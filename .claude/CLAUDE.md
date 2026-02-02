@@ -205,46 +205,13 @@ def create_user(name: str, email: str) -> User:
 
 ---
 
-## 项目结构 (Clean Architecture)
-
-```
-src/
-├── domain/           # 领域层 (纯 Python，无框架依赖)
-│   ├── entities/     # 实体
-│   ├── value_objects/# 值对象
-│   ├── events/       # 领域事件
-│   ├── services/     # 领域服务
-│   └── repositories/ # 仓储接口 (抽象基类)
-├── application/      # 应用层
-│   ├── use_cases/    # 用例/应用服务
-│   ├── dto/          # 数据传输对象
-│   ├── interfaces/   # 端口接口
-│   └── exceptions/   # 应用层异常
-├── infrastructure/   # 基础设施层
-│   ├── database/     # 数据库实现
-│   │   ├── models/   # SQLAlchemy 模型
-│   │   └── repositories/  # 仓储实现
-│   ├── external/     # 外部服务适配器
-│   │   ├── aws/      # AWS 服务
-│   │   └── http/     # HTTP 客户端
-│   └── config/       # 配置管理
-└── presentation/     # 表现层
-    ├── api/          # FastAPI 路由
-    │   ├── routes/   # 路由定义
-    │   ├── dependencies/  # 依赖注入
-    │   └── middleware/    # 中间件
-    └── schemas/      # Pydantic 请求/响应模型
-```
-
-**依赖规则**: 依赖方向永远从外向内
-- ❌ Domain 层禁止导入 FastAPI/Pydantic/SQLAlchemy
-- ❌ Application 层禁止导入 FastAPI/SQLAlchemy
-- ✅ Infrastructure 层可以导入所有层
-- ✅ Presentation 层可以导入 Application 层
+## 项目结构
 
 **架构模式**: DDD + Modular Monolith + Clean Architecture
 
-详细说明请参考 [rules/architecture-backend.md](rules/architecture-backend.md)
+**核心分层**: Domain → Application → Infrastructure → Presentation (依赖方向从外向内)
+
+详细架构规范、模块结构模板、依赖规则请参考 [rules/architecture-backend.md](rules/architecture-backend.md)
 
 ---
 
@@ -330,10 +297,11 @@ class ErrorResponse(BaseModel):
 
 | 文档 | 内容 |
 |------|------|
+| [PROJECT_CONFIG.md](PROJECT_CONFIG.md) | 项目特定配置 (模块列表、技术栈、域事件) |
+| [rules/architecture-backend.md](rules/architecture-backend.md) | 后端架构规范 (DDD + Modular Monolith + Clean Architecture) |
 | [rules/code-standards.md](rules/code-standards.md) | SDK-First 原则详细说明 |
 | [rules/code-style.md](rules/code-style.md) | 代码风格详细规范 |
 | [rules/testing.md](rules/testing.md) | 测试规范详细说明 |
-| [rules/architecture-backend.md](rules/architecture-backend.md) | 后端架构规范 (DDD + Modular Monolith + Clean Architecture) |
 | [rules/security.md](rules/security.md) | 安全规范详细说明 |
 
 ---
