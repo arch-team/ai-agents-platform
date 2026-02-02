@@ -1,0 +1,179 @@
+# Pre-commit 配置
+# 安装: pre-commit install
+# 运行: pre-commit run --all-files
+
+default_language_version:
+  python: python3.11
+
+# 全局设置
+default_stages: [commit]
+
+repos:
+  # ===========================================
+  # 通用钩子
+  # ===========================================
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      # 文件格式检查
+      - id: trailing-whitespace
+        name: 移除尾随空白
+      - id: end-of-file-fixer
+        name: 确保文件以换行符结尾
+      - id: check-yaml
+        name: 检查 YAML 语法
+        args: [--unsafe]  # 允许 Python 构造函数
+      - id: check-toml
+        name: 检查 TOML 语法
+      - id: check-json
+        name: 检查 JSON 语法
+      - id: check-xml
+        name: 检查 XML 语法
+
+      # 安全检查
+      - id: check-added-large-files
+        name: 检查大文件
+        args: [--maxkb=1000]
+      - id: check-merge-conflict
+        name: 检查合并冲突标记
+      - id: detect-private-key
+        name: 检测私钥
+      - id: detect-aws-credentials
+        name: 检测 AWS 凭证
+
+      # Python 检查
+      - id: check-ast
+        name: 检查 Python AST
+      - id: check-docstring-first
+        name: 检查 docstring 位置
+      - id: debug-statements
+        name: 检查调试语句
+      - id: name-tests-test
+        name: 检查测试文件命名
+        args: [--pytest-test-first]
+        files: ^tests/
+
+      # 其他
+      - id: check-case-conflict
+        name: 检查文件名大小写冲突
+      - id: check-symlinks
+        name: 检查损坏的符号链接
+      - id: mixed-line-ending
+        name: 检查混合行结尾
+        args: [--fix=lf]
+
+  # ===========================================
+  # Ruff - 代码检查和格式化
+  # ===========================================
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.3.0
+    hooks:
+      # 代码检查
+      - id: ruff
+        name: Ruff 代码检查
+        args: [--fix, --exit-non-zero-on-fix]
+        types_or: [python, pyi]
+
+      # 代码格式化
+      - id: ruff-format
+        name: Ruff 代码格式化
+        types_or: [python, pyi]
+
+  # ===========================================
+  # MyPy - 类型检查
+  # ===========================================
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.8.0
+    hooks:
+      - id: mypy
+        name: MyPy 类型检查
+        additional_dependencies:
+          - types-passlib>=1.7.7
+          - pydantic>=2.6.0
+          - pydantic-settings>=2.2.0
+        args:
+          - --config-file=pyproject.toml
+        files: ^src/
+        exclude: ^(tests/|migrations/)
+
+  # ===========================================
+  # Bandit - 安全扫描
+  # ===========================================
+  - repo: https://github.com/PyCQA/bandit
+    rev: 1.7.7
+    hooks:
+      - id: bandit
+        name: Bandit 安全扫描
+        args:
+          - -c
+          - pyproject.toml
+          - -r
+          - src/
+        files: ^src/
+
+  # ===========================================
+  # 提交信息检查
+  # ===========================================
+  - repo: https://github.com/commitizen-tools/commitizen
+    rev: v3.14.1
+    hooks:
+      - id: commitizen
+        name: 检查提交信息格式
+        stages: [commit-msg]
+        # 注意: 本项目使用中文提交信息，但仍需遵循格式
+
+  # ===========================================
+  # Poetry/uv 依赖检查
+  # ===========================================
+  - repo: local
+    hooks:
+      - id: uv-lock-check
+        name: 检查 uv.lock 是否最新
+        entry: uv lock --check
+        language: system
+        files: ^pyproject\.toml$
+        pass_filenames: false
+
+  # ===========================================
+  # 本地自定义钩子
+  # ===========================================
+  - repo: local
+    hooks:
+      # 检查敏感信息
+      - id: check-secrets
+        name: 检查敏感信息
+        entry: bash -c 'if grep -rE "(password|secret|key|token)\s*=\s*[\"'][^\"']+[\"']" --include="*.py" src/; then echo "发现可能的敏感信息硬编码！" && exit 1; fi'
+        language: system
+        files: ^src/.*\.py$
+        pass_filenames: false
+
+      # 检查 TODO 和 FIXME
+      - id: check-todos
+        name: 检查 TODO/FIXME
+        entry: bash -c 'if grep -rE "(TODO|FIXME|XXX|HACK)" --include="*.py" src/; then echo "警告: 发现 TODO/FIXME 注释" && exit 0; fi'
+        language: system
+        files: ^src/.*\.py$
+        pass_filenames: false
+        verbose: true
+
+      # 检查打印语句
+      - id: no-print
+        name: 检查 print 语句
+        entry: bash -c 'if grep -rE "^\s*print\s*\(" --include="*.py" src/; then echo "请使用 logger 而非 print" && exit 1; fi'
+        language: system
+        files: ^src/.*\.py$
+        pass_filenames: false
+
+# ===========================================
+# CI 配置
+# ===========================================
+ci:
+  autofix_commit_msg: |
+    [pre-commit.ci] 自动修复
+
+  autofix_prs: true
+  autoupdate_branch: ''
+  autoupdate_commit_msg: '[pre-commit.ci] 更新 pre-commit 钩子'
+  autoupdate_schedule: weekly
+  skip: [uv-lock-check]  # CI 中跳过的钩子
+  submodules: false
