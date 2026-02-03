@@ -217,21 +217,7 @@ def create_user(name: str, email: str) -> User:
 
 ## 安全规范快速参考
 
-### 禁止事项
-- ❌ 硬编码密钥、密码、Token
-- ❌ SQL 字符串拼接
-- ❌ 未验证的用户输入直接使用
-- ❌ 敏感信息写入日志
-- ❌ 使用 `eval()` 或 `exec()`
-
-### 必须事项
-- ✅ 环境变量管理敏感配置
-- ✅ 参数化 SQL 查询 (SQLAlchemy ORM)
-- ✅ 输入验证 (Pydantic)
-- ✅ 适当的错误处理 (不暴露内部信息)
-- ✅ 依赖安全扫描
-
-详细说明请参考 [rules/security.md](rules/security.md)
+速查表和检测命令详见 [rules/security.md](rules/security.md) Section 0 速查卡片。
 
 ---
 

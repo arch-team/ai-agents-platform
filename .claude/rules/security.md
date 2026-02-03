@@ -28,11 +28,7 @@ uv run bandit -r src/ && uv run safety check && uv run pip-audit
 
 ### PR Review 检查清单
 
-- [ ] 无硬编码密钥 (`grep -rE "(password|secret|key)\s*=\s*['\"][^'\"]+['\"]" src/`)
-- [ ] 参数化查询 (`grep -rE "f['\"].*SELECT" src/` 应无结果)
-- [ ] 输入验证 (Pydantic BaseModel)
-- [ ] 错误响应不暴露内部信息
-- [ ] 密码使用 bcrypt 哈希
+详见 [Section 4 检查清单](#4-检查清单)，包含代码审查和部署检查项。
 
 ---
 
@@ -56,15 +52,8 @@ uv run bandit -r src/ && uv run safety check && uv run pip-audit
 AWS_SECRET = "wJalrXUtnFEMI..."
 API_KEY = "sk-1234567890"
 
-# ✅ 正确
-from pydantic import SecretStr
-from pydantic_settings import BaseSettings
-
-class Settings(BaseSettings):
-    aws_secret: SecretStr
-    api_key: SecretStr
-    class Config:
-        env_file = ".env"
+# ✅ 正确 - 见 3.1 节 Settings 模式
+settings.aws_secret  # 从环境变量加载
 ```
 
 **检测**: `grep -rE "(password|secret|key|token)\s*=\s*['\"][^'\"]+['\"]" src/`
@@ -94,20 +83,13 @@ session.execute(stmt, {"user_id": user_id})
 
 ```python
 # ❌ 禁止
-@router.get("/files/{filename}")
-def get_file(filename: str):
-    return FileResponse(f"/uploads/{filename}")  # 可能访问 ../../../etc/passwd
+return FileResponse(f"/uploads/{filename}")  # 可能访问 ../../../etc/passwd
 
 # ✅ 正确
-from pathlib import Path
-
-@router.get("/files/{filename}")
-def get_file(filename: str):
-    safe_name = Path(filename).name  # 移除路径组件
-    file_path = Path("/uploads") / safe_name
-    if not file_path.is_relative_to(Path("/uploads")):
-        raise HTTPException(400, "非法路径")
-    return FileResponse(file_path)
+safe_name = Path(filename).name  # 移除 ../ 等路径组件
+file_path = Path("/uploads") / safe_name
+if not file_path.is_relative_to(Path("/uploads")):
+    raise HTTPException(400, "非法路径")
 ```
 
 ### 2.4 敏感日志
