@@ -8,24 +8,15 @@
 
 > Claude 生成代码时优先查阅此章节
 
-### 测试命令速查
+### 测试命令 & TDD 循环
+
+**见 CLAUDE.md**: §开发命令-测试 (完整命令) | §TDD 工作流 (核心循环)
 
 ```bash
-# 常用命令
-uv run pytest                              # 运行所有测试
-uv run pytest -x                           # 遇错停止
-uv run pytest --cov=src                    # 带覆盖率
-uv run pytest -m "unit"                    # 只跑单元测试
+# 本文件补充命令 (CLAUDE.md 未包含)
 uv run pytest -m "not slow"                # 排除慢速测试
-uv run pytest tests/unit/test_user.py -v  # 指定文件，详细输出
-```
-
-### TDD 循环速查
-
-```
-🔴 Red    → 先写失败测试，明确预期行为
-🟢 Green  → 最少代码使测试通过，不过度设计
-🔄 Refactor → 重构代码，保持测试通过
+uv run pytest --tb=short                   # 简洁错误输出
+uv run pytest --lf                         # 只跑上次失败的测试
 ```
 
 ### 命名模式速查
