@@ -189,6 +189,8 @@ def get_user(user_id):
 
 ## 项目结构
 
+**项目级目录**: 详见 [rules/project-structure.md](rules/project-structure.md) - 完整目录结构规范
+
 **架构模式**: DDD + Modular Monolith + Clean Architecture
 
 **核心分层**: Domain → Application → Infrastructure → Presentation (依赖方向从外向内)
@@ -228,6 +230,7 @@ def get_user(user_id):
 | [PROJECT_CONFIG.ai-agents-platform.md](PROJECT_CONFIG.ai-agents-platform.md) | 项目特定配置 (模块列表、技术栈、域事件) |
 | [PROJECT_CONFIG.template.md](PROJECT_CONFIG.template.md) | 项目配置模板 (可复用到其他项目) |
 | [rules/architecture.md](rules/architecture.md) | 后端架构规范 (DDD + Modular Monolith + Clean Architecture) |
+| [rules/project-structure.md](rules/project-structure.md) | 项目目录结构规范 (完整目录树、配置文件) |
 | [rules/api-design.md](rules/api-design.md) | API 设计规范 (RESTful、状态码、错误格式) |
 | [rules/sdk-first.md](rules/sdk-first.md) | SDK-First 原则详细说明 |
 | [rules/code-style.md](rules/code-style.md) | 代码风格详细规范 |

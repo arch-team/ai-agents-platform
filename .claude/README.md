@@ -15,6 +15,7 @@
 ├── settings.local.json                 # Claude Code 本地权限配置
 └── rules/                              # 专题规范文档
     ├── architecture.md                 # 架构规范 ★核心
+    ├── project-structure.md            # 项目目录结构规范 ★新增
     ├── code-style.md                   # 代码风格规范
     ├── testing.md                      # 测试规范 (TDD)
     ├── security.md                     # 安全规范
@@ -37,6 +38,7 @@
 | 场景 | 推荐文档 |
 |------|----------|
 | 开发命令 (uv, pytest, ruff) | `CLAUDE.md` §开发命令 |
+| 项目目录结构 | `rules/project-structure.md` §0 速查卡片 |
 | 模块结构和分层 | `rules/architecture.md` §0 速查卡片 |
 | 代码风格和类型提示 | `rules/code-style.md` §0 速查卡片 |
 | 测试规范 (TDD/Mock) | `rules/testing.md` §0 速查卡片 |
@@ -69,6 +71,7 @@
 | 文件 | 行数 | 主要内容 |
 |------|------|----------|
 | `architecture.md` | 655 | 架构模式 (DDD + Modular Monolith + Clean Architecture)、分层规则、模块隔离黄金法则、DDD 战术模式 |
+| `project-structure.md` | 87 | 项目根目录结构、配置文件速查、初始化检查清单 |
 | `code-style.md` | 324 | 类型提示、命名规范、Docstring 原则、异步代码规范 |
 | `testing.md` | 308 | TDD 循环、测试分层、AAA 模式、Mock 规范、覆盖率配置 |
 | `security.md` | 252 | 禁止事项（注入、硬编码）、必须事项（验证、哈希）、安全检查命令 |
@@ -90,6 +93,7 @@ Claude Code 的本地权限配置，包含：
 CLAUDE.md (入口)
     │
     ├─→ rules/architecture.md ──→ PROJECT_CONFIG.ai-agents-platform.md
+    ├─→ rules/project-structure.md ──→ rules/architecture.md, rules/testing.md
     ├─→ rules/code-style.md
     ├─→ rules/testing.md ──────→ CLAUDE.md (互相引用)
     ├─→ rules/security.md
