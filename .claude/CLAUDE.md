@@ -95,11 +95,14 @@ uv run pytest -x
 # 详细输出
 uv run pytest -v
 
+# 运行特定模块的测试
+uv run pytest tests/modules/auth/
+
 # 运行特定测试文件
-uv run pytest tests/unit/test_user.py
+uv run pytest tests/modules/auth/unit/domain/test_user_entity.py
 
 # 运行特定测试函数
-uv run pytest tests/unit/test_user.py::test_create_user_with_valid_email
+uv run pytest tests/modules/auth/unit/domain/test_user_entity.py::test_create_user_with_valid_email
 
 # 运行标记的测试
 uv run pytest -m "unit"
