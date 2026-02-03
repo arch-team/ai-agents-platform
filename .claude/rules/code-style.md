@@ -4,9 +4,53 @@
 
 ---
 
-## 类型提示 (Type Hints)
+## 0. 速查卡片 (Quick Reference)
 
-### 强制要求
+> Claude 生成代码时优先查阅此章节
+
+### 类型提示速查
+| 规则 | 示例 |
+|------|------|
+| ✅ 所有公共接口必须有类型提示 | `def get_user(user_id: int) -> User \| None:` |
+| ✅ 使用 `X \| None` 代替 `Optional[X]` | `name: str \| None = None` |
+| ✅ 使用内置泛型 (Python 3.9+) | `list[str]`, `dict[str, int]` |
+| ❌ 禁止使用 `Any` | 使用 `TypeVar` 或具体类型替代 |
+
+### 命名速查
+| 元素 | 样式 | 示例 |
+|------|------|------|
+| 函数/变量 | `snake_case` | `get_user_by_id` |
+| 类 | `PascalCase` | `UserRepository` |
+| 常量 | `UPPER_SNAKE` | `MAX_RETRY` |
+| 私有 | `_prefix` | `_cache` |
+| 类型变量 | `PascalCase` + T | `EntityT` |
+
+### Docstring 速查
+```
+类型自解释 → 省略 Docstring | 有副作用/异常 → 说明行为
+```
+
+### 异步代码速查
+```python
+# ✅ 正确 - 异步函数
+async def fetch_user(user_id: int) -> User: ...
+
+# ✅ 正确 - 上下文管理
+async with get_db_session() as session: ...
+
+# ✅ 正确 - 并发执行
+results = await asyncio.gather(task1(), task2())
+```
+
+### Ruff 自动检查项 (无需人工关注)
+- 导入排序 (isort)
+- 行长度 120 字符
+- 空行规范
+- 格式化风格
+
+---
+
+## 1. 类型提示 (Type Hints)
 
 所有公共接口必须包含完整的类型提示。
 
@@ -16,75 +60,25 @@ def get_user(user_id: int) -> User | None:
     """根据 ID 获取用户。"""
     ...
 
-def process_items(items: list[str]) -> dict[str, int]:
-    """处理项目列表并返回计数字典。"""
-    ...
-
 async def fetch_data(url: str, timeout: float = 30.0) -> bytes:
     """异步获取数据。"""
     ...
 
-# ❌ 错误 - 缺少类型提示
-def get_user(user_id):
-    ...
-
-def process_items(items):
-    ...
-```
-
-### 类型提示最佳实践
-
-```python
-from collections.abc import Callable, Iterable, Sequence
-from typing import TypeVar, Generic
-
-# 使用 | 代替 Union (Python 3.10+)
-def find_user(user_id: int) -> User | None:
-    ...
-
-# 使用内置泛型 (Python 3.9+)
-def process_names(names: list[str]) -> dict[str, int]:
-    ...
-
-# 可调用对象类型
-def apply_transform(
-    data: list[int],
-    transform: Callable[[int], int]
-) -> list[int]:
-    ...
-
-# 泛型类
+# ✅ 正确 - 泛型类
 T = TypeVar("T")
 
 class Repository(Generic[T]):
-    def get(self, id: int) -> T | None:
-        ...
+    def get(self, id: int) -> T | None: ...
+    def save(self, entity: T) -> T: ...
 
-    def save(self, entity: T) -> T:
-        ...
-```
-
-### 禁止使用 Any
-
-```python
-# ❌ 禁止
-from typing import Any
-
-def process_data(data: Any) -> Any:
-    ...
-
-# ✅ 正确 - 使用具体类型或泛型
-from typing import TypeVar
-
-T = TypeVar("T")
-
-def process_data(data: T) -> T:
+# ❌ 错误 - 缺少类型提示
+def get_user(user_id):
     ...
 ```
 
 ---
 
-## 命名规范
+## 2. 命名规范
 
 ### 命名样式汇总
 
@@ -97,42 +91,6 @@ def process_data(data: T) -> T:
 | 常量 | `UPPER_SNAKE_CASE` | `MAX_RETRY_COUNT` |
 | 类型变量 | `PascalCase` + T | `EntityT`, `ResponseT` |
 | 私有成员 | `_leading_underscore` | `_internal_state` |
-| 魔术方法 | `__double_underscore__` | `__init__`, `__str__` |
-
-### 命名示例
-
-```python
-# 模块名
-user_service.py
-training_job_repository.py
-
-# 类名
-class UserService:
-    pass
-
-class TrainingJobRepository:
-    pass
-
-# 常量
-MAX_BATCH_SIZE = 100
-DEFAULT_TIMEOUT_SECONDS = 30
-
-# 函数名
-def calculate_total_cost(items: list[Item]) -> Decimal:
-    pass
-
-def validate_email_format(email: str) -> bool:
-    pass
-
-# 私有方法
-class UserService:
-    def _validate_user_data(self, data: dict) -> None:
-        pass
-
-    def __calculate_internal_score(self) -> float:
-        # 双下划线用于名称修饰 (name mangling)
-        pass
-```
 
 ### 命名原则
 
@@ -143,136 +101,117 @@ class UserService:
 
 ---
 
-## Docstring 规范 (Google Style)
+## 3. Docstring 规范
 
-### 模块级 Docstring
+### 核心原则
+
+> **类型即文档**: 类型提示 + 好命名 = 自解释代码。Docstring 只写类型无法表达的内容。
+
+### 写与不写
+
+| 场景 | 要求 |
+|------|------|
+| 类/模块 | ✅ 一句话描述职责 |
+| 方法 - 类型自解释 | ❌ 省略 |
+| 方法 - 有副作用/异常 | ✅ 说明行为 |
+| 私有方法 | ❌ 省略 |
+
+### 示例
 
 ```python
-"""用户服务模块。
+# ❌ 冗余 - 类型已自解释
+def get_user(user_id: int) -> User | None:
+    """根据 ID 获取用户。
+    Args: user_id: 用户 ID
+    Returns: 用户实体或 None
+    """
 
-提供用户相关的业务逻辑处理，包括用户创建、更新、查询等功能。
+# ✅ 正确 - 省略多余注释
+def get_user(user_id: int) -> User | None: ...
 
-Example:
-    from src.application.services import user_service
+# ✅ 必要 - 有副作用和异常需说明
+def create_user(dto: CreateUserDTO) -> User:
+    """创建用户并发送欢迎邮件。
+    Raises: ValidationError, DuplicateEmailError
+    """
 
-    user = user_service.create_user(name="张三", email="zhangsan@example.com")
-"""
-```
-
-### 类 Docstring
-
-```python
 class UserService:
-    """用户服务类，处理用户相关的业务逻辑。
-
-    负责用户的创建、更新、删除和查询操作，以及相关的业务规则验证。
-
-    Attributes:
-        repository: 用户仓储接口实例
-        email_service: 邮件服务实例
-
-    Example:
-        service = UserService(repository, email_service)
-        user = service.create_user(CreateUserDTO(name="张三"))
-    """
-
-    def __init__(
-        self,
-        repository: UserRepository,
-        email_service: EmailService
-    ) -> None:
-        """初始化用户服务。
-
-        Args:
-            repository: 用户仓储接口
-            email_service: 邮件服务接口
-        """
-        self._repository = repository
-        self._email_service = email_service
+    """用户业务服务。"""  # 类只需一句话
 ```
-
-### 函数/方法 Docstring
-
-```python
-def create_user(self, dto: CreateUserDTO) -> User:
-    """创建新用户。
-
-    根据提供的数据创建新用户，并发送欢迎邮件。
-
-    Args:
-        dto: 创建用户的数据传输对象，包含用户名、邮箱等信息
-
-    Returns:
-        创建成功的用户实体
-
-    Raises:
-        ValidationError: 当邮箱格式无效时抛出
-        DuplicateEmailError: 当邮箱已被注册时抛出
-        EmailSendError: 当发送欢迎邮件失败时抛出
-
-    Example:
-        dto = CreateUserDTO(name="张三", email="zhangsan@example.com")
-        user = service.create_user(dto)
-        print(f"用户 {user.name} 创建成功")
-    """
-```
-
-### 何时需要 Docstring
-
-| 场景 | 是否必须 |
-|------|---------|
-| 公共模块 | ✅ 必须 |
-| 公共类 | ✅ 必须 |
-| 公共方法/函数 | ✅ 必须 |
-| 私有方法 (复杂逻辑) | 🟡 推荐 |
-| 简单的 getter/setter | ❌ 不需要 |
 
 ---
 
-## 导入规范
+## 4. 异步代码规范 (Async Patterns)
 
-### 导入顺序
+### 异步函数定义
+
+```python
+# ✅ 正确 - 显式 async
+async def get_user(user_id: int) -> User | None:
+    async with self._session_factory() as session:
+        return await session.get(User, user_id)
+
+# ❌ 错误 - 同步阻塞调用
+def get_user(user_id: int) -> User | None:
+    return asyncio.run(self._fetch_user(user_id))  # 禁止在已有事件循环中使用
+```
+
+### 并发执行
+
+```python
+# ✅ 正确 - asyncio.gather 并发执行独立任务
+user, permissions = await asyncio.gather(
+    fetch_user(user_id),
+    fetch_permissions(user_id),
+)
+
+# ❌ 错误 - 可并行时顺序执行
+user = await fetch_user(user_id)
+permissions = await fetch_permissions(user_id)  # 浪费时间
+```
+
+### 异步上下文管理
+
+```python
+# ✅ 正确 - 异步上下文管理器
+async with aiohttp.ClientSession() as session:
+    async with session.get(url) as response:
+        data = await response.json()
+
+# ✅ 正确 - 数据库会话
+async with async_session() as session:
+    async with session.begin():
+        session.add(entity)
+```
+
+---
+
+## 5. 导入规范
 
 ```python
 # 1. 标准库导入
 import os
-import sys
 from collections.abc import Callable
-from datetime import datetime
 from typing import TypeVar
 
 # 2. 第三方库导入
-from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel, Field
-from sqlalchemy import Column, String
+from fastapi import APIRouter, Depends
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 # 3. 本地应用导入
 from src.domain.entities import User
 from src.application.dto import CreateUserDTO
-from src.infrastructure.database import get_db_session
 ```
 
-### 导入规则
-
-```python
-# ✅ 正确 - 具体导入
-from src.domain.entities import User
-from src.application.services import UserService
-
-# ❌ 错误 - 通配符导入
-from src.domain.entities import *
-
-# ✅ 正确 - 模块别名用于长路径
-from src.infrastructure.external.aws import sagemaker_client as sagemaker
-
-# ❌ 错误 - 不必要的别名
-from datetime import datetime as dt  # datetime 已经足够短
-```
+**规则**:
+- ✅ 具体导入: `from src.domain.entities import User`
+- ❌ 通配符导入: `from src.domain.entities import *`
+- ✅ 长路径别名: `from src.infrastructure.external.aws import sagemaker_client as sagemaker`
 
 ---
 
-## 代码组织
+## 6. 代码组织
 
 ### 类内部组织顺序
 
@@ -293,13 +232,11 @@ class UserService:
 
     # 4. 类方法 (@classmethod)
     @classmethod
-    def from_config(cls, config: Config) -> "UserService":
-        ...
+    def from_config(cls, config: Config) -> "UserService": ...
 
     # 5. 静态方法 (@staticmethod)
     @staticmethod
-    def validate_email(email: str) -> bool:
-        ...
+    def validate_email(email: str) -> bool: ...
 
     # 6. 属性 (@property)
     @property
@@ -307,80 +244,47 @@ class UserService:
         return self._repository
 
     # 7. 公共方法
-    def create_user(self, dto: CreateUserDTO) -> User:
-        ...
-
-    def get_user(self, user_id: int) -> User | None:
-        ...
+    def create_user(self, dto: CreateUserDTO) -> User: ...
 
     # 8. 私有方法
-    def _validate_user_data(self, data: dict) -> None:
-        ...
+    def _validate_user_data(self, data: dict) -> None: ...
 ```
 
 ### 函数长度和复杂度
 
 - **函数行数**: 建议不超过 50 行
 - **圈复杂度**: 建议不超过 10
-- **参数数量**: 建议不超过 5 个
+- **参数数量**: 建议不超过 5 个 (超过时使用数据类封装)
 
 ```python
-# ❌ 错误 - 过多参数
-def create_user(
-    name: str,
-    email: str,
-    password: str,
-    phone: str,
-    address: str,
-    city: str,
-    country: str,
-    postal_code: str,
-) -> User:
-    ...
-
-# ✅ 正确 - 使用数据类封装
+# ✅ 正确 - 使用数据类封装多参数
 @dataclass
 class CreateUserDTO:
     name: str
     email: str
     password: str
     phone: str | None = None
-    address: Address | None = None
 
-def create_user(dto: CreateUserDTO) -> User:
-    ...
+def create_user(dto: CreateUserDTO) -> User: ...
 ```
 
 ---
 
-## 错误处理
+## 7. 错误处理
 
 ### 异常定义
 
 ```python
 # src/domain/exceptions.py
-
 class DomainError(Exception):
     """领域层基础异常类。"""
-
     def __init__(self, message: str, code: str | None = None) -> None:
         super().__init__(message)
         self.code = code
 
-
-class ValidationError(DomainError):
-    """数据验证错误。"""
-    pass
-
-
-class EntityNotFoundError(DomainError):
-    """实体未找到错误。"""
-    pass
-
-
-class DuplicateEntityError(DomainError):
-    """实体重复错误。"""
-    pass
+class ValidationError(DomainError): pass      # HTTP 422
+class EntityNotFoundError(DomainError): pass  # HTTP 404
+class DuplicateEntityError(DomainError): pass # HTTP 409
 ```
 
 ### 异常处理最佳实践
@@ -396,82 +300,11 @@ except DatabaseConnectionError as e:
     logger.error(f"数据库连接失败: {e}")
     raise ServiceUnavailableError("服务暂时不可用") from e
 
-# ❌ 错误 - 捕获所有异常
+# ❌ 错误 - 捕获所有异常并静默忽略
 try:
     user = repository.get_by_id(user_id)
-except Exception:  # 过于宽泛
-    pass  # 静默忽略
-
-# ✅ 正确 - 使用 finally 清理资源
-try:
-    connection = create_connection()
-    result = connection.execute(query)
-finally:
-    connection.close()
-```
-
----
-
-## 代码格式化
-
-### 行长度
-
-- **最大行长度**: 88 字符 (Ruff 默认)
-- **Docstring/注释**: 建议 72 字符
-
-### 空行使用
-
-```python
-# 模块级函数之间: 2 个空行
-def function_one() -> None:
+except Exception:
     pass
-
-
-def function_two() -> None:
-    pass
-
-
-# 类定义之间: 2 个空行
-class ClassOne:
-    pass
-
-
-class ClassTwo:
-    pass
-
-
-# 类内方法之间: 1 个空行
-class MyClass:
-    def method_one(self) -> None:
-        pass
-
-    def method_two(self) -> None:
-        pass
-```
-
-### 长行处理
-
-```python
-# ✅ 正确 - 使用括号隐式续行
-result = (
-    some_long_function_name(
-        argument_one,
-        argument_two,
-        argument_three,
-    )
-)
-
-# ✅ 正确 - 方法链
-result = (
-    df
-    .filter(col("status") == "active")
-    .groupby("category")
-    .agg(sum("amount"))
-)
-
-# ❌ 错误 - 使用反斜杠续行
-result = some_long_function_name(argument_one, \
-    argument_two, argument_three)
 ```
 
 ---
@@ -483,8 +316,9 @@ result = some_long_function_name(argument_one, \
 - [ ] 所有公共接口都有类型提示
 - [ ] 没有使用 `Any` 类型
 - [ ] 命名符合规范 (snake_case/PascalCase)
-- [ ] 公共类和方法都有 Docstring
+- [ ] Docstring 遵循"类型即文档"原则 (类型自解释时省略)
 - [ ] 导入按正确顺序组织
 - [ ] 没有通配符导入
 - [ ] 异常处理具体而非宽泛
+- [ ] 异步代码正确使用 async/await
 - [ ] 函数复杂度在合理范围内

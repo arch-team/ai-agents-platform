@@ -1,7 +1,42 @@
 # SDK 优先 (SDK-First)
+
 **核心原则**：尽可能使用 SDK 简化代码实现，避免重复造轮子。
 
-## 决策级别说明
+---
+
+## 0. 速查卡片 (Quick Reference)
+
+> Claude 生成代码时优先查阅此章节
+
+### 决策流程
+```
+需要实现某功能?
+    ↓
+官方 SDK 支持? ──是──► 🟢 直接使用 SDK
+    │
+   否
+    ↓
+社区库评估通过? ──是──► 🟡 使用社区库
+    │
+   否
+    ↓
+🔴 自定义实现 (需 Tech Lead 审批)
+```
+
+### Context7 触发场景
+
+| 场景 | 触发关键词 | 应查询内容 |
+|------|-----------|-----------|
+| AWS API | `s3`, `sagemaker`, `dynamodb` | boto3 官方文档 |
+| FastAPI 路由 | `@router`, `Depends`, `HTTPException` | FastAPI 官方示例 |
+| SQLAlchemy ORM | `relationship`, `async_session` | SQLAlchemy 2.0 文档 |
+| Pydantic 验证 | `field_validator`, `model_validator` | Pydantic V2 文档 |
+
+**示例**: 当用户要求 "实现 S3 分片上传" 时，应先查询 Context7 获取 boto3 multipart upload 最新 API。
+
+---
+
+## 1. 决策级别说明
 
 ### 🟢 优先级 1: 直接使用官方 SDK
 
@@ -9,8 +44,6 @@
 - AWS 服务集成 (SageMaker, S3, DynamoDB)
 - 标准 API 调用 (训练任务提交、数据上传下载)
 - 官方文档有明确示例
-
-**示例**:
 
 ```python
 # ✅ 正确: 直接使用 boto3 S3 客户端
@@ -20,11 +53,7 @@ from botocore.config import Config
 config = Config(retries={"max_attempts": 3, "mode": "adaptive"})
 s3_client = boto3.client("s3", config=config)
 
-# 上传文件
 s3_client.upload_file("local_file.txt", "my-bucket", "remote/path/file.txt")
-
-# 下载文件
-s3_client.download_file("my-bucket", "remote/path/file.txt", "local_file.txt")
 ```
 
 ### 🟡 优先级 2: SDK + 薄封装层
@@ -39,35 +68,12 @@ s3_client.download_file("my-bucket", "remote/path/file.txt", "local_file.txt")
 - 不改变 SDK 核心行为
 - 暴露 SDK 原生类型，避免过度抽象
 
-**示例**:
-
-```python
-# ✅ 正确: 薄封装适配 Clean Architecture
-from pathlib import Path
-from abc import ABC, abstractmethod
-import boto3
-
-# 应用层接口 (端口)
-class StorageService(ABC):
-    @abstractmethod
-    def upload_file(self, local_path: Path, remote_key: str) -> None:
-        ...
-
-# 基础设施层实现 (适配器)
-class S3StorageAdapter(StorageService):
-    """S3 存储适配器 - 封装 < 50 行。"""
-
-    def __init__(self, bucket: str, region: str = "us-west-2") -> None:
-        self._bucket = bucket
-        self._client = boto3.client("s3", region_name=region)
-
-    def upload_file(self, local_path: Path, remote_key: str) -> None:
-        self._client.upload_file(str(local_path), self._bucket, remote_key)
-```
+> 关于薄封装层与 Clean Architecture 端口/适配器模式的详细说明，请参考 [architecture-backend.md](architecture-backend.md) §5.4
 
 ### 🟡 优先级 3: 评估后使用社区库
 
 **评估标准**:
+
 | 指标 | 最低要求 |
 |------|---------|
 | GitHub Stars | > 1,000 |
@@ -91,19 +97,65 @@ class S3StorageAdapter(StorageService):
 
 ---
 
-## 本项目核心 SDK 清单
+## 2. 本项目核心 SDK 清单
 
-| 领域 | 官方 SDK | 用途 |
-|------|---------|------|
-| **训练调度** | `sagemaker` | HyperPod 训练任务管理 |
-| **AWS 基础** | `boto3` | S3, DynamoDB, IAM 等服务 |
-| **分布式训练** | `torch.distributed` | DDP, FSDP 分布式策略 |
-| **深度优化** | `deepspeed` | ZeRO 优化、混合精度 |
-| **CDK 部署** | `aws-cdk-lib` | 基础设施即代码 |
-| **API 框架** | `fastapi` | REST API 服务 |
-| **数据验证** | `pydantic` | 请求/响应模型 |
+| 领域 | 官方 SDK | 用途 | 版本要求 |
+|------|---------|------|---------|
+| **训练调度** | `sagemaker` | HyperPod 训练任务管理 | 2.x |
+| **AWS 基础** | `boto3` | S3, DynamoDB, IAM 等服务 | 1.34+ |
+| **分布式训练** | `torch.distributed` | DDP, FSDP 分布式策略 | 2.0+ |
+| **深度优化** | `deepspeed` | ZeRO 优化、混合精度 | 0.14+ |
+| **CDK 部署** | `aws-cdk-lib` | 基础设施即代码 | 2.x |
+| **API 框架** | `fastapi` | REST API 服务 | 0.110+ |
+| **数据验证** | `pydantic` | 请求/响应模型 | v2 |
 
-## 反模式 (Anti-Patterns)
+---
+
+## 3. SDK 异常处理模式
+
+SDK 异常必须转换为域异常，保持领域层纯净。
+
+```python
+# infrastructure/external/aws/s3_adapter.py
+from botocore.exceptions import ClientError
+from src.shared.domain import DomainError
+
+class S3Error(DomainError):
+    """S3 操作异常。"""
+    pass
+
+class S3Adapter:
+    """S3 存储适配器。"""
+
+    def upload_file(self, local_path: Path, key: str) -> None:
+        """上传文件到 S3。
+
+        Raises:
+            S3Error: S3 操作失败时抛出
+        """
+        try:
+            self._client.upload_file(str(local_path), self._bucket, key)
+        except ClientError as e:
+            error_code = e.response["Error"]["Code"]
+            if error_code == "NoSuchBucket":
+                raise S3Error(f"存储桶不存在: {self._bucket}") from e
+            if error_code == "AccessDenied":
+                raise S3Error(f"无权限访问存储桶: {self._bucket}") from e
+            raise S3Error(f"S3 上传失败: {e}") from e
+```
+
+### 常见 SDK 异常映射
+
+| SDK | 原始异常 | 域异常 | HTTP 状态码 |
+|-----|---------|--------|------------|
+| boto3 | `ClientError (NoSuchKey)` | `EntityNotFoundError` | 404 |
+| boto3 | `ClientError (AccessDenied)` | `PermissionError` | 403 |
+| SQLAlchemy | `IntegrityError` | `DuplicateEntityError` | 409 |
+| Pydantic | `ValidationError` | `ValidationError` | 422 |
+
+---
+
+## 4. 反模式 (Anti-Patterns)
 
 ```python
 # ❌ 错误: 重新实现 SDK 已有功能
@@ -129,10 +181,15 @@ class S3StorageAdapter:
         self._client.upload_file(str(local_path), s3_uri.bucket, s3_uri.key)
 ```
 
+---
+
 ## 检查清单
 
 在 PR Review 时，检查以下项目:
+
 - [ ] 是否优先使用了官方 SDK？
 - [ ] 自定义实现是否有充分理由？
 - [ ] 封装层是否保持薄且透明？
 - [ ] 是否避免了重复造轮子？
+- [ ] SDK 异常是否正确转换为域异常？
+- [ ] 是否查询了 Context7 获取最新 API 用法？
