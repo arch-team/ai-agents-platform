@@ -1,12 +1,42 @@
 # 安全规范 (Security Standards)
 
-本文档定义 Python 后端项目的安全规范，基于 OWASP Top 10 和行业最佳实践。
+基于 OWASP Top 10 和行业最佳实践的 Python 后端安全规范。
 
 ---
 
-## 安全原则
+## 0. 速查卡片 (Quick Reference)
 
-### 核心原则
+> Claude 生成代码时优先查阅此章节
+
+### 安全规则速查表
+
+| 规则 | ❌ 禁止 | ✅ 正确 |
+|------|--------|--------|
+| 硬编码密钥 | `API_KEY = "sk-xxx"` | `settings.api_key` (环境变量) |
+| SQL 注入 | `f"SELECT * WHERE id='{x}'"` | `session.query().filter()` |
+| 命令注入 | `os.system(user_input)` | 参数化命令或白名单 |
+| 路径遍历 | `open(f"/uploads/{name}")` | `Path(name).name` 验证 |
+| 敏感日志 | `logger.info(f"密码: {pwd}")` | 仅记录非敏感信息 |
+| 危险函数 | `eval(user_input)` | `json.loads()` / Pydantic |
+
+### 安全检测命令
+
+```bash
+# 完整安全检查
+uv run bandit -r src/ && uv run safety check && uv run pip-audit
+```
+
+### PR Review 检查清单
+
+- [ ] 无硬编码密钥 (`grep -rE "(password|secret|key)\s*=\s*['\"][^'\"]+['\"]" src/`)
+- [ ] 参数化查询 (`grep -rE "f['\"].*SELECT" src/` 应无结果)
+- [ ] 输入验证 (Pydantic BaseModel)
+- [ ] 错误响应不暴露内部信息
+- [ ] 密码使用 bcrypt 哈希
+
+---
+
+## 1. 核心原则
 
 | 原则 | 说明 |
 |------|------|
@@ -17,547 +47,205 @@
 
 ---
 
-## 禁止事项 (絶対禁止)
+## 2. 禁止事项 (絶対禁止)
 
-### 1. 硬编码敏感信息
+### 2.1 硬编码敏感信息
 
 ```python
-# ❌ 絶对禁止 - 硬编码密钥
-AWS_ACCESS_KEY = "AKIAIOSFODNN7EXAMPLE"
-AWS_SECRET_KEY = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
-DATABASE_PASSWORD = "my_secret_password"
-API_KEY = "sk-1234567890abcdef"
+# ❌ 禁止
+AWS_SECRET = "wJalrXUtnFEMI..."
+API_KEY = "sk-1234567890"
 
-# ✅ 正确 - 使用环境变量
-import os
+# ✅ 正确
+from pydantic import SecretStr
 from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
-    aws_access_key: str
-    aws_secret_key: str
-    database_password: str
-    api_key: str
-
+    aws_secret: SecretStr
+    api_key: SecretStr
     class Config:
         env_file = ".env"
-        env_file_encoding = "utf-8"
-
-settings = Settings()
 ```
 
-### 2. SQL 字符串拼接
+**检测**: `grep -rE "(password|secret|key|token)\s*=\s*['\"][^'\"]+['\"]" src/`
+
+### 2.2 注入攻击 (SQL/命令)
 
 ```python
-# ❌ 絶对禁止 - SQL 注入漏洞
-def get_user(user_id: str) -> dict:
-    query = f"SELECT * FROM users WHERE id = '{user_id}'"  # 危险！
-    return db.execute(query)
+# ❌ 禁止 - SQL 注入
+query = f"SELECT * FROM users WHERE id = '{user_id}'"
+db.execute(query)
 
-# ❌ 絶对禁止 - 格式化字符串
-query = "SELECT * FROM users WHERE id = '%s'" % user_id
+# ❌ 禁止 - 命令注入
+os.system(user_input)
 
-# ✅ 正确 - 使用参数化查询
-def get_user(user_id: str) -> User | None:
-    return session.query(User).filter(User.id == user_id).first()
+# ✅ 正确 - ORM 参数化
+session.query(User).filter(User.id == user_id).first()
 
-# ✅ 正确 - 原生 SQL 使用参数绑定
+# ✅ 正确 - 原生 SQL 参数绑定
 from sqlalchemy import text
-query = text("SELECT * FROM users WHERE id = :user_id")
-result = session.execute(query, {"user_id": user_id})
+stmt = text("SELECT * FROM users WHERE id = :user_id")
+session.execute(stmt, {"user_id": user_id})
 ```
 
-### 3. 未验证的用户输入
+**检测**: `grep -rE "f['\"].*SELECT|os\.system|subprocess\.call.*shell=True" src/`
+
+### 2.3 路径遍历
 
 ```python
-# ❌ 絶对禁止 - 直接使用未验证输入
+# ❌ 禁止
 @router.get("/files/{filename}")
 def get_file(filename: str):
-    return FileResponse(f"/uploads/{filename}")  # 路径遍历漏洞！
+    return FileResponse(f"/uploads/{filename}")  # 可能访问 ../../../etc/passwd
 
-# ❌ 絶对禁止 - 直接执行用户输入
-def run_command(cmd: str):
-    os.system(cmd)  # 命令注入！
-
-# ✅ 正确 - 验证和清理输入
+# ✅ 正确
 from pathlib import Path
 
 @router.get("/files/{filename}")
 def get_file(filename: str):
-    # 验证文件名
-    safe_filename = Path(filename).name  # 移除路径组件
-    if not safe_filename or safe_filename.startswith("."):
-        raise HTTPException(status_code=400, detail="无效的文件名")
-
-    file_path = Path("/uploads") / safe_filename
+    safe_name = Path(filename).name  # 移除路径组件
+    file_path = Path("/uploads") / safe_name
     if not file_path.is_relative_to(Path("/uploads")):
-        raise HTTPException(status_code=400, detail="非法路径")
-
+        raise HTTPException(400, "非法路径")
     return FileResponse(file_path)
 ```
 
-### 4. 敏感信息日志
+### 2.4 敏感日志
 
 ```python
-# ❌ 絶对禁止 - 记录敏感信息
+# ❌ 禁止
 logger.info(f"用户登录: {username}, 密码: {password}")
 logger.debug(f"API 密钥: {api_key}")
-logger.info(f"信用卡号: {card_number}")
 
-# ✅ 正确 - 脱敏后记录
+# ✅ 正确
 logger.info(f"用户登录: {username}")
-logger.debug(f"API 密钥: {api_key[:4]}****{api_key[-4:]}")
-logger.info(f"信用卡号: ****{card_number[-4:]}")
-
-# ✅ 正确 - 使用结构化日志并排除敏感字段
-import structlog
-
-logger = structlog.get_logger()
-logger.info(
-    "user_login",
-    username=username,
-    ip_address=request.client.host,
-    # 不记录密码
-)
+logger.debug(f"API 密钥: {api_key[:4]}****")  # 脱敏
 ```
 
-### 5. 危险函数
+**检测**: `grep -rE "logger\.(info|debug|error).*password" src/`
+
+### 2.5 危险函数
 
 ```python
-# ❌ 絶对禁止 - eval/exec
-user_code = request.json.get("code")
-result = eval(user_code)  # 远程代码执行！
+# ❌ 禁止
+eval(user_input)           # 远程代码执行
+exec(user_code)            # 远程代码执行
+pickle.loads(untrusted)    # 反序列化漏洞
 
-# ❌ 絶对禁止 - pickle 反序列化不可信数据
-import pickle
-data = pickle.loads(request.body)  # 反序列化漏洞！
-
-# ✅ 正确 - 使用 JSON 序列化
+# ✅ 正确
 import json
 data = json.loads(request.body)
 
-# ✅ 正确 - 使用 Pydantic 验证
+# ✅ 正确 - Pydantic 验证
 from pydantic import BaseModel
-
 class UserInput(BaseModel):
     name: str
     value: int
-
 data = UserInput.model_validate_json(request.body)
 ```
 
+**检测**: `grep -rE "\beval\s*\(|\bexec\s*\(|pickle\.loads" src/`
+
 ---
 
-## 必须事项 (強制要求)
+## 3. 必须事项 (強制要求)
 
-### 1. 环境变量管理敏感配置
+### 3.1 环境变量配置
 
 ```python
-# src/infrastructure/config/settings.py
-
 from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-
 class Settings(BaseSettings):
-    """应用配置。
+    model_config = SettingsConfigDict(env_file=".env")
 
-    所有敏感配置从环境变量加载。
-    """
-
-    model_config = SettingsConfigDict(
-        env_file=".env",
-        env_file_encoding="utf-8",
-        case_sensitive=False,
-    )
-
-    # 数据库
     database_url: SecretStr = Field(..., description="数据库连接字符串")
-
-    # AWS
-    aws_access_key_id: SecretStr = Field(..., description="AWS 访问密钥 ID")
-    aws_secret_access_key: SecretStr = Field(..., description="AWS 秘密访问密钥")
-    aws_region: str = Field(default="us-west-2", description="AWS 区域")
-
-    # JWT
     jwt_secret_key: SecretStr = Field(..., description="JWT 签名密钥")
-    jwt_algorithm: str = Field(default="HS256", description="JWT 算法")
-    jwt_expire_minutes: int = Field(default=30, description="JWT 过期时间(分钟)")
-
-    def get_database_url(self) -> str:
-        """获取数据库 URL (脱敏)。"""
-        return self.database_url.get_secret_value()
+    aws_secret_access_key: SecretStr = Field(...)
 ```
 
-### 2. 输入验证
+### 3.2 输入验证 (Pydantic)
 
 ```python
-# src/presentation/schemas/user_schemas.py
-
 from pydantic import BaseModel, EmailStr, Field, field_validator
 import re
 
-
 class CreateUserRequest(BaseModel):
-    """创建用户请求。"""
-
-    name: str = Field(
-        ...,
-        min_length=1,
-        max_length=100,
-        description="用户名称",
-    )
-    email: EmailStr = Field(..., description="用户邮箱")
-    password: str = Field(
-        ...,
-        min_length=8,
-        max_length=128,
-        description="用户密码",
-    )
-
-    @field_validator("name")
-    @classmethod
-    def validate_name(cls, v: str) -> str:
-        """验证名称格式。"""
-        # 移除首尾空白
-        v = v.strip()
-        # 检查是否只包含允许的字符
-        if not re.match(r"^[\w\s\u4e00-\u9fff]+$", v):
-            raise ValueError("名称包含非法字符")
-        return v
+    name: str = Field(..., min_length=1, max_length=100)
+    email: EmailStr
+    password: str = Field(..., min_length=8, max_length=128)
 
     @field_validator("password")
     @classmethod
     def validate_password(cls, v: str) -> str:
-        """验证密码强度。"""
-        if not re.search(r"[A-Z]", v):
-            raise ValueError("密码必须包含大写字母")
-        if not re.search(r"[a-z]", v):
-            raise ValueError("密码必须包含小写字母")
-        if not re.search(r"\d", v):
-            raise ValueError("密码必须包含数字")
-        if not re.search(r"[!@#$%^&*(),.?\":{}|<>]", v):
-            raise ValueError("密码必须包含特殊字符")
+        if not re.search(r"[A-Z]", v): raise ValueError("需要大写字母")
+        if not re.search(r"[a-z]", v): raise ValueError("需要小写字母")
+        if not re.search(r"\d", v): raise ValueError("需要数字")
         return v
 ```
 
-### 3. 密码哈希
+### 3.3 密码哈希
 
 ```python
-# src/infrastructure/security/password.py
-
 from passlib.context import CryptContext
 
-# 使用 bcrypt 算法
-pwd_context = CryptContext(
-    schemes=["bcrypt"],
-    deprecated="auto",
-    bcrypt__rounds=12,  # 成本因子
-)
-
+pwd_context = CryptContext(schemes=["bcrypt"], bcrypt__rounds=12)
 
 def hash_password(password: str) -> str:
-    """对密码进行哈希。
-
-    Args:
-        password: 明文密码
-
-    Returns:
-        哈希后的密码
-    """
     return pwd_context.hash(password)
 
-
-def verify_password(plain_password: str, hashed_password: str) -> bool:
-    """验证密码。
-
-    Args:
-        plain_password: 明文密码
-        hashed_password: 哈希密码
-
-    Returns:
-        密码是否匹配
-    """
-    return pwd_context.verify(plain_password, hashed_password)
+def verify_password(plain: str, hashed: str) -> bool:
+    return pwd_context.verify(plain, hashed)
 ```
 
-### 4. JWT 认证
+### 3.4 认证模式
 
 ```python
-# src/infrastructure/security/jwt.py
+# 关键模式: 登录限制 + JWT
+MAX_LOGIN_ATTEMPTS = 5
+LOCKOUT_MINUTES = 30
 
-from datetime import datetime, timedelta
-from typing import Any
-
-from jose import JWTError, jwt
-
-from src.infrastructure.config import Settings
-
-
-class JWTHandler:
-    """JWT 处理器。"""
-
-    def __init__(self, settings: Settings) -> None:
-        self._secret_key = settings.jwt_secret_key.get_secret_value()
-        self._algorithm = settings.jwt_algorithm
-        self._expire_minutes = settings.jwt_expire_minutes
-
-    def create_access_token(
-        self,
-        data: dict[str, Any],
-        expires_delta: timedelta | None = None,
-    ) -> str:
-        """创建访问令牌。
-
-        Args:
-            data: 令牌载荷
-            expires_delta: 过期时间增量
-
-        Returns:
-            JWT 令牌
-        """
-        to_encode = data.copy()
-        expire = datetime.utcnow() + (
-            expires_delta or timedelta(minutes=self._expire_minutes)
-        )
-        to_encode.update({"exp": expire})
-        return jwt.encode(to_encode, self._secret_key, algorithm=self._algorithm)
-
-    def decode_token(self, token: str) -> dict[str, Any]:
-        """解码令牌。
-
-        Args:
-            token: JWT 令牌
-
-        Returns:
-            令牌载荷
-
-        Raises:
-            JWTError: 令牌无效时
-        """
-        return jwt.decode(token, self._secret_key, algorithms=[self._algorithm])
+# 检查锁定 → 验证密码 → 重置计数器
+# 失败时记录尝试，达到阈值则锁定账户
 ```
 
-### 5. 错误处理 (不暴露内部信息)
+### 3.5 错误处理 (不暴露内部信息)
 
 ```python
-# src/presentation/api/middleware/error_handler.py
+# 内部日志: 详细记录
+logger.error("unhandled_exception", error=str(e), traceback=traceback.format_exc())
 
-import traceback
-from fastapi import Request
-from fastapi.responses import JSONResponse
-from starlette.middleware.base import BaseHTTPMiddleware
-import structlog
-
-logger = structlog.get_logger()
-
-
-class ErrorHandlerMiddleware(BaseHTTPMiddleware):
-    """全局错误处理中间件。"""
-
-    async def dispatch(self, request: Request, call_next):
-        try:
-            return await call_next(request)
-        except Exception as e:
-            # 记录详细错误信息 (内部日志)
-            logger.error(
-                "unhandled_exception",
-                error=str(e),
-                traceback=traceback.format_exc(),
-                path=request.url.path,
-                method=request.method,
-            )
-
-            # 返回通用错误信息 (不暴露内部细节)
-            return JSONResponse(
-                status_code=500,
-                content={
-                    "code": "INTERNAL_ERROR",
-                    "message": "服务器内部错误，请稍后重试",
-                    # ❌ 不要返回: "detail": str(e)
-                    # ❌ 不要返回: "traceback": traceback.format_exc()
-                },
-            )
+# 外部响应: 通用信息
+return JSONResponse(
+    status_code=500,
+    content={"code": "INTERNAL_ERROR", "message": "服务器内部错误"}
+    # ❌ 不返回: detail=str(e), traceback=...
+)
 ```
 
----
-
-## OWASP Top 10 防护
-
-### A01: 访问控制缺陷
+### 3.6 访问控制
 
 ```python
-# src/presentation/api/dependencies/auth.py
-
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 
-from src.domain.entities import User
-from src.application.interfaces import AuthService
-
-
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
-
-async def get_current_user(
-    token: str = Depends(oauth2_scheme),
-    auth_service: AuthService = Depends(get_auth_service),
-) -> User:
-    """获取当前认证用户。"""
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="无法验证凭据",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
-    try:
-        user = auth_service.verify_token(token)
-        if user is None:
-            raise credentials_exception
-        return user
-    except Exception:
-        raise credentials_exception
-
-
-def require_role(required_roles: list[str]):
-    """角色权限装饰器。"""
-    async def role_checker(
-        current_user: User = Depends(get_current_user),
-    ) -> User:
-        if current_user.role not in required_roles:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="权限不足",
-            )
-        return current_user
-    return role_checker
-
-
-# 使用示例
-@router.delete("/users/{user_id}")
-async def delete_user(
-    user_id: UUID,
-    current_user: User = Depends(require_role(["admin"])),
-):
-    """删除用户 (仅管理员)。"""
+async def get_current_user(token: str = Depends(oauth2_scheme)) -> User:
+    # 验证 token，失败返回 401
     ...
-```
 
-### A03: 注入攻击
-
-```python
-# 使用 SQLAlchemy ORM 防止 SQL 注入
-def search_users(query: str) -> list[User]:
-    """搜索用户。"""
-    # ✅ 安全 - 使用 ORM
-    return session.query(UserModel).filter(
-        UserModel.name.ilike(f"%{query}%")
-    ).all()
-
-
-# 如果必须使用原生 SQL
-from sqlalchemy import text
-
-def raw_search(query: str) -> list[dict]:
-    """原生 SQL 搜索。"""
-    # ✅ 安全 - 使用参数绑定
-    stmt = text("SELECT * FROM users WHERE name LIKE :query")
-    return session.execute(stmt, {"query": f"%{query}%"}).fetchall()
-```
-
-### A07: 认证缺陷
-
-```python
-# src/infrastructure/security/auth.py
-
-from datetime import datetime, timedelta
-import secrets
-
-from src.domain.repositories import UserRepository
-from src.infrastructure.security.password import verify_password
-
-
-class AuthService:
-    """认证服务。"""
-
-    # 登录尝试限制
-    MAX_LOGIN_ATTEMPTS = 5
-    LOCKOUT_DURATION_MINUTES = 30
-
-    def __init__(self, user_repository: UserRepository) -> None:
-        self._user_repository = user_repository
-        self._login_attempts: dict[str, list[datetime]] = {}
-
-    def authenticate(self, email: str, password: str) -> User | None:
-        """认证用户。"""
-        # 1. 检查是否被锁定
-        if self._is_locked_out(email):
-            raise AuthenticationError("账户已被锁定，请稍后重试")
-
-        # 2. 获取用户
-        user = self._user_repository.get_by_email(email)
-        if not user:
-            self._record_failed_attempt(email)
-            return None
-
-        # 3. 验证密码
-        if not verify_password(password, user.password_hash):
-            self._record_failed_attempt(email)
-            return None
-
-        # 4. 重置登录尝试
-        self._reset_attempts(email)
+def require_role(roles: list[str]):
+    async def checker(user: User = Depends(get_current_user)) -> User:
+        if user.role not in roles:
+            raise HTTPException(status.HTTP_403_FORBIDDEN, "权限不足")
         return user
-
-    def _is_locked_out(self, email: str) -> bool:
-        """检查是否被锁定。"""
-        attempts = self._login_attempts.get(email, [])
-        cutoff = datetime.utcnow() - timedelta(minutes=self.LOCKOUT_DURATION_MINUTES)
-        recent_attempts = [a for a in attempts if a > cutoff]
-        return len(recent_attempts) >= self.MAX_LOGIN_ATTEMPTS
-
-    def _record_failed_attempt(self, email: str) -> None:
-        """记录失败尝试。"""
-        if email not in self._login_attempts:
-            self._login_attempts[email] = []
-        self._login_attempts[email].append(datetime.utcnow())
-
-    def _reset_attempts(self, email: str) -> None:
-        """重置登录尝试。"""
-        self._login_attempts.pop(email, None)
+    return checker
 ```
 
 ---
 
-## 依赖安全
-
-### 依赖扫描配置
-
-```toml
-# pyproject.toml
-
-[tool.bandit]
-exclude_dirs = ["tests", "venv"]
-skips = ["B101"]  # 跳过 assert 检查 (测试中使用)
-
-[tool.safety]
-# 使用 safety check 扫描已知漏洞
-```
-
-### 定期检查命令
-
-```bash
-# 安全审计
-uv run bandit -r src/
-
-# 依赖漏洞扫描
-uv run safety check
-
-# 依赖更新检查
-uv run pip-audit
-```
-
----
-
-## 安全检查清单
+## 4. 检查清单
 
 ### 代码审查检查项
 
