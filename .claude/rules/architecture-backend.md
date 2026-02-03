@@ -244,17 +244,11 @@ from {PROJECT}.modules.auth.api.dependencies import (
 ### 3.3 禁止的依赖
 
 ```python
-# ❌ 禁止：直接导入其他模块的服务
-from {PROJECT}.modules.{other_module}.application.services import {Service}
-
-# ❌ 禁止：直接导入其他模块的实体
-from {PROJECT}.modules.{other_module}.domain.entities import {Entity}
-
-# ❌ 禁止：直接导入其他模块的仓库实现
-from {PROJECT}.modules.{other_module}.infrastructure.repositories import {RepoImpl}
-
-# ❌ 禁止：Domain 层导入任何外部模块
-from {PROJECT}.modules.{other_module}.domain import {Error}  # 绝对禁止！
+# ❌ 禁止：跨模块直接导入 (以下均为反面示例)
+from {PROJECT}.modules.{other_module}.application.services import {Service}       # ❌ Service
+from {PROJECT}.modules.{other_module}.domain.entities import {Entity}             # ❌ Entity
+from {PROJECT}.modules.{other_module}.infrastructure.repositories import {RepoImpl}  # ❌ Repository
+from {PROJECT}.modules.{other_module}.domain import {Error}                       # ❌ Domain 层绝对禁止！
 ```
 
 #### 技术例外：ORM 模型外键关系
@@ -286,49 +280,21 @@ class {Entity}Model(Base):
 
 ### 4.2 事件驱动通信（推荐）
 
-#### 定义域事件
-
 ```python
-# modules/{module}/domain/events.py
-from dataclasses import dataclass
-from {PROJECT}.shared.domain import DomainEvent
-
+# 1. 定义域事件 (modules/{module}/domain/events.py)
 @dataclass
 class {Entity}CompletedEvent(DomainEvent):
-    """{实体}完成事件。"""
     entity_id: int
     owner_id: int
-    # ... 其他字段
-```
 
-#### 发布事件
+# 2. 发布事件 (Application Service 中)
+entity.mark_completed()
+await event_bus.publish_async({Entity}CompletedEvent(entity_id=..., owner_id=...))
 
-```python
-# modules/{module}/application/services/{entity}_service.py
-from {PROJECT}.shared.domain import event_bus
-
-class {Entity}Service:
-    async def complete(self, entity_id: int) -> {Entity}:
-        entity = await self._repository.get_by_id(entity_id)
-        entity.mark_completed()
-
-        # 发布事件，解耦其他模块
-        await event_bus.publish_async({Entity}CompletedEvent(...))
-        return await self._repository.update(entity)
-```
-
-#### 订阅事件
-
-```python
-# modules/{subscriber}/application/services/{subscriber}_service.py
-from {PROJECT}.shared.domain import event_handler
-from {PROJECT}.modules.{publisher}.domain.events import {Entity}CompletedEvent
-
-class {Subscriber}Service:
-    @event_handler({Entity}CompletedEvent)
-    async def on_{entity}_completed(self, event: {Entity}CompletedEvent):
-        """监听{实体}完成事件。"""
-        # 处理逻辑...
+# 3. 订阅事件 (其他模块 Application Service)
+@event_handler({Entity}CompletedEvent)
+async def on_{entity}_completed(self, event: {Entity}CompletedEvent):
+    # 处理逻辑...
 ```
 
 ### 4.3 共享接口通信
@@ -441,28 +407,11 @@ from {PROJECT}.shared.domain import ValidationError
 @dataclass
 class PricingService:
     """定价领域服务 - 跨实体的定价计算逻辑。"""
-
     tax_rate: float = 0.1
 
-    def calculate_total(
-        self,
-        base_price: Money,
-        discount: Discount | None,
-        quantity: int,
-    ) -> Money:
-        """计算总价。
-
-        Args:
-            base_price: 基础价格
-            discount: 折扣 (可选)
-            quantity: 数量
-
-        Returns:
-            计算后的总价
-        """
+    def calculate_total(self, base_price: Money, discount: Discount | None, quantity: int) -> Money:
         if quantity <= 0:
             raise ValidationError("数量必须大于 0")
-
         subtotal = base_price.multiply(quantity)
         if discount:
             subtotal = discount.apply(subtotal)
@@ -618,28 +567,29 @@ Layer 4: Application Service (get_xxx_service)
 Layer 5: Permission Check (require_xxx)
 ```
 
-### 7.2 标准依赖函数模板
+### 7.2 依赖函数模板
 
 ```python
 # modules/{module}/api/dependencies.py
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from {PROJECT}.shared.infrastructure import get_db
-from {PROJECT}.modules.{module}.domain.repositories import I{Entity}Repository
-from {PROJECT}.modules.{module}.infrastructure.persistence.repositories import {Entity}RepositoryImpl
-from {PROJECT}.modules.{module}.application.services import {Entity}Service
+from {PROJECT}.shared.domain.interfaces import I{Capability}
 
-# Layer 2: Repository
-async def get_{entity}_repository(
-    session: AsyncSession = Depends(get_db),
-) -> I{Entity}Repository:
+# Repository 依赖
+async def get_{entity}_repository(session: AsyncSession = Depends(get_db)) -> I{Entity}Repository:
     return {Entity}RepositoryImpl(session)
 
-# Layer 4: Service
+# 跨模块能力依赖 (可选)
+async def get_{capability}(session: AsyncSession = Depends(get_db)) -> I{Capability}:
+    return {Capability}Impl({Capability}RepositoryImpl(session))
+
+# Service 依赖 (组合 Repository + 跨模块能力)
 async def get_{entity}_service(
     repository: I{Entity}Repository = Depends(get_{entity}_repository),
+    capability: I{Capability} = Depends(get_{capability}),  # 可选
 ) -> {Entity}Service:
-    return {Entity}Service(repository=repository)
+    return {Entity}Service(repository=repository, capability=capability)
 ```
 
 ### 7.3 外部客户端 Singleton 模式
@@ -653,28 +603,6 @@ def get_{client}_client() -> {Client}Client:
     """单例模式，避免重复创建客户端。"""
     settings = get_settings()
     return {Client}Client(region=settings.aws_region)
-```
-
-### 7.4 跨模块依赖注入
-
-```python
-# modules/{module}/api/dependencies.py
-from {PROJECT}.shared.domain.interfaces import I{Capability}
-
-async def get_{capability}(
-    session: AsyncSession = Depends(get_db),
-) -> I{Capability}:
-    repo = {Capability}RepositoryImpl(session)
-    return {Capability}Impl(repo)
-
-async def get_{entity}_service(
-    repository: I{Entity}Repository = Depends(get_{entity}_repository),
-    capability: I{Capability} = Depends(get_{capability}),
-) -> {Entity}Service:
-    return {Entity}Service(
-        repository=repository,
-        capability=capability,
-    )
 ```
 
 ---
@@ -692,25 +620,13 @@ class DomainError(Exception):
 class EntityNotFoundError(DomainError):
     """实体未找到 - HTTP 404"""
     def __init__(self, entity_type: str, entity_id: str):
-        self.entity_type = entity_type
-        self.entity_id = entity_id
         super().__init__(f"{entity_type} with id {entity_id} not found")
 
-class ValidationError(DomainError):
-    """验证错误 - HTTP 422"""
-    pass
-
-class DuplicateEntityError(DomainError):
-    """重复实体 - HTTP 409"""
-    pass
-
-class InvalidStateTransitionError(DomainError):
-    """无效状态转换 - HTTP 409"""
-    pass
-
-class ResourceQuotaExceededError(DomainError):
-    """资源配额超限 - HTTP 429"""
-    pass
+# 以下异常无额外逻辑，单行定义
+class ValidationError(DomainError): pass              # HTTP 422
+class DuplicateEntityError(DomainError): pass         # HTTP 409
+class InvalidStateTransitionError(DomainError): pass  # HTTP 409
+class ResourceQuotaExceededError(DomainError): pass   # HTTP 429
 ```
 
 ### 8.2 HTTP 状态码映射
