@@ -125,7 +125,7 @@ uv run uvicorn src.presentation.api.main:app --host 0.0.0.0 --port 8000 --worker
 
 **核心原则**：尽可能使用 SDK 简化代码实现，避免重复造轮子。
 
-详细说明请参考 [rules/code-standards.md](rules/code-standards.md)
+详细说明请参考 [rules/sdk-first.md](rules/sdk-first.md)
 
 ### TDD 工作流
 
@@ -225,7 +225,7 @@ def get_user(user_id):
 | [PROJECT_CONFIG.md](PROJECT_CONFIG.md) | 项目特定配置 (模块列表、技术栈、域事件) |
 | [rules/architecture-backend.md](rules/architecture-backend.md) | 后端架构规范 (DDD + Modular Monolith + Clean Architecture) |
 | [rules/api-design.md](rules/api-design.md) | API 设计规范 (RESTful、状态码、错误格式) |
-| [rules/code-standards.md](rules/code-standards.md) | SDK-First 原则详细说明 |
+| [rules/sdk-first.md](rules/sdk-first.md) | SDK-First 原则详细说明 |
 | [rules/code-style.md](rules/code-style.md) | 代码风格详细规范 |
 | [rules/testing.md](rules/testing.md) | 测试规范详细说明 |
 | [rules/security.md](rules/security.md) | 安全规范详细说明 |

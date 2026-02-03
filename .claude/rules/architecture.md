@@ -652,4 +652,4 @@ class ResourceQuotaExceededError(DomainError): pass   # HTTP 429
 | `rules/code-style.md` | 命名规范、类型提示 |
 | `rules/testing.md` | TDD 循环、测试分层 |
 | `rules/security.md` | 安全最佳实践 |
-| `rules/code-standards.md` | SDK 优先原则 |
+| `rules/sdk-first.md` | SDK 优先原则 |
