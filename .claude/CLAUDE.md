@@ -29,18 +29,11 @@ AI Agents Platform - 基于 AWS HyperPod 的 ML 训练平台后端服务。
 
 ## 技术栈
 
-| 领域 | 技术选型 | 版本要求 |
-|------|---------|---------|
-| **语言** | Python | 3.11+ |
-| **API 框架** | FastAPI | 0.110+ |
-| **ORM** | SQLAlchemy | 2.0+ |
-| **数据验证** | Pydantic | v2 |
-| **测试框架** | pytest | 8.0+ |
-| **类型检查** | MyPy | 1.8+ |
-| **代码检查** | Ruff | 0.3+ |
-| **包管理** | uv | 最新版 |
-| **云服务** | AWS (SageMaker, S3, DynamoDB) | - |
-| **基础设施** | AWS CDK | 2.x |
+**核心**: Python 3.11+ | FastAPI 0.110+ | SQLAlchemy 2.0+ | Pydantic v2 | pytest 8.0+
+
+**工具**: uv (包管理) | Ruff (lint) | MyPy (类型检查)
+
+**云服务**: AWS (SageMaker, S3, DynamoDB) | AWS CDK 2.x
 
 ---
 
@@ -183,25 +176,11 @@ def get_user(user_id):
 | 私有成员 | `_leading_underscore` | `_internal_cache` |
 | 类型变量 | `PascalCase` + T 后缀 | `EntityT`, `ResponseT` |
 
-### Docstring (Google Style)
+### Docstring 原则
 
-```python
-def create_user(name: str, email: str) -> User:
-    """创建新用户。
+> **类型即文档**: 类型提示 + 好命名 = 自解释代码。Docstring 只写类型无法表达的内容。
 
-    Args:
-        name: 用户名称
-        email: 用户邮箱
-
-    Returns:
-        创建的用户实体
-
-    Raises:
-        ValidationError: 邮箱格式无效
-    """
-```
-
-详细说明请参考 [rules/code-style.md](rules/code-style.md)
+详细说明请参考 [rules/code-style.md](rules/code-style.md) §3 Docstring 规范
 
 ---
 
@@ -223,47 +202,7 @@ def create_user(name: str, email: str) -> User:
 
 ## API 设计规范
 
-### RESTful 路由命名
-
-```python
-# ✅ 正确 - 使用复数名词
-GET    /api/v1/users          # 获取用户列表
-GET    /api/v1/users/{id}     # 获取单个用户
-POST   /api/v1/users          # 创建用户
-PUT    /api/v1/users/{id}     # 更新用户
-DELETE /api/v1/users/{id}     # 删除用户
-
-# ❌ 错误 - 使用动词
-POST   /api/v1/createUser
-GET    /api/v1/getUserById
-```
-
-### 错误响应格式
-
-```python
-from pydantic import BaseModel
-
-class ErrorResponse(BaseModel):
-    """标准错误响应格式。"""
-    code: str           # 错误代码，如 "USER_NOT_FOUND"
-    message: str        # 人类可读的错误信息
-    details: dict | None = None  # 可选的详细信息
-```
-
-### HTTP 状态码使用
-
-| 状态码 | 场景 |
-|--------|------|
-| 200 | 成功 (GET, PUT) |
-| 201 | 创建成功 (POST) |
-| 204 | 删除成功 (DELETE) |
-| 400 | 请求参数错误 |
-| 401 | 未认证 |
-| 403 | 无权限 |
-| 404 | 资源不存在 |
-| 409 | 资源冲突 |
-| 422 | 验证错误 |
-| 500 | 服务器内部错误 |
+详见 [rules/api-design.md](rules/api-design.md) - RESTful 路由、HTTP 状态码、错误响应格式
 
 ---
 
@@ -285,6 +224,7 @@ class ErrorResponse(BaseModel):
 |------|------|
 | [PROJECT_CONFIG.md](PROJECT_CONFIG.md) | 项目特定配置 (模块列表、技术栈、域事件) |
 | [rules/architecture-backend.md](rules/architecture-backend.md) | 后端架构规范 (DDD + Modular Monolith + Clean Architecture) |
+| [rules/api-design.md](rules/api-design.md) | API 设计规范 (RESTful、状态码、错误格式) |
 | [rules/code-standards.md](rules/code-standards.md) | SDK-First 原则详细说明 |
 | [rules/code-style.md](rules/code-style.md) | 代码风格详细规范 |
 | [rules/testing.md](rules/testing.md) | 测试规范详细说明 |
