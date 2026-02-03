@@ -67,7 +67,35 @@
 
 **图例**: ✅ 允许 | ❌ 禁止 | ⚠️ 条件允许
 
-### 0.3 PR Review 检查清单
+### 0.3 数据模型选择速查
+
+| 层级 | 组件类型 | 推荐方案 | 理由 |
+|------|---------|---------|------|
+| **Domain** | Entity | Pydantic | 业务规则验证、状态可变 |
+| **Domain** | Value Object | dataclass(frozen) | 不可变、相等性基于值 |
+| **Application** | DTO | dataclass | 内部传输、已验证数据 |
+| **Infrastructure** | 外部响应 | Pydantic | 需验证和类型转换 |
+| **Infrastructure** | ORM Model | SQLAlchemy | 持久化专用 |
+| **API** | Request/Response | Pydantic | 外部输入验证、FastAPI 集成 |
+
+**决策流程**:
+```
+数据来自外部？ ──是──► Pydantic
+      │
+     否
+      ↓
+需要业务验证？ ──是──► Pydantic
+      │
+     否
+      ↓
+需要不可变？ ──是──► dataclass(frozen=True)
+      │
+     否
+      ↓
+dataclass
+```
+
+### 0.4 PR Review 检查清单
 
 **分层规则**:
 - [ ] Domain 层没有外部框架依赖 (FastAPI, SQLAlchemy, boto3)
@@ -86,6 +114,11 @@
 - [ ] Value Object 使用 frozen dataclass，不可变
 - [ ] Repository 接口在 Domain 层，实现在 Infrastructure 层
 - [ ] Domain Event 继承自 DomainEvent
+
+**数据模型**:
+- [ ] API Request/Response 使用 Pydantic
+- [ ] Application DTO 使用 dataclass
+- [ ] Domain Value Object 使用 dataclass(frozen=True)
 
 **依赖注入**:
 - [ ] 依赖注入层级正确 (Session → Repository → Service)
