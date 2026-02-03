@@ -1,7 +1,7 @@
 # 项目配置 (Project Configuration)
 
 > 本文件包含项目特定配置，供 Claude Code 在应用架构规范时参考。
-> 架构规范详见 [rules/architecture-backend.md](rules/architecture-backend.md)
+> 架构规范详见 [rules/architecture.md](rules/architecture.md)
 
 ---
 

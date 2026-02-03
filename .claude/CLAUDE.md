@@ -190,7 +190,7 @@ def get_user(user_id):
 
 **核心分层**: Domain → Application → Infrastructure → Presentation (依赖方向从外向内)
 
-详细架构规范、模块结构模板、依赖规则请参考 [rules/architecture-backend.md](rules/architecture-backend.md)
+详细架构规范、模块结构模板、依赖规则请参考 [rules/architecture.md](rules/architecture.md)
 
 ---
 
@@ -223,7 +223,7 @@ def get_user(user_id):
 | 文档 | 内容 |
 |------|------|
 | [PROJECT_CONFIG.md](PROJECT_CONFIG.md) | 项目特定配置 (模块列表、技术栈、域事件) |
-| [rules/architecture-backend.md](rules/architecture-backend.md) | 后端架构规范 (DDD + Modular Monolith + Clean Architecture) |
+| [rules/architecture.md](rules/architecture.md) | 后端架构规范 (DDD + Modular Monolith + Clean Architecture) |
 | [rules/api-design.md](rules/api-design.md) | API 设计规范 (RESTful、状态码、错误格式) |
 | [rules/sdk-first.md](rules/sdk-first.md) | SDK-First 原则详细说明 |
 | [rules/code-style.md](rules/code-style.md) | 代码风格详细规范 |
