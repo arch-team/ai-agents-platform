@@ -223,7 +223,7 @@ def get_user(user_id):
 | 文档 | 内容 |
 |------|------|
 | [PROJECT_CONFIG.ai-agents-platform.md](PROJECT_CONFIG.ai-agents-platform.md) | 项目特定配置 (模块列表、技术栈、域事件) |
-| [PROJECT_CONFIG.md](PROJECT_CONFIG.md) | 项目配置模板 (可复用到其他项目) |
+| [PROJECT_CONFIG.template.md](PROJECT_CONFIG.template.md) | 项目配置模板 (可复用到其他项目) |
 | [rules/architecture.md](rules/architecture.md) | 后端架构规范 (DDD + Modular Monolith + Clean Architecture) |
 | [rules/api-design.md](rules/api-design.md) | API 设计规范 (RESTful、状态码、错误格式) |
 | [rules/sdk-first.md](rules/sdk-first.md) | SDK-First 原则详细说明 |

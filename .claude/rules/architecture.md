@@ -6,7 +6,7 @@
 
 本文档是后端项目的**核心架构规范单一真实源 (Single Source of Truth)**。
 
-<!-- CLAUDE: 项目特定配置请参考 PROJECT_CONFIG.md -->
+<!-- CLAUDE: 项目特定配置请参考 PROJECT_CONFIG.ai-agents-platform.md -->
 
 <!-- CLAUDE 占位符说明:
   {PROJECT}    → 项目源码根路径，如 src
@@ -127,7 +127,7 @@ dataclass
 | **单向依赖** | 禁止循环依赖 | 使用事件解耦 |
 | **高内聚低耦合** | 相关功能聚合在同一模块 | 按业务领域划分 |
 
-<!-- CLAUDE: 项目模块列表见 PROJECT_CONFIG.md -->
+<!-- CLAUDE: 项目模块列表见 PROJECT_CONFIG.ai-agents-platform.md -->
 
 ---
 
@@ -331,7 +331,7 @@ class {Entity}Service:
         self._capability = capability
 ```
 
-<!-- CLAUDE: 核心域事件清单见 PROJECT_CONFIG.md -->
+<!-- CLAUDE: 核心域事件清单见 PROJECT_CONFIG.ai-agents-platform.md -->
 
 ---
 
@@ -647,7 +647,7 @@ class ResourceQuotaExceededError(DomainError): pass   # HTTP 429
 
 | 文档 | 说明 |
 |------|------|
-| `PROJECT_CONFIG.md` | 项目特定配置 (模块列表、技术栈、域事件) |
+| `PROJECT_CONFIG.ai-agents-platform.md` | 项目特定配置 (模块列表、技术栈、域事件) |
 | `CLAUDE.md` | TDD 工作流、命令、代码风格 |
 | `rules/code-style.md` | 命名规范、类型提示 |
 | `rules/testing.md` | TDD 循环、测试分层 |

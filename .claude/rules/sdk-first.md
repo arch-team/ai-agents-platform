@@ -38,8 +38,6 @@ s3_client.upload_file("local.txt", "bucket", "remote/path.txt")
 
 **封装原则**: < 100 行 | 不改变 SDK 行为 | 暴露原生类型
 
-> 详见 [architecture.md](architecture.md) §5.4
-
 ### 🟡 优先级 3: 社区库
 
 | 指标 | 最低要求 |
