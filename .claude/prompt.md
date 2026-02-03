@@ -11,5 +11,5 @@
 
 
 
-/claude-md-improver /Users/jinhuasu/Project_Workspace/Anker-Projects/ml-platform-research/llm-platform-solution/ai-agents-platform/.claude/rules/security.md 这个关于Python的后端项目的安全规范，以Claude Code的Rule
-形式承载，请基于Claude Code上下文管理的最佳实践对这个安全规范进行优化
+/Users/jinhuasu/Project_Workspace/Anker-Projects/ml-platform-research/llm-platform-solution/ai-agents-platform/.claude/rules/testing.md
+这个文件是关于Python的后端项目的测试规范，以Claude Code的Rule形式承载，请基于Claude Code上下文管理的最佳实践,分析这个规范文件进行优化
