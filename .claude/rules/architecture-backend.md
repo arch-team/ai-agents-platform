@@ -30,33 +30,9 @@
 
 > Claude 生成代码时优先查阅此章节
 
-### 0.1 依赖速查
+### 0.1 依赖合法性速查矩阵
 
-```
-┌────────────────────────────────────────────────────────┐
-│            Modular Monolith 依赖速查                    │
-├────────────────────────────────────────────────────────┤
-│ ✅ 允许                                                │
-│   • 导入 shared/* 任意内容                              │
-│   • API 层导入 auth 的认证依赖                          │
-│   • 通过 EventBus 发布/订阅事件                         │
-│   • 依赖 shared/domain/interfaces 中定义的接口          │
-│   • ORM 模型文件导入其他模块 ORM 模型 (外键)            │
-├────────────────────────────────────────────────────────┤
-│ ❌ 禁止                                                │
-│   • Domain 层导入任何外部模块                           │
-│   • 直接导入其他模块的 Service                          │
-│   • 直接导入其他模块的 Repository 实现                  │
-│   • 直接导入其他模块的 Entity                           │
-├────────────────────────────────────────────────────────┤
-│ 🔄 模块间通信                                          │
-│   • 优先: EventBus (异步解耦)                          │
-│   • 备选: shared/domain/interfaces (同步调用)          │
-│   • 禁止: 直接依赖其他模块实现                          │
-└────────────────────────────────────────────────────────┘
-```
-
-### 0.2 依赖合法性速查矩阵
+> **模块间通信**: 优先 EventBus (异步解耦)，备选 shared/interfaces (同步调用)，禁止直接依赖其他模块实现。
 
 | 从 ↓ 导入 → | `shared/*` | `auth.api.dependencies` | 其他模块 Domain | 其他模块 Service | 其他模块 ORM Model |
 |-------------|:----------:|:-----------------------:|:--------------:|:---------------:|:-----------------:|
@@ -67,7 +43,7 @@
 
 **图例**: ✅ 允许 | ❌ 禁止 | ⚠️ 条件允许
 
-### 0.3 数据模型选择速查
+### 0.2 数据模型选择速查
 
 | 层级 | 组件类型 | 推荐方案 | 理由 |
 |------|---------|---------|------|
@@ -95,7 +71,7 @@
 dataclass
 ```
 
-### 0.4 PR Review 检查清单
+### 0.3 PR Review 检查清单
 
 **分层规则**:
 - [ ] Domain 层没有外部框架依赖 (FastAPI, SQLAlchemy, boto3)
@@ -112,13 +88,10 @@ dataclass
 **DDD 模式**:
 - [ ] Entity 使用 PydanticEntity，包含业务逻辑
 - [ ] Value Object 使用 frozen dataclass，不可变
+- [ ] Application DTO 使用 dataclass (详见 §0.2)
+- [ ] API Request/Response 使用 Pydantic (详见 §0.2)
 - [ ] Repository 接口在 Domain 层，实现在 Infrastructure 层
 - [ ] Domain Event 继承自 DomainEvent
-
-**数据模型**:
-- [ ] API Request/Response 使用 Pydantic
-- [ ] Application DTO 使用 dataclass
-- [ ] Domain Value Object 使用 dataclass(frozen=True)
 
 **依赖注入**:
 - [ ] 依赖注入层级正确 (Session → Repository → Service)
