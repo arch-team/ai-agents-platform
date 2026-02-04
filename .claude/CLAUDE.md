@@ -25,7 +25,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 项目概述
 
-AI Agents Platform - 基于 AWS HyperPod 的 ML 训练平台后端服务。
+AI Agents Platform - 基于Amazon Bedrock AgentCore的企业级AI Agents平台。
 
 ## 技术栈
 

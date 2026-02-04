@@ -56,9 +56,7 @@ s3_client.upload_file("local.txt", "bucket", "remote/path.txt")
 
 | 领域 | SDK | 版本 |
 |------|-----|------|
-| 训练调度 | `sagemaker` | 2.x |
 | AWS 基础 | `boto3` | 1.34+ |
-| 分布式训练 | `torch.distributed` | 2.0+ |
 | 深度优化 | `deepspeed` | 0.14+ |
 | CDK 部署 | `aws-cdk-lib` | 2.x |
 
