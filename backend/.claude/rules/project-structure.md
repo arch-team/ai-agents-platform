@@ -6,13 +6,31 @@
 
 ## 0. 速查卡片
 
-### 项目根目录结构
+### Monorepo 结构概览
 
 ```
-{project}/                      # 后端backend
+ai-agents-platform/             # Monorepo 根目录
+├── .claude/                    # 根级：通用规范
+│   ├── CLAUDE.md               # 全局入口（语言、项目概述）
+│   └── rules/
+│       └── common.md           # 跨项目通用规则
+├── backend/                    # 后端项目 ← 当前位置
+├── frontend/                   # 前端项目 (计划中)
+├── infra/                      # 基础设施 (计划中)
+├── doc/                        # 全局文档
+├── .gitignore                  # 根级 gitignore
+└── README.md                   # 项目总说明
+```
+
+### 后端目录结构
+
+```
+backend/                        # 后端项目根目录
 ├── .claude/                    # Claude Code 上下文 (规范文档)
+│   ├── CLAUDE.md               # 后端入口
+│   ├── PROJECT_CONFIG.*.md
+│   └── rules/                  # 后端专用规则
 ├── .github/workflows/          # CI/CD 工作流
-├── doc/                        # 项目文档 (API/架构/指南)
 ├── migrations/                 # 数据库迁移 (Alembic)
 ├── scripts/                    # 工具脚本
 ├── src/                        # 源代码 → architecture.md
@@ -21,14 +39,13 @@
 │   └── presentation/api/       # FastAPI 入口
 ├── tests/                      # 测试代码 → testing.md
 │   ├── conftest.py             # 全局 Fixture
-│   ├── modules/                # 镜像 src/modules/ 结构 层测试
+│   ├── modules/                # 镜像 src/modules/ 结构
 │   ├── shared/                 # shared/ 层测试
 │   └── e2e/                    # 端到端测试
 ├── .env.example                # 环境变量模板
-├── .gitignore                  # Git 忽略规则
 ├── .pre-commit-config.yaml     # pre-commit 钩子
 ├── pyproject.toml              # 项目配置 (uv/ruff/mypy/pytest)
-└── README.md                   # 项目说明
+└── README.md                   # 后端说明
 ```
 
 ### 配置文件速查
@@ -36,7 +53,6 @@
 | 文件 | 用途 | 必须 |
 |------|------|:----:|
 | `pyproject.toml` | 项目和工具配置 | ✅ |
-| `.gitignore` | Git 忽略规则 | ✅ |
 | `.env.example` | 环境变量模板 | ✅ |
 | `README.md` | 项目说明 | ✅ |
 | `.pre-commit-config.yaml` | pre-commit 钩子 | 推荐 |
@@ -60,6 +76,7 @@
 | `src/modules/{module}/` 内部结构 | [architecture.md](architecture.md) §6 |
 | `tests/modules/{module}/` 结构 | [testing.md](testing.md) §1 |
 | `.claude/rules/` 内容 | [README.md](../README.md) |
+| 根级通用规范 | [../../.claude/CLAUDE.md](../../../.claude/CLAUDE.md) |
 
 ---
 
@@ -73,7 +90,6 @@
 
 ### 配置文件
 - [ ] `pyproject.toml` 包含 uv/ruff/mypy/pytest 配置
-- [ ] `.gitignore` 排除 `__pycache__/`, `.venv/`, `.env`
 - [ ] `.env.example` 列出必要环境变量
 - [ ] `README.md` 包含项目说明
 
