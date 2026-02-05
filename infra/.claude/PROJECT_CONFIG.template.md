@@ -22,8 +22,7 @@
 | **项目名称** | {{PROJECT_NAME}} |
 | **项目描述** | {{PROJECT_DESCRIPTION}} |
 | **架构模式** | CDK Construct 分层 (L1 → L2 → L3) |
-| **CDK 版本** | >=2.130.0 |
-| **Node 版本** | >=18.0.0 |
+| **技术栈版本** | 见 [tech-stack.md](rules/tech-stack.md) |
 | **源码根路径** | `lib` |
 
 ---

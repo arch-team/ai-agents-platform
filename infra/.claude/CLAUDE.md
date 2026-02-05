@@ -1,8 +1,7 @@
 ---
 version: 1.0.0
-last_updated: 2026-02-04
-cdk_version: ">=2.130.0"
-node_version: ">=18.0.0"
+last_updated: 2026-02-05
+tech_stack_ref: rules/tech-stack.md
 ---
 
 # CLAUDE.md - AWS CDK 基础设施项目规范
@@ -15,7 +14,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 技术栈
 
-**核心**: AWS CDK 2.x | TypeScript 5+ | Node.js 18+
+> **详细版本要求**: 见 [rules/tech-stack.md](rules/tech-stack.md) (单一真实源)
+
+**核心**: AWS CDK | TypeScript | Node.js
 
 **测试**: Jest | CDK Assertions | CDK Nag
 
@@ -190,6 +191,7 @@ export class ApiGatewayConstruct extends Construct {
 |------|------|
 | [PROJECT_CONFIG.ai-agents-platform.md](PROJECT_CONFIG.ai-agents-platform.md) | 项目特定配置 (Stack 列表、环境配置) |
 | [PROJECT_CONFIG.template.md](PROJECT_CONFIG.template.md) | 项目配置模板 (可复用到其他项目) |
+| [rules/tech-stack.md](rules/tech-stack.md) | 技术栈规范 (版本要求单一真实源) |
 | [rules/architecture.md](rules/architecture.md) | CDK 架构规范 (Construct 分层) |
 | [rules/project-structure.md](rules/project-structure.md) | 项目目录结构规范 |
 | [rules/construct-design.md](rules/construct-design.md) | Construct 设计规范 |

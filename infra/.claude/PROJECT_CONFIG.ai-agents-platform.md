@@ -13,23 +13,8 @@
 | **项目名称** | ai-agents-platform-infra |
 | **项目描述** | AI Agents Platform - 企业级 AI Agents 平台基础设施 |
 | **架构模式** | CDK Construct 分层 (L1 → L2 → L3) |
-| **CDK 版本** | >=2.130.0 |
-| **Node 版本** | >=18.0.0 |
+| **技术栈版本** | 见 [tech-stack.md](rules/tech-stack.md) |
 | **源码根路径** | `lib` |
-
----
-
-## 技术栈补充
-
-> **注意**: 核心技术栈定义在 CLAUDE.md，此处列出版本要求和项目特有选型。
-
-| 类别 | 技术选型 | 版本要求 |
-|------|---------|---------|
-| **IaC** | AWS CDK | >=2.130.0 |
-| **测试** | Jest | >=29.0.0 |
-| **CDK 断言** | aws-cdk-lib/assertions | - |
-| **安全检查** | cdk-nag | >=2.28.0 |
-| **构造库** | @aws-cdk/aws-* | - |
 
 ---
 
