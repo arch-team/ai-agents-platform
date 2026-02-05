@@ -64,13 +64,10 @@
 // app/routes/index.tsx
 import { lazy, Suspense } from 'react';
 import { Routes, Route } from 'react-router-dom';
-import { Spinner } from '@/shared/ui';
 
 // 懒加载页面组件
 const LoginPage = lazy(() => import('@/pages/login'));
 const DashboardPage = lazy(() => import('@/pages/dashboard'));
-const AgentsPage = lazy(() => import('@/pages/agents'));
-const AgentDetailPage = lazy(() => import('@/pages/agents/detail'));
 
 export function AppRoutes() {
   return (
@@ -78,8 +75,6 @@ export function AppRoutes() {
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/" element={<DashboardPage />} />
-        <Route path="/agents" element={<AgentsPage />} />
-        <Route path="/agents/:id" element={<AgentDetailPage />} />
       </Routes>
     </Suspense>
   );
@@ -91,23 +86,12 @@ export function AppRoutes() {
 ```typescript
 // 大型组件懒加载
 const RichTextEditor = lazy(() => import('./RichTextEditor'));
-const ChartComponent = lazy(() => import('./ChartComponent'));
 
-function DocumentEditor() {
-  const [showChart, setShowChart] = useState(false);
-
+function Editor() {
   return (
-    <div>
-      <Suspense fallback={<Spinner />}>
-        <RichTextEditor />
-      </Suspense>
-
-      {showChart && (
-        <Suspense fallback={<Spinner />}>
-          <ChartComponent />
-        </Suspense>
-      )}
-    </div>
+    <Suspense fallback={<Spinner />}>
+      <RichTextEditor />
+    </Suspense>
   );
 }
 ```
@@ -116,22 +100,12 @@ function DocumentEditor() {
 
 ```typescript
 // 鼠标悬停时预加载
-const AgentDetailPage = lazy(() => import('@/pages/agents/detail'));
-
 function AgentCard({ agent }: { agent: Agent }) {
   const handleMouseEnter = () => {
-    // 预加载详情页
-    import('@/pages/agents/detail');
+    import('@/pages/agents/detail'); // 预加载详情页
   };
 
-  return (
-    <Link
-      to={`/agents/${agent.id}`}
-      onMouseEnter={handleMouseEnter}
-    >
-      {/* ... */}
-    </Link>
-  );
+  return <Link to={`/agents/${agent.id}`} onMouseEnter={handleMouseEnter}>...</Link>;
 }
 ```
 
@@ -139,111 +113,42 @@ function AgentCard({ agent }: { agent: Agent }) {
 
 ## 2. Memoization
 
-### 2.1 React.memo
+### 决策表格
+
+| 场景 | 需要 memo? | 工具 | 示例 |
+|------|-----------|------|------|
+| 传给 memo 子组件的函数 | ✅ | `useCallback` | `onClick` handler |
+| 传给 memo 子组件的对象 | ✅ | `useMemo` | `config` object |
+| 昂贵计算 (排序/过滤) | ✅ | `useMemo` | 大数组处理 |
+| 频繁更新的父组件下的子组件 | ✅ | `React.memo` | DataGrid |
+| 简单计算 | ❌ | - | `a + b` |
+| 不传给子组件的函数 | ❌ | - | 本地 handler |
+| 简单组件 | ❌ | - | Button |
+
+### 示例
 
 ```typescript
-// ✅ 需要 memo - 接收复杂 props 且父组件频繁更新
-interface DataGridProps {
-  data: Item[];
-  columns: Column[];
-  onRowClick: (item: Item) => void;
+// ✅ 需要 - 传递给 memo 子组件
+function Parent() {
+  const handleClick = useCallback(() => { /* ... */ }, []);
+  const config = useMemo(() => ({ theme: 'dark' }), []);
+  return <MemoizedChild onClick={handleClick} config={config} />;
 }
 
-export const DataGrid = memo(function DataGrid({
-  data,
-  columns,
-  onRowClick,
-}: DataGridProps) {
-  // 复杂渲染逻辑
-  return (
-    <table>
-      {/* ... */}
-    </table>
+// ✅ 需要 - 昂贵计算
+function List({ items, filter }: Props) {
+  const filtered = useMemo(
+    () => items.filter(i => i.status === filter).sort((a, b) => a.name.localeCompare(b.name)),
+    [items, filter]
   );
-});
-
-// ❌ 不需要 memo - 简单组件
-export function Button({ children, onClick }: ButtonProps) {
-  return <button onClick={onClick}>{children}</button>;
-}
-```
-
-### 2.2 useMemo
-
-```typescript
-// ✅ 需要 useMemo - 昂贵计算
-function AgentList({ agents, filter }: Props) {
-  const filteredAgents = useMemo(
-    () => agents.filter((a) => a.status === filter).sort((a, b) => a.name.localeCompare(b.name)),
-    [agents, filter]
-  );
-
-  return <List items={filteredAgents} />;
+  return <ul>{filtered.map(/* ... */)}</ul>;
 }
 
-// ✅ 需要 useMemo - 传递给 memo 子组件的对象
-function ParentComponent() {
-  const config = useMemo(
-    () => ({ theme: 'dark', size: 'large' }),
-    []
-  );
-
-  return <MemoizedChild config={config} />;
-}
-
-// ❌ 不需要 useMemo - 简单计算
-function SimpleComponent({ a, b }: Props) {
-  // 不要这样做
-  const sum = useMemo(() => a + b, [a, b]);
-
-  // 直接计算
-  const sum = a + b;
-}
-```
-
-### 2.3 useCallback
-
-```typescript
-// ✅ 需要 useCallback - 传递给 memo 子组件
-function ParentComponent() {
-  const [count, setCount] = useState(0);
-
-  const handleClick = useCallback(() => {
-    console.log('clicked');
-  }, []);
-
-  return (
-    <>
-      <span>{count}</span>
-      <MemoizedButton onClick={handleClick} />
-    </>
-  );
-}
-
-// ✅ 需要 useCallback - 作为 useEffect 依赖
-function SearchComponent({ onSearch }: Props) {
-  const [query, setQuery] = useState('');
-
-  const debouncedSearch = useCallback(
-    debounce((q: string) => onSearch(q), 300),
-    [onSearch]
-  );
-
-  useEffect(() => {
-    debouncedSearch(query);
-  }, [query, debouncedSearch]);
-}
-
-// ❌ 不需要 useCallback - 不传递给子组件
-function SimpleForm() {
-  const [value, setValue] = useState('');
-
-  // 不需要 useCallback
-  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
-    setValue(e.target.value);
-  };
-
-  return <input value={value} onChange={handleChange} />;
+// ❌ 不需要 - 简单计算、不传给子组件
+function Simple({ a, b }: Props) {
+  const sum = a + b; // 不需要 useMemo
+  const handleChange = (e: ChangeEvent) => { /* ... */ }; // 不需要 useCallback
+  return <input onChange={handleChange} />;
 }
 ```
 
@@ -254,16 +159,11 @@ function SimpleForm() {
 ### 3.1 虚拟列表
 
 ```typescript
-// 使用 react-window 处理大列表
+// 使用 react-window 处理大列表 (>100 项)
 import { FixedSizeList } from 'react-window';
 import AutoSizer from 'react-virtualized-auto-sizer';
 
-interface VirtualListProps {
-  items: Item[];
-  renderItem: (item: Item) => React.ReactNode;
-}
-
-export function VirtualList({ items, renderItem }: VirtualListProps) {
+function VirtualList({ items, renderItem }: VirtualListProps) {
   const Row = ({ index, style }: { index: number; style: React.CSSProperties }) => (
     <div style={style}>{renderItem(items[index])}</div>
   );
@@ -271,12 +171,7 @@ export function VirtualList({ items, renderItem }: VirtualListProps) {
   return (
     <AutoSizer>
       {({ height, width }) => (
-        <FixedSizeList
-          height={height}
-          width={width}
-          itemCount={items.length}
-          itemSize={50}
-        >
+        <FixedSizeList height={height} width={width} itemCount={items.length} itemSize={50}>
           {Row}
         </FixedSizeList>
       )}
@@ -285,28 +180,24 @@ export function VirtualList({ items, renderItem }: VirtualListProps) {
 }
 ```
 
-### 3.2 列表 Key 优化
+### 3.2 Key 规则
 
 ```typescript
 // ✅ 正确 - 使用稳定唯一 ID
-{items.map((item) => (
-  <ListItem key={item.id} item={item} />
-))}
+{items.map((item) => <ListItem key={item.id} item={item} />)}
 
 // ❌ 错误 - 使用 index (列表会变化时)
-{items.map((item, index) => (
-  <ListItem key={index} item={item} />
-))}
+{items.map((item, index) => <ListItem key={index} item={item} />)}
 ```
 
 ---
 
 ## 4. 状态优化
 
-### 4.1 细粒度状态
+### 细粒度状态
 
 ```typescript
-// ❌ 错误 - 大对象状态
+// ❌ 错误 - 大对象状态 (任何字段变化都导致重渲染)
 const [state, setState] = useState({
   user: null,
   settings: {},
@@ -317,143 +208,54 @@ const [state, setState] = useState({
 // ✅ 正确 - 拆分状态
 const [user, setUser] = useState(null);
 const [sidebarOpen, setSidebarOpen] = useState(true);
-// 或使用多个 Zustand store
 ```
 
-### 4.2 Zustand Selector
-
-```typescript
-// ❌ 错误 - 订阅整个 store
-function Component() {
-  const store = useStore(); // 任何状态变化都会重渲染
-}
-
-// ✅ 正确 - 只订阅需要的状态
-function Component() {
-  const user = useStore((state) => state.user);
-  const isOpen = useStore((state) => state.sidebarOpen);
-}
-
-// ✅ 正确 - 使用 shallow 比较
-import { shallow } from 'zustand/shallow';
-
-function Component() {
-  const { user, settings } = useStore(
-    (state) => ({ user: state.user, settings: state.settings }),
-    shallow
-  );
-}
-```
-
-### 4.3 React Query 优化
-
-```typescript
-// 配置合适的 staleTime
-const { data } = useQuery({
-  queryKey: ['agents'],
-  queryFn: fetchAgents,
-  staleTime: 1000 * 60 * 5, // 5 分钟内不重新获取
-  gcTime: 1000 * 60 * 30,   // 30 分钟后清除缓存
-});
-
-// 使用 select 只订阅需要的数据
-const { data: agentNames } = useQuery({
-  queryKey: ['agents'],
-  queryFn: fetchAgents,
-  select: (data) => data.map((a) => a.name), // 只订阅名称变化
-});
-```
+> **Zustand Selector 和 React Query 优化**: 详见 [state-management.md](state-management.md) §2.2 和 §1.1
 
 ---
 
 ## 5. 图片优化
 
-### 5.1 懒加载
-
 ```tsx
-// 原生懒加载
+// 原生懒加载 (推荐)
 <img src={imageUrl} loading="lazy" alt="描述" />
 
-// 或使用 Intersection Observer
-import { useInView } from 'react-intersection-observer';
-
-function LazyImage({ src, alt }: { src: string; alt: string }) {
-  const { ref, inView } = useInView({
-    triggerOnce: true,
-    rootMargin: '200px',
-  });
-
-  return (
-    <div ref={ref}>
-      {inView ? <img src={src} alt={alt} /> : <div className="placeholder" />}
-    </div>
-  );
-}
-```
-
-### 5.2 响应式图片
-
-```tsx
-<picture>
-  <source srcSet="/image.webp" type="image/webp" />
-  <source srcSet="/image.jpg" type="image/jpeg" />
-  <img
-    src="/image.jpg"
-    srcSet="/image-320.jpg 320w, /image-640.jpg 640w, /image-1280.jpg 1280w"
-    sizes="(max-width: 320px) 280px, (max-width: 640px) 600px, 1200px"
-    alt="描述"
-    loading="lazy"
-  />
-</picture>
+// 响应式图片
+<img
+  src="/image.jpg"
+  srcSet="/image-320.jpg 320w, /image-640.jpg 640w"
+  sizes="(max-width: 320px) 280px, 600px"
+  alt="描述"
+  loading="lazy"
+/>
 ```
 
 ---
 
 ## 6. 性能监控
 
-### 6.1 React DevTools Profiler
+### Profiler 用法
 
 ```typescript
-// 开发环境使用 Profiler
 import { Profiler } from 'react';
 
-function onRenderCallback(
-  id: string,
-  phase: 'mount' | 'update',
-  actualDuration: number
-) {
-  console.log({ id, phase, actualDuration });
-}
-
-<Profiler id="AgentList" onRender={onRenderCallback}>
+<Profiler id="AgentList" onRender={(id, phase, duration) => console.log({ id, phase, duration })}>
   <AgentList />
 </Profiler>
 ```
 
-### 6.2 Web Vitals
+### Web Vitals
 
-```typescript
-// app/index.tsx
-import { reportWebVitals } from './reportWebVitals';
+```bash
+# 安装
+pnpm add web-vitals
 
-// 启动应用后报告性能指标
-reportWebVitals(console.log);
-
-// reportWebVitals.ts
-import { onCLS, onFID, onFCP, onLCP, onTTFB } from 'web-vitals';
-
-export function reportWebVitals(onPerfEntry?: (metric: any) => void) {
-  if (onPerfEntry && onPerfEntry instanceof Function) {
-    onCLS(onPerfEntry);
-    onFID(onPerfEntry);
-    onFCP(onPerfEntry);
-    onLCP(onPerfEntry);
-    onTTFB(onPerfEntry);
-  }
-}
+# 使用
+import { onCLS, onFCP, onLCP } from 'web-vitals';
+onLCP(console.log);
 ```
 
-### 6.3 性能指标目标
+### 性能指标目标
 
 | 指标 | 目标 | 说明 |
 |------|------|------|
@@ -467,26 +269,18 @@ export function reportWebVitals(onPerfEntry?: (metric: any) => void) {
 
 ## 7. Bundle 优化
 
-### 7.1 分析 Bundle
+### 分析命令
 
 ```bash
-# 使用 vite-bundle-visualizer
+# 安装
 pnpm add -D rollup-plugin-visualizer
 
-# vite.config.ts
+# vite.config.ts 中添加
 import { visualizer } from 'rollup-plugin-visualizer';
-
-export default defineConfig({
-  plugins: [
-    visualizer({
-      open: true,
-      gzipSize: true,
-    }),
-  ],
-});
+plugins: [visualizer({ open: true, gzipSize: true })]
 ```
 
-### 7.2 Tree Shaking
+### Tree Shaking
 
 ```typescript
 // ✅ 正确 - 具名导入 (可 tree shake)
@@ -503,5 +297,5 @@ import _ from 'lodash';
 | 文档 | 说明 |
 |------|------|
 | [component-design.md](component-design.md) | 组件 memo 使用 |
-| [state-management.md](state-management.md) | 状态优化 |
+| [state-management.md](state-management.md) | Zustand Selector / React Query 优化 |
 | [architecture.md](architecture.md) | 代码分割边界 |

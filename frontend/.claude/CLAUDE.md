@@ -10,15 +10,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 技术栈
 
-**核心**: React 18+ | TypeScript 5+ | Vite 5+
+> **详细技术栈规范**: 参考 [rules/tech-stack.md](rules/tech-stack.md) (单一真实源)
 
-**样式**: TailwindCSS 3+
-
-**状态管理**: React Query 5+ (服务端状态) | Zustand 4+ (客户端状态)
-
-**测试**: Vitest | Testing Library | Playwright
-
-**工具**: pnpm (包管理) | ESLint | Prettier
+**概览**: React 18+ | TypeScript 5+ | Vite 5+ | TailwindCSS | React Query | Zustand
 
 ---
 
@@ -128,6 +122,7 @@ pnpm preview
 |------|------|
 | [PROJECT_CONFIG.ai-agents-platform.md](PROJECT_CONFIG.ai-agents-platform.md) | 项目特定配置 (功能模块、API 端点) |
 | [PROJECT_CONFIG.template.md](PROJECT_CONFIG.template.md) | 项目配置模板 (可复用到其他项目) |
+| [rules/tech-stack.md](rules/tech-stack.md) | **技术栈版本规范 (单一真实源)** |
 | [rules/architecture.md](rules/architecture.md) | 前端架构规范 (Feature-Sliced Design) |
 | [rules/project-structure.md](rules/project-structure.md) | 项目目录结构规范 |
 | [rules/component-design.md](rules/component-design.md) | 组件设计规范 |

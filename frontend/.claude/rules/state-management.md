@@ -61,13 +61,12 @@ useState
 ```typescript
 // app/providers/QueryProvider.tsx
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 1000 * 60 * 5, // 5 分钟
-      gcTime: 1000 * 60 * 30,   // 30 分钟 (原 cacheTime)
+      staleTime: 1000 * 60 * 5,  // 5 分钟
+      gcTime: 1000 * 60 * 30,    // 30 分钟
       retry: 1,
       refetchOnWindowFocus: false,
     },
@@ -78,7 +77,6 @@ export function QueryProvider({ children }: { children: React.ReactNode }) {
   return (
     <QueryClientProvider client={queryClient}>
       {children}
-      <ReactQueryDevtools initialIsOpen={false} />
     </QueryClientProvider>
   );
 }
@@ -102,22 +100,18 @@ export const agentKeys = {
 useQuery({ queryKey: agentKeys.detail(agentId) });
 ```
 
-### 1.3 Query Hooks 模板
+### 1.3 Query/Mutation 模板
 
 ```typescript
 // features/agents/api/queries.ts
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiClient } from '@/shared/api';
-import type { Agent, CreateAgentDTO, UpdateAgentDTO } from '../model/types';
 
 // 列表查询
 export function useAgents(filters?: AgentFilters) {
   return useQuery({
     queryKey: agentKeys.list(filters ?? {}),
     queryFn: async () => {
-      const { data } = await apiClient.get<Agent[]>('/api/v1/agents', {
-        params: filters,
-      });
+      const { data } = await apiClient.get<Agent[]>('/api/v1/agents', { params: filters });
       return data;
     },
   });
@@ -127,104 +121,44 @@ export function useAgents(filters?: AgentFilters) {
 export function useAgent(id: string) {
   return useQuery({
     queryKey: agentKeys.detail(id),
-    queryFn: async () => {
-      const { data } = await apiClient.get<Agent>(`/api/v1/agents/${id}`);
-      return data;
-    },
-    enabled: !!id, // 仅当 id 存在时查询
+    queryFn: () => apiClient.get<Agent>(`/api/v1/agents/${id}`).then(r => r.data),
+    enabled: !!id,
   });
 }
 
-// 创建 mutation
+// Mutation 模板
 export function useCreateAgent() {
   const queryClient = useQueryClient();
-
   return useMutation({
-    mutationFn: async (dto: CreateAgentDTO) => {
-      const { data } = await apiClient.post<Agent>('/api/v1/agents', dto);
-      return data;
-    },
-    onSuccess: () => {
-      // 使列表缓存失效
-      queryClient.invalidateQueries({ queryKey: agentKeys.lists() });
-    },
+    mutationFn: (dto: CreateAgentDTO) => apiClient.post<Agent>('/api/v1/agents', dto).then(r => r.data),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: agentKeys.lists() }),
   });
 }
 
-// 更新 mutation
-export function useUpdateAgent() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async ({ id, dto }: { id: string; dto: UpdateAgentDTO }) => {
-      const { data } = await apiClient.put<Agent>(`/api/v1/agents/${id}`, dto);
-      return data;
-    },
-    onSuccess: (data) => {
-      // 更新详情缓存
-      queryClient.setQueryData(agentKeys.detail(data.id), data);
-      // 使列表缓存失效
-      queryClient.invalidateQueries({ queryKey: agentKeys.lists() });
-    },
-  });
-}
-
-// 删除 mutation
-export function useDeleteAgent() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (id: string) => {
-      await apiClient.delete(`/api/v1/agents/${id}`);
-      return id;
-    },
-    onSuccess: (id) => {
-      queryClient.removeQueries({ queryKey: agentKeys.detail(id) });
-      queryClient.invalidateQueries({ queryKey: agentKeys.lists() });
-    },
-  });
-}
+// 更新/删除 mutation 同理，关键点：
+// - onSuccess: invalidateQueries 使列表失效
+// - onSuccess: setQueryData 更新详情缓存
+// - onSuccess: removeQueries 删除缓存
 ```
 
 ### 1.4 乐观更新
 
 ```typescript
+// 乐观更新骨架
 export function useUpdateAgentStatus() {
   const queryClient = useQueryClient();
-
   return useMutation({
-    mutationFn: async ({ id, status }: { id: string; status: AgentStatus }) => {
-      const { data } = await apiClient.patch<Agent>(
-        `/api/v1/agents/${id}/status`,
-        { status }
-      );
-      return data;
-    },
+    mutationFn: ({ id, status }) => apiClient.patch(`/api/v1/agents/${id}/status`, { status }),
     onMutate: async ({ id, status }) => {
-      // 取消正在进行的查询
       await queryClient.cancelQueries({ queryKey: agentKeys.detail(id) });
-
-      // 保存旧数据
-      const previousAgent = queryClient.getQueryData<Agent>(agentKeys.detail(id));
-
-      // 乐观更新
-      if (previousAgent) {
-        queryClient.setQueryData(agentKeys.detail(id), {
-          ...previousAgent,
-          status,
-        });
-      }
-
-      return { previousAgent };
+      const previous = queryClient.getQueryData(agentKeys.detail(id));
+      queryClient.setQueryData(agentKeys.detail(id), (old) => ({ ...old, status }));
+      return { previous };
     },
     onError: (err, { id }, context) => {
-      // 回滚
-      if (context?.previousAgent) {
-        queryClient.setQueryData(agentKeys.detail(id), context.previousAgent);
-      }
+      queryClient.setQueryData(agentKeys.detail(id), context?.previous);
     },
-    onSettled: (data, error, { id }) => {
-      // 重新获取最新数据
+    onSettled: (_, __, { id }) => {
       queryClient.invalidateQueries({ queryKey: agentKeys.detail(id) });
     },
   });
@@ -241,15 +175,11 @@ export function useUpdateAgentStatus() {
 // features/auth/model/store.ts
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import type { User } from '@/entities/user';
 
 interface AuthState {
-  // 状态
   user: User | null;
   token: string | null;
   isAuthenticated: boolean;
-
-  // 操作
   setUser: (user: User | null) => void;
   setToken: (token: string | null) => void;
   logout: () => void;
@@ -258,40 +188,23 @@ interface AuthState {
 export const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({
-      // 初始状态
       user: null,
       token: null,
       isAuthenticated: false,
-
-      // 操作实现
-      setUser: (user) =>
-        set({
-          user,
-          isAuthenticated: !!user,
-        }),
-
+      setUser: (user) => set({ user, isAuthenticated: !!user }),
       setToken: (token) => set({ token }),
-
-      logout: () =>
-        set({
-          user: null,
-          token: null,
-          isAuthenticated: false,
-        }),
+      logout: () => set({ user: null, token: null, isAuthenticated: false }),
     }),
     {
       name: 'auth-storage',
       storage: createJSONStorage(() => localStorage),
-      partialize: (state) => ({
-        token: state.token,
-        // 注意：不持久化敏感用户信息
-      }),
+      partialize: (state) => ({ token: state.token }), // 只持久化 token
     }
   )
 );
 ```
 
-### 2.2 Selector Hooks
+### 2.2 Selector Hooks (性能关键)
 
 ```typescript
 // features/auth/model/store.ts (续)
@@ -329,88 +242,24 @@ interface UIState {
 export const useUIStore = create<UIState>((set) => ({
   sidebarOpen: true,
   theme: 'light',
-  toggleSidebar: () => set((state) => ({ sidebarOpen: !state.sidebarOpen })),
+  toggleSidebar: () => set((s) => ({ sidebarOpen: !s.sidebarOpen })),
   setTheme: (theme) => set({ theme }),
 }));
 
 // Selector hooks
-export const useSidebar = () => useUIStore((state) => ({
-  isOpen: state.sidebarOpen,
-  toggle: state.toggleSidebar,
-}));
-
-export const useTheme = () => useUIStore((state) => ({
-  theme: state.theme,
-  setTheme: state.setTheme,
-}));
-```
-
-### 2.4 异步操作
-
-```typescript
-// features/auth/model/store.ts
-import { apiClient } from '@/shared/api';
-
-interface AuthState {
-  user: User | null;
-  isLoading: boolean;
-  error: string | null;
-  login: (credentials: LoginCredentials) => Promise<void>;
-  fetchCurrentUser: () => Promise<void>;
-}
-
-export const useAuthStore = create<AuthState>((set, get) => ({
-  user: null,
-  isLoading: false,
-  error: null,
-
-  login: async (credentials) => {
-    set({ isLoading: true, error: null });
-    try {
-      const { data } = await apiClient.post('/api/v1/auth/login', credentials);
-      set({
-        user: data.user,
-        token: data.token,
-        isAuthenticated: true,
-        isLoading: false,
-      });
-    } catch (error) {
-      set({
-        error: error instanceof Error ? error.message : '登录失败',
-        isLoading: false,
-      });
-      throw error;
-    }
-  },
-
-  fetchCurrentUser: async () => {
-    const token = get().token;
-    if (!token) return;
-
-    set({ isLoading: true });
-    try {
-      const { data } = await apiClient.get('/api/v1/auth/me');
-      set({ user: data, isAuthenticated: true, isLoading: false });
-    } catch {
-      set({ user: null, isAuthenticated: false, isLoading: false });
-    }
-  },
-}));
+export const useSidebar = () => useUIStore((s) => ({ isOpen: s.sidebarOpen, toggle: s.toggleSidebar }));
+export const useTheme = () => useUIStore((s) => ({ theme: s.theme, setTheme: s.setTheme }));
 ```
 
 ---
 
 ## 3. React Hook Form (表单状态)
 
-### 3.1 基本用法
-
 ```typescript
-// features/auth/ui/LoginForm.tsx
+// features/auth/ui/LoginForm.tsx - 骨架
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Button, Input } from '@/shared/ui';
-import { useLogin } from '../api/queries';
 
 const loginSchema = z.object({
   email: z.string().email('请输入有效的邮箱'),
@@ -420,41 +269,19 @@ const loginSchema = z.object({
 type LoginFormData = z.infer<typeof loginSchema>;
 
 export function LoginForm() {
-  const login = useLogin();
-
-  const {
-    register,
-    handleSubmit,
-    formState: { errors, isSubmitting },
-  } = useForm<LoginFormData>({
+  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
-    defaultValues: {
-      email: '',
-      password: '',
-    },
   });
 
-  const onSubmit = async (data: LoginFormData) => {
-    await login.mutateAsync(data);
-  };
+  const onSubmit = async (data: LoginFormData) => { /* 调用 mutation */ };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-      <Input
-        label="邮箱"
-        type="email"
-        error={errors.email?.message}
-        {...register('email')}
-      />
-      <Input
-        label="密码"
-        type="password"
-        error={errors.password?.message}
-        {...register('password')}
-      />
-      <Button type="submit" loading={isSubmitting}>
-        登录
-      </Button>
+    <form onSubmit={handleSubmit(onSubmit)}>
+      <input {...register('email')} />
+      {errors.email && <span>{errors.email.message}</span>}
+      <input type="password" {...register('password')} />
+      {errors.password && <span>{errors.password.message}</span>}
+      <button type="submit" disabled={isSubmitting}>登录</button>
     </form>
   );
 }
@@ -462,9 +289,9 @@ export function LoginForm() {
 
 ---
 
-## 4. 状态管理最佳实践
+## 4. 最佳实践
 
-### 4.1 避免过度使用全局状态
+### 避免过度使用全局状态
 
 ```typescript
 // ❌ 错误 - 把所有东西都放全局
@@ -479,42 +306,6 @@ const useUIStore = create((set) => ({
   sidebarOpen: true,       // 确实需要跨组件共享
   theme: 'light',          // 确实需要跨组件共享
 }));
-```
-
-### 4.2 状态提升 vs 全局状态
-
-```
-需要跨组件共享？
-    │
-   否 ──────► useState (组件内)
-    │
-   是
-    ↓
-只在父子组件间？ ──是──► Props 传递 / Context
-    │
-   否
-    ↓
-Zustand Store
-```
-
-### 4.3 避免 Prop Drilling
-
-```typescript
-// ❌ 错误 - 层层传递 props
-function App() {
-  const [user, setUser] = useState(null);
-  return <Layout user={user} setUser={setUser} />;
-}
-
-// ✅ 正确 - 使用 Zustand
-function App() {
-  return <Layout />;
-}
-
-function DeepChild() {
-  const user = useAuthStore((s) => s.user);
-  // 直接获取
-}
 ```
 
 ---

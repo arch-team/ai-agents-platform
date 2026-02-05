@@ -2,13 +2,8 @@
 
 # 前端架构规范 (Frontend Architecture Standards)
 
-> **版本**: 1.0
 > **架构模式**: Feature-Sliced Design (FSD)
 > **适用范围**: React + TypeScript 前端项目
-
-本文档是前端项目的**核心架构规范单一真实源 (Single Source of Truth)**。
-
-<!-- CLAUDE: 项目特定配置请参考 PROJECT_CONFIG.ai-agents-platform.md -->
 
 <!-- CLAUDE 占位符说明:
   {Feature}    → 功能名称 PascalCase，如 Auth, Agents, Dashboard
@@ -89,200 +84,26 @@
 
 ---
 
-## 1. Feature-Sliced Design 概述
+## 1. 分层规则
 
-### 1.1 为什么选择 FSD
+### 1.1 各层职责与约束
 
-| 优势 | 说明 |
-|------|------|
-| **可预测性** | 明确的分层规则，代码位置一目了然 |
-| **可扩展性** | 功能隔离，新增功能不影响其他部分 |
-| **可维护性** | 职责清晰，便于团队协作和代码审查 |
-| **可测试性** | 模块独立，便于单元测试和集成测试 |
+| 层级 | 职责 | ✅ 可以 | ❌ 禁止 |
+|------|------|--------|--------|
+| **shared** | 无业务逻辑的可复用代码 | 工具函数、基础 UI、API 客户端 | 任何业务逻辑、业务实体 |
+| **entities** | 业务实体及其基础表示 | 数据模型、基础 UI、类型定义 | 复杂业务逻辑、跨实体依赖 |
+| **features** | 具体业务功能 | 业务逻辑、API 调用、状态管理 | 跨 feature 依赖 |
+| **widgets** | 组合多个 features/entities | 组合下层组件、简单状态 | 直接业务逻辑、API 调用 |
+| **pages** | 页面组装，连接路由 | 组合 widgets/features、页面布局 | 业务逻辑 |
+| **app** | 应用初始化、全局配置 | Provider、路由、全局样式 | 具体业务实现 |
 
-### 1.2 核心概念
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                         app (应用层)                         │
-│                    初始化、路由、全局配置                      │
-├─────────────────────────────────────────────────────────────┤
-│                        pages (页面层)                        │
-│                      页面组件，组装层                         │
-├─────────────────────────────────────────────────────────────┤
-│                       widgets (组件层)                       │
-│                   独立 UI 块，组合 features                   │
-├─────────────────────────────────────────────────────────────┤
-│                       features (功能层)                      │
-│                   业务功能，核心业务逻辑                       │
-├─────────────────────────────────────────────────────────────┤
-│                       entities (实体层)                      │
-│                    业务实体，数据模型                         │
-├─────────────────────────────────────────────────────────────┤
-│                        shared (共享层)                       │
-│                   无业务逻辑的共享代码                        │
-└─────────────────────────────────────────────────────────────┘
-```
+> **目录结构示例**: 详见 [project-structure.md](project-structure.md)
 
 ---
 
-## 2. 分层详解
+## 2. 模块导出规则
 
-### 2.1 shared (共享层)
-
-**职责**: 提供无业务逻辑的可复用代码
-
-**禁止**: 任何业务逻辑、业务实体、业务规则
-
-```
-shared/
-├── api/                  # API 客户端配置
-│   ├── client.ts         # Axios 实例
-│   └── types.ts          # 通用 API 类型
-├── config/               # 应用配置
-│   └── env.ts
-├── hooks/                # 通用 Hooks
-│   ├── useDebounce.ts
-│   └── useLocalStorage.ts
-├── lib/                  # 工具函数
-│   ├── utils.ts
-│   └── date.ts
-├── ui/                   # 基础 UI 组件
-│   ├── Button/
-│   ├── Modal/
-│   └── Input/
-└── types/                # 全局类型定义
-    └── common.ts
-```
-
-### 2.2 entities (实体层)
-
-**职责**: 定义业务实体及其基础表示
-
-**可以**: 定义数据模型、基础 UI 组件、类型
-
-**禁止**: 复杂业务逻辑、API 调用（仅基础查询）
-
-```
-entities/
-├── user/
-│   ├── index.ts          # 导出 User 类型和 UserCard
-│   ├── model/
-│   │   └── types.ts      # User 类型定义
-│   └── ui/
-│       └── UserAvatar.tsx
-├── agent/
-│   ├── index.ts
-│   ├── model/
-│   │   └── types.ts      # Agent 类型定义
-│   └── ui/
-│       └── AgentCard.tsx
-└── session/
-    └── ...
-```
-
-### 2.3 features (功能层)
-
-**职责**: 实现具体业务功能
-
-**可以**: 业务逻辑、API 调用、状态管理、复杂交互
-
-**禁止**: 跨 feature 依赖
-
-```
-features/
-├── auth/
-│   ├── index.ts          # 导出 LoginForm, useAuth, etc.
-│   ├── api/
-│   │   └── queries.ts    # React Query hooks
-│   ├── model/
-│   │   ├── store.ts      # Zustand auth store
-│   │   └── types.ts
-│   └── ui/
-│       ├── LoginForm.tsx
-│       └── RegisterForm.tsx
-├── agents/
-│   ├── index.ts
-│   ├── api/
-│   │   └── queries.ts
-│   ├── model/
-│   │   └── types.ts
-│   └── ui/
-│       ├── AgentList.tsx
-│       └── AgentConfig.tsx
-└── ...
-```
-
-### 2.4 widgets (组件层)
-
-**职责**: 组合多个 features/entities 形成独立 UI 块
-
-**可以**: 组合下层组件、简单状态管理
-
-**禁止**: 直接业务逻辑、API 调用
-
-```
-widgets/
-├── header/
-│   ├── index.ts
-│   └── ui/
-│       └── Header.tsx    # 组合 UserMenu + Navigation
-├── sidebar/
-│   ├── index.ts
-│   └── ui/
-│       └── Sidebar.tsx
-└── user-menu/
-    ├── index.ts
-    └── ui/
-        └── UserMenu.tsx  # 组合 UserAvatar + Dropdown
-```
-
-### 2.5 pages (页面层)
-
-**职责**: 组装页面，连接路由
-
-**可以**: 组合 widgets/features、页面级布局
-
-```
-pages/
-├── login/
-│   ├── index.ts
-│   └── ui/
-│       └── LoginPage.tsx
-├── dashboard/
-│   ├── index.ts
-│   └── ui/
-│       └── DashboardPage.tsx
-└── agents/
-    ├── index.ts
-    └── ui/
-        ├── AgentsPage.tsx
-        └── AgentDetailPage.tsx
-```
-
-### 2.6 app (应用层)
-
-**职责**: 应用初始化、全局配置
-
-```
-app/
-├── index.tsx             # 应用入口
-├── App.tsx               # 根组件
-├── providers/            # 全局 Provider
-│   ├── index.tsx
-│   ├── QueryProvider.tsx
-│   └── AuthProvider.tsx
-├── routes/               # 路由配置
-│   └── index.tsx
-└── styles/               # 全局样式
-    └── global.css
-```
-
----
-
-## 3. 模块导出规则
-
-### 3.1 Public API 原则
+### 2.1 Public API 原则
 
 每个 slice 必须有 `index.ts` 定义公开 API：
 
@@ -300,7 +121,7 @@ export { useLogin, useLogout } from './api/queries';
 export type { LoginCredentials, AuthState } from './model/types';
 ```
 
-### 3.2 禁止导出
+### 2.2 禁止导出
 
 - 内部工具函数
 - 私有组件
@@ -314,81 +135,16 @@ export { useInternalState } from './model/internal';
 
 ---
 
-## 4. 跨层通信
+## 3. 跨层通信
 
-### 4.1 推荐模式
+### 3.1 推荐模式
 
-| 场景 | 推荐方案 |
-|------|---------|
-| 组件间数据传递 | Props drilling / Context |
-| 全局状态 | Zustand store |
-| 服务端数据 | React Query |
-| 事件通信 | Custom Events / Zustand |
-
-### 4.2 React Query 集成
-
-服务端状态管理使用 React Query。详细实现规范请参考 [state-management.md](state-management.md) §1。
-
-### 4.3 Zustand Store
-
-客户端状态管理使用 Zustand。详细实现规范请参考 [state-management.md](state-management.md) §2。
-
----
-
-## 5. 常见模式
-
-### 5.1 Feature 组件模板
-
-```typescript
-// features/{feature}/ui/{Component}.tsx
-import { useState } from 'react';
-import { Button } from '@/shared/ui';
-import { use{Feature}Mutation } from '../api/queries';
-import type { {Feature}Props } from '../model/types';
-
-interface {Component}Props {
-  onSuccess?: () => void;
-}
-
-export function {Component}({ onSuccess }: {Component}Props) {
-  const mutation = use{Feature}Mutation();
-
-  const handleSubmit = async () => {
-    await mutation.mutateAsync(data);
-    onSuccess?.();
-  };
-
-  return (
-    <form onSubmit={handleSubmit}>
-      {/* ... */}
-      <Button type="submit" loading={mutation.isPending}>
-        提交
-      </Button>
-    </form>
-  );
-}
-```
-
-### 5.2 Entity UI 模板
-
-```typescript
-// entities/{entity}/ui/{Entity}Card.tsx
-import type { {Entity} } from '../model/types';
-
-interface {Entity}CardProps {
-  {entity}: {Entity};
-  onClick?: () => void;
-}
-
-export function {Entity}Card({ {entity}, onClick }: {Entity}CardProps) {
-  return (
-    <div onClick={onClick} className="...">
-      <h3>{({entity} as any).name}</h3>
-      {/* 仅展示逻辑，无业务逻辑 */}
-    </div>
-  );
-}
-```
+| 场景 | 推荐方案 | 详细规范 |
+|------|---------|---------|
+| 组件间数据传递 | Props drilling / Context | - |
+| 全局状态 | Zustand store | [state-management.md](state-management.md) §2 |
+| 服务端数据 | React Query | [state-management.md](state-management.md) §1 |
+| 事件通信 | Custom Events / Zustand | - |
 
 ---
 
@@ -396,8 +152,7 @@ export function {Entity}Card({ {entity}, onClick }: {Entity}CardProps) {
 
 | 文档 | 说明 |
 |------|------|
-| `PROJECT_CONFIG.ai-agents-platform.md` | 项目特定配置 (功能模块、路由配置) |
-| `CLAUDE.md` | TDD 工作流、命令、代码风格 |
-| `rules/component-design.md` | 组件设计规范 |
-| `rules/state-management.md` | 状态管理详细规范 |
-| `rules/testing.md` | 测试规范 |
+| [project-structure.md](project-structure.md) | 目录结构详解 |
+| [component-design.md](component-design.md) | 组件设计规范、组件模板 |
+| [state-management.md](state-management.md) | 状态管理详细规范 |
+| [testing.md](testing.md) | 测试规范 |
