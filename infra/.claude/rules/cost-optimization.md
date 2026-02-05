@@ -1,385 +1,177 @@
-# 成本优化规范 (Cost Optimization Standards)
+# 成本优化规范
 
-> Claude 设计基础设施时优先查阅此文档
-
-基于 AWS Well-Architected Framework 成本优化支柱的 CDK 成本管理规范。
+> Claude 设计 CDK 基础设施时优先查阅
 
 ---
 
 ## 0. 速查卡片
 
-### 成本优化决策矩阵
+### 环境资源矩阵
 
-| 资源类型 | Dev 环境 | Staging 环境 | Prod 环境 |
-|---------|---------|-------------|---------|
-| EC2/ECS | t3.small, 按需 | t3.medium, 按需 | t3.large, Reserved/Savings |
-| RDS | db.t3.small, 单 AZ | db.t3.medium, 多 AZ | db.r6g.large, 多 AZ, Reserved |
-| NAT Gateway | 1 个 | 2 个 | 3 个 (每 AZ) |
-| S3 | Intelligent-Tiering | Intelligent-Tiering | Intelligent-Tiering + 生命周期 |
-| Lambda | 默认 | 默认 | 优化内存配置 |
+| 资源 | Dev | Staging | Prod |
+|------|-----|---------|------|
+| EC2/ECS | t3.small, 按需 | t3.medium, 按需 | t3.large, Reserved |
+| RDS | db.t3.small, 单AZ | db.t3.medium, 多AZ | db.r6g.large, 多AZ, Reserved |
+| NAT Gateway | 1 | 2 | 3 (每AZ) |
+| Lambda | 默认 | 默认 | ARM + 优化内存 |
 
-### 成本标签 (必须)
+### 必须标签
 
 ```typescript
-Tags.of(app).add('Project', 'ai-agents-platform');
-Tags.of(app).add('Environment', envName);
-Tags.of(app).add('CostCenter', 'ai-platform');
-Tags.of(app).add('ManagedBy', 'cdk');
+// bin/app.ts - 应用到所有资源
+const requiredTags = { Project: 'ai-agents-platform', Environment: envName, CostCenter: 'ai-platform', ManagedBy: 'cdk' };
+Object.entries(requiredTags).forEach(([k, v]) => cdk.Tags.of(app).add(k, v));
+
+// Prod 额外标签
+if (envName === 'prod') cdk.Tags.of(app).add('Criticality', 'high');
 ```
-
-### PR Review 检查清单
-
-- [ ] 所有资源有成本标签
-- [ ] Dev 环境使用最小规格
-- [ ] 有资源清理策略 (RemovalPolicy)
-- [ ] S3 有生命周期规则
-- [ ] 考虑 Reserved/Savings Plans (Prod)
 
 ---
 
-## 1. 实例选型
+## 1. 计算优化
 
-### 1.1 环境差异化配置
+### 环境配置模式
 
 ```typescript
 // lib/config/environments.ts
 export const instanceConfigs = {
-  dev: {
-    ec2: ec2.InstanceType.of(ec2.InstanceClass.T3, ec2.InstanceSize.SMALL),
-    rds: ec2.InstanceType.of(ec2.InstanceClass.T3, ec2.InstanceSize.SMALL),
-    elasticache: 'cache.t3.micro',
-    natGateways: 1,
-  },
-  staging: {
-    ec2: ec2.InstanceType.of(ec2.InstanceClass.T3, ec2.InstanceSize.MEDIUM),
-    rds: ec2.InstanceType.of(ec2.InstanceClass.T3, ec2.InstanceSize.MEDIUM),
-    elasticache: 'cache.t3.small',
-    natGateways: 2,
-  },
-  prod: {
-    ec2: ec2.InstanceType.of(ec2.InstanceClass.T3, ec2.InstanceSize.LARGE),
-    rds: ec2.InstanceType.of(ec2.InstanceClass.R6G, ec2.InstanceSize.LARGE),
-    elasticache: 'cache.r6g.large',
-    natGateways: 3,
-  },
+  dev:     { ec2: 'T3.SMALL',  rds: 'T3.SMALL',  natGateways: 1 },
+  staging: { ec2: 'T3.MEDIUM', rds: 'T3.MEDIUM', natGateways: 2 },
+  prod:    { ec2: 'T3.LARGE',  rds: 'R6G.LARGE', natGateways: 3 },
 };
 ```
 
-### 1.2 自动扩缩
+### 自动扩缩 + Dev 定时缩减
 
 ```typescript
-// ECS 自动扩缩
-const scaling = service.autoScaleTaskCount({
-  minCapacity: envConfig.minCapacity,
-  maxCapacity: envConfig.maxCapacity,
-});
+// ECS 扩缩
+scaling.scaleOnCpuUtilization('Cpu', { targetUtilizationPercent: 70 });
 
-scaling.scaleOnCpuUtilization('CpuScaling', {
-  targetUtilizationPercent: 70,
-  scaleInCooldown: cdk.Duration.seconds(60),
-  scaleOutCooldown: cdk.Duration.seconds(60),
-});
-
-// 定时扩缩 (非工作时间缩减)
+// Dev: 非工作时间缩减到 0
 if (envName === 'dev') {
-  scaling.scaleOnSchedule('ScaleDown', {
-    schedule: appscaling.Schedule.cron({ hour: '20', minute: '0' }), // 20:00
-    minCapacity: 0,
-    maxCapacity: 0,
-  });
-
-  scaling.scaleOnSchedule('ScaleUp', {
-    schedule: appscaling.Schedule.cron({ hour: '8', minute: '0' }), // 08:00
-    minCapacity: 1,
-    maxCapacity: 2,
-  });
+  scaling.scaleOnSchedule('Down', { schedule: cron({ hour: '20' }), minCapacity: 0 });
+  scaling.scaleOnSchedule('Up',   { schedule: cron({ hour: '8' }),  minCapacity: 1 });
 }
+```
+
+### Lambda 优化
+
+```typescript
+architecture: lambda.Architecture.ARM_64,  // 节省约 20%
+memorySize: envConfig.lambdaMemory ?? 256, // 使用 Power Tuning 确定最优值
+```
+
+### Spot 实例 (非关键负载)
+
+```typescript
+// ECS Spot 容量提供者
+spotPrice: '0.05',  // 设置最高价格
 ```
 
 ---
 
 ## 2. 存储优化
 
-### 2.1 S3 生命周期
+### S3 生命周期 (必须)
 
 ```typescript
-const bucket = new s3.Bucket(this, 'DataBucket', {
-  // 智能分层
-  intelligentTieringConfigurations: [
-    {
-      name: 'DefaultTiering',
-      archiveAccessTierTime: cdk.Duration.days(90),
-      deepArchiveAccessTierTime: cdk.Duration.days(180),
-    },
-  ],
+// 智能分层
+intelligentTieringConfigurations: [{ archiveAccessTierTime: cdk.Duration.days(90) }],
 
-  // 生命周期规则
-  lifecycleRules: [
-    {
-      id: 'TransitionToIA',
-      transitions: [
-        {
-          storageClass: s3.StorageClass.INFREQUENT_ACCESS,
-          transitionAfter: cdk.Duration.days(30),
-        },
-        {
-          storageClass: s3.StorageClass.GLACIER,
-          transitionAfter: cdk.Duration.days(90),
-        },
-      ],
-    },
-    {
-      id: 'ExpireOldVersions',
-      noncurrentVersionExpiration: cdk.Duration.days(30),
-    },
-    {
-      id: 'AbortMultipartUpload',
-      abortIncompleteMultipartUploadAfter: cdk.Duration.days(7),
-    },
-  ],
-});
+// 生命周期规则
+lifecycleRules: [
+  { transitions: [
+      { storageClass: s3.StorageClass.INFREQUENT_ACCESS, transitionAfter: cdk.Duration.days(30) },
+      { storageClass: s3.StorageClass.GLACIER, transitionAfter: cdk.Duration.days(90) },
+  ]},
+  { noncurrentVersionExpiration: cdk.Duration.days(30) },
+  { abortIncompleteMultipartUploadAfter: cdk.Duration.days(7) },
+],
 ```
 
-### 2.2 EBS 优化
+### EBS: gp3 优于 gp2
 
 ```typescript
-// 使用 gp3 而非 gp2
-const volume = new ec2.Volume(this, 'DataVolume', {
-  volumeType: ec2.EbsDeviceVolumeType.GP3,
-  size: cdk.Size.gibibytes(100),
-  iops: 3000, // gp3 可自定义 IOPS
-  throughput: 125,
-});
+volumeType: ec2.EbsDeviceVolumeType.GP3,  // 可自定义 IOPS/吞吐量，成本更低
 ```
 
 ---
 
 ## 3. 网络优化
 
-### 3.1 NAT Gateway 优化
+### NAT Gateway 策略
+
+| 环境 | NAT 配置 | 成本参考 |
+|------|---------|---------|
+| Dev | 1 个或 NAT Instance | ~$4/月 (Instance) vs ~$30/月 (Gateway) |
+| Prod | 每 AZ 一个 | 高可用 |
+
+### VPC Endpoints (减少 NAT 流量)
 
 ```typescript
-// Dev: 单 NAT Gateway
-// Prod: 每 AZ 一个 NAT Gateway (高可用)
-const vpc = new ec2.Vpc(this, 'Vpc', {
-  maxAzs: 3,
-  natGateways: envConfig.natGateways,
-  natGatewaySubnets: {
-    subnetType: ec2.SubnetType.PUBLIC,
-    onePerAz: envName === 'prod',
-  },
-});
+// Gateway Endpoints (免费)
+vpc.addGatewayEndpoint('S3', { service: ec2.GatewayVpcEndpointAwsService.S3 });
+vpc.addGatewayEndpoint('DynamoDB', { service: ec2.GatewayVpcEndpointAwsService.DYNAMODB });
 
-// 考虑 NAT Instance 替代 (Dev 环境)
-if (envName === 'dev') {
-  // 使用 NAT Instance 节省成本
-  // NAT Gateway: ~$30/月
-  // NAT Instance (t3.nano): ~$4/月
-}
-```
-
-### 3.2 VPC Endpoints
-
-```typescript
-// 使用 VPC Endpoints 减少 NAT 流量费用
-vpc.addGatewayEndpoint('S3Endpoint', {
-  service: ec2.GatewayVpcEndpointAwsService.S3,
-});
-
-vpc.addGatewayEndpoint('DynamoDBEndpoint', {
-  service: ec2.GatewayVpcEndpointAwsService.DYNAMODB,
-});
-
-// Interface Endpoints (按需添加)
+// Interface Endpoints (Prod 按需)
 if (envName === 'prod') {
-  vpc.addInterfaceEndpoint('SecretsManagerEndpoint', {
-    service: ec2.InterfaceVpcEndpointAwsService.SECRETS_MANAGER,
-  });
+  vpc.addInterfaceEndpoint('SecretsManager', { service: ec2.InterfaceVpcEndpointAwsService.SECRETS_MANAGER });
 }
 ```
 
 ---
 
-## 4. 计算优化
+## 4. 资源清理
 
-### 4.1 Lambda 内存优化
+### RemovalPolicy 策略
 
-```typescript
-// 使用 AWS Lambda Power Tuning 确定最优配置
-const fn = new lambda.Function(this, 'Handler', {
-  // 根据实际测试结果设置
-  memorySize: envConfig.lambdaMemory ?? 256,
-  timeout: cdk.Duration.seconds(30),
+| 环境 | S3/Logs | RDS |
+|------|---------|-----|
+| Dev | DESTROY + autoDeleteObjects | DESTROY |
+| Staging | DESTROY | SNAPSHOT |
+| Prod | RETAIN | SNAPSHOT |
 
-  // 使用 ARM 架构节省成本 (约 20%)
-  architecture: lambda.Architecture.ARM_64,
-});
-```
-
-### 4.2 Spot 实例
+### CloudWatch Logs 保留
 
 ```typescript
-// ECS Spot 实例 (非关键工作负载)
-const spotCapacityProvider = new ecs.AsgCapacityProvider(this, 'SpotCapacity', {
-  autoScalingGroup: new autoscaling.AutoScalingGroup(this, 'SpotAsg', {
-    vpc,
-    instanceType: envConfig.ec2,
-    machineImage: ecs.EcsOptimizedImage.amazonLinux2(),
-    spotPrice: '0.05', // 设置最高价格
-  }),
-});
-
-cluster.addAsgCapacityProvider(spotCapacityProvider);
+retention: envName === 'prod' ? logs.RetentionDays.ONE_YEAR : logs.RetentionDays.ONE_WEEK,
 ```
 
 ---
 
-## 5. 成本标签
+## 5. 成本监控
 
-### 5.1 标签策略
-
-```typescript
-// bin/app.ts
-import * as cdk from 'aws-cdk-lib';
-
-const app = new cdk.App();
-const envName = app.node.tryGetContext('env') || 'dev';
-
-// 必须标签
-const requiredTags: Record<string, string> = {
-  Project: 'ai-agents-platform',
-  Environment: envName,
-  ManagedBy: 'cdk',
-  CostCenter: 'ai-platform',
-  Owner: 'platform-team',
-};
-
-// 应用到所有资源
-Object.entries(requiredTags).forEach(([key, value]) => {
-  cdk.Tags.of(app).add(key, value);
-});
-
-// 环境特定标签
-if (envName === 'prod') {
-  cdk.Tags.of(app).add('Criticality', 'high');
-  cdk.Tags.of(app).add('DataClassification', 'confidential');
-}
-```
-
-### 5.2 成本分配标签
-
-在 AWS Billing Console 中启用成本分配标签：
-- `Project`
-- `Environment`
-- `CostCenter`
-
----
-
-## 6. 资源清理
-
-### 6.1 RemovalPolicy
+### 预算告警
 
 ```typescript
-// Dev: 允许销毁
-const devBucket = new s3.Bucket(this, 'DevBucket', {
-  removalPolicy: cdk.RemovalPolicy.DESTROY,
-  autoDeleteObjects: true,
-});
-
-// Prod: 保留
-const prodBucket = new s3.Bucket(this, 'ProdBucket', {
-  removalPolicy: cdk.RemovalPolicy.RETAIN,
-});
-
-// 数据库: 快照
-const database = new rds.DatabaseCluster(this, 'Database', {
-  removalPolicy: envName === 'prod'
-    ? cdk.RemovalPolicy.SNAPSHOT
-    : cdk.RemovalPolicy.DESTROY,
-});
-```
-
-### 6.2 定期清理
-
-```typescript
-// CloudWatch Logs 保留期限
-new logs.LogGroup(this, 'AppLogs', {
-  retention: envName === 'prod'
-    ? logs.RetentionDays.ONE_YEAR
-    : logs.RetentionDays.ONE_WEEK,
-  removalPolicy: cdk.RemovalPolicy.DESTROY,
-});
-```
-
----
-
-## 7. 成本监控
-
-### 7.1 预算告警
-
-```typescript
-import * as budgets from 'aws-cdk-lib/aws-budgets';
-
-new budgets.CfnBudget(this, 'MonthlyBudget', {
+new budgets.CfnBudget(this, 'Budget', {
   budget: {
-    budgetName: `ai-platform-${envName}-monthly`,
-    budgetLimit: {
-      amount: envName === 'prod' ? 1000 : 100,
-      unit: 'USD',
-    },
+    budgetLimit: { amount: envName === 'prod' ? 1000 : 100, unit: 'USD' },
     budgetType: 'COST',
     timeUnit: 'MONTHLY',
   },
-  notificationsWithSubscribers: [
-    {
-      notification: {
-        comparisonOperator: 'GREATER_THAN',
-        notificationType: 'ACTUAL',
-        threshold: 80,
-        thresholdType: 'PERCENTAGE',
-      },
-      subscribers: [
-        {
-          address: 'platform-team@example.com',
-          subscriptionType: 'EMAIL',
-        },
-      ],
-    },
-  ],
+  notificationsWithSubscribers: [{
+    notification: { threshold: 80, thresholdType: 'PERCENTAGE', comparisonOperator: 'GREATER_THAN', notificationType: 'ACTUAL' },
+    subscribers: [{ address: 'platform-team@example.com', subscriptionType: 'EMAIL' }],
+  }],
 });
 ```
 
-### 7.2 Cost Explorer 标签
+### Cost Explorer 启用标签
 
-确保在 Cost Explorer 中启用按标签分组：
-1. AWS Console → Billing → Cost Explorer
-2. 启用 `Project`, `Environment`, `CostCenter` 标签
+在 Billing Console 启用成本分配标签: `Project`, `Environment`, `CostCenter`
 
 ---
 
-## 8. 成本审计清单
+## 6. 审计清单
 
-### 月度审计
+**月度**: 未使用 EBS 卷 | 未关联弹性 IP | 空闲 LB | RI 利用率 | S3 存储类
 
-- [ ] 检查未使用的 EBS 卷
-- [ ] 检查未关联的弹性 IP
-- [ ] 检查空闲的负载均衡器
-- [ ] 审查 Reserved Instances 利用率
-- [ ] 检查 S3 存储类使用情况
-
-### 季度审计
-
-- [ ] 评估 Reserved Instances / Savings Plans 续期
-- [ ] 审查实例类型是否合适
-- [ ] 评估是否可以使用 Spot 实例
-- [ ] 检查跨区域数据传输
+**季度**: RI/Savings Plans 续期 | 实例类型评估 | Spot 机会 | 跨区域传输
 
 ---
 
 ## 相关文档
 
-| 文档 | 说明 |
-|------|------|
-| [deployment.md](deployment.md) | 环境配置 |
-| [architecture.md](architecture.md) | 资源设计 |
-| [AWS Well-Architected - Cost](https://docs.aws.amazon.com/wellarchitected/latest/cost-optimization-pillar/) | 外部参考 |
+- [deployment.md](deployment.md) - 环境配置
+- [checklist.md](checklist.md) - PR Review 检查清单 (含成本检查项)
