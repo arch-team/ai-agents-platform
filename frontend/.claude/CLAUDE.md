@@ -99,76 +99,12 @@ pnpm preview
 
 ## 核心原则
 
-### 组件设计原则
-
-**核心原则**：单一职责 + 组合优于继承 + 类型安全。
-
-详细说明请参考 [rules/component-design.md](rules/component-design.md)
-
-### TDD 工作流
-
-本项目全面采用测试驱动开发 (TDD)。
-
-**核心循环**:
-```
-1. 🔴 Red: 先写失败的测试
-2. 🟢 Green: 编写最少代码使测试通过
-3. 🔄 Refactor: 重构代码，保持测试通过
-```
-
-**测试分层策略**:
-
-| 层级 | 覆盖内容 | 工具 |
-|------|---------|------|
-| **Unit** | Hooks、工具函数、组件 | Vitest + Testing Library |
-| **Integration** | 页面集成、API 调用 | Vitest + MSW |
-| **E2E** | 用户流程、关键路径 | Playwright |
-
-**测试诚信原则**: 切勿为让测试通过而伪造结果。测试失败 = 代码有问题，必须修复代码。
-
-详细说明请参考 [rules/testing.md](rules/testing.md)
-
----
-
-## 代码风格快速参考
-
-### 类型提示 (必须)
-
-```typescript
-// ✅ 正确 - 使用接口定义 Props
-interface ButtonProps {
-  variant: 'primary' | 'secondary';
-  onClick: () => void;
-  children: React.ReactNode;
-}
-
-// ❌ 错误 - 缺少类型
-const Button = ({ variant, onClick, children }) => { ... }
-```
-
-### 命名规范
-
-| 元素 | 规范 | 示例 |
-|------|------|------|
-| 组件 | `PascalCase` | `UserProfile`, `LoginForm` |
-| 函数/变量 | `camelCase` | `getUserData`, `isLoading` |
-| 常量 | `UPPER_SNAKE_CASE` | `MAX_RETRY_COUNT` |
-| CSS 类 | `kebab-case` | `user-profile`, `login-form` |
-| 类型/接口 | `PascalCase` | `UserData`, `ApiResponse` |
-| Hooks | `use` 前缀 + `camelCase` | `useAuth`, `useFetch` |
-
-### 组件文件命名
-
-```
-{ComponentName}/
-├── index.ts              # 导出入口
-├── {ComponentName}.tsx   # 组件实现
-├── {ComponentName}.test.tsx  # 单元测试
-├── {ComponentName}.types.ts  # 类型定义 (可选)
-└── {ComponentName}.module.css  # 样式 (可选)
-```
-
-详细说明请参考 [rules/code-style.md](rules/code-style.md)
+| 原则 | 说明 | 详细规范 |
+|------|------|---------|
+| **组件设计** | 单一职责 + 组合优于继承 + 类型安全 | [component-design.md](rules/component-design.md) |
+| **TDD 工作流** | 红-绿-重构循环，测试诚信原则 | [testing.md](rules/testing.md) |
+| **状态管理** | 服务端→React Query，客户端→Zustand | [state-management.md](rules/state-management.md) |
+| **代码风格** | 命名规范、TypeScript、导入排序 | [code-style.md](rules/code-style.md) |
 
 ---
 
@@ -181,42 +117,6 @@ const Button = ({ variant, onClick, children }) => { ... }
 详细架构规范、目录结构、依赖规则请参考 [rules/architecture.md](rules/architecture.md)
 
 **项目目录结构**: 详见 [rules/project-structure.md](rules/project-structure.md)
-
----
-
-## 状态管理快速参考
-
-**决策流程**:
-```
-数据来自服务端 API？ ──是──► React Query (TanStack Query)
-       │
-      否
-       ↓
-需要跨组件共享？ ──是──► Zustand Store
-       │
-      否
-       ↓
-组件本地状态 → useState / useReducer
-```
-
-详见 [rules/state-management.md](rules/state-management.md)
-
----
-
-## 安全规范快速参考
-
-速查表和检测命令详见 [rules/security.md](rules/security.md)
-
----
-
-## 覆盖率要求
-
-| 层级 | 最低覆盖率 | 目标覆盖率 |
-|------|-----------|-----------|
-| Hooks | 90% | 95% |
-| Components | 80% | 85% |
-| Utils | 95% | 100% |
-| **整体** | **80%** | **85%** |
 
 ---
 

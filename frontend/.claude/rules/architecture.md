@@ -325,71 +325,11 @@ export { useInternalState } from './model/internal';
 
 ### 4.2 React Query 集成
 
-```typescript
-// features/agents/api/queries.ts
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiClient } from '@/shared/api';
-import type { Agent } from '@/entities/agent';
-
-export const agentKeys = {
-  all: ['agents'] as const,
-  lists: () => [...agentKeys.all, 'list'] as const,
-  detail: (id: string) => [...agentKeys.all, 'detail', id] as const,
-};
-
-export function useAgents() {
-  return useQuery({
-    queryKey: agentKeys.lists(),
-    queryFn: () => apiClient.get<Agent[]>('/api/v1/agents').then(r => r.data),
-  });
-}
-
-export function useAgent(id: string) {
-  return useQuery({
-    queryKey: agentKeys.detail(id),
-    queryFn: () => apiClient.get<Agent>(`/api/v1/agents/${id}`).then(r => r.data),
-    enabled: !!id,
-  });
-}
-```
+服务端状态管理使用 React Query。详细实现规范请参考 [state-management.md](state-management.md) §1。
 
 ### 4.3 Zustand Store
 
-```typescript
-// features/auth/model/store.ts
-import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
-import type { User } from '@/entities/user';
-
-interface AuthState {
-  user: User | null;
-  token: string | null;
-  isAuthenticated: boolean;
-  setUser: (user: User | null) => void;
-  setToken: (token: string | null) => void;
-  logout: () => void;
-}
-
-export const useAuthStore = create<AuthState>()(
-  persist(
-    (set) => ({
-      user: null,
-      token: null,
-      isAuthenticated: false,
-      setUser: (user) => set({ user, isAuthenticated: !!user }),
-      setToken: (token) => set({ token }),
-      logout: () => set({ user: null, token: null, isAuthenticated: false }),
-    }),
-    { name: 'auth-storage' }
-  )
-);
-
-// 导出 selector hooks
-export const useAuth = () => useAuthStore((state) => ({
-  user: state.user,
-  isAuthenticated: state.isAuthenticated,
-}));
-```
+客户端状态管理使用 Zustand。详细实现规范请参考 [state-management.md](state-management.md) §2。
 
 ---
 

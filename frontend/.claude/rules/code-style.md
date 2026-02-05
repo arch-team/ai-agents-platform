@@ -361,29 +361,9 @@ export function UserCard({ user, onEdit }: UserCardProps) {
 
 ### 4.2 forwardRef 组件
 
-```typescript
-import { forwardRef } from 'react';
+`forwardRef` 组件规范请参考 [component-design.md](component-design.md) §2.3。
 
-interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
-  label?: string;
-  error?: string;
-}
-
-export const Input = forwardRef<HTMLInputElement, InputProps>(
-  ({ label, error, className, ...props }, ref) => {
-    return (
-      <div className="input-wrapper">
-        {label && <label>{label}</label>}
-        <input ref={ref} className={className} {...props} />
-        {error && <span className="error">{error}</span>}
-      </div>
-    );
-  }
-);
-
-// 必须设置 displayName
-Input.displayName = 'Input';
-```
+**关键要求**: 必须设置 `displayName`。
 
 ---
 

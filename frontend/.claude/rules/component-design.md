@@ -455,42 +455,6 @@ Tabs/
 
 ---
 
-## 5. 性能优化
-
-### 5.1 Memo 使用时机
-
-```typescript
-// ✅ 需要 memo - 接收复杂 props 或渲染开销大
-export const DataGrid = memo(function DataGrid({ data, columns }: DataGridProps) {
-  // 复杂渲染逻辑
-});
-
-// ❌ 不需要 memo - 简单组件
-export function Button({ children }: ButtonProps) {
-  return <button>{children}</button>;
-}
-```
-
-### 5.2 useCallback/useMemo
-
-```typescript
-// ✅ 需要 - 传递给 memo 子组件的回调
-const handleClick = useCallback(() => {
-  // ...
-}, [dependency]);
-
-// ✅ 需要 - 昂贵计算
-const sortedItems = useMemo(
-  () => items.sort((a, b) => a.name.localeCompare(b.name)),
-  [items]
-);
-
-// ❌ 不需要 - 简单操作
-const handleClick = () => setValue(v => v + 1);
-```
-
----
-
 ## 相关文档
 
 | 文档 | 说明 |
@@ -498,4 +462,5 @@ const handleClick = () => setValue(v => v + 1);
 | [architecture.md](architecture.md) | FSD 分层，组件放置位置 |
 | [code-style.md](code-style.md) | 命名规范、类型定义 |
 | [testing.md](testing.md) | 组件测试规范 |
+| [performance.md](performance.md) | Memo、useCallback、useMemo 使用规范 |
 | [accessibility.md](accessibility.md) | 无障碍要求 |
