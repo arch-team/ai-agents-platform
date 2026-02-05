@@ -1,6 +1,6 @@
 # Claude Code 上下文管理
 
-本目录包含 Claude Code 的项目上下文配置文件，用于指导 Claude 理解项目规范、架构模式和开发约定。
+本文档用于说明Claude Code的项目上下文配置文件。
 
 ---
 
@@ -8,7 +8,7 @@
 
 ```
 .claude/
-├── README.md                              # 本文件 - 目录说明
+├── README.md                              # 本文件 - Claude Code的项目上下文配置文件说明
 ├── CLAUDE.md                              # 项目主规范 (入口)
 ├── PROJECT_CONFIG.ai-agents-platform.md   # 项目特定配置
 ├── PROJECT_CONFIG.template.md             # 项目配置模板

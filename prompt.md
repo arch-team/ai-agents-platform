@@ -120,4 +120,20 @@ modules/{module}/
 /Users/jinhuasu/Project_Workspace/Anker-Projects/ml-platform-research/llm-platform-solution/ai-agents-platform/infra    
   是基础设施即代码的子项目的Claude Code 上下文（context）管理的规范文件，请你综合Claude Code 上下文管理的最佳实践分析存在的问题，并给出优化方案
 
-/Users/jinhuasu/Project_Workspace/Anker-Projects/ml-platform-research/llm-platform-solution/ai-agents-platform/infra/.claude/rules/cost-optimization.md是基础设施即代码的子项目的Claude Code 上下文（context）管理的规范文件，结合Claude Code 上下文管理的最佳实践在不影响它的作用的情况下精简冗余信息
+/Users/jinhuasu/Project_Workspace/Anker-Projects/ml-platform-research/llm-platform-solution/ai-agents-platform/infra/.claude/rules/security.md是基础设施即代码的子项目的Claude Code 上下文（context）管理的规范文件，结合Claude Code 上下文管理的最佳实践在不影响它的作用的情况下精简冗余信息
+
+如下是对/Users/jinhuasu/Project_Workspace/Anker-Projects/ml-platform-research/llm-platform-solution/ai-agents-platform/infra    
+是基础设施即代码的子项目的Claude Code 上下文（context）管理的规范文件的作用说明。请根据这个文件的作用说明。检查这些文件的内容是否存在违反了单一职责原则
+.claude/
+├── README.md                              # 本文件 - Claude Code的项目上下文配置文件说明
+├── CLAUDE.md                              # 项目主规范 (入口)
+├── PROJECT_CONFIG.ai-agents-platform.md   # 项目特定配置
+├── PROJECT_CONFIG.template.md             # 项目配置模板
+└── rules/                                 # 专题规范文档
+    ├── architecture.md                    # CDK 架构规范 ★核心
+    ├── project-structure.md               # 项目目录结构规范
+    ├── construct-design.md                # Construct 设计规范
+    ├── security.md                        # 安全规范 (IAM)
+    ├── testing.md                         # 测试规范 (TDD)
+    ├── deployment.md                      # 部署规范
+    └── cost-optimization.md               # 成本优化规范

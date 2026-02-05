@@ -46,7 +46,7 @@ App → Stack A → L3 → L2 → L1
 | NetworkStack | VPC, Subnets, NAT |
 | SecurityStack | Security Groups, WAF, KMS |
 | DatabaseStack | RDS, DynamoDB, ElastiCache |
-| ComputeStack | ECS, Lambda, EC2 |
+| ComputeStack | EKS, ECS, Lambda, EC2 |
 | ApiStack | API Gateway, ALB |
 | MonitoringStack | CloudWatch, SNS, Alarms |
 
