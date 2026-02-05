@@ -21,7 +21,8 @@
     ├── security.md                        # 安全规范 (IAM)
     ├── testing.md                         # 测试规范 (TDD)
     ├── deployment.md                      # 部署规范
-    └── cost-optimization.md               # 成本优化规范
+    ├── cost-optimization.md               # 成本优化规范
+    └── tech-stack.md                      # 技术栈规范
 ```
 
 ---
@@ -81,6 +82,7 @@
 | `testing.md` | TDD 工作流、覆盖率要求、Fine-grained Assertions、Snapshot 测试 |
 | `deployment.md` | 环境配置 (dev/staging/prod)、CI/CD Pipeline |
 | `cost-optimization.md` | 资源选型、Reserved Instances、Cost Tags |
+| `tech-stack.md` | 技术栈规范 - AWS CDK 版本、依赖库版本、工具链版本要求 |
 
 ---
 
@@ -97,6 +99,7 @@
 | testing.md | construct-design.md, checklist.md | 测试规范，引用设计和检查清单 |
 | deployment.md | architecture.md (边界), security.md, cost-optimization.md, checklist.md | 与 architecture.md 有职责边界 |
 | cost-optimization.md | deployment.md, checklist.md | 成本优化，引用部署和检查清单 |
+| tech-stack.md | CLAUDE.md, construct-design.md | 技术栈规范，为其他文档提供版本基准 |
 
 **引用原则**:
 - **单向为主**: CLAUDE.md 是入口，rules/ 是专题文档
