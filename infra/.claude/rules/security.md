@@ -39,15 +39,11 @@
 ### 1.1 使用 Grant 方法
 
 ```typescript
-// ✅ 正确 - 使用 Grant 方法
-const bucket = new s3.Bucket(this, 'DataBucket');
-const lambdaFn = new lambda.Function(this, 'Handler', { ... });
-
-// 自动创建最小权限策略
+// ✅ Grant 方法自动创建最小权限策略
 bucket.grantRead(lambdaFn);
 bucket.grantWrite(lambdaFn);
 
-// ❌ 错误 - 手动创建过宽策略
+// ❌ 禁止 - 过宽策略
 lambdaFn.addToRolePolicy(new iam.PolicyStatement({
   actions: ['s3:*'],
   resources: ['*'],
@@ -57,18 +53,13 @@ lambdaFn.addToRolePolicy(new iam.PolicyStatement({
 ### 1.2 精细权限控制
 
 ```typescript
-// ✅ 正确 - 限制资源范围
-bucket.grantRead(lambdaFn, 'data/*'); // 仅限 data/ 前缀
+// ✅ 限制资源范围和条件
+bucket.grantRead(lambdaFn, 'data/*');  // 仅限 data/ 前缀
 
-// ✅ 正确 - 条件限制
 const policy = new iam.PolicyStatement({
   actions: ['s3:GetObject'],
   resources: [bucket.arnForObjects('reports/*')],
-  conditions: {
-    StringEquals: {
-      's3:ExistingObjectTag/Environment': 'prod',
-    },
-  },
+  conditions: { StringEquals: { 's3:ExistingObjectTag/Environment': 'prod' } },
 });
 ```
 
@@ -76,17 +67,9 @@ const policy = new iam.PolicyStatement({
 
 ```typescript
 // ❌ 禁止 - 管理员权限
-const role = new iam.Role(this, 'Role', {
-  assumedBy: new iam.ServicePrincipal('lambda.amazonaws.com'),
-  managedPolicies: [
-    iam.ManagedPolicy.fromAwsManagedPolicyName('AdministratorAccess'),
-  ],
-});
+managedPolicies: [iam.ManagedPolicy.fromAwsManagedPolicyName('AdministratorAccess')]
 
 // ✅ 正确 - 最小权限
-const role = new iam.Role(this, 'Role', {
-  assumedBy: new iam.ServicePrincipal('lambda.amazonaws.com'),
-});
 bucket.grantRead(role);
 table.grantReadWriteData(role);
 ```
@@ -98,138 +81,83 @@ table.grantReadWriteData(role);
 ### 2.1 Secrets Manager
 
 ```typescript
-// ✅ 正确 - 使用 Secrets Manager
+// ✅ 敏感凭证使用 Secrets Manager
 const dbSecret = new secretsmanager.Secret(this, 'DbSecret', {
   secretName: 'prod/db/credentials',
   generateSecretString: {
     secretStringTemplate: JSON.stringify({ username: 'admin' }),
     generateStringKey: 'password',
-    excludePunctuation: true,
     passwordLength: 32,
   },
 });
 
-// 在 RDS 中使用
-const cluster = new rds.DatabaseCluster(this, 'Database', {
-  credentials: rds.Credentials.fromSecret(dbSecret),
-  // ...
-});
-
-// 在 Lambda 中使用
-const fn = new lambda.Function(this, 'Handler', {
-  environment: {
-    SECRET_ARN: dbSecret.secretArn,
-  },
-});
-dbSecret.grantRead(fn);
+// RDS 使用: rds.Credentials.fromSecret(dbSecret)
+// Lambda 使用: dbSecret.grantRead(fn)
 ```
 
 ### 2.2 SSM Parameter Store
 
 ```typescript
-// 非敏感配置使用 SSM Parameter
-const configParam = new ssm.StringParameter(this, 'Config', {
+// 非敏感配置: SSM Parameter | 敏感配置: Secrets Manager
+new ssm.StringParameter(this, 'Config', {
   parameterName: '/app/config/api-url',
   stringValue: 'https://api.example.com',
-});
-
-// 敏感配置使用 SecureString
-const secureParam = new ssm.StringParameter(this, 'SecureConfig', {
-  parameterName: '/app/secrets/api-key',
-  stringValue: 'placeholder', // 实际值通过控制台或 CLI 更新
-  tier: ssm.ParameterTier.STANDARD,
 });
 ```
 
 ### 2.3 禁止硬编码
 
 ```typescript
-// ❌ 禁止 - 硬编码密钥
-const fn = new lambda.Function(this, 'Handler', {
-  environment: {
-    API_KEY: 'sk-1234567890abcdef',
-    DB_PASSWORD: 'my-secret-password',
-  },
-});
+// ❌ 禁止
+environment: { API_KEY: 'sk-1234567890abcdef' }
 
-// ✅ 正确 - 从 Secrets Manager 读取
-const apiKeySecret = secretsmanager.Secret.fromSecretNameV2(
-  this, 'ApiKey', 'prod/api-key'
-);
-const fn = new lambda.Function(this, 'Handler', {
-  environment: {
-    API_KEY_SECRET_ARN: apiKeySecret.secretArn,
-  },
-});
-apiKeySecret.grantRead(fn);
+// ✅ 从 Secrets Manager 读取
+const secret = secretsmanager.Secret.fromSecretNameV2(this, 'ApiKey', 'prod/api-key');
+environment: { API_KEY_SECRET_ARN: secret.secretArn }
+secret.grantRead(fn);
 ```
 
 ---
 
 ## 3. 网络安全
 
-### 3.1 VPC 设计
+### 3.1 VPC 分层子网
+
+| 子网类型 | 用途 | 示例资源 |
+|---------|------|---------|
+| `PUBLIC` | 公网入口 | ALB, NAT Gateway |
+| `PRIVATE_WITH_EGRESS` | 应用层 | ECS, Lambda |
+| `PRIVATE_ISOLATED` | 数据层 | RDS, ElastiCache |
+
+**关键规则**:
+- ✅ 数据库必须放 `PRIVATE_ISOLATED`
+- ❌ 禁止 RDS 在 `PUBLIC` 子网
 
 ```typescript
-// ✅ 正确 - 分层子网设计
-const vpc = new ec2.Vpc(this, 'Vpc', {
-  subnetConfiguration: [
-    {
-      name: 'Public',
-      subnetType: ec2.SubnetType.PUBLIC,
-      cidrMask: 24,
-    },
-    {
-      name: 'Private',
-      subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
-      cidrMask: 24,
-    },
-    {
-      name: 'Isolated',
-      subnetType: ec2.SubnetType.PRIVATE_ISOLATED,
-      cidrMask: 24,
-    },
-  ],
-});
-
 // 数据库放在隔离子网
 const database = new rds.DatabaseCluster(this, 'Database', {
   vpc,
-  vpcSubnets: {
-    subnetType: ec2.SubnetType.PRIVATE_ISOLATED,
-  },
+  vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_ISOLATED },
 });
 ```
 
 ### 3.2 Security Groups
 
 ```typescript
-// ✅ 正确 - 最小开放端口
+// ✅ 最小开放端口 + 禁止所有出站
 const dbSecurityGroup = new ec2.SecurityGroup(this, 'DbSg', {
   vpc,
-  description: 'Security group for Aurora database',
-  allowAllOutbound: false, // 禁止所有出站
+  allowAllOutbound: false,
 });
-
-// 仅允许应用服务器访问
-dbSecurityGroup.addIngressRule(
-  appSecurityGroup,
-  ec2.Port.tcp(3306),
-  'Allow MySQL from app servers'
-);
+dbSecurityGroup.addIngressRule(appSecurityGroup, ec2.Port.tcp(3306), 'Allow MySQL from app');
 ```
 
 ### 3.3 VPC Endpoints
 
 ```typescript
-// ✅ 正确 - 使用 VPC Endpoints 访问 AWS 服务
-vpc.addInterfaceEndpoint('SecretsManagerEndpoint', {
-  service: ec2.InterfaceVpcEndpointAwsService.SECRETS_MANAGER,
-});
-
-vpc.addGatewayEndpoint('S3Endpoint', {
-  service: ec2.GatewayVpcEndpointAwsService.S3,
-});
+// 减少流量外泄风险
+vpc.addInterfaceEndpoint('SecretsManager', { service: ec2.InterfaceVpcEndpointAwsService.SECRETS_MANAGER });
+vpc.addGatewayEndpoint('S3', { service: ec2.GatewayVpcEndpointAwsService.S3 });
 ```
 
 ---
@@ -238,64 +166,25 @@ vpc.addGatewayEndpoint('S3Endpoint', {
 
 ### 4.1 S3 加密
 
-```typescript
-// ✅ 正确 - 启用加密
-const bucket = new s3.Bucket(this, 'DataBucket', {
-  encryption: s3.BucketEncryption.S3_MANAGED, // 或 KMS_MANAGED
-  enforceSSL: true,
-  blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
-});
+- ✅ `encryption: S3_MANAGED` 或 `KMS`
+- ✅ `enforceSSL: true` + `blockPublicAccess: BLOCK_ALL`
+- 🔐 敏感数据: CMK + `enableKeyRotation: true`
 
-// 使用 CMK 加密
-const key = new kms.Key(this, 'BucketKey', {
-  enableKeyRotation: true,
-});
-const bucket = new s3.Bucket(this, 'SecureBucket', {
-  encryption: s3.BucketEncryption.KMS,
-  encryptionKey: key,
-});
-```
+> 代码模板见 [construct-design.md §3](construct-design.md#3-安全默认配置)
 
 ### 4.2 RDS 加密
 
-```typescript
-// ✅ 正确 - 启用存储加密
-const cluster = new rds.DatabaseCluster(this, 'Database', {
-  storageEncrypted: true,
-  // 可选: 自定义 KMS 密钥
-  storageEncryptionKey: key,
-});
-```
+- ✅ `storageEncrypted: true`
+- 🔐 敏感数据使用自定义 KMS 密钥
+
+> 代码模板见 [construct-design.md §3](construct-design.md#3-安全默认配置)
 
 ### 4.3 传输加密
 
 ```typescript
-// ✅ 正确 - 强制 HTTPS
-const api = new apigateway.RestApi(this, 'Api', {
-  // ...
-});
-
-// ALB 强制 HTTPS
-const lb = new elbv2.ApplicationLoadBalancer(this, 'ALB', {
-  vpc,
-  internetFacing: true,
-});
-
-const httpsListener = lb.addListener('HttpsListener', {
-  port: 443,
-  certificates: [certificate],
-  sslPolicy: elbv2.SslPolicy.TLS12,
-});
-
-// HTTP 重定向到 HTTPS
-lb.addListener('HttpListener', {
-  port: 80,
-  defaultAction: elbv2.ListenerAction.redirect({
-    protocol: 'HTTPS',
-    port: '443',
-    permanent: true,
-  }),
-});
+// ALB: HTTPS + TLS 1.2 + HTTP→HTTPS 重定向
+lb.addListener('Https', { port: 443, certificates: [cert], sslPolicy: elbv2.SslPolicy.TLS12 });
+lb.addListener('Http', { port: 80, defaultAction: elbv2.ListenerAction.redirect({ protocol: 'HTTPS', port: '443', permanent: true }) });
 ```
 
 ---
@@ -309,9 +198,6 @@ lb.addListener('HttpListener', {
 import { Aspects } from 'aws-cdk-lib';
 import { AwsSolutionsChecks, NagSuppressions } from 'cdk-nag';
 
-const app = new cdk.App();
-
-// 应用 AWS Solutions 检查
 Aspects.of(app).add(new AwsSolutionsChecks({ verbose: true }));
 ```
 
@@ -320,18 +206,11 @@ Aspects.of(app).add(new AwsSolutionsChecks({ verbose: true }));
 ```typescript
 // 仅在有正当理由时抑制
 NagSuppressions.addStackSuppressions(stack, [
-  {
-    id: 'AwsSolutions-IAM4',
-    reason: '使用 AWS 托管策略是此用例的最佳实践',
-  },
+  { id: 'AwsSolutions-IAM4', reason: '使用 AWS 托管策略是此用例的最佳实践' },
 ]);
 
-// 资源级抑制
 NagSuppressions.addResourceSuppressions(bucket, [
-  {
-    id: 'AwsSolutions-S1',
-    reason: '此 Bucket 用于 CloudTrail 日志，不需要访问日志',
-  },
+  { id: 'AwsSolutions-S1', reason: '此 Bucket 用于 CloudTrail 日志，不需要访问日志' },
 ]);
 ```
 
@@ -348,27 +227,20 @@ NagSuppressions.addResourceSuppressions(bucket, [
 
 ---
 
-## 6. 审计和监控
-
-### 6.1 CloudTrail
+## 6. 审计监控
 
 ```typescript
-const trail = new cloudtrail.Trail(this, 'AuditTrail', {
+// CloudTrail + Config Rules
+const trail = new cloudtrail.Trail(this, 'Trail', {
   bucket: logBucket,
   isMultiRegionTrail: true,
-  includeGlobalServiceEvents: true,
   enableFileValidation: true,
 });
-```
 
-### 6.2 Config Rules
-
-```typescript
-new config.ManagedRule(this, 'S3PublicReadProhibited', {
+new config.ManagedRule(this, 'S3Public', {
   identifier: config.ManagedRuleIdentifiers.S3_BUCKET_PUBLIC_READ_PROHIBITED,
 });
-
-new config.ManagedRule(this, 'RdsEncrypted', {
+new config.ManagedRule(this, 'RdsEncrypt', {
   identifier: config.ManagedRuleIdentifiers.RDS_STORAGE_ENCRYPTED,
 });
 ```
@@ -379,6 +251,6 @@ new config.ManagedRule(this, 'RdsEncrypted', {
 
 | 文档 | 说明 |
 |------|------|
-| [construct-design.md](construct-design.md) | 安全默认配置 |
+| [construct-design.md](construct-design.md) | 安全默认配置代码模板 |
 | [testing.md](testing.md) | CDK Nag 测试 |
 | [AWS Well-Architected - Security](https://docs.aws.amazon.com/wellarchitected/latest/security-pillar/) | 外部参考 |

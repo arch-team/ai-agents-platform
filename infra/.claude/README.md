@@ -13,6 +13,7 @@
 ├── PROJECT_CONFIG.ai-agents-platform.md   # 项目特定配置
 ├── PROJECT_CONFIG.template.md             # 项目配置模板
 └── rules/                                 # 专题规范文档
+    ├── checklist.md                       # PR Review 检查清单 ★单一真实源
     ├── architecture.md                    # CDK 架构规范 ★核心
     ├── project-structure.md               # 项目目录结构规范
     ├── construct-design.md                # Construct 设计规范
@@ -36,6 +37,8 @@
 
 | 场景 | 推荐文档 |
 |------|----------|
+| PR Review 检查清单 | `rules/checklist.md` |
+| TDD 工作流和覆盖率 | `rules/testing.md` §0 速查卡片 |
 | CDK 命令 (synth, deploy) | `CLAUDE.md` §开发命令 |
 | 项目目录结构 | `rules/project-structure.md` §0 速查卡片 |
 | Construct 分层和设计 | `rules/architecture.md` §0 速查卡片 |
@@ -69,11 +72,12 @@
 
 | 文件 | 主要内容 |
 |------|----------|
+| `checklist.md` | PR Review 检查清单（单一真实源） |
 | `architecture.md` | CDK Construct 分层 (L1/L2/L3)、依赖规则、Stack 组合模式 |
 | `project-structure.md` | 项目根目录结构、配置文件速查 |
 | `construct-design.md` | Props 接口规范、JSDoc 注释、安全默认配置 |
 | `security.md` | IAM 最小权限、Grant 方法、Secrets Manager、CDK Nag |
-| `testing.md` | Fine-grained Assertions、Snapshot 测试、CDK Nag 集成 |
+| `testing.md` | TDD 工作流、覆盖率要求、Fine-grained Assertions、Snapshot 测试 |
 | `deployment.md` | 环境配置 (dev/staging/prod)、CI/CD Pipeline |
 | `cost-optimization.md` | 资源选型、Reserved Instances、Cost Tags |
 
@@ -84,17 +88,19 @@
 | 文档 | 主要引用 | 说明 |
 |------|---------|------|
 | **CLAUDE.md** (入口) | 所有 rules/*.md, PROJECT_CONFIG.*.md | 项目入口，引用所有专题文档 |
-| architecture.md | PROJECT_CONFIG.*.md, construct-design.md | 架构规范，引用项目配置和设计规范 |
-| project-structure.md | architecture.md | 目录结构，引用架构规范 |
-| construct-design.md | architecture.md, security.md, testing.md | Construct 设计，引用相关规范 |
-| security.md | construct-design.md, testing.md | 安全规范，引用设计和测试 |
-| testing.md | CLAUDE.md (互引), construct-design.md | 测试规范，与入口互相引用 |
-| deployment.md | architecture.md, security.md, cost-optimization.md | 部署规范，引用多个相关规范 |
-| cost-optimization.md | deployment.md, architecture.md | 成本优化，引用部署和架构 |
+| checklist.md | 所有 rules/*.md | PR Review 检查清单，引用各专题详细说明 |
+| architecture.md | PROJECT_CONFIG.*.md, construct-design.md, deployment.md (边界) | 架构规范，与 deployment.md 有职责边界 |
+| project-structure.md | architecture.md, checklist.md | 目录结构，引用架构和检查清单 |
+| construct-design.md | architecture.md, security.md (边界), testing.md | 与 security.md 有职责边界 |
+| security.md | construct-design.md (边界), testing.md | 与 construct-design.md 有职责边界 |
+| testing.md | construct-design.md, checklist.md | 测试规范，引用设计和检查清单 |
+| deployment.md | architecture.md (边界), security.md, cost-optimization.md, checklist.md | 与 architecture.md 有职责边界 |
+| cost-optimization.md | deployment.md, checklist.md | 成本优化，引用部署和检查清单 |
 
 **引用原则**:
 - **单向为主**: CLAUDE.md 是入口，rules/ 是专题文档
-- **互引例外**: testing.md 与 CLAUDE.md 互相引用（TDD 工作流）
+- **单一真实源**: checklist.md 是所有 PR Review 检查项的唯一来源
+- **职责边界**: 相关文档通过边界说明明确各自职责
 - **快速查找**: 使用 [RULES_INDEX.md](RULES_INDEX.md) 全局索引
 
 ---
@@ -105,10 +111,26 @@
 
 每个规范文档都有 **§0 速查卡片**，包含：
 - 常用模式速查表
-- PR Review 检查清单
 - 常见错误提醒
 
 > Claude 生成代码时优先查阅 §0 速查卡片
+>
+> PR Review 检查清单见 `rules/checklist.md`（单一真实源）
+
+### 单一真实源 (SSOT)
+
+关键信息只在一个地方定义：
+- **PR Review 检查清单**: `rules/checklist.md`
+- **TDD 工作流**: `rules/testing.md`
+- **覆盖率要求**: `rules/testing.md`
+
+其他文档通过链接引用，避免重复。
+
+### 职责边界
+
+相关文档通过边界说明明确职责分工：
+- `construct-design.md` ↔ `security.md`: 代码模板 vs 安全原理
+- `architecture.md` ↔ `deployment.md`: 架构设计 vs 部署执行
 
 ### 符号化表达
 
