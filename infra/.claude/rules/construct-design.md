@@ -1,5 +1,7 @@
 # Construct 设计规范
 
+> **职责**: 定义 Construct 的 Props 接口设计、实现模式、安全默认配置和 JSDoc 注释规范。
+
 > Claude 生成 CDK Construct 代码时优先查阅
 
 ---

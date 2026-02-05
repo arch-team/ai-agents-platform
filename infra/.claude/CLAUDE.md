@@ -6,6 +6,8 @@ tech_stack_ref: rules/tech-stack.md
 
 # CLAUDE.md - AWS CDK 基础设施项目规范
 
+> **职责**: AWS CDK 基础设施项目的 Claude Code 入口规范，提供技术栈概览、开发命令和规范导航。
+
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 > **注意**: 通用规范（响应语言、项目概述）请参考根目录 [../.claude/CLAUDE.md](../../.claude/CLAUDE.md)

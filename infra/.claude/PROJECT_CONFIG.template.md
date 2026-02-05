@@ -1,5 +1,7 @@
 # 项目配置模板 (Project Configuration Template)
 
+> **职责**: 项目配置模板，包含可复用的 `{{PLACEHOLDER}}` 占位符，用于新项目快速初始化。
+
 <!--
 使用说明：
 1. 复制此模板到新项目的 .claude/ 目录

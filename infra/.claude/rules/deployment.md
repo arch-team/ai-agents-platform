@@ -1,5 +1,7 @@
 # 部署规范 (Deployment Standards)
 
+> **职责**: 定义部署执行规范，包括环境矩阵、CI/CD Pipeline、部署流程和蓝绿部署策略。
+
 > Claude 执行部署相关操作时优先查阅此文档
 
 > **职责边界**: 本文档关注**部署执行**（环境矩阵、CI/CD、部署流程）。环境配置的**架构设计**（CDK Context 结构）详见 [architecture.md §4](architecture.md#4-环境配置)

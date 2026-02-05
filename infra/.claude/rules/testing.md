@@ -1,5 +1,7 @@
 # 测试规范
 
+> **职责**: 定义 TDD 工作流、覆盖率要求、Fine-grained Assertions 和 CDK Nag 合规测试规范。
+
 > Claude 生成 CDK 测试代码时优先查阅此文档
 
 本项目全面采用测试驱动开发 (TDD)。

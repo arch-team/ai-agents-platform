@@ -1,5 +1,7 @@
 # CDK 架构规范
 
+> **职责**: 定义 CDK Construct 分层 (L1/L2/L3)、Stack 组合模式和跨 Stack 通信规范。
+
 > Claude 生成 CDK 代码时优先查阅
 
 **架构模式**: CDK Construct 分层 (L1 → L2 → L3)

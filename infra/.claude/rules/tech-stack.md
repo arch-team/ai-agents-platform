@@ -1,6 +1,6 @@
 # 技术栈规范 (Tech Stack Standards)
 
-> **定位**: 技术栈版本要求的**单一真实源 (SSOT)**
+> **职责**: 技术栈版本要求的**单一真实源**，包括 AWS CDK、TypeScript、Node.js 等核心依赖版本。
 
 ---
 

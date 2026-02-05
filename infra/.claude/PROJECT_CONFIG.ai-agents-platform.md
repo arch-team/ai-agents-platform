@@ -1,5 +1,7 @@
 # 项目配置 - AI Agents Platform Infrastructure
 
+> **职责**: AI Agents Platform 项目的特定配置，包括 Stack 列表、环境配置、Construct 列表和成本标签。
+
 > **定位**: 本文件是 CLAUDE.md 的补充，包含**项目特定的业务配置**。
 > **原则**: 通用规范放 `rules/`，项目特定信息放此处。
 > 架构规范详见 [rules/architecture.md](rules/architecture.md)

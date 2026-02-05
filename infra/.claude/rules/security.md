@@ -1,5 +1,7 @@
 # 安全规范 (Security Standards)
 
+> **职责**: 定义 IAM 最小权限、密钥管理、网络安全、数据加密和 CDK Nag 合规规范。
+
 > Claude 生成 CDK 代码时优先查阅此文档
 
 基于 AWS Well-Architected Framework 安全支柱的 CDK 安全规范。
