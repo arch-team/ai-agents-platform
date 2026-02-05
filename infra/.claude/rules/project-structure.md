@@ -6,23 +6,9 @@
 
 ## 0. 速查卡片
 
-### Monorepo 结构概览
+> Monorepo 结构概览请参考 [根级 common.md](../../../.claude/rules/common.md#monorepo-结构概览)
 
-```
-ai-agents-platform/             # Monorepo 根目录
-├── .claude/                    # 根级：通用规范
-│   ├── CLAUDE.md               # 全局入口（语言、项目概述）
-│   └── rules/
-│       └── common.md           # 跨项目通用规则
-├── backend/                    # 后端项目
-├── frontend/                   # 前端项目
-├── infra/                      # 基础设施项目 ← 当前位置
-├── doc/                        # 全局文档
-├── .gitignore                  # 根级 gitignore
-└── README.md                   # 项目总说明
-```
-
-### Infra 目录结构
+### Infra 目录结构 ← 当前位置
 
 ```
 infra/                          # CDK 项目根目录
