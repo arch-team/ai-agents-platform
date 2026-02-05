@@ -8,24 +8,15 @@
 
 ### 部署命令
 
+完整 CDK 命令见 [CLAUDE.md §CDK 命令](../CLAUDE.md#cdk-命令)
+
+**部署专用**:
 ```bash
-# 合成模板
-pnpm cdk synth
-
-# 查看变更
-pnpm cdk diff
-
-# 部署单个 Stack
-pnpm cdk deploy NetworkStack-dev
-
-# 部署所有 Stack
-pnpm cdk deploy --all
-
 # 指定环境部署
 pnpm cdk deploy --context env=prod --all
 
-# 销毁 Stack
-pnpm cdk destroy NetworkStack-dev
+# 查看变更后部署
+pnpm cdk diff && pnpm cdk deploy
 ```
 
 ### 环境矩阵

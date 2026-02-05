@@ -144,22 +144,11 @@ pnpm test lib/constructs/
 
 ## 代码风格快速参考
 
-### 类型提示 (必须)
+### Props 设计
 
-```typescript
-// ✅ 正确 - Construct Props 使用 interface
-interface ApiGatewayConstructProps {
-  readonly stageName: string;
-  readonly throttlingRateLimit?: number;
-  readonly enableAccessLogs?: boolean;
-}
+Props 接口设计规范见 [construct-design.md §1](rules/construct-design.md#1-props-接口设计)
 
-// ✅ 正确 - 使用 readonly 防止意外修改
-interface DatabaseConstructProps {
-  readonly instanceType: ec2.InstanceType;
-  readonly removalPolicy?: cdk.RemovalPolicy;
-}
-```
+**核心规则**: Props 属性必须使用 `readonly` 修饰
 
 ### 命名规范
 
@@ -240,23 +229,11 @@ export class ApiGatewayConstruct extends Construct {
 
 ---
 
-## 验证检查清单
+## PR Review 检查清单
 
-在提交代码前，确保通过以下检查：
+完整检查清单见 [rules/checklist.md](rules/checklist.md)
 
+**预提交一键验证**:
 ```bash
-# 1. 代码检查通过
-pnpm lint
-
-# 2. 格式化检查通过
-pnpm format:check
-
-# 3. 类型检查通过
-pnpm typecheck
-
-# 4. CDK 合成成功
-pnpm cdk synth
-
-# 5. 测试通过且覆盖率达标
-pnpm test:coverage
+pnpm lint && pnpm format:check && pnpm typecheck && pnpm cdk synth && pnpm test:coverage
 ```

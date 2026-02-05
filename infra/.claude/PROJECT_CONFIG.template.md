@@ -42,13 +42,9 @@
 
 ## Stack 列表
 
-> **维护提示**: 新增 Stack 时同步更新此表和 `lib/stacks/` 目录。
+Stack 设计规范和职责说明见 [architecture.md §2.1](rules/architecture.md#21-stack-职责)
 
-| Stack | 职责 | 核心资源 | 依赖 |
-|-------|------|---------|------|
-| `NetworkStack` | 网络基础设施 | VPC, Subnets | - |
-| `{{STACK_1}}` | {{STACK_1_DESC}} | {{RESOURCES_1}} | {{DEPS_1}} |
-| `{{STACK_2}}` | {{STACK_2_DESC}} | {{RESOURCES_2}} | {{DEPS_2}} |
+**本项目 Stack**: 根据实际需求填写
 
 ---
 
@@ -66,30 +62,7 @@
 
 ### CDK Context 配置
 
-```typescript
-// cdk.json
-{
-  "context": {
-    "environments": {
-      "dev": {
-        "account": "{{DEV_ACCOUNT}}",
-        "region": "{{REGION}}",
-        "vpcCidr": "10.0.0.0/16"
-      },
-      "staging": {
-        "account": "{{STAGING_ACCOUNT}}",
-        "region": "{{REGION}}",
-        "vpcCidr": "10.1.0.0/16"
-      },
-      "prod": {
-        "account": "{{PROD_ACCOUNT}}",
-        "region": "{{REGION}}",
-        "vpcCidr": "10.2.0.0/16"
-      }
-    }
-  }
-}
-```
+详细配置示例见 [deployment.md §1.1](rules/deployment.md#11-cdk-context)
 
 ---
 
@@ -106,17 +79,9 @@
 
 ## 命名约定
 
-> **原则**: 资源命名包含环境和项目前缀，便于识别和管理。
+命名规范见 [CLAUDE.md §命名规范](../CLAUDE.md#命名规范)
 
-### 资源命名模式
-
-```typescript
-// 格式: {project}-{env}-{resource-type}-{name}
-const naming = {
-  vpc: `{{PROJECT_PREFIX}}-${env}-vpc`,
-  cluster: `{{PROJECT_PREFIX}}-${env}-aurora`,
-};
-```
+**本项目前缀**: `{{PROJECT_PREFIX}}`
 
 ---
 

@@ -35,20 +35,18 @@
 
 ## Stack 列表
 
-> **维护提示**: 新增 Stack 时同步更新此表和 `lib/stacks/` 目录。
+Stack 设计规范见 [architecture.md §2.1](rules/architecture.md#21-stack-职责)
 
-| Stack | 职责 | 核心资源 | 依赖 |
-|-------|------|---------|------|
-| `NetworkStack` | 网络基础设施 | VPC, Subnets, NAT Gateway | - |
-| `SecurityStack` | 安全组和 IAM | Security Groups, IAM Roles | NetworkStack |
-| `DatabaseStack` | 数据库 | Aurora MySQL, ElastiCache | NetworkStack, SecurityStack |
-| `ComputeStack` | 计算资源 | ECS/Fargate, Lambda | NetworkStack, SecurityStack |
-| `ApiStack` | API 网关 | API Gateway, WAF | ComputeStack |
-| `MonitoringStack` | 监控告警 | CloudWatch, SNS | All Stacks |
-<!-- 示例：
-| `StorageStack` | 存储资源 | S3, EFS | NetworkStack |
-| `CiCdStack` | CI/CD Pipeline | CodePipeline, CodeBuild | - |
--->
+**本项目 Stack**:
+
+| Stack | 依赖 |
+|-------|------|
+| `NetworkStack` | - |
+| `SecurityStack` | NetworkStack |
+| `DatabaseStack` | NetworkStack, SecurityStack |
+| `ComputeStack` | NetworkStack, SecurityStack |
+| `ApiStack` | ComputeStack |
+| `MonitoringStack` | All Stacks |
 
 ---
 
@@ -66,39 +64,9 @@
 
 ### CDK Context 配置
 
-```typescript
-// cdk.json
-{
-  "context": {
-    "environments": {
-      "dev": {
-        "account": "123456789012",
-        "region": "ap-northeast-1",
-        "vpcCidr": "10.0.0.0/16",
-        "instanceType": "t3.small",
-        "minCapacity": 1,
-        "maxCapacity": 2
-      },
-      "staging": {
-        "account": "123456789013",
-        "region": "ap-northeast-1",
-        "vpcCidr": "10.1.0.0/16",
-        "instanceType": "t3.medium",
-        "minCapacity": 2,
-        "maxCapacity": 4
-      },
-      "prod": {
-        "account": "123456789014",
-        "region": "ap-northeast-1",
-        "vpcCidr": "10.2.0.0/16",
-        "instanceType": "t3.large",
-        "minCapacity": 3,
-        "maxCapacity": 10
-      }
-    }
-  }
-}
-```
+详细配置结构见 [deployment.md §1.1](rules/deployment.md#11-cdk-context)
+
+**本项目配置值**: 见上方环境表格
 
 ---
 
@@ -118,27 +86,10 @@
 
 ## 命名约定
 
-> **原则**: 资源命名包含环境和项目前缀，便于识别和管理。
+命名规范见 [CLAUDE.md §命名规范](../CLAUDE.md#命名规范)
 
-### 资源命名模式
-
-```typescript
-// 格式: {project}-{env}-{resource-type}-{name}
-const naming = {
-  vpc: `ai-platform-${env}-vpc`,
-  cluster: `ai-platform-${env}-aurora`,
-  service: `ai-platform-${env}-api-service`,
-  lambda: `ai-platform-${env}-auth-handler`,
-};
-```
-
-### Stack 命名
-
-```typescript
-// 格式: {Project}{Resource}Stack-{env}
-new NetworkStack(app, `AiPlatformNetworkStack-${env}`, { ... });
-new ComputeStack(app, `AiPlatformComputeStack-${env}`, { ... });
-```
+**本项目前缀**: `ai-platform`
+**Stack 命名**: `AiPlatform{Resource}Stack-{env}`
 
 ---
 

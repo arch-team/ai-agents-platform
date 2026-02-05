@@ -119,3 +119,5 @@ modules/{module}/
 
 /Users/jinhuasu/Project_Workspace/Anker-Projects/ml-platform-research/llm-platform-solution/ai-agents-platform/infra    
   是基础设施即代码的子项目的Claude Code 上下文（context）管理的规范文件，请你综合Claude Code 上下文管理的最佳实践分析存在的问题，并给出优化方案
+
+/Users/jinhuasu/Project_Workspace/Anker-Projects/ml-platform-research/llm-platform-solution/ai-agents-platform/infra/.claude/rules/cost-optimization.md是基础设施即代码的子项目的Claude Code 上下文（context）管理的规范文件，结合Claude Code 上下文管理的最佳实践在不影响它的作用的情况下精简冗余信息

@@ -8,11 +8,12 @@
 
 ### 命令
 
+完整测试命令见 [CLAUDE.md §测试](../CLAUDE.md#测试)
+
+**常用**:
 ```bash
 pnpm test                         # 运行所有测试
 pnpm test:coverage                # 测试 + 覆盖率
-pnpm test:watch                   # 监听模式
-pnpm test lib/constructs/vpc/     # 指定目录
 ```
 
 ### 测试类型
