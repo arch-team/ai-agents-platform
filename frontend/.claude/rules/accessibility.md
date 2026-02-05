@@ -1,8 +1,6 @@
+> **职责**: 无障碍规范 - WCAG 2.1 AA、ARIA 使用、键盘导航 (基于 POUR 原则)
+
 # 无障碍规范 (Accessibility Standards)
-
-> Claude 生成 UI 代码时优先查阅此文档
-
-基于 WCAG 2.1 AA 级标准的 React 无障碍规范。
 
 ---
 

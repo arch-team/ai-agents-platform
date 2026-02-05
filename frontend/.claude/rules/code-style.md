@@ -1,8 +1,6 @@
+> **职责**: 代码风格规范 - 命名规范、TypeScript 规范、导入排序
+
 # 代码风格规范 (Code Style Standards)
-
-> Claude 生成代码时优先查阅此文档
-
-本文档定义 React + TypeScript 前端项目的代码风格规范。
 
 ---
 

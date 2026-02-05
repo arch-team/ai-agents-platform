@@ -1,6 +1,6 @@
-# 性能优化规范 (Performance Standards)
+> **职责**: 性能优化规范 - 代码分割、Memoization、列表优化、Bundle 优化
 
-> Claude 生成代码时优先查阅此文档
+# 性能优化规范 (Performance Standards)
 
 ---
 

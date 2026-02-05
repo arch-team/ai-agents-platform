@@ -1,6 +1,6 @@
-# 测试规范 (Testing Standards)
+> **职责**: 测试规范 - TDD 工作流、测试分层、覆盖率要求
 
-> TDD 工作流见 CLAUDE.md
+# 测试规范 (Testing Standards)
 
 ---
 

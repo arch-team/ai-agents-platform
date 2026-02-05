@@ -1,3 +1,5 @@
+> **职责**: FSD 架构规范的单一真实源 - 分层规则、依赖矩阵、Slice 结构模板
+
 # 前端架构规范 (Frontend Architecture Standards)
 
 > **版本**: 1.0

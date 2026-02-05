@@ -1,6 +1,6 @@
-# 状态管理规范 (State Management Standards)
+> **职责**: 状态管理规范 - React Query (服务端)、Zustand (客户端)、表单状态
 
-> Claude 生成状态管理代码时优先查阅此文档
+# 状态管理规范 (State Management Standards)
 
 ---
 

@@ -120,7 +120,7 @@ modules/{module}/
 /Users/jinhuasu/Project_Workspace/Anker-Projects/ml-platform-research/llm-platform-solution/ai-agents-platform/infra    
   是基础设施即代码的子项目的Claude Code 上下文（context）管理的规范文件，请你综合Claude Code 上下文管理的最佳实践分析存在的问题，并给出优化方案
 
-/Users/jinhuasu/Project_Workspace/Anker-Projects/ml-platform-research/llm-platform-solution/ai-agents-platform/infra/.claude/rules/security.md是基础设施即代码的子项目的Claude Code 上下文（context）管理的规范文件，结合Claude Code 上下文管理的最佳实践在不影响它的作用的情况下精简冗余信息
+/Users/jinhuasu/Project_Workspace/Anker-Projects/ml-platform-research/llm-platform-solution/ai-agents-platform/infra/.claude/rules/tech-stack.md是基础设施即代码的子项目的Claude Code 上下文（context）管理的规范文件，结合Claude Code 上下文管理的最佳实践在不影响它的作用的情况下精简冗余信息
 
 如下是对/Users/jinhuasu/Project_Workspace/Anker-Projects/ml-platform-research/llm-platform-solution/ai-agents-platform/infra    
 是基础设施即代码的子项目的Claude Code 上下文（context）管理的规范文件的作用说明。请根据这个文件的作用说明。检查这些文件的内容是否存在违反了单一职责原则
@@ -137,3 +137,35 @@ modules/{module}/
     ├── testing.md                         # 测试规范 (TDD)
     ├── deployment.md                      # 部署规范
     └── cost-optimization.md               # 成本优化规范
+
+
+
+  图片所示的Monorepo 结构概览在三个子项目中都存在，你的优化方案是什么？  
+
+
+  如下是对/Users/jinhuasu/Project_Workspace/Anker-Projects/ml-platform-research/llm-platform-solution/ai-agents-platform/frontend   
+是基础设施即代码的子项目的Claude Code 上下文（context）管理的规范文件的作用说明。请根据这个文件的作用说明。检查这些文件的内容是否存在违反了单一职责原则，以及相应的优化方案
+.claude/
+├── README.md                              # 本文件 - 目录说明
+├── CLAUDE.md                              # 项目主规范 (入口)
+├── PROJECT_CONFIG.ai-agents-platform.md   # 项目特定配置
+├── PROJECT_CONFIG.template.md             # 项目配置模板
+└── rules/                                 # 专题规范文档
+    ├── architecture.md                    # 架构规范 (FSD) ★核心
+    ├── project-structure.md               # 项目目录结构规范
+    ├── component-design.md                # 组件设计规范
+    ├── state-management.md                # 状态管理规范
+    ├── code-style.md                      # 代码风格规范
+    ├── testing.md                         # 测试规范 (TDD)
+    ├── security.md                        # 前端安全规范
+    ├── performance.md                     # 性能优化规范
+    └── accessibility.md                   # 无障碍规范
+
+
+
+    /Users/jinhuasu/Project_Workspace/Anker-Projects/ml-platform-research/llm-platform-solution/ai-agents-platform/infra  我在这个目录下增加了tech-stack.md，请你在/Users/jinhuasu/Project_Workspace/Anker-Projects/ml-platform-research/llm-platform-solution/ai-agents-platform/infra/.claude/README.md中更新这个文件，并为其提供职责定义说明
+
+我新增了tech-stack.md 作为技术栈规范单一来源，根据单一职责原则的要求，分析分散在/Users/jinhuasu/Project_Workspace/Anker-Projects/ml-platform-research/llm-platform-solution/ai-agents-platform/infra下的技术栈相关的说明有哪些应该统一到tech-stack.md中
+
+
+/Users/jinhuasu/Project_Workspace/Anker-Projects/ml-platform-research/llm-platform-solution/ai-agents-platform/infra/.claude/rules/tech-stack.md是基础设施即代码的子项目的Claude Code 上下文（context）管理的规范文件，结合Claude Code 上下文管理的最佳实践在不影响它的作用的情况下精简冗余信息

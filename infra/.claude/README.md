@@ -105,7 +105,6 @@
 - **单向为主**: CLAUDE.md 是入口，rules/ 是专题文档
 - **单一真实源**: checklist.md 是所有 PR Review 检查项的唯一来源
 - **职责边界**: 相关文档通过边界说明明确各自职责
-- **快速查找**: 使用 [RULES_INDEX.md](RULES_INDEX.md) 全局索引
 
 ---
 

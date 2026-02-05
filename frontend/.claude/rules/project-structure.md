@@ -1,6 +1,6 @@
-# 项目目录结构规范 (Project Structure)
+> **职责**: 目录结构规范 - 物理目录结构和配置文件速查
 
-> Claude 初始化或检查项目结构时优先查阅此文档
+# 项目目录结构规范 (Project Structure)
 
 ---
 
@@ -79,97 +79,20 @@ frontend/                       # 前端项目根目录
 
 ## 1. FSD 层级详解
 
-### src/ 目录结构
+> 各层级的职责、依赖规则、Slice 结构模板详见 [architecture.md](architecture.md) §0-2
+>
+> 本节仅展示目录树结构示例。
+
+### src/ 目录结构示例
 
 ```
 src/
-├── app/                        # 应用初始化
-│   ├── index.tsx               # 入口点
-│   ├── App.tsx                 # 根组件
-│   ├── providers/              # 全局 Provider
-│   │   ├── index.tsx           # Provider 组合
-│   │   ├── QueryProvider.tsx   # React Query
-│   │   ├── AuthProvider.tsx    # 认证上下文
-│   │   └── ThemeProvider.tsx   # 主题上下文
-│   ├── routes/                 # 路由配置
-│   │   ├── index.tsx           # 路由定义
-│   │   ├── PrivateRoute.tsx    # 私有路由守卫
-│   │   └── PublicRoute.tsx     # 公开路由守卫
-│   └── styles/                 # 全局样式
-│       └── global.css
-│
-├── pages/                      # 页面组件
-│   ├── login/
-│   │   ├── index.ts
-│   │   └── ui/LoginPage.tsx
-│   ├── dashboard/
-│   │   ├── index.ts
-│   │   └── ui/DashboardPage.tsx
-│   └── not-found/
-│       ├── index.ts
-│       └── ui/NotFoundPage.tsx
-│
-├── widgets/                    # 复合组件
-│   ├── header/
-│   │   ├── index.ts
-│   │   └── ui/Header.tsx
-│   ├── sidebar/
-│   │   ├── index.ts
-│   │   └── ui/Sidebar.tsx
-│   └── layout/
-│       ├── index.ts
-│       └── ui/MainLayout.tsx
-│
-├── features/                   # 业务功能
-│   ├── auth/
-│   │   ├── index.ts            # 公开 API
-│   │   ├── api/queries.ts      # React Query hooks
-│   │   ├── model/
-│   │   │   ├── store.ts        # Zustand store
-│   │   │   └── types.ts        # 类型定义
-│   │   └── ui/
-│   │       ├── LoginForm.tsx
-│   │       └── LoginForm.test.tsx
-│   └── agents/
-│       ├── index.ts
-│       ├── api/queries.ts
-│       ├── model/types.ts
-│       └── ui/
-│           ├── AgentList.tsx
-│           └── AgentConfig.tsx
-│
-├── entities/                   # 业务实体
-│   ├── user/
-│   │   ├── index.ts
-│   │   ├── model/types.ts
-│   │   └── ui/UserAvatar.tsx
-│   └── agent/
-│       ├── index.ts
-│       ├── model/types.ts
-│       └── ui/AgentCard.tsx
-│
-└── shared/                     # 共享代码
-    ├── api/
-    │   ├── client.ts           # Axios 实例
-    │   └── types.ts            # API 通用类型
-    ├── config/
-    │   └── env.ts              # 环境配置
-    ├── hooks/
-    │   ├── useDebounce.ts
-    │   └── useLocalStorage.ts
-    ├── lib/
-    │   ├── utils.ts            # 工具函数
-    │   └── cn.ts               # classNames 工具
-    ├── types/
-    │   └── common.ts           # 通用类型
-    └── ui/                     # 基础 UI 组件
-        ├── Button/
-        │   ├── index.ts
-        │   ├── Button.tsx
-        │   └── Button.test.tsx
-        ├── Modal/
-        ├── Input/
-        └── index.ts            # 统一导出
+├── app/                        # 应用层 → 见 architecture.md §2.6
+├── pages/                      # 页面层 → 见 architecture.md §2.5
+├── widgets/                    # 组件层 → 见 architecture.md §2.4
+├── features/                   # 功能层 → 见 architecture.md §2.3
+├── entities/                   # 实体层 → 见 architecture.md §2.2
+└── shared/                     # 共享层 → 见 architecture.md §2.1
 ```
 
 ---

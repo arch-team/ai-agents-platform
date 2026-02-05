@@ -1,8 +1,6 @@
+> **职责**: 前端安全规范 - XSS 防护、敏感数据存储、输入验证 (基于 OWASP)
+
 # 前端安全规范 (Frontend Security Standards)
-
-> Claude 生成代码时优先查阅此文档
-
-基于 OWASP 前端安全最佳实践的 React + TypeScript 安全规范。
 
 ---
 

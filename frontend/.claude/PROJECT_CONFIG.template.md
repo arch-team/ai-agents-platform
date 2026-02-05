@@ -1,3 +1,5 @@
+> **职责**: 项目配置模板 - 新项目 PROJECT_CONFIG 文件的起点模板
+
 # 项目配置模板 (Project Configuration Template)
 
 <!--

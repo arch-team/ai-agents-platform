@@ -1,6 +1,7 @@
+> **职责**: 项目特定配置 - 功能模块、路由、API 端点、环境变量（业务配置单一真实源）
+
 # 项目配置 - AI Agents Platform Frontend
 
-> **定位**: 本文件是 CLAUDE.md 的补充，包含**项目特定的业务配置**。
 > **原则**: 通用规范放 `rules/`，项目特定信息放此处。
 > 架构规范详见 [rules/architecture.md](rules/architecture.md)
 
@@ -18,22 +19,21 @@
 
 ---
 
-## 技术栈补充
+## 技术栈版本要求
 
-> **注意**: 核心技术栈定义在 CLAUDE.md，此处列出版本要求和项目特有选型。
+> **注意**: 技术栈规范的单一真实源是 [根级 tech-stack.md](../../../doc/tech-stack.md)，此处仅列出本项目的最低版本要求。
 
-| 类别 | 技术选型 | 版本要求 |
-|------|---------|---------|
-| **框架** | React | >=18.2.0 |
-| **构建** | Vite | >=5.0.0 |
-| **样式** | TailwindCSS | >=3.4.0 |
-| **服务端状态** | TanStack Query (React Query) | >=5.0.0 |
-| **客户端状态** | Zustand | >=4.5.0 |
-| **路由** | React Router | >=6.22.0 |
-| **表单** | React Hook Form | >=7.50.0 |
-| **验证** | Zod | >=3.22.0 |
-| **HTTP 客户端** | Axios | >=1.6.0 |
-| **UI 组件库** | Radix UI / Shadcn | - |
+| 依赖 | 最低版本 |
+|------|---------|
+| React | >=18.2.0 |
+| Vite | >=5.0.0 |
+| TailwindCSS | >=3.4.0 |
+| TanStack Query | >=5.0.0 |
+| Zustand | >=4.5.0 |
+| React Router | >=6.22.0 |
+| React Hook Form | >=7.50.0 |
+| Zod | >=3.22.0 |
+| Axios | >=1.6.0 |
 
 ---
 
@@ -108,63 +108,13 @@ export const apiClient = axios.create({
 
 ## 导入路径配置
 
-> **原则**: 使用路径别名简化导入，参考 [rules/architecture.md](rules/architecture.md)
-
-### 路径别名 (tsconfig.json)
-
-```json
-{
-  "compilerOptions": {
-    "paths": {
-      "@/*": ["./src/*"],
-      "@/shared/*": ["./src/shared/*"],
-      "@/features/*": ["./src/features/*"],
-      "@/entities/*": ["./src/entities/*"],
-      "@/widgets/*": ["./src/widgets/*"],
-      "@/pages/*": ["./src/pages/*"]
-    }
-  }
-}
-```
-
-### 推荐导入顺序
-
-```typescript
-// 1. React 和外部库
-import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-
-// 2. 共享模块 (从高层到低层)
-import { Button, Modal } from '@/shared/ui';
-import { useAuth } from '@/shared/hooks';
-import { apiClient } from '@/shared/api';
-
-// 3. 功能模块
-import { AgentCard } from '@/features/agents';
-
-// 4. 类型导入
-import type { Agent } from '@/entities/agent';
-```
+> 路径别名和导入规范详见 [rules/architecture.md](rules/architecture.md) §3 和 [rules/code-style.md](rules/code-style.md) §3
 
 ---
 
 ## 架构合规规则
 
-> **详细规则**: 见 [rules/architecture.md](rules/architecture.md) §0.1 依赖合法性速查矩阵
-
-### 违规检测 (Claude 自动检查)
-
-| 违规类型 | 模式 | 严重级别 |
-|---------|------|---------|
-| 跨 feature 直接导入 | `from '@/features/X'` 在另一个 feature 中 | 🔴 阻止 |
-| 低层导入高层 | `shared` 导入 `features` | 🔴 阻止 |
-| 业务逻辑在 shared | `shared/` 中包含业务逻辑代码 | 🟡 警告 |
-| 组件直接调用 API | 组件中直接使用 `fetch` 或 `axios` | 🟡 警告 |
-
-### 允许的例外
-
-- **Widget 组合**: widgets 可以导入多个 features 的组件进行组合
-- **页面组装**: pages 可以导入 widgets、features、entities
+> 依赖规则、违规检测、允许的例外详见 [rules/architecture.md](rules/architecture.md) §0.1 依赖合法性速查矩阵
 
 ---
 

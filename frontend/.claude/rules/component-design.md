@@ -1,6 +1,6 @@
-# 组件设计规范 (Component Design Standards)
+> **职责**: 组件设计规范 - 组件类型、Props 设计、复合组件模式
 
-> Claude 生成组件代码时优先查阅此文档
+# 组件设计规范 (Component Design Standards)
 
 ---
 
