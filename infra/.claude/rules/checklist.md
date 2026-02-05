@@ -8,6 +8,7 @@
 
 - [ ] 自定义 Construct 放在 `lib/constructs/`
 - [ ] Stack 放在 `lib/stacks/`
+- [ ] 新 Stack 已添加到 PROJECT_CONFIG 的 Stack 列表
 - [ ] 没有跨 Stack 的直接资源引用
 - [ ] Construct 依赖方向正确 (L3 → L2 → L1)
 

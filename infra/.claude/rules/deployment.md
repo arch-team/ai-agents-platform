@@ -28,12 +28,6 @@ pnpm cdk diff && pnpm cdk deploy
 
 ### 部署检查清单
 
-- [ ] `cdk diff` 确认变更
-- [ ] 测试通过
-- [ ] CDK Nag 检查通过
-- [ ] 环境变量配置正确
-- [ ] 有回滚计划
-
 完整 PR Review 清单见 [checklist.md](checklist.md)
 
 ---

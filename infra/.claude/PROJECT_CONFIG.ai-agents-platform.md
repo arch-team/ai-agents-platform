@@ -141,9 +141,4 @@ Tags.of(app).add('Environment', env);
 
 ## PR Review 检查清单
 
-- [ ] 新 Stack 已添加到 Stack 列表
-- [ ] 资源命名符合约定
-- [ ] CDK Nag 检查通过
-- [ ] 成本标签已配置
-- [ ] 包含对应的测试文件
-- [ ] 敏感信息使用 Secrets Manager
+完整检查清单见 [rules/checklist.md](rules/checklist.md)

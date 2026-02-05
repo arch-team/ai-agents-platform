@@ -4,6 +4,8 @@
 
 基于 AWS Well-Architected Framework 安全支柱的 CDK 安全规范。
 
+> **职责边界**: 本文档关注安全**原理和合规要求**（为什么这样写）。安全配置的**代码模板**详见 [construct-design.md §3](construct-design.md#3-安全默认配置)
+
 ---
 
 ## 0. 速查卡片
@@ -29,15 +31,6 @@
 | SNS | `grantPublish()`, `grantSubscribe()` |
 | SQS | `grantSendMessages()`, `grantConsumeMessages()` |
 | Secrets | `grantRead()`, `grantWrite()` |
-
-### PR Review 检查清单
-
-- [ ] 使用 Grant 方法而非手动 IAM 策略
-- [ ] 敏感信息存储在 Secrets Manager
-- [ ] S3 Bucket 阻止公开访问
-- [ ] RDS 在私有子网且加密
-- [ ] CDK Nag 检查通过
-- [ ] 没有 `actions: ['*']` 或 `resources: ['*']`
 
 ---
 

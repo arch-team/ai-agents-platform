@@ -252,8 +252,4 @@ test/
 
 ## PR Review 检查清单
 
-- [ ] 新 Construct 放在 `lib/constructs/{name}/`
-- [ ] 新 Stack 放在 `lib/stacks/`
-- [ ] 测试与源码在对应目录
-- [ ] 无硬编码的账户或区域
-- [ ] cdk.context.json 未被提交
+完整检查清单见 [checklist.md](checklist.md)

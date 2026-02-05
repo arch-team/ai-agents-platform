@@ -119,26 +119,7 @@ pnpm test lib/constructs/
 
 ### TDD 工作流
 
-本项目全面采用测试驱动开发 (TDD)。
-
-**核心循环**:
-```
-1. 🔴 Red: 先写失败的测试
-2. 🟢 Green: 编写最少代码使测试通过
-3. 🔄 Refactor: 重构代码，保持测试通过
-```
-
-**测试分层策略**:
-
-| 层级 | 覆盖内容 | 工具 |
-|------|---------|------|
-| **Unit** | Construct 配置、属性验证 | Jest + CDK Assertions |
-| **Snapshot** | 模板结构稳定性 | Jest Snapshot |
-| **Compliance** | 安全合规检查 | CDK Nag |
-
-**测试诚信原则**: 切勿为让测试通过而伪造结果。测试失败 = 代码有问题，必须修复代码。
-
-详细说明请参考 [rules/testing.md](rules/testing.md)
+本项目全面采用测试驱动开发 (TDD)。详见 [rules/testing.md](rules/testing.md)
 
 ---
 
@@ -200,16 +181,6 @@ export class ApiGatewayConstruct extends Construct {
 **禁止**: 硬编码密钥、过宽 IAM 权限、公开 S3 Bucket。
 
 速查表和检测命令详见 [rules/security.md](rules/security.md)
-
----
-
-## 覆盖率要求
-
-| 层级 | 最低覆盖率 | 目标覆盖率 |
-|------|-----------|-----------|
-| Constructs | 90% | 95% |
-| Stacks | 85% | 90% |
-| **整体** | **85%** | **90%** |
 
 ---
 

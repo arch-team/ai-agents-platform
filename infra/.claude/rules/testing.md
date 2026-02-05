@@ -1,10 +1,30 @@
 # 测试规范
 
-> TDD 工作流和覆盖率要求见 [CLAUDE.md](../CLAUDE.md)
+> Claude 生成 CDK 测试代码时优先查阅此文档
+
+本项目全面采用测试驱动开发 (TDD)。
 
 ---
 
 ## 0. 速查卡片
+
+### TDD 核心循环
+
+```
+1. 🔴 Red: 先写失败的测试
+2. 🟢 Green: 编写最少代码使测试通过
+3. 🔄 Refactor: 重构代码，保持测试通过
+```
+
+**测试诚信原则**: 切勿为让测试通过而伪造结果。测试失败 = 代码有问题，必须修复代码。
+
+### 覆盖率要求
+
+| 层级 | 最低覆盖率 | 目标覆盖率 |
+|------|-----------|-----------|
+| Constructs | 90% | 95% |
+| Stacks | 85% | 90% |
+| **整体** | **85%** | **90%** |
 
 ### 命令
 
@@ -156,7 +176,6 @@ describe('CDK Nag Compliance', () => {
 
 ## 相关文档
 
-- [CLAUDE.md](../CLAUDE.md) - TDD 工作流、覆盖率要求
 - [project-structure.md](project-structure.md) - 测试文件位置
 - [construct-design.md](construct-design.md) - Construct 设计模式
 - [checklist.md](checklist.md) - PR Review 检查清单

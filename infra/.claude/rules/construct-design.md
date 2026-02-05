@@ -43,6 +43,8 @@ export class {Construct} extends Construct {
 
 ### 安全默认配置
 
+> **职责边界**: 本节关注"怎么写"（代码模板）。安全原理和合规要求详见 [security.md](security.md)
+
 | 资源 | 必须配置 |
 |------|---------|
 | S3 | `encryption: S3_MANAGED`, `blockPublicAccess: BLOCK_ALL`, `enforceSSL: true`, `versioned: true` |
@@ -136,6 +138,8 @@ public grantDataApiAccess(grantee: iam.IGrantable): iam.Grant {
 ---
 
 ## 3. 安全默认配置
+
+> **职责边界**: 本节提供安全配置的**代码模板**。了解安全原理、IAM 最小权限、CDK Nag 规则等，请参考 [security.md](security.md)
 
 ### S3 Bucket
 

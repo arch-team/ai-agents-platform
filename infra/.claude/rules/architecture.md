@@ -134,6 +134,8 @@ const vpcId = cdk.Fn.importValue('NetworkVpcId');
 
 ## 4. 环境配置
 
+> **职责边界**: 本节关注环境配置的**架构设计**（如何组织配置结构）。实际部署流程、环境矩阵、CI/CD 配置详见 [deployment.md](deployment.md)
+
 ### CDK Context 模式
 
 ```typescript
