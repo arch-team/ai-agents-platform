@@ -1,6 +1,6 @@
 # Claude Code 上下文管理
 
-本目录包含 Claude Code 的项目上下文配置文件，用于指导 Claude 理解项目规范、架构模式和开发约定。
+本文档用于说明 ./frontend React 前端项目的Claude Code的上下文配置文件,不直接作用该项目的规范
 
 ---
 

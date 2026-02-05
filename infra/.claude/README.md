@@ -1,6 +1,7 @@
 # Claude Code 上下文管理
 
-本文档用于说明Claude Code的项目上下文配置文件。
+本文档用于说明 ./infra AWS CDK 基础设施项目的Claude Code的上下文配置文件,不直接作用该项目的规范
+
 
 ---
 
