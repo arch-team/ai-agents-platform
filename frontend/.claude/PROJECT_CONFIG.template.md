@@ -90,24 +90,7 @@
 
 ## 导入路径配置
 
-> **原则**: 使用路径别名简化导入，参考 [rules/architecture.md](rules/architecture.md)
-
-### 路径别名 (tsconfig.json)
-
-```json
-{
-  "compilerOptions": {
-    "paths": {
-      "@/*": ["./src/*"],
-      "@/shared/*": ["./src/shared/*"],
-      "@/features/*": ["./src/features/*"],
-      "@/entities/*": ["./src/entities/*"],
-      "@/widgets/*": ["./src/widgets/*"],
-      "@/pages/*": ["./src/pages/*"]
-    }
-  }
-}
-```
+> 路径别名和导入规范详见 [rules/architecture.md](rules/architecture.md) §3 和 [rules/code-style.md](rules/code-style.md) §3
 
 ---
 
@@ -115,18 +98,7 @@
 
 > **详细规则**: 见 [rules/architecture.md](rules/architecture.md) §0.1 依赖合法性速查矩阵
 
-### 违规检测 (Claude 自动检查)
-
-| 违规类型 | 模式 | 严重级别 |
-|---------|------|---------|
-| 跨 feature 直接导入 | `from '@/features/X'` 在另一个 feature 中 | 🔴 阻止 |
-| 低层导入高层 | `shared` 导入 `features` | 🔴 阻止 |
-| 业务逻辑在 shared | `shared/` 中包含业务逻辑代码 | 🟡 警告 |
-
-### 允许的例外
-
-- **Widget 组合**: widgets 可以导入多个 features 的组件进行组合
-- **页面组装**: pages 可以导入 widgets、features、entities
+<!-- 项目特定的架构例外规则可在此处添加 -->
 
 ---
 

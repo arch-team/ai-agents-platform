@@ -15,6 +15,7 @@
 ├── PROJECT_CONFIG.ai-agents-platform.md   # 项目特定配置
 ├── PROJECT_CONFIG.template.md             # 项目配置模板
 └── rules/                                 # 专题规范文档
+    ├── tech-stack.md                      # 技术栈版本规范 (单一真实源) ★
     ├── architecture.md                    # 架构规范 (FSD) ★核心
     ├── project-structure.md               # 项目目录结构规范
     ├── component-design.md                # 组件设计规范
@@ -41,6 +42,7 @@
 | 场景 | 推荐文档 |
 |------|----------|
 | 开发命令 (pnpm, vitest) | `CLAUDE.md` §开发命令 |
+| 技术栈版本确认 | `rules/tech-stack.md` |
 | 项目目录结构 | `rules/project-structure.md` §0 速查卡片 |
 | FSD 分层和模块结构 | `rules/architecture.md` §0 速查卡片 |
 | 组件设计模式 | `rules/component-design.md` §0 速查卡片 |
@@ -73,17 +75,18 @@
 
 ### rules/ (专题规范)
 
-| 文件 | 主要内容 |
-|------|----------|
-| `architecture.md` | Feature-Sliced Design (FSD)、分层规则、依赖方向 |
-| `project-structure.md` | 项目根目录结构、配置文件速查 |
-| `component-design.md` | 组件类型（展示型/容器型/复合型）、Props 设计、Hooks 规范 |
-| `state-management.md` | React Query vs Zustand 决策流程、Store 设计 |
-| `code-style.md` | 命名规范、类型定义、导入排序 |
-| `testing.md` | TDD 循环、测试分层、Mock 规范、MSW 集成 |
-| `security.md` | XSS 防护、Token 存储、环境变量安全 |
-| `performance.md` | 代码分割、Memoization、性能指标 |
-| `accessibility.md` | ARIA 角色、语义化 HTML、表单无障碍 |
+| 文件 | 职责 | 主要内容 |
+|------|------|----------|
+| `tech-stack.md` | **技术栈版本的单一真实源** | 核心依赖版本、测试工具、开发工具、禁止使用清单、升级策略 |
+| `architecture.md` | FSD 架构规范的单一真实源 | Feature-Sliced Design (FSD)、分层规则、依赖方向 |
+| `project-structure.md` | 目录结构规范 | 项目根目录结构、配置文件速查 |
+| `component-design.md` | 组件设计规范 | 组件类型（展示型/容器型/复合型）、Props 设计、Hooks 规范 |
+| `state-management.md` | 状态管理规范 | React Query vs Zustand 决策流程、Store 设计 |
+| `code-style.md` | 代码风格规范 | 命名规范、类型定义、导入排序 |
+| `testing.md` | 测试规范 | TDD 循环、测试分层、Mock 规范、MSW 集成 |
+| `security.md` | 前端安全规范 | XSS 防护、Token 存储、环境变量安全 |
+| `performance.md` | 性能优化规范 | 代码分割、Memoization、性能指标 |
+| `accessibility.md` | 无障碍规范 | ARIA 角色、语义化 HTML、表单无障碍 |
 
 ---
 
@@ -92,6 +95,7 @@
 ```
 CLAUDE.md (入口)
     │
+    ├─→ rules/tech-stack.md (技术栈版本)
     ├─→ rules/architecture.md ──→ PROJECT_CONFIG.ai-agents-platform.md
     ├─→ rules/project-structure.md ──→ rules/architecture.md
     ├─→ rules/component-design.md
@@ -129,6 +133,12 @@ CLAUDE.md (入口)
 - 🟡 中优先级
 - 🟢 低优先级
 
+### 单一真实源原则
+
+关键规范有明确的单一真实源：
+- **技术栈版本**: `rules/tech-stack.md`
+- **FSD 架构**: `rules/architecture.md`
+
 ### 模板化
 
 `PROJECT_CONFIG.template.md` 中的占位符支持新项目快速初始化。
@@ -142,6 +152,7 @@ CLAUDE.md (入口)
 1. 修改规范后，确保更新对应的 §0 速查卡片
 2. 新增引用时，检查是否形成循环依赖
 3. 保持 CLAUDE.md 的"相关规范文档"表格同步
+4. 更新本文件的目录结构和文件说明
 
 ### 命名规范
 
@@ -156,8 +167,9 @@ CLAUDE.md (入口)
 
 1. 专题规范放入 `rules/` 目录
 2. 在 CLAUDE.md 的"相关规范文档"表格中添加链接
-3. 添加 §0 速查卡片
-4. 遵循中文优先原则
+3. 在本文件（README.md）的目录结构和文件说明中添加
+4. 添加 §0 速查卡片
+5. 遵循中文优先原则
 
 ---
 

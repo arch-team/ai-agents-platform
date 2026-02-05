@@ -21,19 +21,9 @@
 
 ## 技术栈版本要求
 
-> **注意**: 技术栈规范的单一真实源是 [根级 tech-stack.md](../../../doc/tech-stack.md)，此处仅列出本项目的最低版本要求。
-
-| 依赖 | 最低版本 |
-|------|---------|
-| React | >=18.2.0 |
-| Vite | >=5.0.0 |
-| TailwindCSS | >=3.4.0 |
-| TanStack Query | >=5.0.0 |
-| Zustand | >=4.5.0 |
-| React Router | >=6.22.0 |
-| React Hook Form | >=7.50.0 |
-| Zod | >=3.22.0 |
-| Axios | >=1.6.0 |
+> **技术栈版本**: 详见 [rules/tech-stack.md](rules/tech-stack.md) (单一真实源)
+>
+> 如需项目特定的版本约束，请在 `package.json` 的 `engines` 或 `peerDependencies` 中定义。
 
 ---
 

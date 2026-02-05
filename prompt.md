@@ -144,7 +144,7 @@ modules/{module}/
 
 
   如下是对/Users/jinhuasu/Project_Workspace/Anker-Projects/ml-platform-research/llm-platform-solution/ai-agents-platform/frontend   
-是基础设施即代码的子项目的Claude Code 上下文（context）管理的规范文件的作用说明。请根据这个文件的作用说明。检查这些文件的内容是否存在违反了单一职责原则，以及相应的优化方案
+是前端子项目的Claude Code 上下文（context）管理的规范文件的作用说明。请根据这个文件的作用说明。检查这些文件的内容是否存在违反了单一职责原则，以及相应的优化方案
 .claude/
 ├── README.md                              # 本文件 - 目录说明
 ├── CLAUDE.md                              # 项目主规范 (入口)
@@ -163,10 +163,16 @@ modules/{module}/
 
 
 
-    /Users/jinhuasu/Project_Workspace/Anker-Projects/ml-platform-research/llm-platform-solution/ai-agents-platform/infra  我在这个目录下增加了tech-stack.md，请你在/Users/jinhuasu/Project_Workspace/Anker-Projects/ml-platform-research/llm-platform-solution/ai-agents-platform/infra/.claude/README.md中更新这个文件，并为其提供职责定义说明
+    /Users/jinhuasu/Project_Workspace/Anker-Projects/ml-platform-research/llm-platform-solution/ai-agents-platform/frontend  我在这个目录下增加了tech-stack.md，请你在/Users/jinhuasu/Project_Workspace/Anker-Projects/ml-platform-research/llm-platform-solution/ai-agents-platform/infra/.claude/README.md中更新这个文件，并为其提供职责定义说明
 
 我新增了tech-stack.md 作为技术栈规范单一来源，根据单一职责原则的要求，分析分散在/Users/jinhuasu/Project_Workspace/Anker-Projects/ml-platform-research/llm-platform-solution/ai-agents-platform/frontend下的技术栈相关的说明有哪些应该统一到tech-stack.md中
 
 
-/Users/jinhuasu/Project_Workspace/Anker-Projects/ml-platform-research/llm-platform-solution/ai-agents-platform/frontend/.claude/rules/testing.md
+/Users/jinhuasu/Project_Workspace/Anker-Projects/ml-platform-research/llm-platform-solution/ai-agents-platform/frontend/.claude/rules/tech-stack.md
 是前端的子项目的Claude Code 上下文（context）管理的规范文件，结合Claude Code 上下文管理的最佳实践在不影响它的作用的情况下精简冗余信息
+
+
+/Users/jinhuasu/Project_Workspace/Anker-Projects/ml-platform-research/llm-platform-sol
+ution/ai-agents-platform/frontend  我在这个目录下增加了tech-stack.md，请你在/Users/jinhuasu/Project_Workspace/An
+ker-Projects/ml-platform-research/llm-platform-solution/ai-agents-platform/frontend/.claude/README.md中更新这个文  
+，并为其提供职责定义说明，同时frontend有更新，README.md需要跟改目录更新后到信息保持一致 
