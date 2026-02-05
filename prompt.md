@@ -115,3 +115,7 @@ modules/{module}/
 ```
 
 当前的Python的后端项目的Claude code 上下文管理规范包括rule都有了，在architecture.md中定义了src源代码的目录结构，也在testing.md中定义了定义了测试的代码的目录结构。但作为整体的Python的后端项目的目录结构规范应该提供什么样的规范要求呢？
+
+
+/Users/jinhuasu/Project_Workspace/Anker-Projects/ml-platform-research/llm-platform-solution/ai-agents-platform/infra    
+  是基础设施即代码的子项目的Claude Code 上下文（context）管理的规范文件，请你综合Claude Code 上下文管理的最佳实践分析存在的问题，并给出优化方案

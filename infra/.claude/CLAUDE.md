@@ -1,3 +1,10 @@
+---
+version: 1.0.0
+last_updated: 2026-02-04
+cdk_version: ">=2.130.0"
+node_version: ">=18.0.0"
+---
+
 # CLAUDE.md - AWS CDK 基础设施项目规范
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
@@ -178,7 +185,7 @@ export class ApiGatewayConstruct extends Construct {
 }
 ```
 
-详细说明请参考 [rules/code-style.md](rules/code-style.md) (如有)
+<!-- 代码风格规范已整合到 construct-design.md 等专题文档中 -->
 
 ---
 

@@ -81,21 +81,21 @@
 
 ## 引用关系
 
-```
-CLAUDE.md (入口)
-    │
-    ├─→ rules/architecture.md ──→ PROJECT_CONFIG.ai-agents-platform.md
-    ├─→ rules/project-structure.md ──→ rules/architecture.md
-    ├─→ rules/construct-design.md
-    ├─→ rules/security.md
-    ├─→ rules/testing.md ──────→ CLAUDE.md (互相引用)
-    ├─→ rules/deployment.md
-    ├─→ rules/cost-optimization.md
-    ├─→ PROJECT_CONFIG.ai-agents-platform.md
-    └─→ PROJECT_CONFIG.template.md
-```
+| 文档 | 主要引用 | 说明 |
+|------|---------|------|
+| **CLAUDE.md** (入口) | 所有 rules/*.md, PROJECT_CONFIG.*.md | 项目入口，引用所有专题文档 |
+| architecture.md | PROJECT_CONFIG.*.md, construct-design.md | 架构规范，引用项目配置和设计规范 |
+| project-structure.md | architecture.md | 目录结构，引用架构规范 |
+| construct-design.md | architecture.md, security.md, testing.md | Construct 设计，引用相关规范 |
+| security.md | construct-design.md, testing.md | 安全规范，引用设计和测试 |
+| testing.md | CLAUDE.md (互引), construct-design.md | 测试规范，与入口互相引用 |
+| deployment.md | architecture.md, security.md, cost-optimization.md | 部署规范，引用多个相关规范 |
+| cost-optimization.md | deployment.md, architecture.md | 成本优化，引用部署和架构 |
 
-**引用原则**: 单向引用，CLAUDE.md 是入口，rules/ 是专题文档。
+**引用原则**:
+- **单向为主**: CLAUDE.md 是入口，rules/ 是专题文档
+- **互引例外**: testing.md 与 CLAUDE.md 互相引用（TDD 工作流）
+- **快速查找**: 使用 [RULES_INDEX.md](RULES_INDEX.md) 全局索引
 
 ---
 
