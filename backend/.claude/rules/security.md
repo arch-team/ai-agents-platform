@@ -1,6 +1,6 @@
 # 安全规范 (Security Standards)
 
-> **职责**: 安全规范，定义禁止事项、必须事项和安全检测命令。基于 OWASP Top 10 和行业最佳实践的 Python 后端安全规范。
+> **职责**: 安全规范，定义禁止事项、必须事项和安全检测命令。
 
 ---
 
@@ -24,109 +24,47 @@
 ```bash
 # 完整安全检查
 uv run bandit -r src/ && uv run safety check && uv run pip-audit
+
+# 按类别检测
+grep -rE "(password|secret|key|token)\s*=\s*['\"][^'\"]+['\"]" src/  # 硬编码密钥
+grep -rE "f['\"].*SELECT|os\.system|subprocess\.call.*shell=True" src/  # 注入攻击
+grep -rE "\beval\s*\(|\bexec\s*\(|pickle\.loads" src/                  # 危险函数
+grep -rE "logger\.(info|debug|error).*password" src/                    # 敏感日志
 ```
-
-### PR Review 检查清单
-
-详见 [Section 4 检查清单](#4-检查清单)，包含代码审查和部署检查项。
 
 ---
 
-## 1. 核心原则
+## 2. 禁止事项补充
 
-| 原则 | 说明 |
-|------|------|
-| **最小权限** | 只授予完成任务所需的最小权限 |
-| **深度防御** | 多层安全措施，不依赖单一防线 |
-| **安全默认** | 默认配置应该是安全的 |
-| **失败安全** | 出错时拒绝访问而非放行 |
+> 速查表已列出 6 条核心禁止规则的 ❌/✅ 对比，以下补充速查表无法体现的关键写法。
 
----
-
-## 2. 禁止事项 (絶対禁止)
-
-### 2.1 硬编码敏感信息
+### 原生 SQL 必须参数绑定
 
 ```python
-# ❌ 禁止
-AWS_SECRET = "wJalrXUtnFEMI..."
-API_KEY = "sk-1234567890"
-
-# ✅ 正确 - 见 3.1 节 Settings 模式
-settings.aws_secret  # 从环境变量加载
-```
-
-**检测**: `grep -rE "(password|secret|key|token)\s*=\s*['\"][^'\"]+['\"]" src/`
-
-### 2.2 注入攻击 (SQL/命令)
-
-```python
-# ❌ 禁止 - SQL 注入
+# ❌ 禁止 - 字符串拼接
 query = f"SELECT * FROM users WHERE id = '{user_id}'"
-db.execute(query)
 
-# ❌ 禁止 - 命令注入
-os.system(user_input)
-
-# ✅ 正确 - ORM 参数化
-session.query(User).filter(User.id == user_id).first()
-
-# ✅ 正确 - 原生 SQL 参数绑定
+# ✅ 正确 - SQLAlchemy text() 参数绑定
 from sqlalchemy import text
 stmt = text("SELECT * FROM users WHERE id = :user_id")
 session.execute(stmt, {"user_id": user_id})
 ```
 
-**检测**: `grep -rE "f['\"].*SELECT|os\.system|subprocess\.call.*shell=True" src/`
-
-### 2.3 路径遍历
+### 路径遍历防护写法
 
 ```python
-# ❌ 禁止
-return FileResponse(f"/uploads/{filename}")  # 可能访问 ../../../etc/passwd
-
-# ✅ 正确
 safe_name = Path(filename).name  # 移除 ../ 等路径组件
 file_path = Path("/uploads") / safe_name
 if not file_path.is_relative_to(Path("/uploads")):
     raise HTTPException(400, "非法路径")
 ```
 
-### 2.4 敏感日志
+### 日志脱敏写法
 
 ```python
-# ❌ 禁止
-logger.info(f"用户登录: {username}, 密码: {password}")
-logger.debug(f"API 密钥: {api_key}")
-
-# ✅ 正确
-logger.info(f"用户登录: {username}")
-logger.debug(f"API 密钥: {api_key[:4]}****")  # 脱敏
+# ✅ 敏感字段截断
+logger.debug(f"API 密钥: {api_key[:4]}****")
 ```
-
-**检测**: `grep -rE "logger\.(info|debug|error).*password" src/`
-
-### 2.5 危险函数
-
-```python
-# ❌ 禁止
-eval(user_input)           # 远程代码执行
-exec(user_code)            # 远程代码执行
-pickle.loads(untrusted)    # 反序列化漏洞
-
-# ✅ 正确
-import json
-data = json.loads(request.body)
-
-# ✅ 正确 - Pydantic 验证
-from pydantic import BaseModel
-class UserInput(BaseModel):
-    name: str
-    value: int
-data = UserInput.model_validate_json(request.body)
-```
-
-**检测**: `grep -rE "\beval\s*\(|\bexec\s*\(|pickle\.loads" src/`
 
 ---
 

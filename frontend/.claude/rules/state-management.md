@@ -85,9 +85,7 @@ export function QueryProvider({ children }: { children: React.ReactNode }) {
 ### 1.2 Query Keys 规范
 
 ```typescript
-// features/agents/api/queries.ts
-
-// 定义 key factory
+// features/agents/api/queries.ts - Key Factory 模式
 export const agentKeys = {
   all: ['agents'] as const,
   lists: () => [...agentKeys.all, 'list'] as const,
@@ -95,17 +93,11 @@ export const agentKeys = {
   details: () => [...agentKeys.all, 'detail'] as const,
   detail: (id: string) => [...agentKeys.details(), id] as const,
 };
-
-// 使用示例
-useQuery({ queryKey: agentKeys.detail(agentId) });
 ```
 
 ### 1.3 Query/Mutation 模板
 
 ```typescript
-// features/agents/api/queries.ts
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-
 // 列表查询
 export function useAgents(filters?: AgentFilters) {
   return useQuery({
@@ -117,16 +109,7 @@ export function useAgents(filters?: AgentFilters) {
   });
 }
 
-// 详情查询
-export function useAgent(id: string) {
-  return useQuery({
-    queryKey: agentKeys.detail(id),
-    queryFn: () => apiClient.get<Agent>(`/api/v1/agents/${id}`).then(r => r.data),
-    enabled: !!id,
-  });
-}
-
-// Mutation 模板
+// Mutation + 缓存失效
 export function useCreateAgent() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -135,41 +118,26 @@ export function useCreateAgent() {
   });
 }
 
-// 更新/删除 mutation 同理，关键点：
+// 详情查询同理，关键点: enabled: !!id 防止空请求
+// 更新/删除 mutation 关键点:
 // - onSuccess: invalidateQueries 使列表失效
 // - onSuccess: setQueryData 更新详情缓存
 // - onSuccess: removeQueries 删除缓存
 ```
 
-### 1.4 乐观更新
+### 1.4 乐观更新模式
 
-```typescript
-// 乐观更新骨架
-export function useUpdateAgentStatus() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: ({ id, status }) => apiClient.patch(`/api/v1/agents/${id}/status`, { status }),
-    onMutate: async ({ id, status }) => {
-      await queryClient.cancelQueries({ queryKey: agentKeys.detail(id) });
-      const previous = queryClient.getQueryData(agentKeys.detail(id));
-      queryClient.setQueryData(agentKeys.detail(id), (old) => ({ ...old, status }));
-      return { previous };
-    },
-    onError: (err, { id }, context) => {
-      queryClient.setQueryData(agentKeys.detail(id), context?.previous);
-    },
-    onSettled: (_, __, { id }) => {
-      queryClient.invalidateQueries({ queryKey: agentKeys.detail(id) });
-    },
-  });
-}
+```
+onMutate: cancelQueries → 保存旧数据 → setQueryData 乐观写入 → return { previous }
+onError: 用 context.previous 回滚
+onSettled: invalidateQueries 确保数据一致
 ```
 
 ---
 
 ## 2. Zustand (客户端状态)
 
-### 2.1 Store 模板
+### 2.1 Store 模板（带持久化）
 
 ```typescript
 // features/auth/model/store.ts
@@ -204,11 +172,11 @@ export const useAuthStore = create<AuthState>()(
 );
 ```
 
-### 2.2 Selector Hooks (性能关键)
+**不需要持久化时**: 去掉 `persist` 包装，直接 `create<State>()((set) => ({...}))`
+
+### 2.2 Selector Hooks（性能关键）
 
 ```typescript
-// features/auth/model/store.ts (续)
-
 // 细粒度 selector - 避免不必要的重渲染
 export const useAuth = () =>
   useAuthStore((state) => ({
@@ -226,37 +194,12 @@ export const useAuthActions = () =>
   }));
 ```
 
-### 2.3 不带持久化的 Store
-
-```typescript
-// shared/store/ui.ts
-import { create } from 'zustand';
-
-interface UIState {
-  sidebarOpen: boolean;
-  theme: 'light' | 'dark';
-  toggleSidebar: () => void;
-  setTheme: (theme: 'light' | 'dark') => void;
-}
-
-export const useUIStore = create<UIState>((set) => ({
-  sidebarOpen: true,
-  theme: 'light',
-  toggleSidebar: () => set((s) => ({ sidebarOpen: !s.sidebarOpen })),
-  setTheme: (theme) => set({ theme }),
-}));
-
-// Selector hooks
-export const useSidebar = () => useUIStore((s) => ({ isOpen: s.sidebarOpen, toggle: s.toggleSidebar }));
-export const useTheme = () => useUIStore((s) => ({ theme: s.theme, setTheme: s.setTheme }));
-```
-
 ---
 
 ## 3. React Hook Form (表单状态)
 
 ```typescript
-// features/auth/ui/LoginForm.tsx - 骨架
+// features/auth/ui/LoginForm.tsx
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -291,8 +234,6 @@ export function LoginForm() {
 
 ## 4. 最佳实践
 
-### 避免过度使用全局状态
-
 ```typescript
 // ❌ 错误 - 把所有东西都放全局
 const useStore = create((set) => ({
@@ -307,13 +248,3 @@ const useUIStore = create((set) => ({
   theme: 'light',          // 确实需要跨组件共享
 }));
 ```
-
----
-
-## 相关文档
-
-| 文档 | 说明 |
-|------|------|
-| [architecture.md](architecture.md) | FSD 分层，Store 放置位置 |
-| [component-design.md](component-design.md) | 组件中使用状态 |
-| [testing.md](testing.md) | 状态相关测试 |

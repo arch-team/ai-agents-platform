@@ -58,6 +58,17 @@ infra/                          # CDK 项目根目录
 | `.eslintrc.cjs` | ESLint 配置 | 推荐 |
 | `README.md` | 项目说明 | ✅ |
 
+### 命名规范
+
+| 类型 | 命名 | 示例 |
+|------|------|------|
+| Construct 目录 | `kebab-case` | `api-gateway/` |
+| Construct 文件 | `{name}.construct.ts` | `vpc.construct.ts` |
+| Construct 测试 | `{name}.construct.test.ts` | `vpc.construct.test.ts` |
+| Stack 文件 | `{name}-stack.ts` | `network-stack.ts` |
+| Construct 类名 | `PascalCase` + `Construct` | `VpcConstruct` |
+| Stack 类名 | `PascalCase` + `Stack` | `NetworkStack` |
+
 ### 禁止事项
 
 | 规则 | 说明 |
@@ -69,118 +80,26 @@ infra/                          # CDK 项目根目录
 
 ---
 
-## 1. 目录详解
+## 1. cdk.json 关键配置
 
-### bin/ - 应用入口
-
-```
-bin/
-└── app.ts                      # CDK 应用入口
-```
-
-**职责**: 创建 CDK App，实例化 Stack，配置环境
-
-```typescript
-// bin/app.ts
-#!/usr/bin/env node
-import 'source-map-support/register';
-import * as cdk from 'aws-cdk-lib';
-import { NetworkStack } from '../lib/stacks/network-stack';
-import { ComputeStack } from '../lib/stacks/compute-stack';
-import { getEnvironmentConfig } from '../lib/config/environments';
-
-const app = new cdk.App();
-const envName = app.node.tryGetContext('env') || 'dev';
-const envConfig = getEnvironmentConfig(app, envName);
-
-// 创建 Stacks
-const networkStack = new NetworkStack(app, `NetworkStack-${envName}`, {
-  env: { account: envConfig.account, region: envConfig.region },
-  vpcCidr: envConfig.vpcCidr,
-});
-
-const computeStack = new ComputeStack(app, `ComputeStack-${envName}`, {
-  env: { account: envConfig.account, region: envConfig.region },
-  vpc: networkStack.vpc,
-});
-
-computeStack.addDependency(networkStack);
-
-app.synth();
+```json
+{
+  "app": "npx ts-node --prefer-ts-exts bin/app.ts",
+  "context": {
+    "@aws-cdk/core:newStyleStackSynthesis": true,
+    "@aws-cdk/aws-rds:lowercaseDbIdentifier": true,
+    "environments": {
+      "dev": { "account": "123456789012", "region": "ap-northeast-1" }
+    }
+  }
+}
 ```
 
-### lib/constructs/ - 自定义 Construct
-
-```
-lib/constructs/
-├── vpc/
-│   ├── index.ts                # 导出入口
-│   ├── vpc.construct.ts        # Construct 实现
-│   └── vpc.construct.test.ts   # 单元测试
-├── aurora/
-│   ├── index.ts
-│   ├── aurora.construct.ts
-│   └── aurora.construct.test.ts
-└── api-gateway/
-    └── ...
-```
-
-**命名规范**:
-- 目录名: `kebab-case`
-- 文件名: `{name}.construct.ts`
-- 类名: `PascalCase` + `Construct` 后缀
-
-### lib/stacks/ - Stack 定义
-
-```
-lib/stacks/
-├── network-stack.ts
-├── compute-stack.ts
-├── database-stack.ts
-└── api-stack.ts
-```
-
-**命名规范**:
-- 文件名: `{name}-stack.ts`
-- 类名: `PascalCase` + `Stack` 后缀
-
-### lib/config/ - 配置管理
-
-```
-lib/config/
-├── environments.ts             # 环境配置
-└── constants.ts                # 常量定义
-```
-
-### test/ - 测试文件
-
-```
-test/
-├── constructs/                 # Construct 测试
-│   ├── vpc.construct.test.ts
-│   └── aurora.construct.test.ts
-├── stacks/                     # Stack 测试
-│   └── network-stack.test.ts
-├── snapshot/                   # 快照测试
-│   └── main.test.ts
-└── compliance/                 # 合规测试
-    └── cdk-nag.test.ts
-```
+**关键点**: `environments` 在 context 中定义，通过 `app.node.tryGetContext('env')` 读取
 
 ---
 
-## 2. 跨文档引用
-
-| 内容 | 参考文档 |
-|------|---------|
-| Construct 分层规则 | [architecture.md](architecture.md) §0.1 |
-| Construct 设计模式 | [construct-design.md](construct-design.md) |
-| 测试目录结构 | [testing.md](testing.md) §1 |
-| 根级通用规范 | [../../.claude/CLAUDE.md](../../../.claude/CLAUDE.md) |
-
----
-
-## 3. 新项目初始化检查清单
+## 2. 新项目初始化检查清单
 
 ### 目录
 - [ ] `bin/app.ts` 存在且为可执行
@@ -199,45 +118,3 @@ test/
 - [ ] `.gitignore` 包含 `cdk.context.json`
 - [ ] `.gitignore` 包含 `cdk.out/`
 - [ ] `.gitignore` 包含 `node_modules/`
-
----
-
-## 4. cdk.json 配置参考
-
-```json
-{
-  "app": "npx ts-node --prefer-ts-exts bin/app.ts",
-  "watch": {
-    "include": ["**"],
-    "exclude": [
-      "README.md",
-      "cdk*.json",
-      "**/*.d.ts",
-      "**/*.js",
-      "tsconfig.json",
-      "package*.json",
-      "yarn.lock",
-      "node_modules",
-      "test"
-    ]
-  },
-  "context": {
-    "@aws-cdk/aws-apigateway:usagePlanKeyOrderInsensitiveId": true,
-    "@aws-cdk/core:stackRelativeExports": true,
-    "@aws-cdk/aws-rds:lowercaseDbIdentifier": true,
-    "@aws-cdk/core:newStyleStackSynthesis": true,
-    "environments": {
-      "dev": {
-        "account": "123456789012",
-        "region": "ap-northeast-1"
-      }
-    }
-  }
-}
-```
-
----
-
-## PR Review 检查清单
-
-完整检查清单见 [checklist.md](checklist.md)

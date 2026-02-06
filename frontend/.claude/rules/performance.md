@@ -58,14 +58,13 @@
 
 ## 1. 代码分割
 
-### 1.1 路由级分割
+### 1.1 路由级分割（必须）
 
 ```typescript
 // app/routes/index.tsx
 import { lazy, Suspense } from 'react';
 import { Routes, Route } from 'react-router-dom';
 
-// 懒加载页面组件
 const LoginPage = lazy(() => import('@/pages/login'));
 const DashboardPage = lazy(() => import('@/pages/dashboard'));
 
@@ -81,51 +80,18 @@ export function AppRoutes() {
 }
 ```
 
-### 1.2 组件级分割
+### 1.2 其他分割规则
 
-```typescript
-// 大型组件懒加载
-const RichTextEditor = lazy(() => import('./RichTextEditor'));
-
-function Editor() {
-  return (
-    <Suspense fallback={<Spinner />}>
-      <RichTextEditor />
-    </Suspense>
-  );
-}
-```
-
-### 1.3 预加载
-
-```typescript
-// 鼠标悬停时预加载
-function AgentCard({ agent }: { agent: Agent }) {
-  const handleMouseEnter = () => {
-    import('@/pages/agents/detail'); // 预加载详情页
-  };
-
-  return <Link to={`/agents/${agent.id}`} onMouseEnter={handleMouseEnter}>...</Link>;
-}
-```
+| 场景 | 方式 |
+|------|------|
+| 大型组件（编辑器、图表） | `lazy(() => import('./RichTextEditor'))` + `<Suspense>` |
+| 预加载 | 鼠标悬停时 `import('@/pages/detail')` 触发预加载 |
 
 ---
 
 ## 2. Memoization
 
-### 决策表格
-
-| 场景 | 需要 memo? | 工具 | 示例 |
-|------|-----------|------|------|
-| 传给 memo 子组件的函数 | ✅ | `useCallback` | `onClick` handler |
-| 传给 memo 子组件的对象 | ✅ | `useMemo` | `config` object |
-| 昂贵计算 (排序/过滤) | ✅ | `useMemo` | 大数组处理 |
-| 频繁更新的父组件下的子组件 | ✅ | `React.memo` | DataGrid |
-| 简单计算 | ❌ | - | `a + b` |
-| 不传给子组件的函数 | ❌ | - | 本地 handler |
-| 简单组件 | ❌ | - | Button |
-
-### 示例
+### ✅/❌ 示例
 
 ```typescript
 // ✅ 需要 - 传递给 memo 子组件
@@ -156,53 +122,21 @@ function Simple({ a, b }: Props) {
 
 ## 3. 列表优化
 
-### 3.1 虚拟列表
+### 规则
 
-```typescript
-// 使用 react-window 处理大列表 (>100 项)
-import { FixedSizeList } from 'react-window';
-import AutoSizer from 'react-virtualized-auto-sizer';
-
-function VirtualList({ items, renderItem }: VirtualListProps) {
-  const Row = ({ index, style }: { index: number; style: React.CSSProperties }) => (
-    <div style={style}>{renderItem(items[index])}</div>
-  );
-
-  return (
-    <AutoSizer>
-      {({ height, width }) => (
-        <FixedSizeList height={height} width={width} itemCount={items.length} itemSize={50}>
-          {Row}
-        </FixedSizeList>
-      )}
-    </AutoSizer>
-  );
-}
-```
-
-### 3.2 Key 规则
-
-```typescript
-// ✅ 正确 - 使用稳定唯一 ID
-{items.map((item) => <ListItem key={item.id} item={item} />)}
-
-// ❌ 错误 - 使用 index (列表会变化时)
-{items.map((item, index) => <ListItem key={index} item={item} />)}
-```
+| 规则 | 说明 |
+|------|------|
+| 虚拟列表阈值 | >100 项使用 `react-window` (`FixedSizeList` + `AutoSizer`) |
+| Key 必须稳定唯一 | ✅ `key={item.id}` / ❌ `key={index}`（列表会变化时） |
 
 ---
 
 ## 4. 状态优化
 
-### 细粒度状态
-
 ```typescript
 // ❌ 错误 - 大对象状态 (任何字段变化都导致重渲染)
 const [state, setState] = useState({
-  user: null,
-  settings: {},
-  notifications: [],
-  sidebarOpen: true,
+  user: null, settings: {}, notifications: [], sidebarOpen: true,
 });
 
 // ✅ 正确 - 拆分状态
@@ -210,7 +144,7 @@ const [user, setUser] = useState(null);
 const [sidebarOpen, setSidebarOpen] = useState(true);
 ```
 
-> **Zustand Selector 和 React Query 优化**: 详见 [state-management.md](state-management.md) §2.2 和 §1.1
+> Zustand Selector 优化详见 state-management.md §2.2
 
 ---
 
@@ -232,30 +166,7 @@ const [sidebarOpen, setSidebarOpen] = useState(true);
 
 ---
 
-## 6. 性能监控
-
-### Profiler 用法
-
-```typescript
-import { Profiler } from 'react';
-
-<Profiler id="AgentList" onRender={(id, phase, duration) => console.log({ id, phase, duration })}>
-  <AgentList />
-</Profiler>
-```
-
-### Web Vitals
-
-```bash
-# 安装
-pnpm add web-vitals
-
-# 使用
-import { onCLS, onFCP, onLCP } from 'web-vitals';
-onLCP(console.log);
-```
-
-### 性能指标目标
+## 6. 性能指标目标
 
 | 指标 | 目标 | 说明 |
 |------|------|------|
@@ -269,17 +180,6 @@ onLCP(console.log);
 
 ## 7. Bundle 优化
 
-### 分析命令
-
-```bash
-# 安装
-pnpm add -D rollup-plugin-visualizer
-
-# vite.config.ts 中添加
-import { visualizer } from 'rollup-plugin-visualizer';
-plugins: [visualizer({ open: true, gzipSize: true })]
-```
-
 ### Tree Shaking
 
 ```typescript
@@ -290,12 +190,4 @@ import { debounce } from 'lodash-es';
 import _ from 'lodash';
 ```
 
----
-
-## 相关文档
-
-| 文档 | 说明 |
-|------|------|
-| [component-design.md](component-design.md) | 组件 memo 使用 |
-| [state-management.md](state-management.md) | Zustand Selector / React Query 优化 |
-| [architecture.md](architecture.md) | 代码分割边界 |
+**分析工具**: `rollup-plugin-visualizer` 可视化 bundle 组成

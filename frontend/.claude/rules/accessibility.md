@@ -51,8 +51,6 @@
 
 ## 1. 语义化规则
 
-### 元素选择规则
-
 | 场景 | ✅ 正确 | ❌ 错误 |
 |------|--------|--------|
 | 页面结构 | `<header>`, `<main>`, `<footer>` | `<div class="header">` |
@@ -73,12 +71,6 @@
 <label htmlFor="email">邮箱</label>
 <input id="email" type="email" />
 
-// ✅ 隐式关联
-<label>
-  邮箱
-  <input type="email" />
-</label>
-
 // ✅ 无可见标签时使用 aria-label
 <input type="search" aria-label="搜索 Agents" placeholder="搜索..." />
 
@@ -86,35 +78,21 @@
 <input type="email" placeholder="邮箱" />
 ```
 
-### 2.2 错误提示组件
+### 2.2 错误提示关键模式
+
+错误提示必须使用以下三个 ARIA 属性组合：
 
 ```tsx
-interface InputProps {
-  id: string;
-  label: string;
-  error?: string;
-}
-
-function FormInput({ id, label, error, ...props }: InputProps) {
-  const errorId = `${id}-error`;
-
-  return (
-    <div>
-      <label htmlFor={id}>{label}</label>
-      <input
-        id={id}
-        aria-invalid={!!error}
-        aria-describedby={error ? errorId : undefined}
-        {...props}
-      />
-      {error && (
-        <span id={errorId} role="alert" className="text-red-500">
-          {error}
-        </span>
-      )}
-    </div>
-  );
-}
+<input
+  id={id}
+  aria-invalid={!!error}              // 标记无效状态
+  aria-describedby={error ? errorId : undefined}  // 关联错误信息
+/>
+{error && (
+  <span id={errorId} role="alert">    // role="alert" 自动通知屏幕阅读器
+    {error}
+  </span>
+)}
 ```
 
 ### 2.3 必填字段
@@ -160,72 +138,21 @@ function FormInput({ id, label, error, ...props }: InputProps) {
 
 ## 4. 键盘导航
 
-### 4.1 焦点管理
+### 焦点管理规则
 
-```tsx
-// 模态框打开时聚焦
-function Modal({ isOpen, onClose, children }: ModalProps) {
-  const closeButtonRef = useRef<HTMLButtonElement>(null);
-
-  useEffect(() => {
-    if (isOpen) {
-      closeButtonRef.current?.focus();
-    }
-  }, [isOpen]);
-
-  return (
-    <dialog open={isOpen} aria-modal="true">
-      <button ref={closeButtonRef} onClick={onClose} aria-label="关闭">
-        ×
-      </button>
-      {children}
-    </dialog>
-  );
-}
-```
-
-### 4.2 焦点陷阱
-
-```tsx
-// 使用 @headlessui/react 或类似库
-import { FocusTrap } from '@headlessui/react';
-
-function Modal({ isOpen, children }: ModalProps) {
-  return (
-    <dialog open={isOpen}>
-      <FocusTrap>
-        <div className="modal-content">{children}</div>
-      </FocusTrap>
-    </dialog>
-  );
-}
-```
-
-### 4.3 跳过链接
-
-```tsx
-function Layout({ children }: LayoutProps) {
-  return (
-    <>
-      <a href="#main-content" className="skip-link">
-        跳过导航到主内容
-      </a>
-      <header>
-        <nav>{/* 导航内容 */}</nav>
-      </header>
-      <main id="main-content" tabIndex={-1}>
-        {children}
-      </main>
-    </>
-  );
-}
-```
+| 场景 | 要求 |
+|------|------|
+| Modal 打开 | 焦点移到 Modal 内首个可交互元素 |
+| Modal 关闭 | 焦点回到触发元素 |
+| 焦点陷阱 | Modal 内 Tab 循环，不逃逸到背景（使用 `@headlessui/react` FocusTrap） |
+| 跳过链接 | 页面顶部提供"跳过导航到主内容"链接，`<main id="main-content" tabIndex={-1}>` |
+| 焦点样式 | 禁止 `outline: none`，必须保持 `:focus-visible` 可见 |
 
 ---
 
 ## 5. 视觉无障碍
 
-### 5.1 颜色规则
+### 颜色规则
 
 | 规则 | 要求 |
 |------|------|
@@ -234,17 +161,13 @@ function Layout({ children }: LayoutProps) {
 
 ```tsx
 // ✅ 正确 - 颜色 + 图标 + 文字
-<span className={status === 'active' ? 'text-green-500' : 'text-gray-500'}>
-  {status === 'active' ? '● 活跃' : '○ 未激活'}
-</span>
+<span>{status === 'active' ? '● 活跃' : '○ 未激活'}</span>
 
 // ❌ 错误 - 仅用颜色区分
-<span className={status === 'active' ? 'text-green-500' : 'text-red-500'}>
-  状态
-</span>
+<span className={status === 'active' ? 'text-green-500' : 'text-red-500'}>状态</span>
 ```
 
-### 5.2 焦点样式
+### 焦点样式
 
 ```css
 /* 确保焦点可见 */
@@ -256,13 +179,3 @@ function Layout({ children }: LayoutProps) {
 /* ❌ 禁止移除焦点样式 */
 /* :focus { outline: none; } */
 ```
-
----
-
-## 相关文档
-
-| 文档 | 说明 |
-|------|------|
-| [component-design.md](component-design.md) | 组件设计 |
-| [testing.md](testing.md) | 无障碍测试 (jest-axe) |
-| [WCAG 2.1](https://www.w3.org/WAI/WCAG21/quickref/) | 官方指南 |

@@ -176,3 +176,18 @@ modules/{module}/
 ution/ai-agents-platform/frontend  我在这个目录下增加了tech-stack.md，请你在/Users/jinhuasu/Project_Workspace/An
 ker-Projects/ml-platform-research/llm-platform-solution/ai-agents-platform/frontend/.claude/README.md中更新这个文  
 ，并为其提供职责定义说明，同时frontend有更新，README.md需要跟改目录更新后到信息保持一致 
+
+
+
+请为：/Users/jinhuasu/Project_Workspace/Anker-Projects/ml-platform-research/llm-platform-solution/ai-agents-  
+  platform/backend下的markdown在文件的开头添加清晰简要的职责定义
+
+
+/claude-md-improver 当前infra项目中Claude Code的上下文管理的markdown文件相互之间的引用是否存在循环引入，引入关系不明确的问题，请给出改进方案
+
+
+claude-md-improver 当前ai-agents-platform monorepo项目，包含后端（backend）、前端（frontend）和基础设施（infra）子项目，我再为这个项目打造Claude Code上下文管理的规范，目前已经基本完成，结合Claude code上下文管理的最佳实践，你对目前上下管理的有什么优化建议
+
+  当前ai-agents-platform monorepo项目，包含后端（backend）、前端（frontend）和基础设施（infra）子项目, 我分别为这些子项目提供了Claude Code上下文管理的规范。这些规范的命令你有什么优化建议吗？以便各个子项目下的规范文件的名称具有更好的可读性和一致性。
+
+
