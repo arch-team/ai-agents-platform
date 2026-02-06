@@ -1,6 +1,6 @@
 # Claude Code 上下文管理
 
-本文档用于说明 ./backend Python 后端项目的Claude Code的上下文配置文件,不直接作用该项目的规范
+> **职责**: `.claude/` 目录的导航说明，帮助开发者快速定位规范文档。本文档用于说明 ./backend Python 后端项目的Claude Code的上下文配置文件,不直接作用该项目的规范
 
 ---
 

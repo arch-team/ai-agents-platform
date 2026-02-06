@@ -1,5 +1,7 @@
 # 项目配置模板 (Project Configuration Template)
 
+> **职责**: 项目配置模板，供新项目复制并填充占位符。
+
 <!--
 使用说明：
 1. 复制此模板到新项目的 .claude/ 目录

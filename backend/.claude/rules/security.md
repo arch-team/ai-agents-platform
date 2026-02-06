@@ -1,6 +1,6 @@
 # 安全规范 (Security Standards)
 
-基于 OWASP Top 10 和行业最佳实践的 Python 后端安全规范。
+> **职责**: 安全规范，定义禁止事项、必须事项和安全检测命令。基于 OWASP Top 10 和行业最佳实践的 Python 后端安全规范。
 
 ---
 

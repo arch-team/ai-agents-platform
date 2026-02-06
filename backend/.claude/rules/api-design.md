@@ -1,5 +1,7 @@
 # API 设计规范 (API Design Standards)
 
+> **职责**: API 设计规范，定义 RESTful 路由、HTTP 状态码和错误响应格式。
+
 > Claude 生成 API 代码时优先查阅此文档
 
 ---

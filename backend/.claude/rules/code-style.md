@@ -1,6 +1,6 @@
 # 代码风格规范 (Code Style)
 
-本文档定义 Python 后端项目的代码风格规范，基于 PEP 8 并结合现代 Python 最佳实践。
+> **职责**: Python 代码风格规范，定义类型提示、命名和 Docstring 原则。本文档定义 Python 后端项目的代码风格规范，基于 PEP 8 并结合现代 Python 最佳实践。
 
 ---
 

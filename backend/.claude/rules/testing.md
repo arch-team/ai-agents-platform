@@ -1,5 +1,7 @@
 # 测试规范 (Testing Standards)
 
+> **职责**: 测试规范，定义 TDD 工作流、测试分层和 Fixture 模式。
+
 > TDD 工作流见 CLAUDE.md
 
 ---

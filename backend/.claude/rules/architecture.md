@@ -1,5 +1,7 @@
 # 后端架构规范 (Backend Architecture Standards)
 
+> **职责**: 后端架构规范的单一真实源，定义分层规则、模块隔离和 DDD 模式。
+
 > **版本**: 2.0
 > **架构模式**: DDD + Modular Monolith + Clean Architecture
 > **适用范围**: Python 后端项目

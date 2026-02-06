@@ -1,5 +1,7 @@
 # CLAUDE.md - Python 后端项目规范
 
+> **职责**: 后端项目的入口规范，定义技术栈、开发命令和核心原则。
+
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 > **注意**: 通用规范（响应语言、项目概述）请参考根目录 [../.claude/CLAUDE.md](../../.claude/CLAUDE.md)
