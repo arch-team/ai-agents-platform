@@ -48,11 +48,7 @@
 
 ### PR Review 检查清单
 
-- [ ] 路由级组件使用 lazy 加载
-- [ ] 大列表使用虚拟列表
-- [ ] memo 使用有明确理由
-- [ ] 图片有 loading="lazy"
-- [ ] 没有在渲染中创建新对象/函数传给子组件
+完整检查清单见 [checklist.md](checklist.md) §性能
 
 ---
 

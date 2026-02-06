@@ -65,22 +65,7 @@
 
 ### 0.4 PR Review 检查清单
 
-**分层规则**:
-- [ ] 新文件放置在正确的 FSD 层级
-- [ ] 依赖方向正确（只向下依赖）
-- [ ] 没有跨 feature 的直接导入
-- [ ] shared 层没有业务逻辑
-
-**Slice 结构**:
-- [ ] 每个 slice 有 `index.ts` 统一导出
-- [ ] API 调用在 `api/` 目录，使用 React Query
-- [ ] 状态管理在 `model/` 目录
-- [ ] UI 组件在 `ui/` 目录
-
-**类型安全**:
-- [ ] 所有导出有明确类型
-- [ ] Props 使用 interface 定义
-- [ ] 避免 `any` 类型
+完整检查清单见 [checklist.md](checklist.md) §分层与架构
 
 ---
 

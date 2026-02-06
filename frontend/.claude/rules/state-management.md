@@ -46,11 +46,7 @@ useState
 
 ### PR Review 检查清单
 
-- [ ] 服务端数据使用 React Query
-- [ ] 全局状态使用 Zustand
-- [ ] Store 有 selector hooks 导出
-- [ ] Query Keys 遵循命名规范
-- [ ] 敏感数据不存入持久化 Store
+完整检查清单见 [checklist.md](checklist.md) §状态管理
 
 ---
 

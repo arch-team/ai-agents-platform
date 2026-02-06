@@ -39,13 +39,7 @@
 
 ### PR Review 检查清单
 
-- [ ] 图片有描述性 alt 文本
-- [ ] 表单控件有关联的 label
-- [ ] 可交互元素可通过键盘访问
-- [ ] 颜色对比度 >= 4.5:1
-- [ ] 焦点顺序合理且可见
-- [ ] 错误信息与输入框关联 (`aria-describedby`)
-- [ ] 图标按钮有 `aria-label`
+完整检查清单见 [checklist.md](checklist.md) §无障碍
 
 ---
 

@@ -97,20 +97,11 @@ pnpm preview
 
 ---
 
-## 验证检查清单
+## PR Review 检查清单
 
-在提交代码前，确保通过以下检查：
+完整检查清单见 [rules/checklist.md](rules/checklist.md)
 
+**预提交一键验证**:
 ```bash
-# 1. 代码检查通过
-pnpm lint
-
-# 2. 格式化检查通过
-pnpm format:check
-
-# 3. 类型检查通过
-pnpm typecheck
-
-# 4. 测试通过且覆盖率达标
-pnpm test:coverage
+pnpm lint && pnpm format:check && pnpm typecheck && pnpm test:coverage
 ```

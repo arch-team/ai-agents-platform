@@ -82,8 +82,4 @@ class ErrorResponse(BaseModel):
 
 ## PR Review 检查清单
 
-- [ ] 路由使用复数名词，不使用动词
-- [ ] HTTP 方法语义正确
-- [ ] 返回正确的 HTTP 状态码
-- [ ] 错误响应使用 ErrorResponse 格式
-- [ ] 分页参数使用 `page` 和 `page_size`
+完整检查清单见 [checklist.md](checklist.md) §API 设计

@@ -42,10 +42,7 @@ uv run pytest tests/modules/ -m unit  # 所有模块单元测试
 
 ### PR 检查
 
-- [ ] 测试在 `tests/modules/{module}/`
-- [ ] AAA 模式 + 清晰命名
-- [ ] Mock 仅边界 + 可独立运行
-- [ ] 使用测试标记 (`@pytest.mark.unit` 等)
+完整检查清单见 [checklist.md](checklist.md) §测试
 
 ---
 

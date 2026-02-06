@@ -46,13 +46,7 @@
 
 ### PR Review 检查清单
 
-- [ ] 组件类型正确（展示/容器/复合）
-- [ ] Props 使用 interface 定义
-- [ ] 事件处理函数命名以 `handle` 开头
-- [ ] 无 `any` 类型
-- [ ] children 类型为 `React.ReactNode`
-- [ ] 可选 Props 有合理默认值
-- [ ] 复合组件使用 Context 共享状态
+完整检查清单见 [checklist.md](checklist.md) §组件设计
 
 ---
 

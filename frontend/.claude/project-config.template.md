@@ -1,4 +1,4 @@
-> **职责**: 项目配置模板 - 新项目 PROJECT_CONFIG 文件的起点模板
+> **职责**: 项目配置模板 - 新项目 project-config 文件的起点模板
 
 # 项目配置模板 (Project Configuration Template)
 
@@ -7,7 +7,7 @@
 1. 复制此模板到新项目的 .claude/ 目录
 2. 替换所有 {{PLACEHOLDER}} 占位符
 3. 删除不适用的章节
-4. 保持与 CLAUDE.md 的单向引用（CLAUDE.md → PROJECT_CONFIG.md）
+4. 保持与 CLAUDE.md 的单向引用（CLAUDE.md → project-config.md）
 -->
 
 > **定位**: 本文件是 CLAUDE.md 的补充，包含**项目特定的业务配置**。

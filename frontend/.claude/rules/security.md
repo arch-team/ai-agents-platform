@@ -28,19 +28,7 @@ grep -rE "(password|secret|token|key)\s*[:=]" src/
 
 ### PR Review 检查清单
 
-**代码审查**:
-- [ ] 没有 `dangerouslySetInnerHTML` (除非必要且使用 DOMPurify)
-- [ ] 没有 `eval()`, `new Function()`
-- [ ] URL 跳转有验证
-- [ ] 用户输入有验证和限制
-- [ ] 敏感数据不在 localStorage
-- [ ] 没有硬编码的密钥
-
-**配置检查**:
-- [ ] 所有环境变量使用 `VITE_` 前缀
-- [ ] `.env` 文件在 `.gitignore` 中
-- [ ] 依赖定期更新和审计
-- [ ] 生产构建移除 console.log
+完整检查清单见 [checklist.md](checklist.md) §安全
 
 ---
 

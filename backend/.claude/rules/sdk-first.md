@@ -115,7 +115,4 @@ find src/ -name "*adapter*.py" -exec wc -l {} \; | awk '$1 > 100 {print}'
 
 ## PR Review 检查清单
 
-- [ ] 优先使用官方 SDK
-- [ ] 自定义实现有充分理由
-- [ ] 封装层 < 100 行
-- [ ] SDK 异常转换为域异常
+完整检查清单见 [checklist.md](checklist.md) §SDK 使用

@@ -53,12 +53,7 @@ import type { User } from '@/entities/user';
 
 ### PR Review 检查清单
 
-- [ ] 命名符合规范
-- [ ] 没有 `any` 类型
-- [ ] Props 使用 `interface` 定义
-- [ ] 导入按规范排序
-- [ ] 没有未使用的变量/导入
-- [ ] 组件有 `displayName` (forwardRef)
+完整检查清单见 [checklist.md](checklist.md) §代码风格
 
 ---
 

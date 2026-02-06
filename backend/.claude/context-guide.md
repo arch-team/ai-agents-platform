@@ -8,14 +8,16 @@
 
 ```
 .claude/
-├── README.md                           # 本文件 - 目录说明
+├── context-guide.md                    # 本文件 - 目录说明
 ├── CLAUDE.md                           # 项目主规范 (入口)
-├── PROJECT_CONFIG.ai-agents-platform.md # 项目特定配置
-├── PROJECT_CONFIG.template.md          # 项目配置模板
+├── project-config.md                   # 项目特定配置
+├── project-config.template.md          # 项目配置模板
 ├── settings.local.json                 # Claude Code 本地权限配置
 └── rules/                              # 专题规范文档
+    ├── tech-stack.md                   # 技术栈版本规范 (单一真实源) ★
+    ├── checklist.md                    # PR Review 检查清单 ★单一真实源
     ├── architecture.md                 # 架构规范 ★核心
-    ├── project-structure.md            # 项目目录结构规范 ★新增
+    ├── project-structure.md            # 项目目录结构规范
     ├── code-style.md                   # 代码风格规范
     ├── testing.md                      # 测试规范 (TDD)
     ├── security.md                     # 安全规范
@@ -30,7 +32,7 @@
 ### 开发者入门
 
 1. **阅读入口**: 从 `CLAUDE.md` 开始，了解项目概况和核心原则
-2. **查阅配置**: 参考 `PROJECT_CONFIG.ai-agents-platform.md` 了解模块划分
+2. **查阅配置**: 参考 `project-config.md` 了解模块划分
 3. **深入专题**: 按需阅读 `rules/` 下的专题规范
 
 ### 常用查阅场景
@@ -38,6 +40,8 @@
 | 场景 | 推荐文档 |
 |------|----------|
 | 开发命令 (uv, pytest, ruff) | `CLAUDE.md` §开发命令 |
+| 技术栈版本确认 | `rules/tech-stack.md` |
+| PR Review 检查清单 | `rules/checklist.md` |
 | 项目目录结构 | `rules/project-structure.md` §0 速查卡片 |
 | 模块结构和分层 | `rules/architecture.md` §0 速查卡片 |
 | 代码风格和类型提示 | `rules/code-style.md` §0 速查卡片 |
@@ -59,24 +63,26 @@
 - 核心原则（SDK-First、TDD）
 - 规范文档导航表
 
-### PROJECT_CONFIG.*.md (项目配置)
+### project-config*.md (项目配置)
 
 | 文件 | 用途 |
 |------|------|
-| `PROJECT_CONFIG.ai-agents-platform.md` | 本项目特定配置：模块列表、域事件、跨模块接口 |
-| `PROJECT_CONFIG.template.md` | 新项目配置模板，包含 `{{PLACEHOLDER}}` 占位符 |
+| `project-config.md` | 本项目特定配置：模块列表、域事件、跨模块接口 |
+| `project-config.template.md` | 新项目配置模板，包含 `{{PLACEHOLDER}}` 占位符 |
 
 ### rules/ (专题规范)
 
-| 文件 | 行数 | 主要内容 |
-|------|------|----------|
-| `architecture.md` | 655 | 架构模式 (DDD + Modular Monolith + Clean Architecture)、分层规则、模块隔离黄金法则、DDD 战术模式 |
-| `project-structure.md` | 87 | 项目根目录结构、配置文件速查、初始化检查清单 |
-| `code-style.md` | 324 | 类型提示、命名规范、Docstring 原则、异步代码规范 |
-| `testing.md` | 308 | TDD 循环、测试分层、AAA 模式、Mock 规范、覆盖率配置 |
-| `security.md` | 252 | 禁止事项（注入、硬编码）、必须事项（验证、哈希）、安全检查命令 |
-| `sdk-first.md` | 121 | SDK 决策流程、优先级说明、异常处理模式 |
-| `api-design.md` | 87 | RESTful 路由、HTTP 状态码、分页规范、错误响应格式 |
+| 文件 | 主要内容 |
+|------|----------|
+| `tech-stack.md` | **技术栈版本的单一真实源** - Python、FastAPI、SQLAlchemy 等核心依赖版本 |
+| `checklist.md` | **PR Review 检查清单（单一真实源）** - 架构、代码风格、安全、测试、API 设计检查项 |
+| `architecture.md` | 架构模式 (DDD + Modular Monolith + Clean Architecture)、分层规则、模块隔离黄金法则、DDD 战术模式 |
+| `project-structure.md` | 项目根目录结构、配置文件速查、初始化检查清单 |
+| `code-style.md` | 类型提示、命名规范、Docstring 原则、异步代码规范 |
+| `testing.md` | TDD 循环、测试分层、AAA 模式、Mock 规范、覆盖率配置 |
+| `security.md` | 禁止事项（注入、硬编码）、必须事项（验证、哈希）、安全检查命令 |
+| `sdk-first.md` | SDK 决策流程、优先级说明、异常处理模式 |
+| `api-design.md` | RESTful 路由、HTTP 状态码、分页规范、错误响应格式 |
 
 ### settings.local.json
 
@@ -92,18 +98,22 @@ Claude Code 的本地权限配置，包含：
 ```
 CLAUDE.md (入口)
     │
-    ├─→ rules/architecture.md ──→ PROJECT_CONFIG.ai-agents-platform.md
+    ├─→ rules/tech-stack.md (技术栈版本)
+    ├─→ rules/checklist.md (PR Review 检查清单)
+    ├─→ rules/architecture.md ──→ project-config.md
     ├─→ rules/project-structure.md ──→ rules/architecture.md, rules/testing.md
     ├─→ rules/code-style.md
     ├─→ rules/testing.md ──────→ CLAUDE.md (互相引用)
     ├─→ rules/security.md
     ├─→ rules/sdk-first.md
     ├─→ rules/api-design.md
-    ├─→ PROJECT_CONFIG.ai-agents-platform.md
-    └─→ PROJECT_CONFIG.template.md
+    ├─→ project-config.md
+    └─→ project-config.template.md
 ```
 
-**引用原则**: 单向引用，CLAUDE.md 是入口，rules/ 是专题文档。
+**引用原则**:
+- **单向为主**: CLAUDE.md 是入口，rules/ 是专题文档
+- **单一真实源**: checklist.md 是所有 PR Review 检查项的唯一来源
 
 ---
 
@@ -113,10 +123,20 @@ CLAUDE.md (入口)
 
 每个规范文档都有 **§0 速查卡片**，包含：
 - 常用模式速查表
-- PR Review 检查清单
 - 常见错误提醒
 
 > Claude 生成代码时优先查阅 §0 速查卡片
+>
+> PR Review 检查清单见 `rules/checklist.md`（单一真实源）
+
+### 单一真实源 (SSOT)
+
+关键信息只在一个地方定义：
+- **技术栈版本**: `rules/tech-stack.md`
+- **PR Review 检查清单**: `rules/checklist.md`
+- **架构规范**: `rules/architecture.md`
+
+其他文档通过链接引用，避免重复。
 
 ### 符号化表达
 
@@ -129,7 +149,7 @@ CLAUDE.md (入口)
 
 ### 模板化
 
-`PROJECT_CONFIG.template.md` 和 `rules/architecture.md` 中的占位符支持新项目快速初始化。
+`project-config.template.md` 和 `rules/architecture.md` 中的占位符支持新项目快速初始化。
 
 ---
 
@@ -147,8 +167,9 @@ CLAUDE.md (入口)
 |------|------|------|
 | 主规范 | `CLAUDE.md` | - |
 | 专题规范 | `rules/{topic}.md` | `rules/testing.md` |
-| 项目配置 | `PROJECT_CONFIG.{name}.md` | `PROJECT_CONFIG.ai-agents-platform.md` |
-| 模板 | `PROJECT_CONFIG.template.md` | - |
+| 上下文导航 | `context-guide.md` | - |
+| 项目配置 | `project-config.md` | - |
+| 模板 | `project-config.template.md` | - |
 
 ### 新增文件
 

@@ -14,7 +14,7 @@
 frontend/                       # 前端项目根目录
 ├── .claude/                    # Claude Code 上下文 (规范文档)
 │   ├── CLAUDE.md               # 前端入口
-│   ├── PROJECT_CONFIG.*.md
+│   ├── project-config*.md
 │   └── rules/                  # 前端专用规则
 ├── public/                     # 静态资源
 │   └── favicon.ico
@@ -133,8 +133,4 @@ src/
 
 ## PR Review 检查清单
 
-- [ ] 新文件放置在正确的 FSD 层级
-- [ ] 组件与测试文件同目录
-- [ ] 新 slice 有 `index.ts` 导出
-- [ ] 无临时文件被提交
-- [ ] 环境变量已在 `.env.example` 声明
+完整检查清单见 [checklist.md](checklist.md) §项目结构

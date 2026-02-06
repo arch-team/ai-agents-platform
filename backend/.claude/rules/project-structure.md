@@ -16,7 +16,7 @@
 backend/                        # 后端项目根目录
 ├── .claude/                    # Claude Code 上下文 (规范文档)
 │   ├── CLAUDE.md               # 后端入口
-│   ├── PROJECT_CONFIG.*.md
+│   ├── project-config*.md
 │   └── rules/                  # 后端专用规则
 ├── .github/workflows/          # CI/CD 工作流
 ├── migrations/                 # 数据库迁移 (Alembic)
@@ -63,7 +63,7 @@ backend/                        # 后端项目根目录
 |------|---------|
 | `src/modules/{module}/` 内部结构 | [architecture.md](architecture.md) §6 |
 | `tests/modules/{module}/` 结构 | [testing.md](testing.md) §1 |
-| `.claude/rules/` 内容 | [README.md](../README.md) |
+| `.claude/rules/` 内容 | [context-guide.md](../context-guide.md) |
 | 根级通用规范 | [../../.claude/CLAUDE.md](../../../.claude/CLAUDE.md) |
 
 ---
@@ -85,7 +85,4 @@ backend/                        # 后端项目根目录
 
 ## PR Review 检查清单
 
-- [ ] 新文件放置在正确目录
-- [ ] 测试在 `tests/` 下，镜像 `src/` 结构
-- [ ] 新 Python 包有 `__init__.py`
-- [ ] 无临时文件被提交
+完整检查清单见 [checklist.md](checklist.md) §项目结构

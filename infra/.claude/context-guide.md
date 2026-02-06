@@ -11,10 +11,10 @@
 
 ```
 .claude/
-├── README.md                              # 本文件 - Claude Code的项目上下文配置文件说明
+├── context-guide.md                       # 本文件 - Claude Code的项目上下文配置文件说明
 ├── CLAUDE.md                              # 项目主规范 (入口)
-├── PROJECT_CONFIG.ai-agents-platform.md   # 项目特定配置
-├── PROJECT_CONFIG.template.md             # 项目配置模板
+├── project-config.md                      # 项目特定配置
+├── project-config.template.md             # 项目配置模板
 └── rules/                                 # 专题规范文档
     ├── checklist.md                       # PR Review 检查清单 ★单一真实源
     ├── architecture.md                    # CDK 架构规范 ★核心
@@ -34,7 +34,7 @@
 ### 开发者入门
 
 1. **阅读入口**: 从 `CLAUDE.md` 开始，了解项目概况和核心原则
-2. **查阅配置**: 参考 `PROJECT_CONFIG.ai-agents-platform.md` 了解 Stack 划分
+2. **查阅配置**: 参考 `project-config.md` 了解 Stack 划分
 3. **深入专题**: 按需阅读 `rules/` 下的专题规范
 
 ### 常用查阅场景
@@ -65,12 +65,12 @@
 - 核心原则（Construct 设计、TDD）
 - 规范文档导航表
 
-### PROJECT_CONFIG.*.md (项目配置)
+### project-config*.md (项目配置)
 
 | 文件 | 用途 |
 |------|------|
-| `PROJECT_CONFIG.ai-agents-platform.md` | 本项目特定配置：Stack 列表、环境配置、AWS 账户 |
-| `PROJECT_CONFIG.template.md` | 新项目配置模板，包含 `{{PLACEHOLDER}}` 占位符 |
+| `project-config.md` | 本项目特定配置：Stack 列表、环境配置、AWS 账户 |
+| `project-config.template.md` | 新项目配置模板，包含 `{{PLACEHOLDER}}` 占位符 |
 
 ### rules/ (专题规范)
 
@@ -92,9 +92,9 @@
 
 | 文档 | 主要引用 | 说明 |
 |------|---------|------|
-| **CLAUDE.md** (入口) | 所有 rules/*.md, PROJECT_CONFIG.*.md | 项目入口，引用所有专题文档 |
+| **CLAUDE.md** (入口) | 所有 rules/*.md, project-config*.md | 项目入口，引用所有专题文档 |
 | checklist.md | 所有 rules/*.md | PR Review 检查清单，引用各专题详细说明 |
-| architecture.md | PROJECT_CONFIG.*.md, construct-design.md, deployment.md (边界) | 架构规范，与 deployment.md 有职责边界 |
+| architecture.md | project-config*.md, construct-design.md, deployment.md (边界) | 架构规范，与 deployment.md 有职责边界 |
 | project-structure.md | architecture.md, checklist.md | 目录结构，引用架构和检查清单 |
 | construct-design.md | architecture.md, security.md (边界), testing.md | 与 security.md 有职责边界 |
 | security.md | construct-design.md (边界), testing.md | 与 construct-design.md 有职责边界 |
@@ -148,7 +148,7 @@
 
 ### 模板化
 
-`PROJECT_CONFIG.template.md` 中的占位符支持新项目快速初始化。
+`project-config.template.md` 中的占位符支持新项目快速初始化。
 
 ---
 
@@ -166,8 +166,9 @@
 |------|------|------|
 | 主规范 | `CLAUDE.md` | - |
 | 专题规范 | `rules/{topic}.md` | `rules/testing.md` |
-| 项目配置 | `PROJECT_CONFIG.{name}.md` | `PROJECT_CONFIG.ai-agents-platform.md` |
-| 模板 | `PROJECT_CONFIG.template.md` | - |
+| 上下文导航 | `context-guide.md` | - |
+| 项目配置 | `project-config.md` | - |
+| 模板 | `project-config.template.md` | - |
 
 ### 新增文件
 

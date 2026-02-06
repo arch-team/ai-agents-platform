@@ -54,28 +54,7 @@ dataclass
 
 ### 0.3 PR Review 检查清单
 
-**分层规则**:
-- [ ] Domain 层没有外部框架依赖 (FastAPI, SQLAlchemy, boto3)
-- [ ] Domain 层实体使用 Pydantic BaseModel 或 PydanticEntity 基类
-- [ ] Application 层只依赖 Domain 层和接口
-- [ ] 仓储接口定义在 Domain 层，实现在 Infrastructure 层
-- [ ] API 层通过 Application Services 执行业务操作
-
-**模块隔离**:
-- [ ] 模块 Domain 层没有导入其他模块
-- [ ] 模块间通信使用 EventBus 或 shared/interfaces
-- [ ] `__init__.py` 只导出公开 API，不导出实现细节
-
-**DDD 模式**:
-- [ ] Entity 使用 PydanticEntity，Value Object 使用 frozen dataclass
-- [ ] Application DTO 使用 dataclass，API Schema 使用 Pydantic
-- [ ] Repository 接口在 Domain 层，实现在 Infrastructure 层
-- [ ] Domain Event 继承自 DomainEvent
-
-**依赖注入**:
-- [ ] 依赖注入层级正确 (Session → Repository → Service)
-- [ ] 外部服务有对应的接口抽象
-- [ ] 跨模块依赖通过 shared/interfaces 注入
+完整检查清单见 [checklist.md](checklist.md) §分层与架构
 
 ---
 

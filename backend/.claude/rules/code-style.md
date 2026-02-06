@@ -165,10 +165,4 @@ from src.application.dto import CreateUserDTO
 
 ## 检查清单
 
-- [ ] 所有公共接口都有类型提示
-- [ ] 没有使用 `Any` 类型
-- [ ] 命名符合规范 (snake_case/PascalCase)
-- [ ] Docstring 遵循"类型即文档"原则 (类型自解释时省略)
-- [ ] 没有通配符导入
-- [ ] 异常处理具体而非宽泛
-- [ ] 异步代码正确使用 async/await
+完整检查清单见 [checklist.md](checklist.md) §代码风格

@@ -16,7 +16,7 @@
 infra/                          # CDK 项目根目录
 ├── .claude/                    # Claude Code 上下文 (规范文档)
 │   ├── CLAUDE.md               # 基础设施入口
-│   ├── PROJECT_CONFIG.*.md
+│   ├── project-config*.md
 │   └── rules/                  # Infra 专用规则
 ├── bin/                        # CDK 应用入口
 │   └── app.ts
