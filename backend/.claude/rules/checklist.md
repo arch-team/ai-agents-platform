@@ -81,6 +81,27 @@
 
 ---
 
+## 日志
+
+- [ ] 使用 structlog 结构化键值对，不使用字符串拼接
+- [ ] 敏感数据已脱敏（密码、Token、邮箱）
+- [ ] 没有使用 `print()` 调试输出
+- [ ] 异常记录包含完整 traceback
+
+详见 [logging.md](logging.md)
+
+---
+
+## 可观测性
+
+- [ ] Health Check 端点 (`/health`, `/health/ready`) 可用
+- [ ] 关键操作有 Span 或 Metrics 记录
+- [ ] Correlation ID 在请求链路中传递
+
+详见 [observability.md](observability.md)
+
+---
+
 ## 项目结构
 
 - [ ] 新文件放置在正确目录

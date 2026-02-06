@@ -180,6 +180,25 @@ class {Entity}CompletedEvent(DomainEvent):
 # 订阅: @event_handler({Entity}CompletedEvent)
 ```
 
+#### 事件可靠性要求
+
+| 要求 | 说明 | 实现方式 |
+|------|------|---------|
+| **幂等性** | 处理器必须能安全重复执行 | 通过 `event_id` 去重，处理前检查是否已处理 |
+| **重试策略** | 失败时指数退避重试 | `max_retries=3`, 退避间隔 `1s → 2s → 4s` |
+| **Outbox Pattern** | 事件与业务操作原子性提交 | 事件先写入 `outbox` 表，后台轮询发布 |
+| **顺序保证** | 同一聚合根的事件需有序处理 | 按 `aggregate_id` 分区 |
+
+```python
+# 幂等处理器模式
+@event_handler({Entity}CompletedEvent)
+async def handle_{entity}_completed(event: {Entity}CompletedEvent) -> None:
+    if await event_store.is_processed(event.event_id):
+        return  # 幂等: 已处理则跳过
+    # 执行业务逻辑...
+    await event_store.mark_processed(event.event_id)
+```
+
 ### 4.3 接口位置区分
 
 - `shared/domain/interfaces/`: **跨模块能力接口**（如 `IQuotaChecker`）

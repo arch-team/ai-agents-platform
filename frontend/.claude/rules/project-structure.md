@@ -39,7 +39,7 @@ frontend/                       # 前端项目根目录
 │   ├── e2e/
 │   └── fixtures/
 ├── .env.example                # 环境变量模板
-├── .eslintrc.cjs               # ESLint 配置
+├── eslint.config.js               # ESLint 配置
 ├── .prettierrc                 # Prettier 配置
 ├── index.html                  # HTML 入口
 ├── package.json                # 项目配置
@@ -61,7 +61,7 @@ frontend/                       # 前端项目根目录
 | `vite.config.ts` | Vite 构建配置 | ✅ |
 | `.env.example` | 环境变量模板 | ✅ |
 | `tailwind.config.js` | TailwindCSS 配置 | ✅ |
-| `.eslintrc.cjs` | ESLint 配置 | ✅ |
+| `eslint.config.js` | ESLint flat config (ESLint 9+) | ✅ |
 | `.prettierrc` | Prettier 配置 | ✅ |
 | `README.md` | 项目说明 | ✅ |
 | `playwright.config.ts` | E2E 测试配置 | 推荐 |
@@ -125,7 +125,7 @@ src/
 - [ ] `README.md` 包含项目说明
 
 ### 代码质量
-- [ ] `.eslintrc.cjs` 配置 React + TypeScript 规则
+- [ ] `eslint.config.js` 配置 React + TypeScript 规则
 - [ ] `.prettierrc` 配置格式化规则
 - [ ] `vitest.config.ts` 配置测试
 

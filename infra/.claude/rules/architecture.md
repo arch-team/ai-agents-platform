@@ -106,13 +106,23 @@ computeStack.addDependency(networkStack);  // 显式依赖
 
 ## 3. 跨 Stack 通信
 
-### 方式一：Props 传递 (推荐)
+### 决策矩阵
+
+| 方式 | 适用场景 | 优点 | 缺点 |
+|------|---------|------|------|
+| **Props 传递** (首选) | 同一 App 内 Stack 间依赖 | 类型安全、重构友好 | 仅限同 App |
+| **SSM Parameter** | 跨 App/跨团队共享配置 | 解耦部署、运行时查找 | 合成期延迟、需管理命名 |
+| **CfnOutput** | 遗留系统集成 | CloudFormation 原生 | ⚠️ 创建删除顺序耦合，难以修改导出值 |
+
+> **规则**: 优先 Props 传递 → 跨 App 用 SSM → 仅遗留集成用 CfnOutput
+
+### 方式一：Props 传递 (首选)
 
 ```typescript
 const computeStack = new ComputeStack(app, 'Compute', { vpc: networkStack.vpc });
 ```
 
-### 方式二：SSM Parameter
+### 方式二：SSM Parameter (跨 App 场景)
 
 ```typescript
 // 写入 (Network Stack)
@@ -122,7 +132,9 @@ new ssm.StringParameter(this, 'VpcId', { parameterName: '/infra/vpc-id', stringV
 const vpcId = ssm.StringParameter.valueFromLookup(this, '/infra/vpc-id');
 ```
 
-### 方式三：CfnOutput + Fn.importValue
+### 方式三：CfnOutput + Fn.importValue (不推荐新代码使用)
+
+> ⚠️ `Fn.importValue` 会创建 Stack 间硬耦合：导出 Stack 无法修改导出值或删除，除非所有导入 Stack 先移除引用。
 
 ```typescript
 // 导出

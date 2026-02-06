@@ -188,6 +188,11 @@ ker-Projects/ml-platform-research/llm-platform-solution/ai-agents-platform/front
 
 claude-md-improver 当前ai-agents-platform monorepo项目，包含后端（backend）、前端（frontend）和基础设施（infra）子项目，我再为这个项目打造Claude Code上下文管理的规范，目前已经基本完成，结合Claude code上下文管理的最佳实践，你对目前上下管理的有什么优化建议
 
-  当前ai-agents-platform monorepo项目，包含后端（backend）、前端（frontend）和基础设施（infra）子项目, 我分别为这些子项目提供了Claude Code上下文管理的规范。这些规范的命令你有什么优化建议吗？以便各个子项目下的规范文件的名称具有更好的可读性和一致性。
+  当前ai-agents-platform monorepo项目，包含后端（backend）、前端（frontend）和基础设施（infra）子项目, 我分别为这些子项目提供了Claude Code上下文管理的规范。分析这些子项目中定义的规范条目是否符合它们各自领域的最佳实践
+  
+  这些规范文件的命名你有什么优化建议吗？以便各个子项目下的规范文件的名称具有更好的可读性和一致性。
+
+
+  claude-md-improver 当前ai-agents-platform monorepo项目，对基础设施（infra）子项目，我为这个项目打造Claude Code上下文管理的规范，目前已经完成，结合Claude code上下文管理的最佳实践，你对目前上下管理的有什么优化建议
 
 

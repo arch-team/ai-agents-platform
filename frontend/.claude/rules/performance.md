@@ -167,7 +167,7 @@ const [sidebarOpen, setSidebarOpen] = useState(true);
 | 指标 | 目标 | 说明 |
 |------|------|------|
 | LCP | < 2.5s | 最大内容绘制 |
-| FID | < 100ms | 首次输入延迟 |
+| INP | < 200ms | 交互到下次绘制 (已取代 FID，2024.03 成为 Core Web Vitals 正式指标) |
 | CLS | < 0.1 | 累积布局偏移 |
 | FCP | < 1.8s | 首次内容绘制 |
 | TTI | < 3.8s | 可交互时间 |

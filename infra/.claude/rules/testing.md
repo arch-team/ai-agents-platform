@@ -141,7 +141,7 @@ describe('Snapshot Tests', () => {
   it('NetworkStack matches snapshot', () => {
     const app = new cdk.App();
     const stack = new NetworkStack(app, 'TestStack', {
-      env: { account: '123456789012', region: 'ap-northeast-1' },
+      env: { account: '123456789012', region: 'ap-northeast-1' },  // 测试用占位符账户
       vpcCidr: '10.0.0.0/16',
     });
 

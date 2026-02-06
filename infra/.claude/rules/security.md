@@ -205,14 +205,17 @@ Aspects.of(app).add(new AwsSolutionsChecks({ verbose: true }));
 
 ### 5.2 抑制规则
 
-```typescript
-// 仅在有正当理由时抑制
-NagSuppressions.addStackSuppressions(stack, [
-  { id: 'AwsSolutions-IAM4', reason: '使用 AWS 托管策略是此用例的最佳实践' },
-]);
+> **粒度原则**: 优先 `addResourceSuppressions` (精确到资源) → 仅在确实需要时使用 `addStackSuppressions` (Stack 级)。Stack 级抑制可能导致后续新增资源被意外跳过检查。
 
+```typescript
+// ✅ 首选 - 资源级抑制 (精确、安全)
 NagSuppressions.addResourceSuppressions(bucket, [
   { id: 'AwsSolutions-S1', reason: '此 Bucket 用于 CloudTrail 日志，不需要访问日志' },
+]);
+
+// ⚠️ 慎用 - Stack 级抑制 (影响范围大，需额外说明)
+NagSuppressions.addStackSuppressions(stack, [
+  { id: 'AwsSolutions-IAM4', reason: '使用 AWS 托管策略是此用例的最佳实践' },
 ]);
 ```
 

@@ -12,7 +12,7 @@
 |---------|---------|------|
 | 服务端数据 | React Query | 用户列表、Agent 详情 |
 | 全局 UI 状态 | Zustand | 主题、侧边栏展开状态 |
-| 用户会话 | Zustand + persist | 登录状态、Token |
+| 用户会话 | Zustand (内存) | 登录状态、Token (禁止持久化敏感数据) |
 | 表单状态 | React Hook Form | 登录表单、配置表单 |
 | 组件局部状态 | useState | 下拉菜单开关 |
 | 复杂组件状态 | useReducer | 多步骤向导 |
@@ -26,7 +26,7 @@
       ↓
 需要跨组件共享？ ──是──► Zustand Store
       │                    ↓
-     否              需要持久化？ ──是──► Zustand + persist
+     否              需要持久化？ ──是──► Zustand + persist (⚠️ 禁止持久化 Token 等敏感数据)
       ↓
 组件状态复杂？ ──是──► useReducer
       │
@@ -133,12 +133,14 @@ onSettled: invalidateQueries 确保数据一致
 
 ## 2. Zustand (客户端状态)
 
-### 2.1 Store 模板（带持久化）
+### 2.1 Store 模板（Auth 示例 - 内存存储）
+
+> **安全说明**: Token 等敏感数据**禁止**存入 localStorage（XSS 可读取）。
+> 推荐 httpOnly Cookie（需后端配合）或内存存储。详见 [security.md](security.md) §3。
 
 ```typescript
 // features/auth/model/store.ts
 import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
 
 interface AuthState {
   user: User | null;
@@ -149,26 +151,32 @@ interface AuthState {
   logout: () => void;
 }
 
-export const useAuthStore = create<AuthState>()(
+// Token 仅保存在内存中，刷新页面后需重新认证（更安全）
+export const useAuthStore = create<AuthState>()((set) => ({
+  user: null,
+  token: null,
+  isAuthenticated: false,
+  setUser: (user) => set({ user, isAuthenticated: !!user }),
+  setToken: (token) => set({ token }),
+  logout: () => set({ user: null, token: null, isAuthenticated: false }),
+}));
+```
+
+**需要持久化非敏感状态时**: 使用 `persist` 中间件包装，但**不要持久化 Token**
+
+```typescript
+import { persist, createJSONStorage } from 'zustand/middleware';
+
+export const useUIStore = create<UIState>()(
   persist(
-    (set) => ({
-      user: null,
-      token: null,
-      isAuthenticated: false,
-      setUser: (user) => set({ user, isAuthenticated: !!user }),
-      setToken: (token) => set({ token }),
-      logout: () => set({ user: null, token: null, isAuthenticated: false }),
-    }),
+    (set) => ({ /* 非敏感状态 */ }),
     {
-      name: 'auth-storage',
+      name: 'ui-storage',
       storage: createJSONStorage(() => localStorage),
-      partialize: (state) => ({ token: state.token }), // 只持久化 token
     }
   )
 );
 ```
-
-**不需要持久化时**: 去掉 `persist` 包装，直接 `create<State>()((set) => ({...}))`
 
 ### 2.2 Selector Hooks（性能关键）
 
@@ -216,10 +224,29 @@ export function LoginForm() {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)}>
-      <input {...register('email')} />
-      {errors.email && <span>{errors.email.message}</span>}
-      <input type="password" {...register('password')} />
-      {errors.password && <span>{errors.password.message}</span>}
+      <label htmlFor="email">邮箱</label>
+      <input
+        id="email"
+        {...register('email')}
+        aria-invalid={!!errors.email}
+        aria-describedby={errors.email ? 'email-error' : undefined}
+      />
+      {errors.email && (
+        <span id="email-error" role="alert">{errors.email.message}</span>
+      )}
+
+      <label htmlFor="password">密码</label>
+      <input
+        id="password"
+        type="password"
+        {...register('password')}
+        aria-invalid={!!errors.password}
+        aria-describedby={errors.password ? 'password-error' : undefined}
+      />
+      {errors.password && (
+        <span id="password-error" role="alert">{errors.password.message}</span>
+      )}
+
       <button type="submit" disabled={isSubmitting}>登录</button>
     </form>
   );

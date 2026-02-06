@@ -6,10 +6,10 @@
 
 | 技术 | 版本 |
 |------|------|
-| React | 18+ |
+| React | 19+ |
 | TypeScript | 5+ |
 | Vite | 5+ |
-| TailwindCSS | 3+ |
+| TailwindCSS | 4+ |
 | TanStack Query | 5+ |
 | Zustand | 4+ |
 | React Hook Form | 7+ |

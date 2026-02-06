@@ -89,11 +89,14 @@ infra/                          # CDK 项目根目录
     "@aws-cdk/core:newStyleStackSynthesis": true,
     "@aws-cdk/aws-rds:lowercaseDbIdentifier": true,
     "environments": {
-      "dev": { "account": "123456789012", "region": "ap-northeast-1" }
+      "dev": { "account": "<YOUR_DEV_ACCOUNT_ID>", "region": "ap-northeast-1" },
+      "prod": { "account": "<YOUR_PROD_ACCOUNT_ID>", "region": "ap-northeast-1" }
     }
   }
 }
 ```
+
+> **注意**: `<YOUR_*_ACCOUNT_ID>` 为占位符，实际值请参考 [project-config.md](../project-config.md) 中的环境配置。禁止将真实账户 ID 提交到公开仓库。
 
 **关键点**: `environments` 在 context 中定义，通过 `app.node.tryGetContext('env')` 读取
 
