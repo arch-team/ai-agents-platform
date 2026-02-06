@@ -28,22 +28,6 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 开发命令
 
-### 环境管理 (pnpm)
-
-```bash
-# 安装依赖
-pnpm install
-
-# 添加生产依赖
-pnpm add <package>
-
-# 添加开发依赖
-pnpm add -D <package>
-
-# 更新所有依赖
-pnpm update
-```
-
 ### CDK 命令
 
 ```bash
@@ -184,23 +168,6 @@ export class ApiGatewayConstruct extends Construct {
 **禁止**: 硬编码密钥、过宽 IAM 权限、公开 S3 Bucket。
 
 速查表和检测命令详见 [rules/security.md](rules/security.md)
-
----
-
-## 相关规范文档
-
-| 文档 | 内容 |
-|------|------|
-| [PROJECT_CONFIG.ai-agents-platform.md](PROJECT_CONFIG.ai-agents-platform.md) | 项目特定配置 (Stack 列表、环境配置) |
-| [PROJECT_CONFIG.template.md](PROJECT_CONFIG.template.md) | 项目配置模板 (可复用到其他项目) |
-| [rules/tech-stack.md](rules/tech-stack.md) | 技术栈规范 (版本要求单一真实源) |
-| [rules/architecture.md](rules/architecture.md) | CDK 架构规范 (Construct 分层) |
-| [rules/project-structure.md](rules/project-structure.md) | 项目目录结构规范 |
-| [rules/construct-design.md](rules/construct-design.md) | Construct 设计规范 |
-| [rules/security.md](rules/security.md) | 安全规范 (IAM、Secrets) |
-| [rules/testing.md](rules/testing.md) | 测试规范详细说明 |
-| [rules/deployment.md](rules/deployment.md) | 部署规范 |
-| [rules/cost-optimization.md](rules/cost-optimization.md) | 成本优化规范 |
 
 ---
 

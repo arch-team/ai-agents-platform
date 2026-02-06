@@ -20,28 +20,6 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 开发命令
 
-### 环境管理 (uv)
-
-```bash
-# 安装 uv (如果未安装)
-curl -LsSf https://astral.sh/uv/install.sh | sh
-
-# 同步依赖
-uv sync
-
-# 添加生产依赖
-uv add <package>
-
-# 添加开发依赖
-uv add --dev <package>
-
-# 移除依赖
-uv remove <package>
-
-# 更新所有依赖
-uv lock --upgrade
-```
-
 ### 代码质量
 
 ```bash
@@ -70,25 +48,12 @@ uv run pytest
 # 运行测试 + 覆盖率报告
 uv run pytest --cov=src --cov-report=term-missing
 
-# 遇错停止
-uv run pytest -x
-
-# 详细输出
-uv run pytest -v
-
 # 运行特定模块的测试
 uv run pytest tests/modules/auth/
-
-# 运行特定测试文件
-uv run pytest tests/modules/auth/unit/domain/test_user_entity.py
-
-# 运行特定测试函数
-uv run pytest tests/modules/auth/unit/domain/test_user_entity.py::test_create_user_with_valid_email
 
 # 运行标记的测试
 uv run pytest -m "unit"
 uv run pytest -m "integration"
-uv run pytest -m "e2e"
 ```
 
 ### 服务运行
@@ -201,22 +166,6 @@ def get_user(user_id):
 | Infrastructure | 80% | 85% |
 | Presentation | 80% | 85% |
 | **整体** | **85%** | **90%** |
-
----
-
-## 相关规范文档
-
-| 文档 | 内容 |
-|------|------|
-| [PROJECT_CONFIG.ai-agents-platform.md](PROJECT_CONFIG.ai-agents-platform.md) | 项目特定配置 (模块列表、技术栈、域事件) |
-| [PROJECT_CONFIG.template.md](PROJECT_CONFIG.template.md) | 项目配置模板 (可复用到其他项目) |
-| [rules/architecture.md](rules/architecture.md) | 后端架构规范 (DDD + Modular Monolith + Clean Architecture) |
-| [rules/project-structure.md](rules/project-structure.md) | 项目目录结构规范 (完整目录树、配置文件) |
-| [rules/api-design.md](rules/api-design.md) | API 设计规范 (RESTful、状态码、错误格式) |
-| [rules/sdk-first.md](rules/sdk-first.md) | SDK-First 原则详细说明 |
-| [rules/code-style.md](rules/code-style.md) | 代码风格详细规范 |
-| [rules/testing.md](rules/testing.md) | 测试规范详细说明 |
-| [rules/security.md](rules/security.md) | 安全规范详细说明 |
 
 ---
 

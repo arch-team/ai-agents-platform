@@ -18,25 +18,6 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 开发命令
 
-### 环境管理 (pnpm)
-
-```bash
-# 安装依赖
-pnpm install
-
-# 添加生产依赖
-pnpm add <package>
-
-# 添加开发依赖
-pnpm add -D <package>
-
-# 移除依赖
-pnpm remove <package>
-
-# 更新所有依赖
-pnpm update
-```
-
 ### 代码质量
 
 ```bash
@@ -113,25 +94,6 @@ pnpm preview
 详细架构规范、目录结构、依赖规则请参考 [rules/architecture.md](rules/architecture.md)
 
 **项目目录结构**: 详见 [rules/project-structure.md](rules/project-structure.md)
-
----
-
-## 相关规范文档
-
-| 文档 | 内容 |
-|------|------|
-| [PROJECT_CONFIG.ai-agents-platform.md](PROJECT_CONFIG.ai-agents-platform.md) | 项目特定配置 (功能模块、API 端点) |
-| [PROJECT_CONFIG.template.md](PROJECT_CONFIG.template.md) | 项目配置模板 (可复用到其他项目) |
-| [rules/tech-stack.md](rules/tech-stack.md) | **技术栈版本规范 (单一真实源)** |
-| [rules/architecture.md](rules/architecture.md) | 前端架构规范 (Feature-Sliced Design) |
-| [rules/project-structure.md](rules/project-structure.md) | 项目目录结构规范 |
-| [rules/component-design.md](rules/component-design.md) | 组件设计规范 |
-| [rules/state-management.md](rules/state-management.md) | 状态管理规范 |
-| [rules/code-style.md](rules/code-style.md) | 代码风格详细规范 |
-| [rules/testing.md](rules/testing.md) | 测试规范详细说明 |
-| [rules/security.md](rules/security.md) | 前端安全规范 |
-| [rules/performance.md](rules/performance.md) | 性能优化规范 |
-| [rules/accessibility.md](rules/accessibility.md) | 无障碍规范 |
 
 ---
 
