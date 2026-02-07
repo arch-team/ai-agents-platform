@@ -94,24 +94,4 @@ export const apiClient = axios.create({
 | `VITE_API_BASE_URL` | 后端 API 基础 URL | `http://localhost:8000` |
 | `VITE_APP_TITLE` | 应用标题 | `AI Agents Platform` |
 
----
 
-## 导入路径配置
-
-> 路径别名和导入规范详见 [rules/architecture.md](rules/architecture.md) §3 和 [rules/code-style.md](rules/code-style.md) §3
-
----
-
-## 架构合规规则
-
-> 依赖规则、违规检测、允许的例外详见 [rules/architecture.md](rules/architecture.md) §0.1 依赖合法性速查矩阵
-
----
-
-## PR Review 检查清单
-
-- [ ] 新组件放置在正确的 FSD 层级
-- [ ] 导入符合依赖方向规则
-- [ ] API 调用通过 React Query hooks
-- [ ] 类型定义完整
-- [ ] 包含对应的测试文件

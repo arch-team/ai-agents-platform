@@ -37,14 +37,14 @@
 
 ### 0.2 层级职责速查
 
-| 层级 | 职责 | 示例 |
-|------|------|------|
-| **app** | 应用初始化、路由、全局 Provider | `App.tsx`, `routes.tsx`, `providers.tsx` |
-| **pages** | 页面组件，组装 widgets/features | `LoginPage`, `DashboardPage` |
-| **widgets** | 独立 UI 块，组合多个 features | `Header`, `Sidebar`, `UserMenu` |
-| **features** | 业务功能，包含业务逻辑 | `auth/LoginForm`, `agents/AgentList` |
-| **entities** | 业务实体，数据模型和基础 UI | `user/model`, `agent/ui/AgentCard` |
-| **shared** | 共享工具，无业务逻辑 | `ui/Button`, `api/client`, `lib/utils` |
+| 层级 | 职责 | 示例 | ✅ 可以 | ❌ 禁止 |
+|------|------|------|--------|--------|
+| **app** | 应用初始化、路由、全局 Provider | `App.tsx`, `routes.tsx`, `providers.tsx` | Provider、路由、全局样式 | 具体业务实现 |
+| **pages** | 页面组件，组装 widgets/features | `LoginPage`, `DashboardPage` | 组合 widgets/features、页面布局 | 业务逻辑 |
+| **widgets** | 独立 UI 块，组合多个 features | `Header`, `Sidebar`, `UserMenu` | 组合下层组件、简单状态 | 直接业务逻辑、API 调用 |
+| **features** | 业务功能，包含业务逻辑 | `auth/LoginForm`, `agents/AgentList` | 业务逻辑、API 调用、状态管理 | 跨 feature 依赖 |
+| **entities** | 业务实体，数据模型和基础 UI | `user/model`, `agent/ui/AgentCard` | 数据模型、基础 UI、类型定义 | 复杂业务逻辑、跨实体依赖 |
+| **shared** | 共享工具，无业务逻辑 | `ui/Button`, `api/client`, `lib/utils` | 工具函数、基础 UI、API 客户端 | 任何业务逻辑、业务实体 |
 
 ### 0.3 Slice 结构模板
 
@@ -63,32 +63,12 @@
     └── utils.ts
 ```
 
-### 0.4 PR Review 检查清单
-
-完整检查清单见 [checklist.md](checklist.md) §分层与架构
 
 ---
 
-## 1. 分层规则
+## 1. 模块导出规则
 
-### 1.1 各层职责与约束
-
-| 层级 | 职责 | ✅ 可以 | ❌ 禁止 |
-|------|------|--------|--------|
-| **shared** | 无业务逻辑的可复用代码 | 工具函数、基础 UI、API 客户端 | 任何业务逻辑、业务实体 |
-| **entities** | 业务实体及其基础表示 | 数据模型、基础 UI、类型定义 | 复杂业务逻辑、跨实体依赖 |
-| **features** | 具体业务功能 | 业务逻辑、API 调用、状态管理 | 跨 feature 依赖 |
-| **widgets** | 组合多个 features/entities | 组合下层组件、简单状态 | 直接业务逻辑、API 调用 |
-| **pages** | 页面组装，连接路由 | 组合 widgets/features、页面布局 | 业务逻辑 |
-| **app** | 应用初始化、全局配置 | Provider、路由、全局样式 | 具体业务实现 |
-
-> **目录结构示例**: 详见 [project-structure.md](project-structure.md)
-
----
-
-## 2. 模块导出规则
-
-### 2.1 Public API 原则
+### 1.1 Public API 原则
 
 每个 slice 必须有 `index.ts` 定义公开 API：
 
@@ -106,7 +86,7 @@ export { useLogin, useLogout } from './api/queries';
 export type { LoginCredentials, AuthState } from './model/types';
 ```
 
-### 2.2 禁止导出
+### 1.2 禁止导出
 
 - 内部工具函数
 - 私有组件
@@ -120,9 +100,9 @@ export { useInternalState } from './model/internal';
 
 ---
 
-## 3. 跨层通信
+## 2. 跨层通信
 
-### 3.1 推荐模式
+### 2.1 推荐模式
 
 | 场景 | 推荐方案 | 详细规范 |
 |------|---------|---------|
@@ -131,13 +111,3 @@ export { useInternalState } from './model/internal';
 | 服务端数据 | React Query | [state-management.md](state-management.md) §1 |
 | 事件通信 | Custom Events / Zustand | - |
 
----
-
-## 相关文档
-
-| 文档 | 说明 |
-|------|------|
-| [project-structure.md](project-structure.md) | 目录结构详解 |
-| [component-design.md](component-design.md) | 组件设计规范、组件模板 |
-| [state-management.md](state-management.md) | 状态管理详细规范 |
-| [testing.md](testing.md) | 测试规范 |

@@ -46,9 +46,6 @@
 ❌ 不需要 (过度优化)
 ```
 
-### PR Review 检查清单
-
-完整检查清单见 [checklist.md](checklist.md) §性能
 
 ---
 

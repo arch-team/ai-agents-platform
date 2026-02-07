@@ -26,9 +26,6 @@ pnpm audit
 grep -rE "(password|secret|token|key)\s*[:=]" src/
 ```
 
-### PR Review 检查清单
-
-完整检查清单见 [checklist.md](checklist.md) §安全
 
 ---
 

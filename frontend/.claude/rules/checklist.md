@@ -103,18 +103,9 @@
 
 ## 项目结构
 
-- [ ] 新文件放置在正确的 FSD 层级
 - [ ] 组件与测试文件同目录
-- [ ] 新 slice 有 `index.ts` 导出
 - [ ] 无临时文件被提交
 - [ ] 环境变量已在 `.env.example` 声明
 
 详见 [project-structure.md](project-structure.md)
 
----
-
-## 预提交一键验证
-
-```bash
-pnpm lint && pnpm format:check && pnpm typecheck && pnpm test:coverage
-```

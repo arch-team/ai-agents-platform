@@ -12,7 +12,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 > **详细技术栈规范**: 参考 [rules/tech-stack.md](rules/tech-stack.md) (单一真实源)
 
-**概览**: React 18+ | TypeScript 5+ | Vite 5+ | TailwindCSS | React Query | Zustand
+**概览**: React | TypeScript | Vite | TailwindCSS | React Query | Zustand
 
 ---
 

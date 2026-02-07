@@ -44,9 +44,6 @@ useState
 | 全局 Store | `shared/store/{store}.ts` |
 | 实体类型 | `entities/{entity}/model/types.ts` |
 
-### PR Review 检查清单
-
-完整检查清单见 [checklist.md](checklist.md) §状态管理
 
 ---
 
@@ -123,11 +120,7 @@ export function useCreateAgent() {
 
 ### 1.4 乐观更新模式
 
-```
-onMutate: cancelQueries → 保存旧数据 → setQueryData 乐观写入 → return { previous }
-onError: 用 context.previous 回滚
-onSettled: invalidateQueries 确保数据一致
-```
+> 模式: `onMutate`(cancelQueries → 保存旧数据 → setQueryData) → `onError`(回滚) → `onSettled`(invalidateQueries)
 
 ---
 

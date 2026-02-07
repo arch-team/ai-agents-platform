@@ -33,9 +33,6 @@
 - ❌ `getByTestId` 优先 → ✅ 可访问性查询优先
 - ❌ 同步期望异步 → ✅ `waitFor` / `findBy`
 
-### PR Review 检查清单
-
-完整检查清单见 [checklist.md](checklist.md) §测试
 
 ---
 
@@ -221,32 +218,7 @@ export class LoginPage {
 
 ## 6. 测试配置
 
-### Vitest
-
-```typescript
-// vitest.config.ts
-export default defineConfig({
-  test: {
-    globals: true,
-    environment: 'jsdom',
-    setupFiles: ['./tests/setup.ts'],
-    coverage: { provider: 'v8', reporter: ['text', 'html'] },
-  },
-  resolve: { alias: { '@': path.resolve(__dirname, './src') } },
-});
-```
-
-### Playwright
-
-```typescript
-// playwright.config.ts
-export default defineConfig({
-  testDir: './tests/e2e',
-  fullyParallel: true,
-  use: { baseURL: 'http://localhost:5173', trace: 'on-first-retry' },
-  webServer: { command: 'pnpm dev', url: 'http://localhost:5173' },
-});
-```
+> Vitest 和 Playwright 配置文件位于项目根目录 (`vitest.config.ts`, `playwright.config.ts`)，具体配置项参考官方文档。
 
 ---
 
@@ -259,12 +231,3 @@ export default defineConfig({
 | Utils | 95% | 100% |
 | **整体** | **80%** | **85%** |
 
----
-
-## 相关文档
-
-| 文档 | 说明 |
-|------|------|
-| [component-design.md](component-design.md) | 组件设计模式 |
-| [state-management.md](state-management.md) | 状态管理 (React Query Mock) |
-| [CLAUDE.md](../CLAUDE.md) | TDD 工作流 |

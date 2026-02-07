@@ -51,9 +51,6 @@ import { useLocalState } from './hooks';
 import type { User } from '@/entities/user';
 ```
 
-### PR Review 检查清单
-
-完整检查清单见 [checklist.md](checklist.md) §代码风格
 
 ---
 
@@ -133,12 +130,3 @@ import { Button } from '../../../shared/ui';
 | `import * as utils from '...'` | 不利于 Tree Shaking |
 | 导入内部实现文件 | 破坏模块封装 |
 
----
-
-## 相关文档
-
-| 文档 | 说明 |
-|------|------|
-| [component-design.md](component-design.md) | 组件设计模式、组件代码组织 |
-| [architecture.md](architecture.md) | FSD 分层规则 |
-| [testing.md](testing.md) | 测试命名规范 |

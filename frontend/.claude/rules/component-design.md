@@ -44,9 +44,6 @@
 | 可选属性 | `disabled?: boolean` | `disabled: boolean \| undefined` |
 | 默认值 | 解构默认值 | Props 中定义默认 |
 
-### PR Review 检查清单
-
-完整检查清单见 [checklist.md](checklist.md) §组件设计
 
 ---
 

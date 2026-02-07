@@ -37,9 +37,6 @@
 | 功能性图片 | 描述功能 | `alt="搜索"` |
 | SVG 图标 | `aria-hidden` 或 `role="img"` | `<svg aria-hidden="true">` |
 
-### PR Review 检查清单
-
-完整检查清单见 [checklist.md](checklist.md) §无障碍
 
 ---
 

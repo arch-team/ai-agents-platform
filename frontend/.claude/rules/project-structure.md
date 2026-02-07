@@ -77,38 +77,7 @@ frontend/                       # 前端项目根目录
 
 ---
 
-## 1. FSD 层级详解
-
-> 各层级的职责、依赖规则、Slice 结构模板详见 [architecture.md](architecture.md) §0-2
->
-> 本节仅展示目录树结构示例。
-
-### src/ 目录结构示例
-
-```
-src/
-├── app/                        # 应用层 → 见 architecture.md §2.6
-├── pages/                      # 页面层 → 见 architecture.md §2.5
-├── widgets/                    # 组件层 → 见 architecture.md §2.4
-├── features/                   # 功能层 → 见 architecture.md §2.3
-├── entities/                   # 实体层 → 见 architecture.md §2.2
-└── shared/                     # 共享层 → 见 architecture.md §2.1
-```
-
----
-
-## 2. 跨文档引用
-
-| 内容 | 参考文档 |
-|------|---------|
-| FSD 分层规则和依赖矩阵 | [architecture.md](architecture.md) §0.1 |
-| 组件设计模式 | [component-design.md](component-design.md) |
-| 测试目录结构 | [testing.md](testing.md) §1 |
-| 根级通用规范 | [../../.claude/CLAUDE.md](../../../.claude/CLAUDE.md) |
-
----
-
-## 3. 新项目初始化检查清单
+## 1. 新项目初始化检查清单
 
 ### 目录
 - [ ] `src/app/` 包含 App.tsx、providers/、routes/
@@ -129,8 +98,3 @@ src/
 - [ ] `.prettierrc` 配置格式化规则
 - [ ] `vitest.config.ts` 配置测试
 
----
-
-## PR Review 检查清单
-
-完整检查清单见 [checklist.md](checklist.md) §项目结构
