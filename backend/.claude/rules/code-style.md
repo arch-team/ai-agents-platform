@@ -55,23 +55,10 @@ permissions = await fetch_permissions(user_id)
 ## 1. 类型提示 (Type Hints)
 
 ```python
-# ✅ 正确 - 完整类型提示
-def get_user(user_id: int) -> User | None:
-    ...
-
-async def fetch_data(url: str, timeout: float = 30.0) -> bytes:
-    ...
-
-# ✅ 正确 - 泛型类
+# 泛型类模式
 T = TypeVar("T")
-
 class Repository(Generic[T]):
     def get(self, id: int) -> T | None: ...
-    def save(self, entity: T) -> T: ...
-
-# ❌ 错误 - 缺少类型提示
-def get_user(user_id):
-    ...
 ```
 
 ---
@@ -143,19 +130,7 @@ def get_user(user_id: int) -> User | None:
 
 ## 5. 导入规范
 
-```python
-# 1. 标准库导入
-import os
-from collections.abc import Callable
-
-# 2. 第三方库导入
-from fastapi import APIRouter, Depends
-from pydantic import BaseModel
-
-# 3. 本地应用导入
-from src.domain.entities import User
-from src.application.dto import CreateUserDTO
-```
+> 导入分组排序由 Ruff (isort) 自动处理，以下为人工需关注的规则。
 
 - ✅ 具体导入: `from src.domain.entities import User`
 - ❌ 通配符导入: `from src.domain.entities import *`

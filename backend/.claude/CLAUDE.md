@@ -103,33 +103,7 @@ uv run uvicorn src.presentation.api.main:app --host 0.0.0.0 --port 8000 --worker
 
 ## 代码风格快速参考
 
-### 类型提示 (必须)
-
-```python
-# ✅ 正确
-def get_user(user_id: int) -> User | None:
-    ...
-
-# ❌ 错误 - 缺少类型
-def get_user(user_id):
-    ...
-```
-
-### 命名规范
-
-| 元素 | 规范 | 示例 |
-|------|------|------|
-| 函数/变量 | `snake_case` | `get_user_by_id` |
-| 类名 | `PascalCase` | `UserRepository` |
-| 常量 | `UPPER_SNAKE_CASE` | `MAX_RETRY_COUNT` |
-| 私有成员 | `_leading_underscore` | `_internal_cache` |
-| 类型变量 | `PascalCase` + T 后缀 | `EntityT`, `ResponseT` |
-
-### Docstring 原则
-
-> **类型即文档**: 类型提示 + 好命名 = 自解释代码。Docstring 只写类型无法表达的内容。
-
-详细说明请参考 [rules/code-style.md](rules/code-style.md) §3 Docstring 规范
+类型提示、命名规范、Docstring、异步代码详见 [rules/code-style.md](rules/code-style.md)
 
 ---
 

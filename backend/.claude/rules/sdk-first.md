@@ -30,11 +30,7 @@
 
 ### 🟢 优先级 1: 直接使用官方 SDK
 
-```python
-# ✅ 直接使用 boto3
-s3_client = boto3.client("s3", config=Config(retries={"max_attempts": 3}))
-s3_client.upload_file("local.txt", "bucket", "remote/path.txt")
-```
+无需封装，直接调用。
 
 ### 🟡 优先级 2: SDK + 薄封装层
 
@@ -54,15 +50,9 @@ s3_client.upload_file("local.txt", "bucket", "remote/path.txt")
 
 ---
 
-## 项目特有 SDK
+## 项目 SDK 版本
 
-| 领域 | SDK | 版本 |
-|------|-----|------|
-| AWS 基础 | `boto3` | 1.34+ |
-| 深度优化 | `deepspeed` | 0.14+ |
-| CDK 部署 | `aws-cdk-lib` | 2.x |
-
-> 通用框架 (FastAPI, Pydantic, SQLAlchemy) 见 CLAUDE.md 技术栈
+所有 SDK 版本要求见 [tech-stack.md](tech-stack.md)（单一真实源）。
 
 ---
 
@@ -87,16 +77,11 @@ except ClientError as e:
 ## 反模式
 
 ```python
-# ❌ 重新实现 SDK 功能
-def upload_to_s3(file_path, bucket, key):
-    with open(file_path, 'rb') as f:
-        # 手动分片上传... ← 禁止
-
-# ❌ 过度封装
+# ❌ 过度封装 - 模糊接口，隐藏 SDK 行为
 class SuperAwesomeS3Wrapper:
-    def magic_upload(self, thing): ...  # 模糊接口 ← 禁止
+    def magic_upload(self, thing): ...
 
-# ✅ 薄封装
+# ✅ 薄封装 - 明确接口，直接委托 SDK
 class S3Adapter:
     def upload_file(self, local: Path, uri: S3Uri) -> None:
         self._client.upload_file(str(local), uri.bucket, uri.key)

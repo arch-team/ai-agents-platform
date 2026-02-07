@@ -189,16 +189,6 @@ class {Entity}CompletedEvent(DomainEvent):
 | **Outbox Pattern** | 事件与业务操作原子性提交 | 事件先写入 `outbox` 表，后台轮询发布 |
 | **顺序保证** | 同一聚合根的事件需有序处理 | 按 `aggregate_id` 分区 |
 
-```python
-# 幂等处理器模式
-@event_handler({Entity}CompletedEvent)
-async def handle_{entity}_completed(event: {Entity}CompletedEvent) -> None:
-    if await event_store.is_processed(event.event_id):
-        return  # 幂等: 已处理则跳过
-    # 执行业务逻辑...
-    await event_store.mark_processed(event.event_id)
-```
-
 ### 4.3 接口位置区分
 
 - `shared/domain/interfaces/`: **跨模块能力接口**（如 `IQuotaChecker`）
@@ -212,19 +202,7 @@ async def handle_{entity}_completed(event: {Entity}CompletedEvent) -> None:
 
 继承 `PydanticEntity`，自动获得 `id`, `created_at`, `updated_at`。
 
-```python
-class {Entity}(PydanticEntity):
-    model_config = ConfigDict(validate_assignment=True)  # 赋值时触发验证
-
-    name: str = Field(min_length=3, max_length=64)
-    status: {Entity}Status = {Entity}Status.ACTIVE
-
-    def activate(self) -> None:
-        self.status = {Entity}Status.ACTIVE
-        self.touch()
-```
-
-**规范**: 状态转换在 Entity 内部 | 禁止依赖外部服务 | 只抛 Domain 异常 | Pydantic 视为标准工具不属于"外部框架" | 必须配置 `validate_assignment=True`
+**规范**: 必须配置 `ConfigDict(validate_assignment=True)` | 状态转换在 Entity 内部（调用 `self.touch()` 更新时间戳） | 禁止依赖外部服务 | 只抛 Domain 异常 | Pydantic 视为标准工具不属于"外部框架"
 
 ### 5.2 Value Object 值对象
 
@@ -236,18 +214,7 @@ class {Entity}(PydanticEntity):
 
 ### 5.4 Repository 仓库
 
-接口在 Domain 层，实现在 Infrastructure 层。
-
-```python
-# Domain 层 - 接口
-class I{Entity}Repository(IRepository[{Entity}, int]):
-    """定义业务需要的查询方法"""
-    async def find_by_name(self, name: str) -> {Entity} | None: ...
-
-# Infrastructure 层 - 实现
-class {Entity}RepositoryImpl(PydanticRepository[{Entity}, {Entity}Model, int]):
-    _updatable_fields = {"name", "status", "updated_at"}  # 控制可更新字段
-```
+接口在 Domain 层 (`I{Entity}Repository(IRepository[{Entity}, int])`)，实现在 Infrastructure 层 (`{Entity}RepositoryImpl(PydanticRepository[...])`)。
 
 **规范**: `IRepository[E, ID]` 泛型接口定义在 shared | `PydanticRepository` 内置 CRUD | 通过 `_updatable_fields` 白名单控制可更新字段
 

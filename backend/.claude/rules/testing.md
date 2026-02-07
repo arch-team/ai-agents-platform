@@ -79,13 +79,6 @@ tests/
     └── test_full_{workflow}.py
 ```
 
-### Fixture 作用域层级
-
-```
-tests/conftest.py                      → session: 数据库引擎、全局配置
-tests/modules/{module}/conftest.py     → module: 模块专用 Factory、Mock
-tests/modules/{module}/unit/conftest.py → 可选: 单元测试特有 Fixture
-```
 
 ---
 
@@ -114,16 +107,9 @@ def test_create_user_returns_user(self) -> None:
 | `module` | 模块 Factory | `tests/modules/{m}/conftest.py` |
 | `function` | 测试数据 | 默认 |
 
-**模式**: `yield` + 清理
+**模式**: `yield` + 清理（yield 前为 setup，yield 后为 teardown）
 
 ```python
-@pytest.fixture(scope="session")
-def engine():
-    engine = create_engine("sqlite:///:memory:")
-    Base.metadata.create_all(engine)
-    yield engine
-    Base.metadata.drop_all(engine)
-
 @pytest.fixture
 def db_session(engine) -> Session:
     session = sessionmaker(bind=engine)()
@@ -185,15 +171,4 @@ class UserFactory(factory.Factory):
 
 ## 7. 覆盖率
 
-```toml
-# pyproject.toml
-[tool.coverage.run]
-source = ["src"]
-branch = true
-omit = ["*/migrations/*", "*/__init__.py"]
-
-[tool.coverage.report]
-fail_under = 85
-```
-
-**分层覆盖率目标见 CLAUDE.md**
+分层覆盖率目标见 [CLAUDE.md](../CLAUDE.md) §覆盖率要求。配置详见 `pyproject.toml` `[tool.coverage]`。

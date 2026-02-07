@@ -34,137 +34,36 @@ grep -rE "logger\.(info|debug|error).*password" src/                    # 敏感
 
 ---
 
-## 2. 禁止事项补充
+## 1. 易错写法补充
 
-> 速查表已列出 6 条核心禁止规则的 ❌/✅ 对比，以下补充速查表无法体现的关键写法。
-
-### 原生 SQL 必须参数绑定
+> 速查表已列出核心 ❌/✅ 对比，以下补充易错的正确写法。
 
 ```python
-# ❌ 禁止 - 字符串拼接
-query = f"SELECT * FROM users WHERE id = '{user_id}'"
-
-# ✅ 正确 - SQLAlchemy text() 参数绑定
-from sqlalchemy import text
+# SQL 参数绑定 - 使用 SQLAlchemy text() 而非 f-string
 stmt = text("SELECT * FROM users WHERE id = :user_id")
 session.execute(stmt, {"user_id": user_id})
-```
 
-### 路径遍历防护写法
-
-```python
-safe_name = Path(filename).name  # 移除 ../ 等路径组件
+# 路径遍历防护 - 使用 Path.name 移除 ../ 组件
+safe_name = Path(filename).name
 file_path = Path("/uploads") / safe_name
-if not file_path.is_relative_to(Path("/uploads")):
-    raise HTTPException(400, "非法路径")
-```
-
-### 日志脱敏写法
-
-```python
-# ✅ 敏感字段截断
-logger.debug(f"API 密钥: {api_key[:4]}****")
 ```
 
 ---
 
-## 3. 必须事项 (強制要求)
+## 2. 强制要求
 
-### 3.1 环境变量配置
-
-```python
-from pydantic import Field, SecretStr
-from pydantic_settings import BaseSettings, SettingsConfigDict
-
-class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env")
-
-    database_url: SecretStr = Field(..., description="数据库连接字符串")
-    jwt_secret_key: SecretStr = Field(..., description="JWT 签名密钥")
-    aws_secret_access_key: SecretStr = Field(...)
-```
-
-### 3.2 输入验证 (Pydantic)
-
-```python
-from pydantic import BaseModel, EmailStr, Field, field_validator
-import re
-
-class CreateUserRequest(BaseModel):
-    name: str = Field(..., min_length=1, max_length=100)
-    email: EmailStr
-    password: str = Field(..., min_length=8, max_length=128)
-
-    @field_validator("password")
-    @classmethod
-    def validate_password(cls, v: str) -> str:
-        if not re.search(r"[A-Z]", v): raise ValueError("需要大写字母")
-        if not re.search(r"[a-z]", v): raise ValueError("需要小写字母")
-        if not re.search(r"\d", v): raise ValueError("需要数字")
-        return v
-```
-
-### 3.3 密码哈希
-
-```python
-from passlib.context import CryptContext
-
-pwd_context = CryptContext(schemes=["bcrypt"], bcrypt__rounds=12)
-
-def hash_password(password: str) -> str:
-    return pwd_context.hash(password)
-
-def verify_password(plain: str, hashed: str) -> bool:
-    return pwd_context.verify(plain, hashed)
-```
-
-### 3.4 认证模式
-
-```python
-# 关键模式: 登录限制 + JWT
-MAX_LOGIN_ATTEMPTS = 5
-LOCKOUT_MINUTES = 30
-
-# 检查锁定 → 验证密码 → 重置计数器
-# 失败时记录尝试，达到阈值则锁定账户
-```
-
-### 3.5 错误处理 (不暴露内部信息)
-
-```python
-# 内部日志: 详细记录
-logger.error("unhandled_exception", error=str(e), traceback=traceback.format_exc())
-
-# 外部响应: 通用信息
-return JSONResponse(
-    status_code=500,
-    content={"code": "INTERNAL_ERROR", "message": "服务器内部错误"}
-    # ❌ 不返回: detail=str(e), traceback=...
-)
-```
-
-### 3.6 访问控制
-
-```python
-from fastapi import Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer
-
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
-
-async def get_current_user(token: str = Depends(oauth2_scheme)) -> User:
-    # 验证 token，失败返回 401
-    ...
-
-def require_role(roles: list[str]):
-    async def checker(user: User = Depends(get_current_user)) -> User:
-        if user.role not in roles:
-            raise HTTPException(status.HTTP_403_FORBIDDEN, "权限不足")
-        return user
-    return checker
-```
+| 要求 | 规范 | 关键约束 |
+|------|------|---------|
+| **环境变量** | `pydantic_settings.BaseSettings` | 敏感字段使用 `SecretStr` 类型 |
+| **输入验证** | Pydantic `Field` + `field_validator` | 密码: 8~128 字符，含大小写+数字 |
+| **密码存储** | `passlib` bcrypt | `bcrypt__rounds=12` |
+| **登录限制** | 登录失败锁定 | 5 次失败 → 锁定 30 分钟 |
+| **错误响应** | 通用错误信息 | ❌ 禁止返回 `str(e)` 或 traceback，详见 [architecture.md](architecture.md) §8 |
+| **访问控制** | OAuth2 + RBAC | `get_current_user` → `require_role` 依赖链 |
 
 ---
 
-## 4. 检查清单
+## 相关文档
 
-完整检查清单见 [checklist.md](checklist.md) §安全
+- [checklist.md](checklist.md) §安全 - PR Review 检查清单
+- [logging.md](logging.md) - 日志脱敏规则
