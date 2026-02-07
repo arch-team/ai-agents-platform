@@ -168,8 +168,7 @@ modules/{module}/
 我新增了tech-stack.md 作为技术栈规范单一来源，根据单一职责原则的要求，分析分散在/Users/jinhuasu/Project_Workspace/Anker-Projects/ml-platform-research/llm-platform-solution/ai-agents-platform/frontend下的技术栈相关的说明有哪些应该统一到tech-stack.md中
 
 
-/Users/jinhuasu/Project_Workspace/Anker-Projects/ml-platform-research/llm-platform-solution/ai-agents-platform/frontend/.claude/rules/tech-stack.md
-是前端的子项目的Claude Code 上下文（context）管理的规范文件，结合Claude Code 上下文管理的最佳实践在不影响它的作用的情况下精简冗余信息
+/Users/jinhuasu/Project_Workspace/Anker-Projects/ml-platform-research/llm-platform-solution/ai-agents-platform/backend/.claude/rules/logging.md是后端子项目的Claude Code 上下文（context）管理的规范文件，结合Claude Code 上下文管理的最佳实践在不影响它的作用的情况下精简冗余信息
 
 
 /Users/jinhuasu/Project_Workspace/Anker-Projects/ml-platform-research/llm-platform-sol
@@ -193,6 +192,15 @@ claude-md-improver 当前ai-agents-platform monorepo项目，包含后端（back
   这些规范文件的命名你有什么优化建议吗？以便各个子项目下的规范文件的名称具有更好的可读性和一致性。
 
 
-  claude-md-improver 当前ai-agents-platform monorepo项目，对基础设施（infra）子项目，我为这个项目打造Claude Code上下文管理的规范，目前已经完成，结合Claude code上下文管理的最佳实践，你对目前上下管理的有什么优化建议
+当前ai-agents-platform monorepo项目，对后端（backend）子项目，我为这个项目打造Claude Code上下文管理的规范，目前已经完成，结合Claude code上下文管理的最佳实践，你对目前上下管理的有什么优化建议
+
+当前ai-agents-platform monorepo项目，对基础设施（infra）子项目，我为这个项目打造Claude Code上下文管理的规范，目前已经完成，结合Claude code上下文管理的最佳实践，你对目前上下管理的有什么优化建议
 
 
+
+
+可以，但是对于每个问题的优化方案，你需要一个问题一个问题处理，每个问题你需要先说明优化的依据，获得我的确认后再执行 
+  - infra/.claude/project-config.template.md → 移动到 doc/templates/
+
+
+分析这个基础设施infra子项目： /Users/jinhuasu/Project_Workspace/Anker-Projects/ml-platform-research/llm-platform-solution/ai-agents-platform/infra下上下文管理的规范文件，结合Claude Code 上下文管理的最佳实践在不影响它的作用的情况下分析是否存在冗余信息，是否存在各个规范文件不满足单一职责原则、职责重叠的问题
