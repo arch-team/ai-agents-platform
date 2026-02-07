@@ -63,7 +63,6 @@ backend/                        # 后端项目根目录
 |------|---------|
 | `src/modules/{module}/` 内部结构 | [architecture.md](architecture.md) §6 |
 | `tests/modules/{module}/` 结构 | [testing.md](testing.md) §1 |
-| `.claude/rules/` 内容 | [context-guide.md](../context-guide.md) |
 | 根级通用规范 | [../../.claude/CLAUDE.md](../../../.claude/CLAUDE.md) |
 
 ---

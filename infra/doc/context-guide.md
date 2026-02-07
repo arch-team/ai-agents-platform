@@ -2,7 +2,7 @@
 
 > **职责**: 说明 `.claude/` 目录结构、文件用途和引用关系，帮助开发者快速定位所需规范文档。
 
-本文档用于说明 ./infra AWS CDK 基础设施项目的Claude Code的上下文配置文件,不直接作用该项目的规范
+本文档位于 `doc/` 目录，用于说明 ./infra AWS CDK 基础设施项目的 Claude Code 的上下文配置文件，不直接作用该项目的规范
 
 
 ---
@@ -11,10 +11,8 @@
 
 ```
 .claude/
-├── context-guide.md                       # 本文件 - Claude Code的项目上下文配置文件说明
 ├── CLAUDE.md                              # 项目主规范 (入口)
 ├── project-config.md                      # 项目特定配置
-├── project-config.template.md             # 项目配置模板
 └── rules/                                 # 专题规范文档
     ├── checklist.md                       # PR Review 检查清单 ★单一真实源
     ├── architecture.md                    # CDK 架构规范 ★核心
@@ -70,7 +68,7 @@
 | 文件 | 用途 |
 |------|------|
 | `project-config.md` | 本项目特定配置：Stack 列表、环境配置、AWS 账户 |
-| `project-config.template.md` | 新项目配置模板，包含 `{{PLACEHOLDER}}` 占位符 |
+| `project-config.template.md` | 新项目配置模板，包含 `{{PLACEHOLDER}}` 占位符（位于 `doc/` 目录） |
 
 ### rules/ (专题规范)
 
@@ -148,7 +146,7 @@
 
 ### 模板化
 
-`project-config.template.md` 中的占位符支持新项目快速初始化。
+`project-config.template.md`（位于 `doc/` 目录）中的占位符支持新项目快速初始化。
 
 ---
 
@@ -166,9 +164,7 @@
 |------|------|------|
 | 主规范 | `CLAUDE.md` | - |
 | 专题规范 | `rules/{topic}.md` | `rules/testing.md` |
-| 上下文导航 | `context-guide.md` | - |
 | 项目配置 | `project-config.md` | - |
-| 模板 | `project-config.template.md` | - |
 
 ### 新增文件
 

@@ -69,9 +69,7 @@ chore(backend): 升级 FastAPI 到 0.111
 |------|------|------|
 | 主规范 | `CLAUDE.md` | 各子项目入口（Claude Code 框架约定） |
 | 专题规范 | `rules/{topic}.md` | `rules/testing.md`, `rules/checklist.md` |
-| 上下文导航 | `context-guide.md` | 目录说明（非 Claude Code 加载） |
 | 项目配置 | `project-config.md` | 项目特定配置（非 Claude Code 加载） |
-| 模板 | `project-config.template.md` | 新项目配置模板 |
 | 项目说明 | `README.md` | 项目根目录说明 |
 
 **命名原则**: 除 `CLAUDE.md`（Claude Code 框架约定）和 `README.md` 外，所有文档统一使用 `kebab-case.md`

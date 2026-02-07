@@ -1,6 +1,6 @@
 # Claude Code 上下文管理
 
-> **职责**: `.claude/` 目录的导航说明，帮助开发者快速定位规范文档。本文档用于说明 ./backend Python 后端项目的Claude Code的上下文配置文件,不直接作用该项目的规范
+> **职责**: `.claude/` 目录的导航说明，帮助开发者快速定位规范文档。本文档位于 `doc/` 目录，用于说明 ./backend Python 后端项目的 Claude Code 的上下文配置文件，不直接作用该项目的规范
 
 ---
 
@@ -8,10 +8,8 @@
 
 ```
 .claude/
-├── context-guide.md                    # 本文件 - 目录说明
 ├── CLAUDE.md                           # 项目主规范 (入口)
 ├── project-config.md                   # 项目特定配置
-├── project-config.template.md          # 项目配置模板
 ├── settings.local.json                 # Claude Code 本地权限配置
 └── rules/                              # 专题规范文档
     ├── tech-stack.md                   # 技术栈版本规范 (单一真实源) ★
@@ -68,7 +66,7 @@
 | 文件 | 用途 |
 |------|------|
 | `project-config.md` | 本项目特定配置：模块列表、域事件、跨模块接口 |
-| `project-config.template.md` | 新项目配置模板，包含 `{{PLACEHOLDER}}` 占位符 |
+| `project-config.template.md` | 新项目配置模板，包含 `{{PLACEHOLDER}}` 占位符（位于 `doc/` 目录） |
 
 ### rules/ (专题规范)
 
@@ -107,8 +105,7 @@ CLAUDE.md (入口)
     ├─→ rules/security.md
     ├─→ rules/sdk-first.md
     ├─→ rules/api-design.md
-    ├─→ project-config.md
-    └─→ project-config.template.md
+    └─→ project-config.md
 ```
 
 **引用原则**:
@@ -149,7 +146,7 @@ CLAUDE.md (入口)
 
 ### 模板化
 
-`project-config.template.md` 和 `rules/architecture.md` 中的占位符支持新项目快速初始化。
+`project-config.template.md`（位于 `doc/` 目录）和 `rules/architecture.md` 中的占位符支持新项目快速初始化。
 
 ---
 
@@ -167,9 +164,7 @@ CLAUDE.md (入口)
 |------|------|------|
 | 主规范 | `CLAUDE.md` | - |
 | 专题规范 | `rules/{topic}.md` | `rules/testing.md` |
-| 上下文导航 | `context-guide.md` | - |
 | 项目配置 | `project-config.md` | - |
-| 模板 | `project-config.template.md` | - |
 
 ### 新增文件
 
