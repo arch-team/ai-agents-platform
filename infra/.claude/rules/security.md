@@ -43,80 +43,39 @@
 ```typescript
 // ✅ Grant 方法自动创建最小权限策略
 bucket.grantRead(lambdaFn);
-bucket.grantWrite(lambdaFn);
 
 // ❌ 禁止 - 过宽策略
-lambdaFn.addToRolePolicy(new iam.PolicyStatement({
-  actions: ['s3:*'],
-  resources: ['*'],
-}));
+lambdaFn.addToRolePolicy(new iam.PolicyStatement({ actions: ['s3:*'], resources: ['*'] }));
 ```
 
 ### 1.2 精细权限控制
 
-```typescript
-// ✅ 限制资源范围和条件
-bucket.grantRead(lambdaFn, 'data/*');  // 仅限 data/ 前缀
+- ✅ 限制资源范围: `bucket.grantRead(lambdaFn, 'data/*')`
+- ✅ 添加条件约束: `conditions: { StringEquals: { ... } }`
+- ❌ 禁止 Admin 权限: `AdministratorAccess`
 
-const policy = new iam.PolicyStatement({
-  actions: ['s3:GetObject'],
-  resources: [bucket.arnForObjects('reports/*')],
-  conditions: { StringEquals: { 's3:ExistingObjectTag/Environment': 'prod' } },
-});
-```
-
-### 1.3 避免 Admin 权限
-
-```typescript
-// ❌ 禁止 - 管理员权限
-managedPolicies: [iam.ManagedPolicy.fromAwsManagedPolicyName('AdministratorAccess')]
-
-// ✅ 正确 - 最小权限
-bucket.grantRead(role);
-table.grantReadWriteData(role);
-```
+> 详细代码模板见 [construct-design.md §2](construct-design.md#2-construct-实现模式)
 
 ---
 
 ## 2. 密钥管理
 
-### 2.1 Secrets Manager
+### 2.1 存储策略
+
+- **敏感凭证**: Secrets Manager（数据库密码、API Key 等）
+- **非敏感配置**: SSM Parameter Store（API URL、配置项等）
+- ❌ **禁止**: 硬编码密钥 `environment: { API_KEY: 'sk-xxx' }`
+
+### 2.2 使用模式
 
 ```typescript
-// ✅ 敏感凭证使用 Secrets Manager
-const dbSecret = new secretsmanager.Secret(this, 'DbSecret', {
-  secretName: 'prod/db/credentials',
-  generateSecretString: {
-    secretStringTemplate: JSON.stringify({ username: 'admin' }),
-    generateStringKey: 'password',
-    passwordLength: 32,
-  },
-});
-
-// RDS 使用: rds.Credentials.fromSecret(dbSecret)
-// Lambda 使用: dbSecret.grantRead(fn)
-```
-
-### 2.2 SSM Parameter Store
-
-```typescript
-// 非敏感配置: SSM Parameter | 敏感配置: Secrets Manager
-new ssm.StringParameter(this, 'Config', {
-  parameterName: '/app/config/api-url',
-  stringValue: 'https://api.example.com',
-});
-```
-
-### 2.3 禁止硬编码
-
-```typescript
-// ❌ 禁止
-environment: { API_KEY: 'sk-1234567890abcdef' }
-
 // ✅ 从 Secrets Manager 读取
 const secret = secretsmanager.Secret.fromSecretNameV2(this, 'ApiKey', 'prod/api-key');
 environment: { API_KEY_SECRET_ARN: secret.secretArn }
 secret.grantRead(fn);
+
+// ❌ 禁止 - 硬编码
+environment: { API_KEY: 'sk-1234567890abcdef' }
 ```
 
 ---
@@ -145,22 +104,17 @@ const database = new rds.DatabaseCluster(this, 'Database', {
 
 ### 3.2 Security Groups
 
-```typescript
-// ✅ 最小开放端口 + 禁止所有出站
-const dbSecurityGroup = new ec2.SecurityGroup(this, 'DbSg', {
-  vpc,
-  allowAllOutbound: false,
-});
-dbSecurityGroup.addIngressRule(appSecurityGroup, ec2.Port.tcp(3306), 'Allow MySQL from app');
-```
+- ✅ 最小开放端口 + `allowAllOutbound: false`
+- ✅ 仅允许必要的入站来源和端口
+- ❌ 禁止 `allowAllOutbound: true`（默认值）用于数据层
 
 ### 3.3 VPC Endpoints
 
-```typescript
-// 减少流量外泄风险
-vpc.addInterfaceEndpoint('SecretsManager', { service: ec2.InterfaceVpcEndpointAwsService.SECRETS_MANAGER });
-vpc.addGatewayEndpoint('S3', { service: ec2.GatewayVpcEndpointAwsService.S3 });
-```
+使用 VPC Endpoints 减少流量外泄风险，避免敏感数据经过公网：
+- Gateway Endpoints: S3, DynamoDB（免费）
+- Interface Endpoints: Secrets Manager, CloudWatch 等（按需）
+
+> 完整代码模板和环境策略详见 [cost-optimization.md §3](cost-optimization.md#3-网络优化)
 
 ---
 

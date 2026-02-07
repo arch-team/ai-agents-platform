@@ -84,6 +84,4 @@
 
 ## 预提交一键验证
 
-```bash
-pnpm lint && pnpm format:check && pnpm typecheck && pnpm cdk synth && pnpm test:coverage
-```
+完整验证命令见 [CLAUDE.md §PR Review 检查清单](../CLAUDE.md#pr-review-检查清单)

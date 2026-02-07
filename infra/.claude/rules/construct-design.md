@@ -45,7 +45,7 @@ export class {Construct} extends Construct {
 
 ### 安全默认配置
 
-> **职责边界**: 本节关注"怎么写"（代码模板）。安全原理和合规要求详见 [security.md](security.md)
+> 安全要求和原理详见 [security.md](security.md)，本节仅列出代码模板中的必须配置项。
 
 | 资源 | 必须配置 |
 |------|---------|
@@ -211,4 +211,3 @@ export interface ApiGatewayConstructProps {
 - [architecture.md](architecture.md) - Construct 分层规则
 - [security.md](security.md) - 安全配置详细规范
 - [testing.md](testing.md) - Construct 测试规范
-- [checklist.md](checklist.md) - PR Review 检查清单

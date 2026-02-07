@@ -26,6 +26,21 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ---
 
+## 环境设置
+
+```bash
+# 首次设置
+pnpm install
+pnpm cdk bootstrap  # 首次使用 CDK（每个 AWS 账户/Region 执行一次）
+
+# 验证环境
+node -v && pnpm -v && pnpm exec tsc --version && pnpm exec cdk --version
+pnpm cdk synth       # 确保能成功合成
+pnpm test            # 确保测试通过
+```
+
+---
+
 ## 开发命令
 
 ### CDK 命令
@@ -110,64 +125,36 @@ pnpm test lib/constructs/
 
 ---
 
-## 代码风格快速参考
+## 代码风格
 
-### Props 设计
-
-Props 接口设计规范见 [construct-design.md §1](rules/construct-design.md#1-props-接口设计)
-
-**核心规则**: Props 属性必须使用 `readonly` 修饰
-
-### 命名规范
-
-| 元素 | 规范 | 示例 |
-|------|------|------|
-| Construct 类 | `PascalCase` | `ApiGatewayConstruct`, `VpcConstruct` |
-| Stack 类 | `PascalCase` + `Stack` 后缀 | `NetworkStack`, `ComputeStack` |
-| Props 接口 | `PascalCase` + `Props` 后缀 | `VpcConstructProps` |
-| CDK ID | `PascalCase` | `'MainVpc'`, `'ApiGateway'` |
-| 资源名称 | `kebab-case` | `'ai-platform-api'` |
-
-### JSDoc 原则
-
-```typescript
-/**
- * API 网关 Construct - 提供统一的 REST API 入口。
- *
- * @remarks
- * 默认启用访问日志和 WAF 集成。
- */
-export class ApiGatewayConstruct extends Construct {
-  // ...
-}
-```
-
-<!-- 代码风格规范已整合到 construct-design.md 等专题文档中 -->
+代码风格规范详见 [construct-design.md](rules/construct-design.md) 和 [project-structure.md](rules/project-structure.md)
 
 ---
 
 ## 项目结构
 
-**架构模式**: CDK Construct 分层 (L1 → L2 → L3)
-
-**核心分层**:
-- **L1**: CloudFormation 资源 (Cfn* 前缀)
-- **L2**: 高级 Construct (aws-* 模块)
-- **L3**: 自定义 Construct (业务组合)
-
-详细架构规范、Construct 结构模板请参考 [rules/architecture.md](rules/architecture.md)
+**架构模式**: CDK Construct 分层 (L1 → L2 → L3)，详见 [rules/architecture.md](rules/architecture.md)
 
 **项目目录结构**: 详见 [rules/project-structure.md](rules/project-structure.md)
 
 ---
 
-## 安全规范快速参考
+## 安全规范
 
-**最小权限原则**: 使用 `grantRead()`, `grantWrite()` 等 Grant 方法。
+详见 [rules/security.md](rules/security.md)
 
-**禁止**: 硬编码密钥、过宽 IAM 权限、公开 S3 Bucket。
+---
 
-速查表和检测命令详见 [rules/security.md](rules/security.md)
+## 注意事项 (Gotchas)
+
+| 项目 | 说明 |
+|------|------|
+| **CDK Context 缓存** | `cdk.context.json` 缓存 VPC/AZ 查询结果，值不符预期时删除此文件重新 synth |
+| **CfnOutput 陷阱** | 使用 Fn.importValue 后，导出 Stack 无法修改/删除导出值，优先用 Props 传递 |
+| **NAT Gateway 成本** | dev 环境慎用 NAT Gateway (~$30/月)，优先使用单个 NAT 或 NAT Instance |
+| **包管理** | 仅使用 pnpm，禁止 npm/yarn |
+| **--hotswap** | `cdk deploy --hotswap` 仅用于 dev 快速迭代，禁止在 staging/prod 使用 |
+| **CDK Nag 版本** | cdk-nag 规则随版本变化，升级后可能出现新违规项 |
 
 ---
 

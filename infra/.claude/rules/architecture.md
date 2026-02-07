@@ -186,6 +186,5 @@ new NetworkStack(app, `Network-${envName}`, {
 
 - [project-structure.md](project-structure.md) - 目录结构规范
 - [construct-design.md](construct-design.md) - Construct 设计规范
-- [checklist.md](checklist.md) - PR Review 检查清单
 - [security.md](security.md) - 安全规范
 - [testing.md](testing.md) - 测试规范

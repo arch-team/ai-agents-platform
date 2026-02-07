@@ -30,10 +30,6 @@ pnpm cdk diff && pnpm cdk deploy
 | staging | 预发布 | CI/CD | 自动 |
 | prod | 生产 | CI/CD | 手动审批 |
 
-### 部署检查清单
-
-完整 PR Review 清单见 [checklist.md](checklist.md)
-
 ---
 
 ## 1. 环境配置
@@ -183,4 +179,3 @@ pnpm audit                  # 依赖漏洞检查
 | [architecture.md](architecture.md) | Stack 依赖关系、环境配置 |
 | [security.md](security.md) | 部署安全、IAM 权限 |
 | [cost-optimization.md](cost-optimization.md) | 环境成本管理 |
-| [checklist.md](checklist.md) | PR Review 检查清单 |
