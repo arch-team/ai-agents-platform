@@ -20,7 +20,9 @@
     ├── testing.md                      # 测试规范 (TDD)
     ├── security.md                     # 安全规范
     ├── sdk-first.md                    # SDK 优先原则
-    └── api-design.md                   # API 设计规范
+    ├── api-design.md                   # API 设计规范
+    ├── logging.md                      # 日志规范 (structlog)
+    └── observability.md                # 可观测性规范 (Metrics/Tracing)
 ```
 
 ---
@@ -47,6 +49,8 @@
 | 安全检查清单 | `rules/security.md` §0 速查卡片 |
 | API 路由和状态码 | `rules/api-design.md` |
 | SDK 使用决策 | `rules/sdk-first.md` |
+| 结构化日志规范 | `rules/logging.md` §速查卡片 |
+| 可观测性 (Metrics/Tracing) | `rules/observability.md` §速查卡片 |
 
 ---
 
@@ -81,6 +85,8 @@
 | `security.md` | 禁止事项（注入、硬编码）、必须事项（验证、哈希）、安全检查命令 |
 | `sdk-first.md` | SDK 决策流程、优先级说明、异常处理模式 |
 | `api-design.md` | RESTful 路由、HTTP 状态码、分页规范、错误响应格式 |
+| `logging.md` | 结构化日志规范 - structlog 配置、日志级别、Correlation ID、脱敏规则 |
+| `observability.md` | 可观测性规范 - Metrics 命名、Distributed Tracing (Span)、Health Check 端点 |
 
 ### settings.local.json
 
@@ -105,6 +111,8 @@ CLAUDE.md (入口)
     ├─→ rules/security.md
     ├─→ rules/sdk-first.md
     ├─→ rules/api-design.md
+    ├─→ rules/logging.md ──────→ rules/security.md (脱敏), rules/observability.md
+    ├─→ rules/observability.md ─→ rules/logging.md, rules/tech-stack.md
     └─→ project-config.md
 ```
 
@@ -170,8 +178,9 @@ CLAUDE.md (入口)
 
 1. 专题规范放入 `rules/` 目录
 2. 在 CLAUDE.md 的"相关规范文档"表格中添加链接
-3. 添加 §0 速查卡片
-4. 遵循中文优先原则
+3. 在本文件（context-guide.md）的目录结构和文件说明中添加
+4. 添加 §0 速查卡片
+5. 遵循中文优先原则
 
 ### 演进策略
 

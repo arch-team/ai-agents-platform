@@ -125,6 +125,14 @@ uv run uvicorn src.presentation.api.main:app --host 0.0.0.0 --port 8000 --worker
 
 ---
 
+## 日志与可观测性
+
+**日志规范**: 详见 [rules/logging.md](rules/logging.md) - structlog 结构化日志、Correlation ID、脱敏规则
+
+**可观测性**: 详见 [rules/observability.md](rules/observability.md) - Metrics 命名、Distributed Tracing、Health Check 端点
+
+---
+
 ## API 设计规范
 
 详见 [rules/api-design.md](rules/api-design.md) - RESTful 路由、HTTP 状态码、错误响应格式
