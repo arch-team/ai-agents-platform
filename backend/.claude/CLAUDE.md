@@ -10,11 +10,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 技术栈
 
-**核心**: Python 3.11+ | FastAPI 0.110+ | SQLAlchemy 2.0+ | Pydantic v2 | pytest 8.0+
+**核心**: Python 3.11+ | FastAPI | SQLAlchemy 2.0+ | Pydantic v2 | MySQL 8.0+
 
-**工具**: uv (包管理) | Ruff (lint) | MyPy (类型检查)
+**工具**: uv (包管理) | Ruff (lint) | MyPy (类型检查) | pytest 8.0+
 
-**云服务**: AWS (SageMaker, S3, DynamoDB) | AWS CDK 2.x
+版本矩阵和约束详见 [rules/tech-stack.md](rules/tech-stack.md)
 
 ---
 
