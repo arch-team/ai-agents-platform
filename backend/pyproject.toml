@@ -1,14 +1,14 @@
 [project]
 name = "ai-agents-platform"
 version = "0.1.0"
-description = "AI Agents Platform - 基于 AWS HyperPod 的 ML 训练平台后端服务"
+description = "AI Agents Platform - 基于 Amazon Bedrock AgentCore 的企业级 AI Agents 平台后端服务"
 readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "MIT" }
 authors = [
     { name = "AI Agents Platform Team" }
 ]
-keywords = ["ml", "training", "aws", "hyperpod", "fastapi"]
+keywords = ["ai", "agents", "aws", "bedrock", "agentcore", "fastapi"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
@@ -108,7 +108,7 @@ packages = ["src"]
 
 [tool.ruff]
 target-version = "py311"
-line-length = 88
+line-length = 120
 indent-width = 4
 
 # 排除目录

@@ -327,3 +327,21 @@ Layer 1: Database Session (get_db)
 | `InvalidStateTransitionError` | 409 | 状态转换非法 |
 | `ValidationError` | 422 | 参数验证失败 |
 | `ResourceQuotaExceededError` | 429 | 配额不足 |
+
+---
+
+## 9. 架构合规测试
+
+> **测试位置**: `tests/unit/test_architecture_compliance.py`
+
+| 测试类 | 验证规则 |
+|--------|---------|
+| `TestCleanArchitectureLayers` | 分层依赖方向 |
+| `TestModuleDomainLayerIsolation` | Domain 层绝对隔离 |
+| `TestModuleApplicationLayerDependencies` | Application 层依赖接口 |
+| `TestModuleApiLayerAuthDependency` | Auth 依赖例外验证 |
+
+```bash
+# 运行架构合规测试
+uv run pytest tests/unit/test_architecture_compliance.py -v
+```

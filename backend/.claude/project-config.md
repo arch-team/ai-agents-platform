@@ -24,19 +24,15 @@
 
 ## 技术栈补充
 
-> **注意**: 核心技术栈定义在 CLAUDE.md，此处列出版本要求和项目特有选型。
+> **完整版本矩阵**: 见 [rules/tech-stack.md](rules/tech-stack.md) (单一真实源)
+>
+> 以下仅列出 tech-stack.md 未覆盖的**项目特有选型**。
 
-| 类别 | 技术选型 | 版本要求 |
-|------|---------|---------|
-| **Web 框架** | FastAPI | >=0.110.0 |
-| **ASGI 服务器** | Uvicorn | >=0.27.0 |
-| **数据验证** | Pydantic | >=2.6.0 |
-| **ORM** | SQLAlchemy (async) | >=2.0.25 |
-| **数据库迁移** | Alembic | >=1.13.0 |
-| **数据库** | MySQL 8.0+ (Aurora MySQL 3.x 兼容) | 8.0+ |
-| **AWS SDK** | boto3 | >=1.34.0 |
-| **认证** | python-jose, passlib | - |
-| **日志** | structlog | >=24.1.0 |
+| 类别 | 技术选型 | 说明 |
+|------|---------|------|
+| **数据库** | MySQL 8.0+ (Aurora MySQL 3.x 兼容) | 异步驱动: asyncmy |
+| **认证** | python-jose, passlib | JWT + bcrypt |
+| **数据库迁移** | Alembic >=1.13.0 | 基于 SQLAlchemy |
 
 ---
 
@@ -120,38 +116,6 @@ from src.modules.auth.api.current_user import CurrentUser
 
 ---
 
-## 架构合规规则
+## 架构合规
 
-> **详细规则**: 见 [rules/architecture.md](rules/architecture.md) §0.1 依赖合法性速查矩阵。
-
-### 违规检测 (Claude 自动检查)
-
-| 违规类型 | 模式 | 严重级别 |
-|---------|------|---------|
-| 跨模块 Service 导入 | `from src.modules.X.application.services` | 🔴 阻止 |
-| 跨模块 Entity 导入 | `from src.modules.X.domain.entities` | 🔴 阻止 |
-| Domain 层导入外部框架 | `domain/` 文件中 `from fastapi/sqlalchemy` | 🔴 阻止 |
-| 跨模块 Repository 实现导入 | `from src.modules.X.infrastructure.repositories` | 🟡 警告 |
-
-### 允许的例外
-
-- **ORM 外键关系**: `*_model.py` 中可导入其他模块的 ORM Model
-- **Auth 认证**: API 层可导入 `auth.api.dependencies`
-
----
-
-## 架构合规测试
-
-> **测试位置**: `tests/unit/test_architecture_compliance.py`
-
-| 测试类 | 验证规则 |
-|--------|---------|
-| `TestCleanArchitectureLayers` | 分层依赖方向 |
-| `TestModuleDomainLayerIsolation` | Domain 层绝对隔离 |
-| `TestModuleApplicationLayerDependencies` | Application 层依赖接口 |
-| `TestModuleApiLayerAuthDependency` | Auth 依赖例外验证 |
-
-```bash
-# 运行架构合规测试
-uv run pytest tests/unit/test_architecture_compliance.py -v
-```
+> 违规检测规则、依赖合法性矩阵、允许的例外、合规测试详见 [rules/architecture.md](rules/architecture.md) §0.1、§3、§9。

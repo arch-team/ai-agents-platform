@@ -169,6 +169,17 @@ def get_user(user_id):
 
 ---
 
+## 注意事项 (Gotchas)
+
+| 项目 | 说明 |
+|------|------|
+| **数据库** | MySQL 8.0+ / Aurora MySQL 3.x，非 PostgreSQL。SQLAlchemy 方言注意差异 |
+| **异步驱动** | 需要 asyncmy 作为异步 MySQL 驱动 |
+| **包管理** | 仅使用 uv，禁止 pip/poetry |
+| **云服务** | 基于 Amazon Bedrock AgentCore，非 SageMaker HyperPod |
+
+---
+
 ## PR Review 检查清单
 
 完整检查清单见 [rules/checklist.md](rules/checklist.md)
