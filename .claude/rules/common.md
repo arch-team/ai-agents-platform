@@ -88,7 +88,7 @@ chore(backend): 升级 FastAPI 到 0.111
 ```
 ai-agents-platform/             # Monorepo 根目录
 ├── .claude/                    # 根级：通用规范
-│   ├── CLAUDE.md               # 全局入口（项目概述、会话协议、分支策略）
+│   ├── CLAUDE.md               # 全局入口（语言、项目概述、会话协议）
 │   └── rules/
 │       └── common.md           # 跨项目通用规则（本文件）
 ├── backend/                    # 后端项目 (Python + FastAPI)
@@ -96,6 +96,7 @@ ai-agents-platform/             # Monorepo 根目录
 ├── infra/                      # 基础设施项目 (AWS CDK)
 ├── docs/                       # 全局文档
 │   ├── progress.md             # 项目进度追踪（每次会话必读）
+│   ├── adr/                    # 架构决策记录 (ADR)
 │   ├── strategy/               # 战略规划文档
 │   └── template/               # 文档模板
 ├── .gitignore                  # 根级 gitignore
