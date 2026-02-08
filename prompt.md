@@ -178,6 +178,7 @@ ker-Projects/ml-platform-research/llm-platform-solution/ai-agents-platform/front
 
 
 
+
 请为：/Users/jinhuasu/Project_Workspace/Anker-Projects/ml-platform-research/llm-platform-solution/ai-agents-  
   platform/backend下的markdown在文件的开头添加清晰简要的职责定义
 
@@ -203,7 +204,8 @@ claude-md-improver 当前ai-agents-platform monorepo项目，包含后端（back
   - infra/.claude/project-config.template.md → 移动到 doc/templates/
 
 
-分析这个前端frontend子项目： /Users/jinhuasu/Project_Workspace/Anker-Projects/ml-platform-research/llm-platform-solution/ai-agents-platform/frontend下上下文管理的规范文件，结合Claude Code 上下文管理的最佳实践在不影响它的作用的情况下分析是否存在冗余信息，是否存在各个规范文件不满足单一职责原则、职责重叠的问题
+分析这个前端frontend子项目： /Users/jinhuasu/Project_Workspace/Anker-Projects/ml-platform-research/llm-platform-solution/ai-agents-platform/frontend下上下文管理的规范文件，
+结合Claude Code 上下文管理的最佳实践在不影响它的作用的情况下分析是否存在冗余信息，是否存在各个规范文件不满足单一职责原则、职责重叠的问题
 
 
 按照Claude Code上下文管理的机制，对于会自动加载到Claude Code context的规范文档，在规范文档中引用别的文档是否有必要？增加引入和不增加引用有什么优缺点？你的优化方案是什么，依据是什么
@@ -214,3 +216,9 @@ claude-md-improver 当前ai-agents-platform monorepo项目，包含后端（back
 
 
 当前ai-agents-platform monorepo项目，包含后端（backend）、前端（frontend）和基础设施（infra）子项目，我为这个项目打造Claude Code上下文管理的规范，目前已经完成，我手动将context-guide.md、project-config.template.md移动了到相应子目录下的doc目录下，请分析这个移动是否带来信息不一致的问题
+
+
+当前ai-agents-platform monorepo项目，包含后端（backend）、前端（frontend）和基础设施（infra）子项目，我为这个项目打造Claude Code上下文管理的规范，目前已经完成。如果我想把这样的项目上下文管理的规范，可以让更多的人和项目来使用，我应该如何现实这样的目标呢？
+
+
+我想依托Claude Code/Claude Agent SDK和开源生态以及Amazon Bedrock AgentCore开发一个AI Agents平台项目，用户可以使用这个平台创建解决各种场景的Agent应用，帮我定义这个项目的愿景、目标、Metric等，我想以这个为基础驱动这个项目等长期迭代
