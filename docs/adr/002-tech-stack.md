@@ -13,7 +13,7 @@ Python 3.11+ / FastAPI / SQLAlchemy 2.0+ (async) / MySQL 8.0+ (Aurora) / uv / Ru
 
 ## 理由
 
-- **Python**: Bedrock AgentCore SDK 和 Claude Agent SDK 均为 Python 优先
+- **Python**: Bedrock AgentCore SDK (boto3) 为 Python 原生；Claude Agent SDK 同时支持 Python 和 TypeScript，Python 与后端技术栈一致
 - **FastAPI**: 原生 async 支持，Pydantic v2 集成，OpenAPI 自动生成
 - **SQLAlchemy 2.0+**: 统一的 async/sync API，成熟的 ORM + asyncmy 驱动
 - **Aurora MySQL**: 与企业现有 AWS 基础设施一致，Aurora 提供高可用

@@ -221,4 +221,12 @@ claude-md-improver 当前ai-agents-platform monorepo项目，包含后端（back
 当前ai-agents-platform monorepo项目，包含后端（backend）、前端（frontend）和基础设施（infra）子项目，我为这个项目打造Claude Code上下文管理的规范，目前已经完成。如果我想把这样的项目上下文管理的规范，可以让更多的人和项目来使用，我应该如何现实这样的目标呢？
 
 
-我想依托Claude Code/Claude Agent SDK和开源生态以及Amazon Bedrock AgentCore开发一个AI Agents平台项目，用户可以使用这个平台创建解决各种场景的Agent应用，帮我定义这个项目的愿景、目标、Metric等，我想以这个为基础驱动这个项目等长期迭代
+我想依托Claude Code/Claude Agent SDK和开源生态以及Amazon Bedrock AgentCore开发一个AI Agents平台
+项目，用户可以使用这个平台创建解决各种场景的Agent应用，帮我定义这个项目的愿景、目标、Metric等，我想以这个为基础驱动这个项目等长期迭代
+
+
+对于每个问题的优化方案，你需要一个问题一个问题处理，每个问题你需要先说明优化的依据，获得我的确认后再执行 
+
+
+完成/Users/jinhuasu/Project_Workspace/Anker-Projects/ml-platform-research/llm-platform-solution/claude-context-temp
+  lates/docs/project-strategy.md 中Phase 1: Foundation（基础）— v1.0的任务  

@@ -28,5 +28,5 @@
 
 - `execution` 模块通过 Infrastructure 层适配器集成 AgentCore SDK
 - Anti-Corruption Layer 隔离 SDK 调用，降低 API 变更影响
-- 降级路径: Claude Agent SDK 直接调用 / Bedrock Converse API
+- 降级路径: Claude Agent SDK 独立部署（ECS/Docker，不经过 AgentCore Runtime）/ Bedrock Converse API
 - 集成架构详见 `docs/strategy/product-architecture.md` §4

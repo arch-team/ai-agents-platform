@@ -137,7 +137,7 @@ AI Agents Platform 是基于 Amazon Bedrock AgentCore 的企业内部 AI Agents 
 | Agent 管理 | `modules/agents` | `features/agents` | ComputeStack, DatabaseStack |
 | 运行时引擎 | `modules/runtime` | `features/runtime` | ComputeStack, ApiStack |
 | 编排协作 | `modules/orchestration` | `features/orchestration` | ComputeStack |
-| 监控评估 | `modules/monitoring` | `features/monitoring` | MonitoringStack |
+| 监控评估 | `modules/insights` | `features/insights` | MonitoringStack |
 | 用户权限 | `modules/auth` (已有) | `features/auth` | SecurityStack, DatabaseStack |
 | 平台基础 | `shared` (已有) | `shared` | NetworkStack, ApiStack |
 
@@ -176,48 +176,70 @@ AI Agents Platform 是基于 Amazon Bedrock AgentCore 的企业内部 AI Agents 
 
 ## 4. Amazon Bedrock AgentCore 集成架构
 
-### 4.1 AgentCore 能力边界
+### 4.1 三层能力边界
 
-明确平台自建能力与 Bedrock AgentCore 托管能力之间的分工:
+明确 AgentCore（基础设施层）、Claude Agent SDK（Agent 逻辑层）与平台自建（企业业务层）之间的分工:
 
-| 能力维度 | AgentCore 提供 | 平台自建 |
-|---------|---------------|---------|
-| **Agent 运行时** | Agent 执行引擎、会话管理、Memory | Agent 配置管理、版本控制、模板市场 |
-| **模型调用** | Bedrock 模型 API、模型路由 | 模型选择策略、fallback 机制、成本控制 |
-| **工具调用** | Action Groups、Code Interpreter | 工具注册、权限管控、调用审计 |
-| **知识库** | Knowledge Base、向量检索 | 知识源管理、数据同步策略 |
-| **可观测性** | CloudWatch 集成、基础 Metrics | 业务级监控、质量评估、成本分析 |
-| **安全** | IAM 集成、API 级鉴权 | 用户认证、RBAC、多租户隔离 |
+| 能力维度 | AgentCore 提供 | Claude Agent SDK 提供 | 平台自建 |
+|---------|---------------|---------------------|---------|
+| **Agent 运行时** | MicroVM 隔离执行、资源调度 | Agent 循环（query API）、Session resume/fork | Agent 配置管理、版本控制、模板市场 |
+| **模型调用** | Bedrock 模型 API、多模型路由 | 通过 Bedrock 统一接口调用（`CLAUDE_CODE_USE_BEDROCK=1`） | 模型选择策略、fallback 机制、成本控制 |
+| **工具调用** | Gateway（REST/Lambda→MCP 转换） | 内置工具（Read/Write/Edit/Bash 等）、MCP 原生集成 | 企业工具目录、权限管控、调用审计 |
+| **知识库** | Knowledge Base、向量检索 | MCP Server 接入企业数据源 | 知识源管理、数据同步策略 |
+| **可观测性** | OpenTelemetry 集成、CloudWatch Metrics | — | 业务级仪表盘、质量评估、成本归因 |
+| **安全** | IAM/OAuth 身份、CEDAR 策略引擎 | Hooks（PreToolUse/PostToolUse）、Permissions（allowed_tools） | 用户认证、平台 RBAC、多租户隔离 |
+| **Agent 协作** | — | Subagents（Task 工具）、多 Agent 分工 | 工作流编排、协作模板 |
 
 ### 4.2 集成架构
 
 ```
-┌─────────────────────────────────────────────────────┐
-│                 AI Agents Platform                    │
-│                                                       │
-│  ┌───────────┐  ┌───────────┐  ┌───────────────────┐ │
-│  │ Agent 管理 │  │ 编排协作  │  │  监控评估         │ │
-│  │ (自建)    │  │ (自建)    │  │  (自建+AgentCore) │ │
-│  └─────┬─────┘  └─────┬─────┘  └────────┬──────────┘ │
-│        │              │                  │             │
-│  ┌─────▼──────────────▼──────────────────▼──────────┐ │
-│  │           AgentCore 集成层 (Anti-Corruption)      │ │
-│  │   infrastructure/external/bedrock/                 │ │
-│  └─────────────────────┬────────────────────────────┘ │
-└────────────────────────┼──────────────────────────────┘
-                         │
-         ┌───────────────▼───────────────┐
-         │    Amazon Bedrock AgentCore    │
-         │                               │
-         │  ┌─────────┐  ┌───────────┐   │
-         │  │ Agent    │  │ Knowledge │   │
-         │  │ Runtime  │  │ Base      │   │
-         │  └─────────┘  └───────────┘   │
-         │  ┌─────────┐  ┌───────────┐   │
-         │  │ Action   │  │ Memory    │   │
-         │  │ Groups   │  │ Store     │   │
-         │  └─────────┘  └───────────┘   │
-         └───────────────────────────────┘
+┌──────────────────────────────────────────────────────────────┐
+│                    AI Agents Platform（企业业务层）             │
+│                                                                │
+│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌────────────────┐   │
+│  │ Agent    │ │ 编排协作 │ │ 监控评估 │ │ 用户权限       │   │
+│  │ 管理     │ │          │ │          │ │ (RBAC/多租户)  │   │
+│  └────┬─────┘ └────┬─────┘ └────┬─────┘ └───────┬────────┘   │
+│       │            │            │                │             │
+│  ┌────▼────────────▼────────────▼────────────────▼──────────┐ │
+│  │              SDK 集成层 (Anti-Corruption)                  │ │
+│  │        infrastructure/external/agent_sdk/                  │ │
+│  └──────────────────────────┬───────────────────────────────┘ │
+└─────────────────────────────┼─────────────────────────────────┘
+                              │ query() API
+         ┌────────────────────▼────────────────────┐
+         │  Claude Agent SDK（Agent 逻辑层，Claude Code CLI 封装）│
+         │                                          │
+         │  ┌───────────┐  ┌─────────────────────┐  │
+         │  │ Agent 循环 │  │ 内置工具            │  │
+         │  │ (query)   │  │ Read/Write/Edit/Bash │  │
+         │  └───────────┘  └─────────────────────┘  │
+         │  ┌───────────┐  ┌─────────────────────┐  │
+         │  │ Hooks     │  │ MCP 集成            │  │
+         │  │ 治理回调  │  │ stdio/HTTP/SSE      │  │
+         │  └───────────┘  └─────────────────────┘  │
+         │  ┌───────────┐  ┌─────────────────────┐  │
+         │  │ Subagents │  │ Session 管理        │  │
+         │  │ (Task)    │  │ resume/fork         │  │
+         │  └───────────┘  └─────────────────────┘  │
+         └────────────────────┬────────────────────┘
+                              │ CLAUDE_CODE_USE_BEDROCK=1
+         ┌────────────────────▼────────────────────┐
+         │     Amazon Bedrock AgentCore（基础设施层） │
+         │                                          │
+         │  ┌───────────┐  ┌─────────────────────┐  │
+         │  │ Runtime   │  │ Gateway             │  │
+         │  │ (MicroVM) │  │ (REST/Lambda→MCP)   │  │
+         │  └───────────┘  └─────────────────────┘  │
+         │  ┌───────────┐  ┌─────────────────────┐  │
+         │  │ Memory    │  │ Identity            │  │
+         │  │ 短期/长期 │  │ (OAuth/IAM/Cognito) │  │
+         │  └───────────┘  └─────────────────────┘  │
+         │  ┌───────────┐  ┌─────────────────────┐  │
+         │  │ Knowledge │  │ Observability       │  │
+         │  │ Base      │  │ (OpenTelemetry)     │  │
+         │  └───────────┘  └─────────────────────┘  │
+         └─────────────────────────────────────────┘
 ```
 
 ### 4.3 集成接口设计
@@ -248,46 +270,47 @@ modules/runtime/
 
 ---
 
-## 5. Claude Code / Agent SDK 协作模式
+## 5. Claude Agent SDK 协作模式
 
-### 5.1 Agent SDK 在平台中的角色
+### 5.1 Claude Agent SDK 在平台中的角色
 
-Claude Code 和 Agent SDK 在平台中扮演两个层面的角色:
+Claude Agent SDK 是对 Claude Code CLI 的编程封装，在平台中承担 Agent 逻辑层的核心职责:
 
-**开发时 -- Claude Code 辅助开发**:
+**开发时 -- Claude Code CLI 辅助开发**:
 
-开发者使用 Claude Code 作为 AI 编程助手，遵循项目中已定义的架构规范（DDD、FSD、CDK）进行功能开发和代码审查。Claude Code 通过 `.claude/` 目录下的规范文档理解项目约束。
+开发者使用 Claude Code CLI 作为 AI 编程助手，遵循项目中已定义的架构规范（DDD、FSD、CDK）进行功能开发和代码审查。Claude Code 通过 `.claude/` 目录下的规范文档理解项目约束。
 
-**运行时 -- Agent SDK 驱动执行**:
+**运行时 -- Claude Agent SDK 驱动执行**:
 
-平台内部的 Agent 通过 Bedrock AgentCore 的 Agent SDK 进行任务执行。SDK 提供与模型交互、工具调用、上下文管理等核心能力。
+平台内部的 Agent 通过 Claude Agent SDK 的 `query()` API 驱动执行循环。SDK 运行在 AgentCore Runtime 容器中，提供 Agent 循环、内置工具、Hooks 治理、MCP 集成、Session 管理等核心能力。通过 `CLAUDE_CODE_USE_BEDROCK=1` 环境变量调用 Bedrock 模型。
 
 ### 5.2 开发者工作流
 
 ```
 开发者
   │
-  ├── Claude Code (开发环境)
+  ├── Claude Code CLI (开发环境)
   │   ├── 遵循 .claude/ 规范生成代码
   │   ├── TDD 工作流 (Red → Green → Refactor)
   │   └── 架构合规检查
   │
   └── AI Agents Platform (运行环境)
-      ├── 创建/配置 Agent
-      ├── 定义工具集和知识库
-      ├── 编排 Multi-Agent 工作流
-      └── 监控运行状态和质量
+      ├── 创建/配置 Agent (AgentConfig + 模型选择)
+      ├── 管理工具目录 (MCP Server 注册/审批)
+      ├── 编排 Multi-Agent 工作流 (Subagents 协作)
+      └── 查看业务洞察 (成本归因/使用趋势)
 ```
 
 ### 5.3 SDK 集成点
 
-| 集成点 | SDK 能力 | 平台封装 |
-|--------|---------|---------|
-| Agent 创建 | `create_agent()` | Agent 配置持久化 + 版本管理 |
-| Agent 调用 | `invoke_agent()` | 会话管理 + 执行追踪 |
-| 工具注册 | `create_action_group()` | 工具权限管控 + 审计日志 |
-| 知识库 | `create_knowledge_base()` | 数据源管理 + 同步策略 |
-| Memory | `create_memory()` | 上下文持久化 + 清理策略 |
+| 集成点 | Claude Agent SDK 能力 | 平台封装 |
+|--------|---------------------|---------|
+| Agent 执行 | `query()` API — Agent 循环、工具调用、上下文管理 | Agent 配置持久化 + 版本管理 + 执行追踪 |
+| 工具集成 | 内置工具（Read/Write/Edit/Bash 等）+ MCP 原生集成 | 企业工具目录管理 + 权限管控 + 调用审计 |
+| 治理回调 | Hooks（PreToolUse/PostToolUse/Stop） | 企业级审计、权限拦截、行为监控 |
+| 子 Agent | Subagents（Task 工具）— 专业化子 Agent 生成 | 工作流编排 + 协作模板 |
+| 会话管理 | Session resume/fork — 长期任务、多轮交互 | 会话持久化 + 上下文清理策略 |
+| 权限控制 | Permissions（allowed_tools + permission_mode） | 平台 RBAC + 多租户隔离 |
 
 ---
 

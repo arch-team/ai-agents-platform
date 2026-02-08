@@ -23,11 +23,10 @@
 
 ## 项目概述
 
-AI Agents Platform — 基于 Amazon Bedrock AgentCore 的企业级 AI Agents 平台。
+AI Agents Platform — 基于 Amazon Bedrock AgentCore 的企业内部 AI Agents 平台，让企业团队能够创建、部署和管理 AI Agent。
 
-- **架构**: DDD + Modular Monolith + Clean Architecture
-- **技术栈**: Python 3.11+ / FastAPI / SQLAlchemy 2.0+ / Aurora MySQL
-- **北极星指标**: 周活跃 Agent 数量 (WAA)
+- **核心技术**: Amazon Bedrock AgentCore + Claude Agent SDK
+- **架构模式**: DDD + Modular Monolith + Clean Architecture (后端) | FSD (前端) | CDK (基础设施)
 
 ---
 

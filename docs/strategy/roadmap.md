@@ -18,9 +18,9 @@ Phase 1: MVP 基础        Phase 2: 核心功能        Phase 3: 生态扩展   
 └──────────────┘     └──────────────┘      └──────────────┘       └──────────────┘
 
 后端模块:              后端模块:               后端模块:               后端模块:
-  shared → auth         tools                  orchestration           audit
+  shared → auth         tool-catalog           orchestration           audit
   agents → execution    knowledge              evaluation              marketplace
-                        monitoring             models                  analytics
+                        insights                                       analytics
                         templates
 
 CDK Stacks:            CDK Stacks:             CDK Stacks:             CDK Stacks:
@@ -113,20 +113,20 @@ CI/CD: GitHub Actions 基础 Pipeline (lint → test → cdk synth → deploy de
 
 | 顺序 | 模块 | 职责 | 依赖 |
 |:----:|------|------|------|
-| 5 | `tools` | 工具注册与调用网关 - 工具元数据管理、工具调用代理、权限校验 | shared, auth, agents |
+| 5 | `tool-catalog` | 企业工具目录 - 工具注册/发现/审批、MCP Server 目录管理、权限管控与调用审计 | shared, auth, agents |
 | 6 | `knowledge` | 知识库管理 - 文档上传/解析、向量化存储、RAG 检索集成 | shared, auth, agents |
-| 7 | `monitoring` | 执行监控与日志 - 执行记录存储、Token 消耗统计、错误追踪 | shared, auth, execution |
-| 8 | `templates` | Agent 模板管理 - 模板 CRUD、模板实例化、分类标签 | shared, auth, agents, tools, knowledge |
+| 7 | `insights` | 业务洞察与成本归因 - 消费 AgentCore Observability 数据、Token 成本按团队/项目归因、使用趋势分析 | shared, auth, execution |
+| 8 | `templates` | Agent 模板管理 - 模板 CRUD、模板实例化、分类标签 | shared, auth, agents, tool-catalog, knowledge |
 
-`templates` 模块排在最后，因为它需要聚合 agents、tools、knowledge 的配置来定义完整的 Agent 模板。
+`templates` 模块排在最后，因为它需要聚合 agents、tool-catalog、knowledge 的配置来定义完整的 Agent 模板。
 
 ### 3.3 前端功能
 
 | 功能模块 | 关键页面/组件 |
 |---------|-------------|
-| 工具市场 | ToolMarketPage (工具浏览/搜索)、ToolConfigForm (工具配置)、ToolCard (entities 层) |
+| 工具目录 | ToolCatalogPage (工具浏览/搜索/审批)、McpServerRegistryForm (MCP Server 注册)、ToolCard (entities 层) |
 | 知识库管理 | KnowledgeBasePage (文档列表)、FileUploadWidget (拖拽上传)、DocumentPreview |
-| 监控仪表板 | MonitoringDashboardPage (执行统计)、TokenUsageChart、ErrorLogTable |
+| 业务洞察仪表板 | InsightsDashboardPage (成本归因/使用趋势)、TokenCostChart、UsageTrendTable |
 | 模板市场 | TemplateMarketPage (模板浏览)、TemplateDetailPage、CreateFromTemplateForm |
 
 ### 3.4 基础设施
@@ -142,8 +142,8 @@ CI/CD: GitHub Actions 基础 Pipeline (lint → test → cdk synth → deploy de
 
 | 里程碑 | 时间窗口 | 交付物 |
 |--------|---------|--------|
-| **M4: 工具系统** | 第 13-16 周 | tools 模块完成；Agent 可调用外部工具；前端工具配置界面 |
-| **M5: 知识库 + 监控** | 第 17-20 周 | knowledge 模块 (RAG 集成)；monitoring 模块；前端仪表板 |
+| **M4: 工具目录** | 第 13-16 周 | tool-catalog 模块完成；MCP Server 注册与审批流程；前端工具目录界面 |
+| **M5: 知识库 + 业务洞察** | 第 17-20 周 | knowledge 模块 (RAG 集成)；insights 模块 (成本归因/使用趋势)；前端仪表板 |
 | **M6: 模板生态** | 第 21-24 周 | templates 模块 + 10 个预置模板；ComputeStack + ApiStack 部署 Staging |
 
 ### 3.6 验收标准
@@ -155,7 +155,7 @@ CI/CD: GitHub Actions 基础 Pipeline (lint → test → cdk synth → deploy de
 | API 可用性 | >= 99% (Staging 环境) |
 | 单元测试覆盖率 | >= 85% (后端)、>= 80% (前端) |
 | 知识库检索准确率 | Top-5 召回率 >= 80% |
-| 监控覆盖率 | 关键 API 均有延迟/错误率指标 |
+| 成本归因覆盖率 | 所有 Agent 执行均有按团队/项目维度的成本归因 |
 
 ---
 
@@ -169,11 +169,10 @@ CI/CD: GitHub Actions 基础 Pipeline (lint → test → cdk synth → deploy de
 
 | 顺序 | 模块 | 职责 | 依赖 |
 |:----:|------|------|------|
-| 9 | `orchestration` | Multi-Agent 工作流编排 - DAG 定义/执行引擎、Agent 间消息路由、并行/串行执行策略 | shared, auth, agents, execution, tools |
-| 10 | `evaluation` | Agent 质量评估框架 - 评估指标定义、自动化测试用例、评分报告生成 | shared, auth, agents, execution, monitoring |
-| 11 | `models` | 多模型支持和路由 - 模型注册/管理、智能路由 (成本/延迟/能力)、用量配额 | shared, auth |
+| 9 | `orchestration` | Multi-Agent 工作流编排 - DAG 定义/执行引擎、Agent 间消息路由、并行/串行执行策略 | shared, auth, agents, execution, tool-catalog |
+| 10 | `evaluation` | Agent 质量评估 - 消费 AgentCore Evaluations 评估数据、自定义业务评估指标、评估报告可视化 | shared, auth, agents, execution, insights |
 
-`orchestration` 优先于 `evaluation`，因为 Multi-Agent 编排是本阶段核心差异化能力。`models` 模块相对独立，可与 `evaluation` 并行开发。
+`orchestration` 优先于 `evaluation`，因为 Multi-Agent 编排是本阶段核心差异化能力。模型选择策略和 fallback 配置已合并到 `agents` 模块的 AgentConfig 中（Bedrock 原生提供多模型路由），不再作为独立模块。
 
 ### 4.3 前端功能
 
@@ -181,7 +180,6 @@ CI/CD: GitHub Actions 基础 Pipeline (lint → test → cdk synth → deploy de
 |---------|-------------|
 | 可视化编排器 | OrchestrationEditorPage (拖拽式 DAG 编辑器)、NodePalette (Agent/Tool 节点面板)、FlowCanvas (画布)、ConnectionLine |
 | 评估报告 | EvaluationDashboardPage (评估结果总览)、TestCaseRunner (测试执行)、ScoreRadarChart |
-| 模型管理 | ModelRegistryPage (模型列表)、ModelConfigForm (路由策略配置)、UsageQuotaWidget |
 
 ### 4.4 基础设施
 
@@ -196,7 +194,7 @@ CI/CD: GitHub Actions 基础 Pipeline (lint → test → cdk synth → deploy de
 | 里程碑 | 时间窗口 | 交付物 |
 |--------|---------|--------|
 | **M7: Multi-Agent 编排** | 第 25-32 周 | orchestration 模块完成；可视化编排器 MVP；支持串行/并行/条件分支 |
-| **M8: 评估体系 + 模型管理** | 第 33-40 周 | evaluation 模块 + 自动化评估 Pipeline；models 模块 + 智能路由 |
+| **M8: 评估体系** | 第 33-40 周 | evaluation 模块 + 自动化评估 Pipeline；Agent 模型配置增强（fallback 策略） |
 | **M9: 生产部署** | 第 41-48 周 | Prod 环境部署；蓝绿部署验证；全公司推广启动 (目标 50+ 活跃用户) |
 
 ### 4.6 验收标准
@@ -224,9 +222,9 @@ CI/CD: GitHub Actions 基础 Pipeline (lint → test → cdk synth → deploy de
 |:----:|------|------|------|
 | 12 | `audit` | 审计日志与合规 - 全操作审计追踪、合规报告生成、数据保留策略 | shared, auth (全模块事件订阅) |
 | 13 | `marketplace` | Agent 市场/分享 - Agent 发布/审核流程、版本管理、评价系统 | shared, auth, agents, templates, evaluation |
-| 14 | `analytics` | 使用分析与洞察 - 用户行为分析、Agent 使用热力图、ROI 计算 | shared, auth, monitoring, execution |
+| 14 | `analytics` | 使用分析与洞察 - 用户行为分析、Agent 使用热力图、ROI 计算 | shared, auth, insights, execution |
 
-`audit` 优先实现，因为企业级合规是全公司大规模使用的前提条件。`marketplace` 依赖 `evaluation` 提供的质量评分，`analytics` 依赖 `monitoring` 的数据积累。
+`audit` 优先实现，因为企业级合规是全公司大规模使用的前提条件。`marketplace` 依赖 `evaluation` 提供的质量评分，`analytics` 依赖 `insights` 的数据积累。
 
 ### 5.3 前端功能
 
@@ -317,7 +315,7 @@ Phase 4: 混合架构 (核心单体 + 高负载模块微服务化)
 
 | 依赖 | 影响范围 | 当前状态 | 备选方案 |
 |------|---------|---------|---------|
-| Amazon Bedrock AgentCore | execution, orchestration 模块 | 依赖 GA 版本稳定性 | Claude Agent SDK 直接调用；自建 Agent 运行时 |
+| Amazon Bedrock AgentCore | execution, orchestration 模块 | 依赖 GA 版本稳定性 | Claude Agent SDK 独立部署（ECS/Docker，不经过 AgentCore Runtime） |
 | Aurora MySQL 3.x | 全部数据存储 | 稳定可用 | 标准 MySQL 8.0 (降级方案) |
 | Claude Agent SDK | Agent 执行核心 | 关注 SDK 版本更新 | Bedrock Converse API 作为降级路径 |
 | AWS CDK 生态 | 全部基础设施 | 稳定 (>= 2.130) | 版本锁定 + 定期升级评估 |
@@ -339,8 +337,8 @@ Phase 4: 混合架构 (核心单体 + 高负载模块微服务化)
 | 核心能力 | 对应后端模块 | 首次交付阶段 |
 |---------|-------------|:----------:|
 | Agent 管理 | agents, templates | Phase 1/2 |
-| 运行时引擎 | execution, tools | Phase 1/2 |
+| 运行时引擎 | execution, tool-catalog | Phase 1/2 |
 | 编排协作 | orchestration | Phase 3 |
-| 监控评估 | monitoring, evaluation | Phase 2/3 |
+| 监控评估 | insights, evaluation | Phase 2/3 |
 | 用户权限 | auth, audit | Phase 1/4 |
-| 平台基础 | shared, models, knowledge, marketplace, analytics | Phase 1/2/3/4 |
+| 平台基础 | shared, knowledge, marketplace, analytics | Phase 1/2/3/4 |
