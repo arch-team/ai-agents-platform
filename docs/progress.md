@@ -6,7 +6,7 @@
 
 - **阶段**: Phase 1 MVP (0-3 月)
 - **里程碑**: M3 端到端演示 — ✅ 已完成
-- **下一步**: Phase 1 MVP 全部完成！可开始 Phase 2 或进行端到端集成验证
+- **下一步**: Phase 1 后端+前端完成！可进行基础设施 CDK 开发或端到端集成验证
 
 ## 模块状态
 
@@ -217,5 +217,5 @@
 > 仅保留最近一次，每次会话结束时覆盖更新此节。
 
 - **日期**: 2026-02-09
-- **完成**: Phase 1 里程碑验收 — 模式 C 安全/质量审查团队 (4 并行 Agent: security-reviewer/code-reviewer/arch-reviewer/test-reviewer) 执行全面审查。安全审查发现并修复 3 高危 + 3 中危漏洞（CORS、IDOR、SDK 信息泄露、密码复杂度、JWT iat、API docs）；架构合规 14/14 通过；代码质量 ruff/mypy 全通过；611 测试 93.38% 覆盖率
-- **决策**: CORS 从 allow_origins=["*"] 改为可配置白名单；Agent get_agent 端点添加所有权校验（IDOR 修复）；BedrockLLMClient 异常信息脱敏（不暴露原始 SDK 错误）；密码添加大小写+数字复杂度校验；非 DEBUG 模式禁用 /docs
+- **完成**: Phase 1 前端开发完成 — 使用 Agent Teams 4 波执行 (scaffold-dev → feature-auth+feature-agents+feature-chat 三并行 → integration-dev → reviewer)。101 个文件，8305 行代码，80 测试通过，lint/typecheck/build 全通过。FSD 架构合规，WCAG 无障碍合规。同时完成了后端安全加固（6 项安全修复）
+- **决策**: FSD 架构严格分层；Token 仅存内存（Zustand 不持久化）；API client JWT 通过 setTokenGetter 注入避免 shared→features 反向依赖；SSE 使用 fetch+ReadableStream（非 EventSource，支持自定义 Authorization header）；路由级 lazy 代码分割
