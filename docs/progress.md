@@ -4,9 +4,9 @@
 
 ## 当前状态
 
-- **阶段**: Phase 1 MVP (0-3 月)
-- **里程碑**: M3 端到端演示 — ✅ 已完成
-- **下一步**: Phase 1 MVP 全部完成（后端+前端+基础设施+CI/CD）！可进入 Phase 2 或端到端集成部署
+- **阶段**: Phase 2 核心功能 (3-6 月)
+- **里程碑**: M4 工具目录 — 🔄 进行中
+- **下一步**: 执行 M4 任务 #1 — tool-catalog/domain 实体 + 值对象 + 状态机
 
 ## 模块状态
 
@@ -19,12 +19,20 @@
 | `agents` | 已完成 | ai-agents-factory-v1 | Agent CRUD (7 端点), 状态机 (draft → active → archived), AgentConfig, 领域事件 |
 | `execution` | 已完成 | ai-agents-factory-v1 | 单 Agent 对话 (6 端点), Bedrock ConverseStream, SSE 流式, IAgentQuerier 跨模块 |
 
+### Phase 2 (3-6 月)
+
+| 模块 | 状态 | 分支 | 备注 |
+|------|:----:|------|------|
+| `tool-catalog` | 进行中 | ai-agents-factory-v1 | 工具注册/审批, MCP Server 目录, 权限管控 |
+| `knowledge` | 待开始 | - | 知识库管理, RAG 检索 |
+| `insights` | 待开始 | - | 成本归因, 使用趋势 |
+| `templates` | 待开始 | - | Agent 模板管理 (依赖 tool-catalog + knowledge) |
+
 ### 后续阶段
 
 | 阶段 | 模块 |
 |------|------|
-| Phase 2 | tools, knowledge, monitoring, templates |
-| Phase 3 | orchestration, evaluation, models |
+| Phase 3 | orchestration, evaluation |
 | Phase 4 | audit, marketplace, analytics |
 
 ## 基础设施
@@ -200,6 +208,67 @@
                                               #12 (质量验收)
 ```
 
+### M4: 工具目录 (第 13-16 周) — 🔄 进行中
+
+> 交付物: tool-catalog 模块完成，10 个 RESTful 端点，工具审批流程 (draft → pending_review → approved/rejected → deprecated)
+> 验收标准: ruff check + mypy --strict + pytest --cov-fail-under=85 全通过
+
+#### 领域模型设计摘要
+
+**Tool 实体**: name, description, tool_type(ToolType), version, status(ToolStatus), creator_id, config(ToolConfig), reviewer_id, review_comment, reviewed_at, allowed_roles
+**ToolStatus 枚举**: DRAFT → PENDING_REVIEW → APPROVED / REJECTED → DEPRECATED
+**ToolType 枚举**: MCP_SERVER / API / FUNCTION
+**ToolConfig 值对象**: server_url, transport, endpoint_url, method, headers, runtime, handler, code_uri, auth_type, auth_config（frozen dataclass, 扁平结构）
+
+**状态机规则**:
+- `submit()`: DRAFT → PENDING_REVIEW（需 name + description + config 完整）
+- `approve(reviewer_id)`: PENDING_REVIEW → APPROVED
+- `reject(reviewer_id, comment)`: PENDING_REVIEW → REJECTED
+- `resubmit()`: REJECTED → PENDING_REVIEW（修改后重新提交）
+- `deprecate()`: APPROVED → DEPRECATED（不可逆）
+- 仅 DRAFT 状态可物理删除；DRAFT/REJECTED 可编辑
+
+**API 端点**: POST /tools, GET /tools, GET /tools/approved, GET /tools/{id}, PUT /tools/{id}, DELETE /tools/{id}, POST /tools/{id}/submit, POST /tools/{id}/approve, POST /tools/{id}/reject, POST /tools/{id}/deprecate
+
+**权限模型**: ADMIN 可审批/废弃所有工具；DEVELOPER 注册和管理自己的工具；approved 工具对所有认证用户可用
+
+#### 任务拆解
+
+| # | 任务 | 状态 | 依赖 | 参考规范 | 会话 |
+|---|------|:----:|:----:|---------|------|
+| 1 | tool-catalog/domain: Tool 实体 + ToolStatus/ToolType 枚举 + ToolConfig 值对象 + 状态机 (submit/approve/reject/resubmit/deprecate) | 待开始 | - | `rules/architecture.md` §5 DDD 战术模式 | - |
+| 2 | tool-catalog/domain: 领域事件 (Created/Updated/Deleted/Submitted/Approved/Rejected/Deprecated) + 模块异常 + IToolRepository 接口 | 待开始 | #1 | `rules/architecture.md` §4.2 事件驱动, §5.4 仓库接口 | - |
+| 3 | tool-catalog/application: DTO (CreateTool/UpdateTool/Tool/PagedTool) + ToolCatalogService (CRUD + 审批流程 + 列表/搜索 + 权限) | 待开始 | #1, #2 | `rules/architecture.md` §5 + `rules/security.md` §2 RBAC | - |
+| 4 | tool-catalog/infrastructure: ToolModel ORM + ToolRepositoryImpl (含 list_filtered 通用筛选) + Alembic migration | 待开始 | #2 | `rules/tech-stack.md` + `rules/project-structure.md` | - |
+| 5 | tool-catalog/api: Request/Response Schema + dependencies.py + endpoints.py (10 个端点含审批流程) | 待开始 | #3, #4 | `rules/api-design.md` + `rules/security.md` | - |
+| 6 | 模块注册: main.py 路由注册 + tool-catalog 异常映射 + __init__.py 模块导出 | 待开始 | #5 | `rules/architecture.md` §6.3 模块导出 | - |
+| 7 | tests: tool-catalog 模块单元测试 (Domain 状态机全路径 + Application Service 全场景含审批权限) | 待开始 | #1-#3 | `rules/testing.md` TDD + AAA 模式 | - |
+| 8 | tests: tool-catalog 模块集成测试 (Repository 含筛选 + API 端点含审批流程 + 架构合规更新) | 待开始 | #4-#6, #7 | `rules/testing.md` 集成测试 | - |
+| 9 | 质量验收: ruff check + mypy --strict + pytest --cov-fail-under=85 全通过 | 待开始 | #1-#8 | `rules/checklist.md` + roadmap.md §3.6 | - |
+
+#### 关键设计决策
+
+| 决策 | 选择 | 理由 |
+|------|------|------|
+| ToolConfig 存储 | ORM 展开为独立列 | 与 AgentConfig 模式一致；便于查询和索引 |
+| 权限模型 | Tool.allowed_roles 字段 | YAGNI — Phase 2 简化；Phase 4 可升级为独立权限表 |
+| REJECTED 状态 | 独立状态 + resubmit() | 审计追踪需要区分"从未审批"和"审批被拒" |
+| 名称唯一性 | 同 creator 下唯一（联合索引） | 与 Agent owner_id+name 模式一致 |
+| 删除策略 | 仅 DRAFT 可物理删除 | 进入审批流程的工具需保留记录 |
+| Config 验证时机 | 提交审批时（submit/resubmit） | DRAFT 允许不完整；提交时强制校验 |
+| 通用筛选 | Repository 提供 list_filtered | 支持 status+type+keyword 组合查询 |
+| IToolQuerier 跨模块接口 | 延迟到 templates 模块开发时 | YAGNI — 当前无消费方 |
+
+#### 依赖关系图
+
+```
+#1 (Domain 实体/值对象/状态机) ──► #2 (事件/异常/仓库接口) ──► #3 (Application)
+                                                        └──► #4 (Infrastructure) ──► #5 (API) ──► #6 (模块注册)
+#1-#3 ──► #7 (单元测试)
+#4-#7 ──► #8 (集成测试)
+#1-#8 ──► #9 (质量验收)
+```
+
 ---
 
 ## 遗留事项
@@ -217,5 +286,5 @@
 > 仅保留最近一次，每次会话结束时覆盖更新此节。
 
 - **日期**: 2026-02-09
-- **完成**: Phase 1 MVP 全部完成 — 后端(M1-M3 + 安全加固) + 前端(FSD React) + 基础设施(CDK 3 Stacks) + CI/CD(3 GitHub Actions)。本次会话完成: 基础设施 CDK 开发（4 波 Agent Teams: scaffold → dev-network+dev-security 并行 → dev-database+CI/CD → reviewer），41 文件，73 测试，100% 覆盖率，CDK Nag 合规
-- **决策**: VPC 3 AZ 三层子网 (Public/Private/Isolated)；Dev 单 NAT Gateway 节省成本；Aurora MySQL PRIVATE_ISOLATED + KMS 加密 + Secrets Manager 凭证；CDK Nag AwsSolutionsChecks 资源级抑制（非 Stack 级）；Stack 间 Props 传递依赖（非 CfnOutput）
+- **完成**: Phase 1 全部交付 + M4 任务拆解。Phase 1: 后端(4 模块, 611 测试) + 前端(FSD, 80 测试) + 基础设施(3 CDK Stacks, 73 测试) + CI/CD(3 workflows) + 安全加固(6 项修复)。M4 任务拆解: 规划团队 (architect/rules-analyst/domain-designer) 设计 tool-catalog 领域模型，产出 9 项任务 + 8 项设计决策
+- **决策**: Tool 审批流程 5 状态机 (DRAFT→PENDING_REVIEW→APPROVED/REJECTED→DEPRECATED)；REJECTED 提供 resubmit() 直接重新提交；ToolConfig 扁平结构展开独立列；权限用 allowed_roles 字段（YAGNI）；Config 验证在 submit 时而非 create 时；IToolQuerier 延迟到 templates 模块
