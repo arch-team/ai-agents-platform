@@ -37,9 +37,7 @@ class AgentService:
         Raises:
             AgentNameDuplicateError: 名称重复
         """
-        existing = await self._repository.get_by_name_and_owner(dto.name, owner_id)
-        if existing is not None:
-            raise AgentNameDuplicateError(dto.name)
+        await self._check_name_unique(dto.name, owner_id)
 
         agent = Agent(
             name=dto.name,
@@ -63,14 +61,8 @@ class AgentService:
         return self._to_dto(created)
 
     async def get_agent(self, agent_id: int) -> AgentDTO:
-        """获取 Agent 详情。
-
-        Raises:
-            AgentNotFoundError: Agent 不存在
-        """
-        agent = await self._repository.get_by_id(agent_id)
-        if agent is None:
-            raise AgentNotFoundError(agent_id)
+        """Raises: AgentNotFoundError"""
+        agent = await self._get_agent_or_raise(agent_id)
         return self._to_dto(agent)
 
     async def list_agents(
@@ -81,22 +73,17 @@ class AgentService:
         page: int = 1,
         page_size: int = 20,
     ) -> PagedAgentDTO:
-        """获取用户的 Agent 列表（支持按状态筛选）。"""
+        """获取用户的 Agent 列表, 支持按状态筛选和分页。"""
         offset = (page - 1) * page_size
 
         if status is not None:
             agents = await self._repository.list_by_owner_and_status(
-                owner_id,
-                status,
-                offset=offset,
-                limit=page_size,
+                owner_id, status, offset=offset, limit=page_size,
             )
             total = await self._repository.count_by_owner_and_status(owner_id, status)
         else:
             agents = await self._repository.list_by_owner(
-                owner_id,
-                offset=offset,
-                limit=page_size,
+                owner_id, offset=offset, limit=page_size,
             )
             total = await self._repository.count_by_owner(owner_id)
 
@@ -116,16 +103,10 @@ class AgentService:
         """更新 Agent。仅 owner 可操作，仅 DRAFT 可编辑全部字段。
 
         Raises:
-            AgentNotFoundError: Agent 不存在
-            DomainError: 非 owner 操作
-            InvalidStateTransitionError: 非 DRAFT 状态不允许更新
-            AgentNameDuplicateError: 名称重复
+            AgentNotFoundError, DomainError, InvalidStateTransitionError,
+            AgentNameDuplicateError
         """
-        agent = await self._repository.get_by_id(agent_id)
-        if agent is None:
-            raise AgentNotFoundError(agent_id)
-
-        self._check_permission(agent, operator_id)
+        agent = await self._get_owned_agent(agent_id, operator_id)
 
         if agent.status != AgentStatus.DRAFT:
             raise InvalidStateTransitionError(
@@ -136,49 +117,32 @@ class AgentService:
 
         changed_fields: list[str] = []
 
-        # 检查名称重复
+        # 名称变更需要唯一性校验
         if dto.name is not None and dto.name != agent.name:
-            existing = await self._repository.get_by_name_and_owner(
-                dto.name,
-                agent.owner_id,
-            )
-            if existing is not None:
-                raise AgentNameDuplicateError(dto.name)
+            await self._check_name_unique(dto.name, agent.owner_id)
             agent.name = dto.name
             changed_fields.append("name")
 
-        if dto.description is not None:
-            agent.description = dto.description
-            changed_fields.append("description")
+        # 普通字段更新
+        for field in ("description", "system_prompt"):
+            value = getattr(dto, field)
+            if value is not None:
+                setattr(agent, field, value)
+                changed_fields.append(field)
 
-        if dto.system_prompt is not None:
-            agent.system_prompt = dto.system_prompt
-            changed_fields.append("system_prompt")
+        # 重建 AgentConfig (frozen 值对象, 任一字段变化需整体替换)
+        config_overrides: dict[str, str | float | int] = {}
+        for field in ("model_id", "temperature", "max_tokens"):
+            value = getattr(dto, field)
+            if value is not None:
+                config_overrides[field] = value
+                changed_fields.append(field)
 
-        # 重建 AgentConfig (如果有 config 字段变化)
-        config_changed = False
-        new_model_id = agent.config.model_id
-        new_temperature = agent.config.temperature
-        new_max_tokens = agent.config.max_tokens
-
-        if dto.model_id is not None:
-            new_model_id = dto.model_id
-            config_changed = True
-            changed_fields.append("model_id")
-        if dto.temperature is not None:
-            new_temperature = dto.temperature
-            config_changed = True
-            changed_fields.append("temperature")
-        if dto.max_tokens is not None:
-            new_max_tokens = dto.max_tokens
-            config_changed = True
-            changed_fields.append("max_tokens")
-
-        if config_changed:
+        if config_overrides:
             agent.config = AgentConfig(
-                model_id=new_model_id,
-                temperature=new_temperature,
-                max_tokens=new_max_tokens,
+                model_id=config_overrides.get("model_id", agent.config.model_id),  # type: ignore[arg-type]
+                temperature=config_overrides.get("temperature", agent.config.temperature),  # type: ignore[arg-type]
+                max_tokens=config_overrides.get("max_tokens", agent.config.max_tokens),  # type: ignore[arg-type]
                 top_p=agent.config.top_p,
                 stop_sequences=agent.config.stop_sequences,
             )
@@ -201,15 +165,9 @@ class AgentService:
         """删除 Agent。仅 DRAFT 可删除。
 
         Raises:
-            AgentNotFoundError: Agent 不存在
-            DomainError: 非 owner 操作
-            InvalidStateTransitionError: 非 DRAFT 状态不允许删除
+            AgentNotFoundError, DomainError, InvalidStateTransitionError
         """
-        agent = await self._repository.get_by_id(agent_id)
-        if agent is None:
-            raise AgentNotFoundError(agent_id)
-
-        self._check_permission(agent, operator_id)
+        agent = await self._get_owned_agent(agent_id, operator_id)
 
         if agent.status != AgentStatus.DRAFT:
             raise InvalidStateTransitionError(
@@ -219,37 +177,22 @@ class AgentService:
             )
 
         await self._repository.delete(agent_id)
-
         await event_bus.publish_async(
-            AgentDeletedEvent(
-                agent_id=agent_id,
-                owner_id=agent.owner_id,
-            ),
+            AgentDeletedEvent(agent_id=agent_id, owner_id=agent.owner_id),
         )
 
     async def activate_agent(self, agent_id: int, operator_id: int) -> AgentDTO:
         """激活 Agent。调用 agent.activate() 进行状态转换和校验。
 
         Raises:
-            AgentNotFoundError: Agent 不存在
-            DomainError: 非 owner 操作
-            InvalidStateTransitionError: 非 DRAFT 状态
-            ValidationError: 缺少 system_prompt
+            AgentNotFoundError, DomainError, InvalidStateTransitionError,
+            ValidationError
         """
-        agent = await self._repository.get_by_id(agent_id)
-        if agent is None:
-            raise AgentNotFoundError(agent_id)
-
-        self._check_permission(agent, operator_id)
-
+        agent = await self._get_owned_agent(agent_id, operator_id)
         agent.activate()
         updated = await self._repository.update(agent)
-
         await event_bus.publish_async(
-            AgentActivatedEvent(
-                agent_id=updated.id or 0,
-                owner_id=updated.owner_id,
-            ),
+            AgentActivatedEvent(agent_id=updated.id or 0, owner_id=updated.owner_id),
         )
         return self._to_dto(updated)
 
@@ -257,26 +200,38 @@ class AgentService:
         """归档 Agent。调用 agent.archive() 进行状态转换。
 
         Raises:
-            AgentNotFoundError: Agent 不存在
-            DomainError: 非 owner 操作
-            InvalidStateTransitionError: 已归档状态不可重复归档
+            AgentNotFoundError, DomainError, InvalidStateTransitionError
         """
+        agent = await self._get_owned_agent(agent_id, operator_id)
+        agent.archive()
+        updated = await self._repository.update(agent)
+        await event_bus.publish_async(
+            AgentArchivedEvent(agent_id=updated.id or 0, owner_id=updated.owner_id),
+        )
+        return self._to_dto(updated)
+
+    # ── 内部辅助方法 ──
+
+    async def _get_agent_or_raise(self, agent_id: int) -> Agent:
         agent = await self._repository.get_by_id(agent_id)
         if agent is None:
             raise AgentNotFoundError(agent_id)
+        return agent
 
-        self._check_permission(agent, operator_id)
+    async def _get_owned_agent(self, agent_id: int, operator_id: int) -> Agent:
+        """获取 Agent 并校验所有权。"""
+        agent = await self._get_agent_or_raise(agent_id)
+        if agent.owner_id != operator_id:
+            raise DomainError(
+                message="无权操作此 Agent",
+                code="FORBIDDEN_AGENT",
+            )
+        return agent
 
-        agent.archive()
-        updated = await self._repository.update(agent)
-
-        await event_bus.publish_async(
-            AgentArchivedEvent(
-                agent_id=updated.id or 0,
-                owner_id=updated.owner_id,
-            ),
-        )
-        return self._to_dto(updated)
+    async def _check_name_unique(self, name: str, owner_id: int) -> None:
+        existing = await self._repository.get_by_name_and_owner(name, owner_id)
+        if existing is not None:
+            raise AgentNameDuplicateError(name)
 
     @staticmethod
     def _to_dto(agent: Agent) -> AgentDTO:
@@ -294,16 +249,3 @@ class AgentService:
             created_at=agent.created_at or agent.updated_at,  # type: ignore[arg-type]
             updated_at=agent.updated_at,  # type: ignore[arg-type]
         )
-
-    @staticmethod
-    def _check_permission(agent: Agent, operator_id: int) -> None:
-        """检查操作者是否为 Agent 所有者。
-
-        Raises:
-            DomainError: 操作者非 Agent 所有者
-        """
-        if agent.owner_id != operator_id:
-            raise DomainError(
-                message="无权操作此 Agent",
-                code="FORBIDDEN_AGENT",
-            )

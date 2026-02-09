@@ -44,9 +44,7 @@ class PydanticRepository(IRepository[EntityT, IDT], Generic[EntityT, ModelT, IDT
 
     async def _get_model_or_raise(self, entity_id: object) -> ModelT:
         """根据 ID 获取 ORM Model，不存在则抛出 EntityNotFoundError。"""
-        stmt = select(self.model_class).where(self.model_class.id == entity_id)  # type: ignore[attr-defined]
-        result = await self._session.execute(stmt)
-        model = result.scalar_one_or_none()
+        model = await self._find_model(entity_id)
         if model is None:
             raise EntityNotFoundError(
                 entity_type=self.entity_class.__name__,
@@ -54,14 +52,16 @@ class PydanticRepository(IRepository[EntityT, IDT], Generic[EntityT, ModelT, IDT
             )
         return model
 
-    async def get_by_id(self, entity_id: IDT) -> EntityT | None:
-        """根据 ID 获取实体。"""
+    async def _find_model(self, entity_id: object) -> ModelT | None:
+        """根据 ID 查询 ORM Model，不存在返回 None。"""
         stmt = select(self.model_class).where(self.model_class.id == entity_id)  # type: ignore[attr-defined]
         result = await self._session.execute(stmt)
-        model = result.scalar_one_or_none()
-        if model is None:
-            return None
-        return self._to_entity(model)
+        return result.scalar_one_or_none()
+
+    async def get_by_id(self, entity_id: IDT) -> EntityT | None:
+        """根据 ID 获取实体。"""
+        model = await self._find_model(entity_id)
+        return self._to_entity(model) if model else None
 
     async def list(self, *, offset: int = 0, limit: int = 20) -> list[EntityT]:
         """分页获取实体列表。"""

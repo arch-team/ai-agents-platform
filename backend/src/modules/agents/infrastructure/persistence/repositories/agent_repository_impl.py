@@ -12,6 +12,16 @@ from src.modules.agents.infrastructure.persistence.models.agent_model import Age
 from src.shared.infrastructure.pydantic_repository import PydanticRepository
 
 
+def _serialize_stop_sequences(sequences: tuple[str, ...]) -> str:
+    """将 stop_sequences 元组序列化为 JSON 字符串。"""
+    return json.dumps(list(sequences)) if sequences else ""
+
+
+def _deserialize_stop_sequences(raw: str) -> tuple[str, ...]:
+    """将 JSON 字符串反序列化为 stop_sequences 元组。"""
+    return tuple(json.loads(raw)) if raw else ()
+
+
 class AgentRepositoryImpl(PydanticRepository[Agent, AgentModel, int], IAgentRepository):
     """Agent 仓库的 SQLAlchemy 实现。"""
 
@@ -32,16 +42,6 @@ class AgentRepositoryImpl(PydanticRepository[Agent, AgentModel, int], IAgentRepo
     )
 
     def _to_entity(self, model: AgentModel) -> Agent:
-        stop_sequences: tuple[str, ...] = ()
-        if model.stop_sequences:
-            stop_sequences = tuple(json.loads(model.stop_sequences))
-        config = AgentConfig(
-            model_id=model.model_id,
-            temperature=model.temperature,
-            max_tokens=model.max_tokens,
-            top_p=model.top_p,
-            stop_sequences=stop_sequences,
-        )
         return Agent(
             id=model.id,
             name=model.name,
@@ -49,33 +49,20 @@ class AgentRepositoryImpl(PydanticRepository[Agent, AgentModel, int], IAgentRepo
             system_prompt=model.system_prompt,
             status=AgentStatus(model.status),
             owner_id=model.owner_id,
-            config=config,
+            config=AgentConfig(
+                model_id=model.model_id,
+                temperature=model.temperature,
+                max_tokens=model.max_tokens,
+                top_p=model.top_p,
+                stop_sequences=_deserialize_stop_sequences(model.stop_sequences),
+            ),
             created_at=model.created_at,
             updated_at=model.updated_at,
         )
 
-    def _to_model(self, entity: Agent) -> AgentModel:
-        stop_sequences_json = json.dumps(list(entity.config.stop_sequences)) if entity.config.stop_sequences else ""
-        return AgentModel(
-            id=entity.id,
-            name=entity.name,
-            description=entity.description,
-            system_prompt=entity.system_prompt,
-            status=entity.status.value,
-            owner_id=entity.owner_id,
-            model_id=entity.config.model_id,
-            temperature=entity.config.temperature,
-            max_tokens=entity.config.max_tokens,
-            top_p=entity.config.top_p,
-            stop_sequences=stop_sequences_json,
-            created_at=entity.created_at,
-            updated_at=entity.updated_at,
-        )
-
-    def _get_update_data(self, entity: Agent) -> dict[str, object]:
-        """提取可更新字段数据，展开 AgentConfig。"""
-        stop_sequences_json = json.dumps(list(entity.config.stop_sequences)) if entity.config.stop_sequences else ""
-        flat_data: dict[str, object] = {
+    def _flatten_config(self, entity: Agent) -> dict[str, object]:
+        """将 Entity 的 AgentConfig 展开为扁平字段字典。"""
+        return {
             "name": entity.name,
             "description": entity.description,
             "system_prompt": entity.system_prompt,
@@ -84,9 +71,20 @@ class AgentRepositoryImpl(PydanticRepository[Agent, AgentModel, int], IAgentRepo
             "temperature": entity.config.temperature,
             "max_tokens": entity.config.max_tokens,
             "top_p": entity.config.top_p,
-            "stop_sequences": stop_sequences_json,
+            "stop_sequences": _serialize_stop_sequences(entity.config.stop_sequences),
         }
-        return {k: v for k, v in flat_data.items() if k in self._updatable_fields}
+
+    def _to_model(self, entity: Agent) -> AgentModel:
+        return AgentModel(
+            id=entity.id,
+            owner_id=entity.owner_id,
+            created_at=entity.created_at,
+            updated_at=entity.updated_at,
+            **self._flatten_config(entity),
+        )
+
+    def _get_update_data(self, entity: Agent) -> dict[str, object]:
+        return self._flatten_config(entity)
 
     async def list_by_owner(  # noqa: D102
         self,

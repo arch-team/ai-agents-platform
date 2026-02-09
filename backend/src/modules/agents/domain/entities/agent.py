@@ -1,6 +1,6 @@
 """Agent 领域实体。"""
 
-from pydantic import ConfigDict, Field
+from pydantic import Field
 
 from src.modules.agents.domain.value_objects.agent_config import AgentConfig
 from src.modules.agents.domain.value_objects.agent_status import AgentStatus
@@ -10,8 +10,6 @@ from src.shared.domain.exceptions import InvalidStateTransitionError, Validation
 
 class Agent(PydanticEntity):
     """Agent 实体。"""
-
-    model_config = ConfigDict(validate_assignment=True)
 
     name: str = Field(min_length=1, max_length=100)
     description: str = Field(max_length=500, default="")

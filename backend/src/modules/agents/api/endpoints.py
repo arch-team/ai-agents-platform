@@ -21,9 +21,12 @@ from src.modules.auth.application.dto.user_dto import UserDTO
 
 router = APIRouter(prefix="/api/v1/agents", tags=["agents"])
 
+# 类型别名简化重复的依赖注入声明
+ServiceDep = Annotated[AgentService, Depends(get_agent_service)]
+CurrentUserDep = Annotated[UserDTO, Depends(get_current_user)]
+
 
 def _to_response(dto: AgentDTO) -> AgentResponse:
-    """将 AgentDTO 转换为 API 响应模型。"""
     return AgentResponse(
         id=dto.id,
         name=dto.name,
@@ -45,26 +48,19 @@ def _to_response(dto: AgentDTO) -> AgentResponse:
 @router.post("", response_model=AgentResponse, status_code=status.HTTP_201_CREATED)
 async def create_agent(
     request: CreateAgentRequest,
-    service: Annotated[AgentService, Depends(get_agent_service)],
-    current_user: Annotated[UserDTO, Depends(get_current_user)],
+    service: ServiceDep,
+    current_user: CurrentUserDep,
 ) -> AgentResponse:
     """创建 Agent。"""
-    dto = CreateAgentDTO(
-        name=request.name,
-        description=request.description,
-        system_prompt=request.system_prompt,
-        model_id=request.model_id,
-        temperature=request.temperature,
-        max_tokens=request.max_tokens,
-    )
+    dto = CreateAgentDTO(**request.model_dump())
     agent = await service.create_agent(dto, current_user.id)
     return _to_response(agent)
 
 
 @router.get("", response_model=AgentListResponse)
 async def list_agents(
-    service: Annotated[AgentService, Depends(get_agent_service)],
-    current_user: Annotated[UserDTO, Depends(get_current_user)],
+    service: ServiceDep,
+    current_user: CurrentUserDep,
     status_filter: Annotated[AgentStatus | None, Query(alias="status")] = None,
     page: Annotated[int, Query(ge=1)] = 1,
     page_size: Annotated[int, Query(ge=1, le=100)] = 20,
@@ -76,23 +72,22 @@ async def list_agents(
         page=page,
         page_size=page_size,
     )
-    total_pages = math.ceil(paged.total / page_size) if paged.total > 0 else 0
     return AgentListResponse(
         items=[_to_response(a) for a in paged.items],
         total=paged.total,
         page=paged.page,
         page_size=paged.page_size,
-        total_pages=total_pages,
+        total_pages=math.ceil(paged.total / page_size) if paged.total else 0,
     )
 
 
 @router.get("/{agent_id}", response_model=AgentResponse)
 async def get_agent(
     agent_id: int,
-    service: Annotated[AgentService, Depends(get_agent_service)],
-    _current_user: Annotated[UserDTO, Depends(get_current_user)],
+    service: ServiceDep,
+    _current_user: CurrentUserDep,
 ) -> AgentResponse:
-    """获取 Agent 详情。需要认证。"""
+    """获取 Agent 详情。"""
     agent = await service.get_agent(agent_id)
     return _to_response(agent)
 
@@ -101,18 +96,11 @@ async def get_agent(
 async def update_agent(
     agent_id: int,
     request: UpdateAgentRequest,
-    service: Annotated[AgentService, Depends(get_agent_service)],
-    current_user: Annotated[UserDTO, Depends(get_current_user)],
+    service: ServiceDep,
+    current_user: CurrentUserDep,
 ) -> AgentResponse:
-    """更新 Agent。仅 owner 或 ADMIN 可操作。"""
-    dto = UpdateAgentDTO(
-        name=request.name,
-        description=request.description,
-        system_prompt=request.system_prompt,
-        model_id=request.model_id,
-        temperature=request.temperature,
-        max_tokens=request.max_tokens,
-    )
+    """更新 Agent。"""
+    dto = UpdateAgentDTO(**request.model_dump())
     agent = await service.update_agent(agent_id, dto, current_user.id)
     return _to_response(agent)
 
@@ -120,8 +108,8 @@ async def update_agent(
 @router.delete("/{agent_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_agent(
     agent_id: int,
-    service: Annotated[AgentService, Depends(get_agent_service)],
-    current_user: Annotated[UserDTO, Depends(get_current_user)],
+    service: ServiceDep,
+    current_user: CurrentUserDep,
 ) -> None:
     """删除 Agent。仅 DRAFT 状态可删除。"""
     await service.delete_agent(agent_id, current_user.id)
@@ -130,8 +118,8 @@ async def delete_agent(
 @router.post("/{agent_id}/activate", response_model=AgentResponse)
 async def activate_agent(
     agent_id: int,
-    service: Annotated[AgentService, Depends(get_agent_service)],
-    current_user: Annotated[UserDTO, Depends(get_current_user)],
+    service: ServiceDep,
+    current_user: CurrentUserDep,
 ) -> AgentResponse:
     """激活 Agent。"""
     agent = await service.activate_agent(agent_id, current_user.id)
@@ -141,8 +129,8 @@ async def activate_agent(
 @router.post("/{agent_id}/archive", response_model=AgentResponse)
 async def archive_agent(
     agent_id: int,
-    service: Annotated[AgentService, Depends(get_agent_service)],
-    current_user: Annotated[UserDTO, Depends(get_current_user)],
+    service: ServiceDep,
+    current_user: CurrentUserDep,
 ) -> AgentResponse:
     """归档 Agent。"""
     agent = await service.archive_agent(agent_id, current_user.id)
