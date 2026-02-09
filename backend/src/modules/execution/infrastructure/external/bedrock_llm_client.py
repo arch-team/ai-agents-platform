@@ -5,6 +5,7 @@ SDK-First: < 100 行，暴露原生类型，
 """
 
 import asyncio
+import logging
 from collections.abc import AsyncIterator
 from typing import Any, Protocol
 
@@ -15,6 +16,9 @@ from src.modules.execution.application.interfaces import (
     LLMStreamChunk,
 )
 from src.shared.domain.exceptions import DomainError
+
+
+logger = logging.getLogger(__name__)
 
 
 class _BedrockRuntimeClient(Protocol):
@@ -56,8 +60,10 @@ class BedrockLLMClient(ILLMClient):
         try:
             response = await asyncio.to_thread(self._client.converse, **kwargs)
         except Exception as e:
+            # 日志记录完整异常, 但不向用户暴露内部错误信息
+            logger.exception("Bedrock Converse API 调用失败")
             raise DomainError(
-                message=f"Bedrock API 调用失败: {e}",
+                message="LLM 服务暂时不可用, 请稍后重试",
                 code="BEDROCK_API_ERROR",
             ) from e
 
@@ -99,8 +105,9 @@ class BedrockLLMClient(ILLMClient):
         try:
             response = await asyncio.to_thread(self._client.converse_stream, **kwargs)
         except Exception as e:
+            logger.exception("Bedrock ConverseStream API 调用失败")
             raise DomainError(
-                message=f"Bedrock API 调用失败: {e}",
+                message="LLM 服务暂时不可用, 请稍后重试",
                 code="BEDROCK_API_ERROR",
             ) from e
 

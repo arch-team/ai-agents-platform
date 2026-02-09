@@ -54,7 +54,7 @@ class TestRegisterEndpoint:
 
         response = client.post(
             "/api/v1/auth/register",
-            json={"email": "test@example.com", "password": "securepassword123", "name": "Test User"},
+            json={"email": "test@example.com", "password": "SecurePassword123", "name": "Test User"},
         )
 
         assert response.status_code == 201
@@ -71,7 +71,7 @@ class TestRegisterEndpoint:
 
         response = client.post(
             "/api/v1/auth/register",
-            json={"email": "test@example.com", "password": "securepassword123", "name": "Test User"},
+            json={"email": "test@example.com", "password": "SecurePassword123", "name": "Test User"},
         )
 
         assert response.status_code == 409
@@ -82,7 +82,7 @@ class TestRegisterEndpoint:
         """422 for invalid email format."""
         response = client.post(
             "/api/v1/auth/register",
-            json={"email": "not-an-email", "password": "securepassword123", "name": "Test User"},
+            json={"email": "not-an-email", "password": "SecurePassword123", "name": "Test User"},
         )
 
         assert response.status_code == 422
@@ -107,7 +107,7 @@ class TestLoginEndpoint:
 
         response = client.post(
             "/api/v1/auth/login",
-            json={"email": "test@example.com", "password": "securepassword123"},
+            json={"email": "test@example.com", "password": "SecurePassword123"},
         )
 
         assert response.status_code == 200
@@ -134,7 +134,7 @@ class TestLoginEndpoint:
 
         response = client.post(
             "/api/v1/auth/login",
-            json={"email": "inactive@example.com", "password": "securepassword123"},
+            json={"email": "inactive@example.com", "password": "SecurePassword123"},
         )
 
         assert response.status_code == 401

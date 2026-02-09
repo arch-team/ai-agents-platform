@@ -16,23 +16,30 @@ from src.modules.execution.domain.exceptions import (
 )
 from src.presentation.api.routes.health import router as health_router
 from src.shared.api.exception_handlers import register_exception_handlers, register_status_mapping
+from src.shared.infrastructure.settings import get_settings
 
 
 def create_app() -> FastAPI:
     """创建并配置 FastAPI 应用实例。"""
+    settings = get_settings()
     app = FastAPI(
         title="AI Agents Platform",
         description="基于 Amazon Bedrock AgentCore 的企业级 AI Agents 平台",
         version="0.1.0",
+        # 非开发环境禁用 docs, 避免暴露 API schema
+        docs_url="/docs" if settings.APP_DEBUG else None,
+        redoc_url="/redoc" if settings.APP_DEBUG else None,
     )
 
-    # CORS 中间件
+    # CORS 中间件 — 禁止 allow_origins=["*"] + allow_credentials=True 组合
+    # 生产环境应通过 CORS_ALLOWED_ORIGINS 环境变量配置具体域名
+    cors_origins = settings.CORS_ALLOWED_ORIGINS
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],
+        allow_origins=cors_origins,
         allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
+        allow_methods=["GET", "POST", "PUT", "DELETE"],
+        allow_headers=["Authorization", "Content-Type"],
     )
 
     # 注册 auth 模块异常映射

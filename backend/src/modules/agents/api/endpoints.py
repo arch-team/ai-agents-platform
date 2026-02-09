@@ -85,10 +85,10 @@ async def list_agents(
 async def get_agent(
     agent_id: int,
     service: ServiceDep,
-    _current_user: CurrentUserDep,
+    current_user: CurrentUserDep,
 ) -> AgentResponse:
-    """获取 Agent 详情。"""
-    agent = await service.get_agent(agent_id)
+    """获取 Agent 详情。校验所有权，防止越权访问。"""
+    agent = await service.get_owned_agent(agent_id, current_user.id)
     return _to_response(agent)
 
 

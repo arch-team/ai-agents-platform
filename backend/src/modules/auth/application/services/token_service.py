@@ -16,8 +16,9 @@ def create_access_token(
     extra_claims: dict[str, object] | None = None,
 ) -> str:
     """创建 JWT access token。"""
-    expire = datetime.now(UTC) + timedelta(minutes=expire_minutes)
-    payload: dict[str, object] = {"sub": subject, "exp": expire}
+    now = datetime.now(UTC)
+    expire = now + timedelta(minutes=expire_minutes)
+    payload: dict[str, object] = {"sub": subject, "exp": expire, "iat": now}
     if extra_claims:
         payload.update(extra_claims)
     return str(jwt.encode(payload, secret_key, algorithm=algorithm))

@@ -197,18 +197,18 @@ class TestGetAgentEndpoint:
 
     def test_get_success(self, client: TestClient, mock_service: AsyncMock) -> None:
         """200 + 返回 AgentResponse。"""
-        mock_service.get_agent.return_value = _make_agent_dto(agent_id=42)
+        mock_service.get_owned_agent.return_value = _make_agent_dto(agent_id=42)
 
         response = client.get("/api/v1/agents/42")
 
         assert response.status_code == 200
         data = response.json()
         assert data["id"] == 42
-        mock_service.get_agent.assert_called_once_with(42)
+        mock_service.get_owned_agent.assert_called_once_with(42, 1)
 
     def test_get_not_found(self, client: TestClient, mock_service: AsyncMock) -> None:
         """404 Agent 不存在。"""
-        mock_service.get_agent.side_effect = AgentNotFoundError(999)
+        mock_service.get_owned_agent.side_effect = AgentNotFoundError(999)
 
         response = client.get("/api/v1/agents/999")
 

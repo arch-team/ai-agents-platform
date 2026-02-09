@@ -69,6 +69,15 @@ class AgentService:
         agent = await self._get_agent_or_raise(agent_id)
         return self._to_dto(agent)
 
+    async def get_owned_agent(self, agent_id: int, operator_id: int) -> AgentDTO:
+        """获取 Agent 详情（校验所有权）。
+
+        Raises:
+            AgentNotFoundError, DomainError(FORBIDDEN_AGENT)
+        """
+        agent = await self._get_owned_agent(agent_id, operator_id)
+        return self._to_dto(agent)
+
     async def list_agents(
         self,
         owner_id: int,

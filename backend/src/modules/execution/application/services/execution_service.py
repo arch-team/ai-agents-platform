@@ -355,7 +355,8 @@ class ExecutionService:
             raise ConversationNotFoundError(conversation_id)
         return conversation
 
-    def _check_ownership(self, conversation: Conversation, user_id: int) -> None:
+    @staticmethod
+    def _check_ownership(conversation: Conversation, user_id: int) -> None:
         """校验对话所有权。"""
         if conversation.user_id != user_id:
             raise DomainError(

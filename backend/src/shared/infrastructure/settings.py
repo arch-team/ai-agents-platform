@@ -31,6 +31,9 @@ class Settings(BaseSettings):
     JWT_ALGORITHM: str = "HS256"
     JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
 
+    # CORS 配置 — 生产环境必须配置具体域名
+    CORS_ALLOWED_ORIGINS: list[str] = ["http://localhost:3000"]
+
     # AWS 配置
     AWS_REGION: str = "us-east-1"
 
