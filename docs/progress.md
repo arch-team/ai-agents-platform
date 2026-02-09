@@ -217,5 +217,5 @@
 > 仅保留最近一次，每次会话结束时覆盖更新此节。
 
 - **日期**: 2026-02-09
-- **完成**: M2 + M3 里程碑全部完成 — Phase 1 MVP 后端全部交付。M2: agents 模块 9 项任务（415 测试，97.66%）。M3: execution 模块 12 项任务（611 测试，94.08%），4 波 Agent Teams 执行 (dev-domain+dev-shared 并行 → dev-app+dev-infra+dev-bridge 三并行 → dev-api → reviewer)。审查修复 SSE 流异常信息泄露安全问题
-- **决策**: Bedrock ConverseStream API（非 AgentCore Runtime，Phase 1 简化）；Message 为独立实体（支持流式更新和独立查询）；跨模块通过 shared/interfaces/IAgentQuerier 解耦（agents 提供 AgentQuerierImpl）；presentation/providers.py 作为 composition root 组装跨模块依赖（通过架构合规测试）；流结束后一次性写数据库；SSE 错误处理区分 DomainError vs Exception 防信息泄露
+- **完成**: Phase 1 里程碑验收 — 模式 C 安全/质量审查团队 (4 并行 Agent: security-reviewer/code-reviewer/arch-reviewer/test-reviewer) 执行全面审查。安全审查发现并修复 3 高危 + 3 中危漏洞（CORS、IDOR、SDK 信息泄露、密码复杂度、JWT iat、API docs）；架构合规 14/14 通过；代码质量 ruff/mypy 全通过；611 测试 93.38% 覆盖率
+- **决策**: CORS 从 allow_origins=["*"] 改为可配置白名单；Agent get_agent 端点添加所有权校验（IDOR 修复）；BedrockLLMClient 异常信息脱敏（不暴露原始 SDK 错误）；密码添加大小写+数字复杂度校验；非 DEBUG 模式禁用 /docs
