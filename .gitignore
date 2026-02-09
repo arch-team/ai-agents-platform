@@ -104,6 +104,9 @@ cdk.out/
 docs/_build/
 site/
 
+# Plan docs (临时计划文档)
+plan-docs/
+
 # Secrets (never commit)
 secrets/
 *.pem

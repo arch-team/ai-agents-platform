@@ -90,7 +90,8 @@ ai-agents-platform/             # Monorepo 根目录
 ├── .claude/                    # 根级：通用规范
 │   ├── CLAUDE.md               # 全局入口（语言、项目概述、会话协议）
 │   └── rules/
-│       └── common.md           # 跨项目通用规则（本文件）
+│       ├── common.md           # 跨项目通用规则（本文件）
+│       └── session-workflow.md # 会话工作流规则（三步循环、任务管理）
 ├── backend/                    # 后端项目 (Python + FastAPI)
 ├── frontend/                   # 前端项目 (React + TypeScript)
 ├── infra/                      # 基础设施项目 (AWS CDK)

@@ -32,8 +32,22 @@ AI Agents Platform — 基于 Amazon Bedrock AgentCore 的企业内部 AI Agents
 
 ## 会话协议
 
-> **每次会话开始时必须阅读 [docs/progress.md](../docs/progress.md)**，了解当前进度和上次会话产出。
-> 会话结束前更新 `docs/progress.md` 的"当前状态"和"上次会话"。
+> 详细执行步骤见 `.claude/rules/session-workflow.md`（自动加载）
+
+### 核心三步循环
+
+1. **开始**: 读取 `docs/progress.md` → 识别当前 Milestone、待做任务、遗留事项 → 向用户汇报
+2. **执行**: 按任务表"参考规范"加载 rules → 检查前置依赖 → TDD 实现 → 质量检查
+3. **结束**: 更新 `docs/progress.md` 五个区域（当前状态、模块状态、任务表、遗留事项、上次会话）
+
+### 文档角色
+
+| 文件 | 角色 | 何时读取 |
+|------|------|---------|
+| `docs/progress.md` | 任务驱动器 | **每次会话开始** |
+| `docs/strategy/roadmap.md` | 决定"做什么" | 开始新 Milestone 时 |
+| `backend/.claude/rules/*` | 指导"怎么做" | 实现任务时 (自动加载) |
+| `backend/.claude/rules/checklist.md` | 验证"做得对不对" | 验收和 PR 前 |
 
 ---
 
