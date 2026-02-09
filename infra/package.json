@@ -1,0 +1,39 @@
+{
+  "name": "ai-agents-platform-infra",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc -w",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "cdk": "cdk",
+    "lint": "eslint 'lib/**/*.ts' 'bin/**/*.ts' 'test/**/*.ts' --no-error-on-unmatched-pattern",
+    "lint:fix": "eslint 'lib/**/*.ts' 'bin/**/*.ts' 'test/**/*.ts' --no-error-on-unmatched-pattern --fix",
+    "format": "prettier --write 'lib/**/*.ts' 'bin/**/*.ts' 'test/**/*.ts'",
+    "format:check": "prettier --check 'lib/**/*.ts' 'bin/**/*.ts' 'test/**/*.ts'",
+    "typecheck": "tsc --noEmit"
+  },
+  "packageManager": "pnpm@10.9.0",
+  "dependencies": {
+    "aws-cdk-lib": "^2.237.1",
+    "cdk-nag": "^2.37.55",
+    "constructs": "^10.4.5",
+    "source-map-support": "^0.5.21"
+  },
+  "devDependencies": {
+    "@types/jest": "^30.0.0",
+    "@types/node": "^25.2.2",
+    "@typescript-eslint/eslint-plugin": "^8.54.0",
+    "@typescript-eslint/parser": "^8.54.0",
+    "aws-cdk": "^2.1105.0",
+    "eslint": "^9.39.2",
+    "eslint-config-prettier": "^10.1.8",
+    "jest": "^30.2.0",
+    "prettier": "^3.8.1",
+    "ts-jest": "^29.4.6",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3"
+  }
+}

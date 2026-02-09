@@ -1,0 +1,28 @@
+# 依赖
+node_modules/
+
+# CDK 输出
+cdk.out/
+cdk.context.json
+
+# TypeScript 编译输出
+*.js
+*.d.ts
+*.js.map
+
+# 测试覆盖率
+coverage/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# 系统文件
+.DS_Store
+Thumbs.db
+
+# 保留配置文件 (JS)
+!jest.config.js
+!eslint.config.mjs

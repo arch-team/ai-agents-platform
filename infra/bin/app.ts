@@ -1,0 +1,46 @@
+#!/usr/bin/env node
+import 'source-map-support/register';
+import * as cdk from 'aws-cdk-lib';
+import { Aspects } from 'aws-cdk-lib';
+import { AwsSolutionsChecks } from 'cdk-nag';
+import { getEnvironmentConfig } from '../lib/config/environments';
+import { getRequiredTags } from '../lib/config/constants';
+import { NetworkStack, SecurityStack, DatabaseStack } from '../lib/stacks';
+
+const app = new cdk.App();
+const envConfig = getEnvironmentConfig(app);
+
+// 应用必须标签
+const tags = getRequiredTags(envConfig.envName);
+Object.entries(tags).forEach(([key, value]) => {
+  cdk.Tags.of(app).add(key, value);
+});
+
+// 启用 CDK Nag
+Aspects.of(app).add(new AwsSolutionsChecks({ verbose: true }));
+
+// Stack 实例化
+const networkStack = new NetworkStack(app, `Network-${envConfig.envName}`, {
+  env: { account: envConfig.account, region: envConfig.region },
+  vpcCidr: envConfig.vpcCidr,
+  envName: envConfig.envName,
+});
+
+const securityStack = new SecurityStack(app, `Security-${envConfig.envName}`, {
+  env: { account: envConfig.account, region: envConfig.region },
+  vpc: networkStack.vpc,
+  envName: envConfig.envName,
+});
+securityStack.addDependency(networkStack);
+
+const databaseStack = new DatabaseStack(app, `Database-${envConfig.envName}`, {
+  env: { account: envConfig.account, region: envConfig.region },
+  vpc: networkStack.vpc,
+  dbSecurityGroup: securityStack.dbSecurityGroup,
+  encryptionKey: securityStack.encryptionKey,
+  envName: envConfig.envName,
+});
+databaseStack.addDependency(networkStack);
+databaseStack.addDependency(securityStack);
+
+app.synth();

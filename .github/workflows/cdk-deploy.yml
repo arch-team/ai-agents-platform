@@ -1,0 +1,65 @@
+name: CDK Deploy
+
+on:
+  push:
+    branches: [main, ai-agents-factory-v1]
+    paths: ['infra/**']
+  pull_request:
+    paths: ['infra/**']
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment'
+        type: choice
+        options: [dev, staging, prod]
+        default: dev
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: infra
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'pnpm'
+          cache-dependency-path: infra/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm test:coverage
+      - run: pnpm cdk synth --context env=${{ inputs.environment || 'dev' }}
+
+  deploy-dev:
+    needs: test
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/ai-agents-factory-v1'
+    runs-on: ubuntu-latest
+    environment: dev
+    defaults:
+      run:
+        working-directory: infra
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'pnpm'
+          cache-dependency-path: infra/pnpm-lock.yaml
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ap-northeast-1
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm cdk deploy --all --context env=dev --require-approval never
