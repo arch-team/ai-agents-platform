@@ -1,4 +1,4 @@
-"""Auth API dependencies for FastAPI DI."""
+"""Auth API 依赖注入。"""
 
 from collections.abc import Awaitable, Callable
 from typing import Annotated
@@ -26,10 +26,9 @@ def get_user_service(
     session: Annotated[AsyncSession, Depends(get_db)],
     settings: Annotated[Settings, Depends(get_settings)],
 ) -> UserService:
-    """FastAPI 依赖: 创建 UserService 实例。"""
-    repository = UserRepositoryImpl(session=session)
+    """创建 UserService 实例。"""
     return UserService(
-        repository,
+        UserRepositoryImpl(session=session),
         jwt_secret_key=settings.JWT_SECRET_KEY.get_secret_value(),
         jwt_algorithm=settings.JWT_ALGORITHM,
         jwt_expire_minutes=settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES,
@@ -38,10 +37,10 @@ def get_user_service(
 
 async def get_current_user(
     credentials: Annotated[HTTPAuthorizationCredentials, Depends(security)],
-    session: Annotated[AsyncSession, Depends(get_db)],
+    service: Annotated[UserService, Depends(get_user_service)],
     settings: Annotated[Settings, Depends(get_settings)],
 ) -> UserDTO:
-    """FastAPI 依赖: 从 JWT token 解析当前用户。
+    """从 JWT token 解析当前用户。
 
     Raises:
         AuthenticationError: token 无效或用户不存在
@@ -56,13 +55,6 @@ async def get_current_user(
         msg = "无效的认证令牌"
         raise AuthenticationError(msg)
 
-    repository = UserRepositoryImpl(session=session)
-    service = UserService(
-        repository,
-        jwt_secret_key=settings.JWT_SECRET_KEY.get_secret_value(),
-        jwt_algorithm=settings.JWT_ALGORITHM,
-        jwt_expire_minutes=settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES,
-    )
     user = await service.get_user(int(str(user_id_str)))
     if user is None:
         msg = "用户不存在"
@@ -71,7 +63,7 @@ async def get_current_user(
 
 
 def require_role(*roles: Role) -> Callable[..., Awaitable[UserDTO]]:
-    """FastAPI 依赖工厂: 验证用户角色。
+    """依赖工厂: 验证用户角色。
 
     Raises:
         AuthorizationError: 用户角色不在允许列表中

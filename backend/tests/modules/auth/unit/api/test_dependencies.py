@@ -68,20 +68,15 @@ class TestGetCurrentUser:
     async def test_valid_token_returns_user(self) -> None:
         token = _make_token(user_id=42)
         credentials = HTTPAuthorizationCredentials(scheme="Bearer", credentials=token)
-        mock_session = AsyncMock()
         settings = _test_settings()
         expected_user = _make_user_dto(user_id=42)
 
-        with patch(
-            "src.modules.auth.api.dependencies.UserService"
-        ) as mock_service_cls:
-            mock_service = AsyncMock()
-            mock_service.get_user.return_value = expected_user
-            mock_service_cls.return_value = mock_service
+        mock_service = AsyncMock()
+        mock_service.get_user.return_value = expected_user
 
-            result = await get_current_user(
-                credentials=credentials, session=mock_session, settings=settings,
-            )
+        result = await get_current_user(
+            credentials=credentials, service=mock_service, settings=settings,
+        )
 
         assert result.id == 42
         mock_service.get_user.assert_called_once_with(42)
@@ -93,32 +88,27 @@ class TestGetCurrentUser:
 
         token = jose_jwt.encode({"role": "admin"}, _JWT_SECRET, algorithm=_JWT_ALGORITHM)
         credentials = HTTPAuthorizationCredentials(scheme="Bearer", credentials=token)
-        mock_session = AsyncMock()
         settings = _test_settings()
+        mock_service = AsyncMock()
 
         with pytest.raises(AuthenticationError, match="无效的认证令牌"):
             await get_current_user(
-                credentials=credentials, session=mock_session, settings=settings,
+                credentials=credentials, service=mock_service, settings=settings,
             )
 
     @pytest.mark.asyncio
     async def test_user_not_found_raises(self) -> None:
         token = _make_token(user_id=999)
         credentials = HTTPAuthorizationCredentials(scheme="Bearer", credentials=token)
-        mock_session = AsyncMock()
         settings = _test_settings()
 
-        with patch(
-            "src.modules.auth.api.dependencies.UserService"
-        ) as mock_service_cls:
-            mock_service = AsyncMock()
-            mock_service.get_user.return_value = None
-            mock_service_cls.return_value = mock_service
+        mock_service = AsyncMock()
+        mock_service.get_user.return_value = None
 
-            with pytest.raises(AuthenticationError, match="用户不存在"):
-                await get_current_user(
-                    credentials=credentials, session=mock_session, settings=settings,
-                )
+        with pytest.raises(AuthenticationError, match="用户不存在"):
+            await get_current_user(
+                credentials=credentials, service=mock_service, settings=settings,
+            )
 
 
 @pytest.mark.unit

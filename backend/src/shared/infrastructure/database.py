@@ -11,6 +11,9 @@ from sqlalchemy.ext.asyncio import (
 from sqlalchemy.orm import DeclarativeBase
 
 
+_NOT_INITIALIZED_MSG = "Database not initialized. Call init_db() first."
+
+
 class Base(DeclarativeBase):
     """SQLAlchemy ORM 声明基类。"""
 
@@ -29,22 +32,20 @@ def init_db(database_url: str, *, echo: bool = False) -> None:
 def get_engine() -> AsyncEngine:
     """获取当前数据库引擎。"""
     if _engine is None:
-        msg = "Database not initialized. Call init_db() first."
-        raise RuntimeError(msg)
+        raise RuntimeError(_NOT_INITIALIZED_MSG)
     return _engine
 
 
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
     """FastAPI 依赖注入: 获取异步数据库会话。"""
     if _session_factory is None:
-        msg = "Database not initialized. Call init_db() first."
-        raise RuntimeError(msg)
+        raise RuntimeError(_NOT_INITIALIZED_MSG)
     async with _session_factory() as session:
         yield session
 
 
 async def create_all_tables() -> None:
-    """创建所有表 (开发/测试用)。"""
+    """创建所有表（开发/测试用）。"""
     engine = get_engine()
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)

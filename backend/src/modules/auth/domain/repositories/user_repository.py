@@ -1,4 +1,4 @@
-"""User repository interface."""
+"""用户仓库接口。"""
 
 from abc import abstractmethod
 

@@ -1,4 +1,4 @@
-"""In-process event bus."""
+"""进程内事件总线。"""
 
 from collections import defaultdict
 from collections.abc import Callable
@@ -7,41 +7,41 @@ from src.shared.domain.events import DomainEvent
 
 
 class EventBus:
-    """In-process event bus.
-
-    Supports synchronous and asynchronous event publishing and subscribing.
-    Provides idempotency guarantee via _processed_event_ids.
-    """
+    """进程内事件总线，支持同步/异步发布订阅，通过 event_id 保证幂等性。"""
 
     def __init__(self) -> None:
-        """Initialize event bus."""
         self._handlers: dict[type[DomainEvent], list[Callable[..., object]]] = defaultdict(list)
         self._processed_event_ids: set[object] = set()
 
     def subscribe(self, event_type: type[DomainEvent], handler: Callable[..., object]) -> None:
-        """Subscribe to an event type."""
+        """订阅事件类型。"""
         self._handlers[event_type].append(handler)
 
-    async def publish_async(self, event: DomainEvent) -> None:
-        """Publish event asynchronously (idempotent)."""
+    def _mark_processed(self, event: DomainEvent) -> bool:
+        """标记事件为已处理，返回是否为首次处理。"""
         if event.event_id in self._processed_event_ids:
-            return
+            return False
         self._processed_event_ids.add(event.event_id)
+        return True
+
+    async def publish_async(self, event: DomainEvent) -> None:
+        """异步发布事件（幂等）。"""
+        if not self._mark_processed(event):
+            return
         for handler in self._handlers.get(type(event), []):
             result = handler(event)
             if hasattr(result, "__await__"):
                 await result
 
     def publish(self, event: DomainEvent) -> None:
-        """Publish event synchronously (idempotent)."""
-        if event.event_id in self._processed_event_ids:
+        """同步发布事件（幂等）。"""
+        if not self._mark_processed(event):
             return
-        self._processed_event_ids.add(event.event_id)
         for handler in self._handlers.get(type(event), []):
             handler(event)
 
     def clear(self) -> None:
-        """Clear all handlers and processed event records."""
+        """清空所有处理器和已处理事件记录。"""
         self._handlers.clear()
         self._processed_event_ids.clear()
 
@@ -51,7 +51,7 @@ event_bus = EventBus()
 
 
 def event_handler(event_type: type[DomainEvent]) -> Callable[..., object]:
-    """Event handler decorator, auto-registers to global event_bus."""
+    """事件处理器装饰器，自动注册到全局 event_bus。"""
 
     def decorator(func: Callable[..., object]) -> Callable[..., object]:
         event_bus.subscribe(event_type, func)

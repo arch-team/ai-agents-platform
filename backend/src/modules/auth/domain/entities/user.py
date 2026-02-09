@@ -1,4 +1,4 @@
-"""User domain entity."""
+"""用户领域实体。"""
 
 from pydantic import EmailStr, Field
 

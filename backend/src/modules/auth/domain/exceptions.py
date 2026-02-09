@@ -1,4 +1,4 @@
-"""Auth domain exceptions."""
+"""认证模块领域异常。"""
 
 from src.shared.domain.exceptions import DomainError, DuplicateEntityError
 

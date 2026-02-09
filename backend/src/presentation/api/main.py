@@ -1,4 +1,4 @@
-"""AI Agents Platform - FastAPI application entry point."""
+"""FastAPI 应用入口。"""
 
 import uvicorn
 from fastapi import FastAPI
@@ -11,7 +11,7 @@ from src.shared.api.exception_handlers import register_exception_handlers, regis
 
 
 def create_app() -> FastAPI:
-    """Create and configure FastAPI application instance."""
+    """创建并配置 FastAPI 应用实例。"""
     app = FastAPI(
         title="AI Agents Platform",
         description="基于 Amazon Bedrock AgentCore 的企业级 AI Agents 平台",
@@ -45,7 +45,7 @@ app = create_app()
 
 
 def run() -> None:
-    """Development server entry point."""
+    """开发服务器入口。"""
     uvicorn.run(
         "src.presentation.api.main:app",
         host="127.0.0.1",

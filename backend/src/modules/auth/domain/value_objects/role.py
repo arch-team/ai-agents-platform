@@ -1,4 +1,4 @@
-"""User role value object."""
+"""用户角色值对象。"""
 
 from enum import StrEnum
 

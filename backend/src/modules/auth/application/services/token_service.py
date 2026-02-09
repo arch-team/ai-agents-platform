@@ -2,7 +2,7 @@
 
 from datetime import UTC, datetime, timedelta
 
-from jose import JWTError, jwt
+from jose import JWTError, jwt  # type: ignore[import-untyped]
 
 from src.modules.auth.domain.exceptions import AuthenticationError
 
@@ -15,25 +15,12 @@ def create_access_token(
     expire_minutes: int,
     extra_claims: dict[str, object] | None = None,
 ) -> str:
-    """创建 JWT access token。
-
-    Args:
-        subject: token 主体 (通常是 user_id)
-        secret_key: JWT 签名密钥
-        algorithm: JWT 签名算法
-        expire_minutes: token 过期时间 (分钟)
-        extra_claims: 额外的 JWT claims
-
-    """
+    """创建 JWT access token。"""
     expire = datetime.now(UTC) + timedelta(minutes=expire_minutes)
-    payload: dict[str, object] = {
-        "sub": subject,
-        "exp": expire,
-    }
+    payload: dict[str, object] = {"sub": subject, "exp": expire}
     if extra_claims:
         payload.update(extra_claims)
-    result: str = jwt.encode(payload, secret_key, algorithm=algorithm)
-    return result
+    return str(jwt.encode(payload, secret_key, algorithm=algorithm))
 
 
 def decode_access_token(
@@ -46,7 +33,6 @@ def decode_access_token(
 
     Raises:
         AuthenticationError: token 无效或已过期
-
     """
     try:
         payload: dict[str, object] = jwt.decode(

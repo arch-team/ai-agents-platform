@@ -1,4 +1,4 @@
-"""User ORM model."""
+"""用户 ORM 模型定义。"""
 
 from datetime import UTC, datetime
 

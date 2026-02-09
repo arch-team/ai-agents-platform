@@ -1,4 +1,4 @@
-"""User repository implementation."""
+"""用户仓库实现。"""
 
 from sqlalchemy import select
 
@@ -14,10 +14,11 @@ class UserRepositoryImpl(PydanticRepository[User, UserModel, int], IUserReposito
 
     entity_class = User
     model_class = UserModel
-    _updatable_fields: frozenset[str] = frozenset({"name", "role", "is_active", "hashed_password", "updated_at"})
+    _updatable_fields: frozenset[str] = frozenset(
+        {"name", "role", "is_active", "hashed_password", "updated_at"},
+    )
 
     def _to_entity(self, model: UserModel) -> User:
-        """ORM Model -> User Entity 转换，显式处理 Role 枚举。"""
         return User(
             id=model.id,
             email=model.email,
@@ -30,7 +31,6 @@ class UserRepositoryImpl(PydanticRepository[User, UserModel, int], IUserReposito
         )
 
     def _to_model(self, entity: User) -> UserModel:
-        """User Entity -> ORM Model 转换，显式处理 Role 枚举。"""
         return UserModel(
             id=entity.id,
             email=entity.email,
@@ -42,11 +42,8 @@ class UserRepositoryImpl(PydanticRepository[User, UserModel, int], IUserReposito
             updated_at=entity.updated_at,
         )
 
-    async def get_by_email(self, email: str) -> User | None:
-        """根据邮箱查找用户。"""
+    async def get_by_email(self, email: str) -> User | None:  # noqa: D102
         stmt = select(UserModel).where(UserModel.email == email)
         result = await self._session.execute(stmt)
         model = result.scalar_one_or_none()
-        if model is None:
-            return None
-        return self._to_entity(model)
+        return self._to_entity(model) if model else None

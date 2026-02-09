@@ -1,4 +1,4 @@
-"""API layer common schemas."""
+"""API 层通用 Schema。"""
 
 from typing import Generic, TypeVar
 
@@ -9,7 +9,7 @@ T = TypeVar("T")
 
 
 class ErrorResponse(BaseModel):
-    """Unified error response format."""
+    """统一错误响应格式。"""
 
     code: str
     message: str
@@ -17,19 +17,19 @@ class ErrorResponse(BaseModel):
 
 
 class PageRequest(BaseModel):
-    """Pagination request parameters."""
+    """分页请求参数。"""
 
     page: int = Field(default=1, ge=1)
     page_size: int = Field(default=20, ge=1, le=100)
 
     @property
     def offset(self) -> int:
-        """Calculate offset for database query."""
+        """计算分页偏移量。"""
         return (self.page - 1) * self.page_size
 
 
 class PageResponse(BaseModel, Generic[T]):
-    """Pagination response wrapper."""
+    """分页响应封装。"""
 
     items: list[T]
     total: int

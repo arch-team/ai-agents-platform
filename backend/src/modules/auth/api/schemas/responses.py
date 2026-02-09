@@ -1,4 +1,4 @@
-"""Auth API response schemas."""
+"""认证 API 响应模型。"""
 
 from pydantic import BaseModel
 

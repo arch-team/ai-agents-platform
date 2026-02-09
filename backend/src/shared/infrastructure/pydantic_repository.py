@@ -30,8 +30,7 @@ class PydanticRepository(IRepository[EntityT, IDT], Generic[EntityT, ModelT, IDT
         """Entity -> ORM Model 转换。"""
         data = entity.model_dump(exclude_none=False)
         column_keys = {c.key for c in self.model_class.__table__.columns}
-        filtered = {k: v for k, v in data.items() if k in column_keys}
-        return self.model_class(**filtered)
+        return self.model_class(**{k: v for k, v in data.items() if k in column_keys})
 
     def _to_entity(self, model: ModelT) -> EntityT:
         """ORM Model -> Entity 转换。"""
@@ -42,6 +41,18 @@ class PydanticRepository(IRepository[EntityT, IDT], Generic[EntityT, ModelT, IDT
         """提取可更新字段数据。"""
         data = entity.model_dump()
         return {k: v for k, v in data.items() if k in self._updatable_fields}
+
+    async def _get_model_or_raise(self, entity_id: object) -> ModelT:
+        """根据 ID 获取 ORM Model，不存在则抛出 EntityNotFoundError。"""
+        stmt = select(self.model_class).where(self.model_class.id == entity_id)  # type: ignore[attr-defined]
+        result = await self._session.execute(stmt)
+        model = result.scalar_one_or_none()
+        if model is None:
+            raise EntityNotFoundError(
+                entity_type=self.entity_class.__name__,
+                entity_id=entity_id,  # type: ignore[arg-type]
+            )
+        return model
 
     async def get_by_id(self, entity_id: IDT) -> EntityT | None:
         """根据 ID 获取实体。"""
@@ -78,14 +89,8 @@ class PydanticRepository(IRepository[EntityT, IDT], Generic[EntityT, ModelT, IDT
         Raises:
             EntityNotFoundError: 实体不存在
         """
-        stmt = select(self.model_class).where(self.model_class.id == entity.id)  # type: ignore[attr-defined]
-        result = await self._session.execute(stmt)
-        model = result.scalar_one_or_none()
-        if model is None:
-            entity_name = self.entity_class.__name__
-            raise EntityNotFoundError(entity_type=entity_name, entity_id=entity.id or 0)
-        update_data = self._get_update_data(entity)
-        for field, value in update_data.items():
+        model = await self._get_model_or_raise(entity.id)
+        for field, value in self._get_update_data(entity).items():
             setattr(model, field, value)
         await self._session.flush()
         await self._session.refresh(model)
@@ -97,11 +102,6 @@ class PydanticRepository(IRepository[EntityT, IDT], Generic[EntityT, ModelT, IDT
         Raises:
             EntityNotFoundError: 实体不存在
         """
-        stmt = select(self.model_class).where(self.model_class.id == entity_id)  # type: ignore[attr-defined]
-        result = await self._session.execute(stmt)
-        model = result.scalar_one_or_none()
-        if model is None:
-            entity_name = self.entity_class.__name__
-            raise EntityNotFoundError(entity_type=entity_name, entity_id=entity_id)  # type: ignore[arg-type]
+        model = await self._get_model_or_raise(entity_id)
         await self._session.delete(model)
         await self._session.flush()

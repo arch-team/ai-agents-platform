@@ -1,4 +1,4 @@
-"""PydanticEntity base class for all domain entities."""
+"""领域实体基类。"""
 
 from datetime import UTC, datetime
 from typing import Any
@@ -20,7 +20,7 @@ class PydanticEntity(BaseModel):
     updated_at: datetime | None = None
 
     def model_post_init(self, context: Any, /) -> None:  # noqa: ANN401, ARG002
-        """初始化时间戳，确保 created_at 和 updated_at 一致。"""
+        """初始化时间戳。"""
         now = _utc_now()
         if self.created_at is None:
             object.__setattr__(self, "created_at", now)

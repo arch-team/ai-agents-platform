@@ -4,7 +4,7 @@ import asyncio
 from logging.config import fileConfig
 
 from alembic import context
-from sqlalchemy import pool
+from sqlalchemy import Connection, pool
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from src.shared.infrastructure.database import Base
@@ -26,44 +26,39 @@ target_metadata = Base.metadata
 
 
 def run_migrations_offline() -> None:
-    """离线模式运行迁移 (不需要数据库连接)。"""
-    url = config.get_main_option("sqlalchemy.url")
+    """离线模式运行迁移（不需要数据库连接）。"""
     context.configure(
-        url=url,
+        url=config.get_main_option("sqlalchemy.url"),
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
     )
-
     with context.begin_transaction():
         context.run_migrations()
 
 
-def do_run_migrations(connection):  # type: ignore[no-untyped-def]  # noqa: ANN001
+def _do_run_migrations(connection: Connection) -> None:
     """在连接上运行迁移。"""
     context.configure(connection=connection, target_metadata=target_metadata)
-
     with context.begin_transaction():
         context.run_migrations()
 
 
-async def run_async_migrations() -> None:
+async def _run_async_migrations() -> None:
     """异步模式运行迁移。"""
     connectable = async_engine_from_config(
         config.get_section(config.config_ini_section, {}),
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
     )
-
     async with connectable.connect() as connection:
-        await connection.run_sync(do_run_migrations)
-
+        await connection.run_sync(_do_run_migrations)
     await connectable.dispose()
 
 
 def run_migrations_online() -> None:
-    """在线模式运行迁移 (异步引擎)。"""
-    asyncio.run(run_async_migrations())
+    """在线模式运行迁移（异步引擎）。"""
+    asyncio.run(_run_async_migrations())
 
 
 if context.is_offline_mode():

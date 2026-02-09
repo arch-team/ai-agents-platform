@@ -1,4 +1,4 @@
-"""Auth API request schemas."""
+"""认证 API 请求模型。"""
 
 from pydantic import BaseModel, EmailStr, Field
 

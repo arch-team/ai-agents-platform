@@ -1,4 +1,4 @@
-"""IRepository 泛型接口 - 仓库抽象定义。"""
+"""仓库泛型接口定义。"""
 
 from abc import ABC, abstractmethod
 from typing import Generic, TypeVar
@@ -18,17 +18,12 @@ class IRepository(ABC, Generic[E, ID]):
         """根据 ID 获取实体。"""
 
     @abstractmethod
-    async def list(
-        self,
-        *,
-        offset: int = 0,
-        limit: int = 20,
-    ) -> list[E]:
-        """分页获取实体列表。"""
+    async def list(self, *, offset: int = 0, limit: int = 20) -> list[E]:
+        """获取实体列表。"""
 
     @abstractmethod
     async def count(self) -> int:
-        """获取实体总数。"""
+        """统计实体总数。"""
 
     @abstractmethod
     async def create(self, entity: E) -> E:

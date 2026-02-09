@@ -1,4 +1,4 @@
-"""Unified exception handlers for FastAPI."""
+"""FastAPI 统一异常处理。"""
 
 import logging
 
@@ -28,7 +28,7 @@ _EXCEPTION_STATUS_MAP: dict[type[DomainError], int] = {
 
 
 def _resolve_status_code(exc: DomainError) -> int:
-    """Resolve HTTP status code using isinstance for subclass support."""
+    """通过 isinstance 解析 HTTP 状态码，支持子类匹配。"""
     for exc_type, status_code in _EXCEPTION_STATUS_MAP.items():
         if isinstance(exc, exc_type):
             return status_code
@@ -37,36 +37,27 @@ def _resolve_status_code(exc: DomainError) -> int:
 
 def _domain_error_handler(_request: Request, exc: DomainError) -> JSONResponse:
     """DomainError 及其子类的统一处理。"""
-    status_code = _resolve_status_code(exc)
     return JSONResponse(
-        status_code=status_code,
-        content={
-            "code": exc.code,
-            "message": exc.message,
-            "details": None,
-        },
+        status_code=_resolve_status_code(exc),
+        content={"code": exc.code, "message": exc.message, "details": None},
     )
 
 
 def _unhandled_exception_handler(_request: Request, _exc: Exception) -> JSONResponse:
-    """未处理异常的兜底处理, 不暴露内部信息。"""
+    """未处理异常的兜底处理，不暴露内部信息。"""
     logger.exception("Unhandled exception")
     return JSONResponse(
         status_code=500,
-        content={
-            "code": "INTERNAL_ERROR",
-            "message": "Internal server error",
-            "details": None,
-        },
+        content={"code": "INTERNAL_ERROR", "message": "Internal server error", "details": None},
     )
 
 
 def register_status_mapping(exception_type: type[DomainError], status_code: int) -> None:
-    """Register a DomainError subclass to HTTP status code mapping."""
+    """注册 DomainError 子类到 HTTP 状态码的映射。"""
     _EXCEPTION_STATUS_MAP[exception_type] = status_code
 
 
 def register_exception_handlers(app: FastAPI) -> None:
-    """Register all exception handlers to FastAPI app."""
+    """注册所有异常处理器到 FastAPI 应用。"""
     app.add_exception_handler(DomainError, _domain_error_handler)  # type: ignore[arg-type]
     app.add_exception_handler(Exception, _unhandled_exception_handler)
