@@ -15,6 +15,7 @@ from src.modules.auth.infrastructure.persistence.models.user_model import UserMo
 from src.modules.agents.infrastructure.persistence.models.agent_model import AgentModel  # noqa: F401
 from src.modules.execution.infrastructure.persistence.models.conversation_model import ConversationModel  # noqa: F401
 from src.modules.execution.infrastructure.persistence.models.message_model import MessageModel  # noqa: F401
+from src.modules.tool_catalog.infrastructure.persistence.models.tool_model import ToolModel  # noqa: F401
 
 config = context.config
 
