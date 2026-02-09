@@ -42,9 +42,7 @@ class Settings(BaseSettings):
         """构建 asyncmy 数据库连接字符串。"""
         pwd = self.DATABASE_PASSWORD.get_secret_value()
         return (
-            f"mysql+asyncmy://{self.DATABASE_USER}:{pwd}"
-            f"@{self.DATABASE_HOST}:{self.DATABASE_PORT}"
-            f"/{self.DATABASE_NAME}"
+            f"mysql+asyncmy://{self.DATABASE_USER}:{pwd}@{self.DATABASE_HOST}:{self.DATABASE_PORT}/{self.DATABASE_NAME}"
         )
 
 
