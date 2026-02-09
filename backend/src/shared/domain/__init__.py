@@ -9,15 +9,18 @@ from src.shared.domain.exceptions import (
     ResourceQuotaExceededError,
     ValidationError,
 )
+from src.shared.domain.interfaces import ActiveAgentInfo, IAgentQuerier
 from src.shared.domain.repositories import IRepository
 
 
 __all__ = [
+    "ActiveAgentInfo",
     "DomainError",
     "DomainEvent",
     "DuplicateEntityError",
     "EntityNotFoundError",
     "EventBus",
+    "IAgentQuerier",
     "IRepository",
     "InvalidStateTransitionError",
     "PydanticEntity",

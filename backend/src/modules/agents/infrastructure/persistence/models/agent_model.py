@@ -1,4 +1,4 @@
-"""Agent ORM 模型定义。"""
+"""Agent ORM 模型。"""
 
 from datetime import UTC, datetime
 

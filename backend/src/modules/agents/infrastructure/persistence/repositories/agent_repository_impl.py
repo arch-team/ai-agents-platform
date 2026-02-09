@@ -1,8 +1,9 @@
 """Agent 仓库实现。"""
 
 import json
+from collections.abc import Sequence
 
-from sqlalchemy import func, select
+from sqlalchemy import ColumnElement, func, select
 
 from src.modules.agents.domain.entities.agent import Agent
 from src.modules.agents.domain.repositories.agent_repository import IAgentRepository
@@ -13,12 +14,10 @@ from src.shared.infrastructure.pydantic_repository import PydanticRepository
 
 
 def _serialize_stop_sequences(sequences: tuple[str, ...]) -> str:
-    """将 stop_sequences 元组序列化为 JSON 字符串。"""
     return json.dumps(list(sequences)) if sequences else ""
 
 
 def _deserialize_stop_sequences(raw: str) -> tuple[str, ...]:
-    """将 JSON 字符串反序列化为 stop_sequences 元组。"""
     return tuple(json.loads(raw)) if raw else ()
 
 
@@ -61,7 +60,6 @@ class AgentRepositoryImpl(PydanticRepository[Agent, AgentModel, int], IAgentRepo
         )
 
     def _flatten_config(self, entity: Agent) -> dict[str, object]:
-        """将 Entity 的 AgentConfig 展开为扁平字段字典。"""
         return {
             "name": entity.name,
             "description": entity.description,
@@ -86,6 +84,36 @@ class AgentRepositoryImpl(PydanticRepository[Agent, AgentModel, int], IAgentRepo
     def _get_update_data(self, entity: Agent) -> dict[str, object]:
         return self._flatten_config(entity)
 
+    # ── 查询辅助方法 ──
+
+    @staticmethod
+    def _owner_filters(
+        owner_id: int,
+        status: AgentStatus | None = None,
+    ) -> Sequence[ColumnElement[bool]]:
+        """构建 owner 相关的查询条件。"""
+        filters: list[ColumnElement[bool]] = [AgentModel.owner_id == owner_id]
+        if status is not None:
+            filters.append(AgentModel.status == status.value)
+        return filters
+
+    async def _count_where(self, *conditions: ColumnElement[bool]) -> int:
+        stmt = select(func.count()).select_from(AgentModel).where(*conditions)
+        result = await self._session.execute(stmt)
+        return result.scalar_one()
+
+    async def _list_where(
+        self,
+        *conditions: ColumnElement[bool],
+        offset: int = 0,
+        limit: int = 20,
+    ) -> list[Agent]:
+        stmt = select(AgentModel).where(*conditions).offset(offset).limit(limit).order_by(AgentModel.id)
+        result = await self._session.execute(stmt)
+        return [self._to_entity(m) for m in result.scalars().all()]
+
+    # ── 接口实现 ──
+
     async def list_by_owner(  # noqa: D102
         self,
         owner_id: int,
@@ -93,20 +121,14 @@ class AgentRepositoryImpl(PydanticRepository[Agent, AgentModel, int], IAgentRepo
         offset: int = 0,
         limit: int = 20,
     ) -> list[Agent]:
-        stmt = (
-            select(AgentModel)
-            .where(AgentModel.owner_id == owner_id)
-            .offset(offset)
-            .limit(limit)
-            .order_by(AgentModel.id)
+        return await self._list_where(
+            *self._owner_filters(owner_id),
+            offset=offset,
+            limit=limit,
         )
-        result = await self._session.execute(stmt)
-        return [self._to_entity(m) for m in result.scalars().all()]
 
     async def count_by_owner(self, owner_id: int) -> int:  # noqa: D102
-        stmt = select(func.count()).select_from(AgentModel).where(AgentModel.owner_id == owner_id)
-        result = await self._session.execute(stmt)
-        return result.scalar_one()
+        return await self._count_where(*self._owner_filters(owner_id))
 
     async def get_by_name_and_owner(  # noqa: D102
         self,
@@ -129,31 +151,15 @@ class AgentRepositoryImpl(PydanticRepository[Agent, AgentModel, int], IAgentRepo
         offset: int = 0,
         limit: int = 20,
     ) -> list[Agent]:
-        stmt = (
-            select(AgentModel)
-            .where(
-                AgentModel.owner_id == owner_id,
-                AgentModel.status == status.value,
-            )
-            .offset(offset)
-            .limit(limit)
-            .order_by(AgentModel.id)
+        return await self._list_where(
+            *self._owner_filters(owner_id, status),
+            offset=offset,
+            limit=limit,
         )
-        result = await self._session.execute(stmt)
-        return [self._to_entity(m) for m in result.scalars().all()]
 
     async def count_by_owner_and_status(  # noqa: D102
         self,
         owner_id: int,
         status: AgentStatus,
     ) -> int:
-        stmt = (
-            select(func.count())
-            .select_from(AgentModel)
-            .where(
-                AgentModel.owner_id == owner_id,
-                AgentModel.status == status.value,
-            )
-        )
-        result = await self._session.execute(stmt)
-        return result.scalar_one()
+        return await self._count_where(*self._owner_filters(owner_id, status))

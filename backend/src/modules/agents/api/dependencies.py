@@ -16,5 +16,4 @@ async def get_agent_service(
     session: Annotated[AsyncSession, Depends(get_db)],
 ) -> AgentService:
     """创建 AgentService 实例。"""
-    repository = AgentRepositoryImpl(session=session)
-    return AgentService(repository=repository)
+    return AgentService(repository=AgentRepositoryImpl(session=session))

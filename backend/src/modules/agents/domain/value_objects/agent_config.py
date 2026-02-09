@@ -1,4 +1,4 @@
-"""Agent 配置值对象。"""
+"""Agent 配置值对象（frozen dataclass，不可变）。"""
 
 from dataclasses import dataclass
 

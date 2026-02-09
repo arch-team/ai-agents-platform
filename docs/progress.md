@@ -5,8 +5,8 @@
 ## 当前状态
 
 - **阶段**: Phase 1 MVP (0-3 月)
-- **里程碑**: M2 Agent CRUD — ✅ 已完成
-- **下一步**: 从 roadmap.md 拆解 M3 里程碑任务
+- **里程碑**: M3 端到端演示 — ✅ 已完成
+- **下一步**: Phase 1 MVP 全部完成！可开始 Phase 2 或进行端到端集成验证
 
 ## 模块状态
 
@@ -17,7 +17,7 @@
 | `shared` | 已完成 | ai-agents-factory-v1 | PydanticEntity, IRepository, EventBus, DomainError, get_db, get_settings, PydanticRepository, exception_handlers, schemas |
 | `auth` | 已完成 | ai-agents-factory-v1 | User, Role, JWT, RBAC, get_current_user, 登录/注册/me 端点 |
 | `agents` | 已完成 | ai-agents-factory-v1 | Agent CRUD (7 端点), 状态机 (draft → active → archived), AgentConfig, 领域事件 |
-| `execution` | 待开始 | - | 单 Agent 对话, Bedrock AgentCore 集成, SSE |
+| `execution` | 已完成 | ai-agents-factory-v1 | 单 Agent 对话 (6 端点), Bedrock ConverseStream, SSE 流式, IAgentQuerier 跨模块 |
 
 ### 后续阶段
 
@@ -122,6 +122,84 @@
 #1-#8 ──► #9 (质量验收)
 ```
 
+### M3: 端到端演示 (第 9-12 周) — ✅ 已完成
+
+> 交付物: execution 模块完成（单 Agent 对话）+ SSE 流式响应 + 跨模块集成
+> 验收标准: ruff check + mypy --strict + pytest --cov-fail-under=85 全通过；用户可与 ACTIVE Agent 对话
+> 验收结果: **611 测试通过，覆盖率 94.08%，ruff/mypy 全通过，架构合规全通过**
+
+#### 领域模型设计摘要
+
+**Conversation 实体**: title, agent_id, user_id, status(ConversationStatus), message_count, total_tokens
+**Message 实体**: conversation_id, role(MessageRole), content, token_count（独立实体，非值对象）
+**ConversationStatus 枚举**: ACTIVE → COMPLETED / FAILED（不可逆）
+**MessageRole 枚举**: USER / ASSISTANT
+
+**核心流程**:
+- 创建对话: 校验 Agent ACTIVE 状态 → 创建 Conversation
+- 发送消息: 创建 user Message → 加载历史 + system_prompt → 调用 Bedrock ConverseStream → 创建 assistant Message → SSE 流式返回
+- 流式策略: 流进行中内存累积，流结束后一次性写数据库
+
+**跨模块集成**: `shared/domain/interfaces/IAgentQuerier` → agents 模块提供 `AgentQuerierImpl` 实现
+**外部服务抽象**: `execution/application/interfaces/ILLMClient` → `infrastructure/external/BedrockLLMClient`（基于 boto3 ConverseStream API，封装 < 100 行）
+
+**API 端点**: POST /conversations, GET /conversations, GET /conversations/{id}, POST /conversations/{id}/messages, POST /conversations/{id}/messages/stream, POST /conversations/{id}/complete
+
+#### 任务拆解
+
+| # | 任务 | 状态 | 依赖 | 参考规范 | 会话 |
+|---|------|:----:|:----:|---------|------|
+| 1 | execution/domain: Conversation 实体 + Message 实体 + ConversationStatus/MessageRole 枚举 + 状态机 (complete/fail) | 已完成 | - | `rules/architecture.md` §5 DDD 战术模式 | 2026-02-09 |
+| 2 | execution/domain: 领域事件 (ConversationCreated/MessageSent/MessageReceived/ConversationCompleted) + 模块异常 + IConversationRepository + IMessageRepository | 已完成 | #1 | `rules/architecture.md` §4.2 事件驱动, §5.4 仓库接口 | 2026-02-09 |
+| 3 | shared/domain/interfaces: IAgentQuerier 跨模块接口 + ActiveAgentInfo 数据结构 | 已完成 | - | `rules/architecture.md` §3 模块隔离, §4.3 接口位置 | 2026-02-09 |
+| 4 | execution/application: ILLMClient 接口 + LLMMessage/LLMResponse/LLMStreamChunk DTO + ExecutionService (create/send/stream/get/list/complete) | 已完成 | #1-#3 | `rules/architecture.md` §5 + `rules/sdk-first.md` | 2026-02-09 |
+| 5 | execution/infrastructure/persistence: ConversationModel + MessageModel ORM + Repos 实现 + Alembic migration | 已完成 | #2 | `rules/tech-stack.md` + `rules/project-structure.md` | 2026-02-09 |
+| 6 | execution/infrastructure/external: BedrockLLMClient (boto3 converse/converse_stream 薄封装) | 已完成 | #4 | `rules/sdk-first.md` 封装 < 100 行 | 2026-02-09 |
+| 7 | agents/infrastructure: AgentQuerierImpl (实现 shared 的 IAgentQuerier) | 已完成 | #3 | `rules/architecture.md` §3 模块隔离 | 2026-02-09 |
+| 8 | execution/api: Request/Response Schema + dependencies.py + endpoints.py (6 端点含 SSE 流式) | 已完成 | #4-#7 | `rules/api-design.md` + `rules/security.md` | 2026-02-09 |
+| 9 | 模块注册: main.py 路由注册 + execution 异常映射 + settings 新增 Bedrock 配置 | 已完成 | #8 | `rules/architecture.md` §6.3 | 2026-02-09 |
+| 10 | tests: execution 模块单元测试 (Domain + Application mock LLM) | 已完成 | #1-#4 | `rules/testing.md` TDD + AAA 模式 | 2026-02-09 |
+| 11 | tests: execution 模块集成测试 (Repo + API 端点 + SSE 流式 + 架构合规更新) | 已完成 | #5-#9, #10 | `rules/testing.md` 集成测试 | 2026-02-09 |
+| 12 | 质量验收: ruff check + mypy --strict + pytest --cov-fail-under=85 全通过 | 已完成 | #1-#11 | `rules/checklist.md` + roadmap.md §2.6 | 2026-02-09 |
+
+#### 关键设计决策
+
+| 决策 | 选择 | 理由 |
+|------|------|------|
+| Bedrock API | ConverseStream (非 AgentCore Runtime) | Phase 1 MVP 简化；converse API 成熟稳定；AgentCore 留给 Phase 3 orchestration |
+| Message 建模 | 独立实体 + 独立仓库 | 流式消息需逐步更新；独立分页查询；Token 成本归因 |
+| system_prompt 存储 | 不存为 Message | 属于 Agent 配置，非对话内容；Bedrock API 分开传递 |
+| 跨模块通信 | shared/interfaces/IAgentQuerier | 遵循模块隔离 R1/R3；agents 可独立演进 |
+| 流式写数据库 | 流结束后一次性写入 | 减少数据库压力；避免大量短事务 |
+| 对话删除 | 不支持物理删除，仅 complete | 审计友好；数据保留用于 insights |
+| Token 统计 | Conversation.total_tokens 冗余 + Message.token_count 明细 | 列表查询避免 SUM；支持两个维度归因 |
+| LLM 接口参数 | 原始类型（非 AgentConfig） | 避免 Application 层跨模块导入 |
+| SSE 格式 | data-only JSON | Phase 1 简化；前端解析简单 |
+| boto3 异步 | asyncio.to_thread() 包装 | boto3 同步 SDK，薄封装异步化 |
+
+#### 依赖关系图
+
+```
+#1 (Domain 实体) ──► #2 (事件/异常/仓库接口) ──┐
+                                                ├──► #4 (Application: ExecutionService + ILLMClient)
+#3 (shared IAgentQuerier) ─────────────────────┘        │
+                                                ┌───────┼───────┐
+                                                ↓       ↓       ↓
+                                          #5 (ORM)  #6 (Bedrock) #7 (AgentQuerierImpl)
+                                                └───────┼───────┘
+                                                        ↓
+                                                  #8 (API 端点)
+                                                        ↓
+                                                  #9 (模块注册)
+                                                        ↓
+                                          ┌─────────────┼─────────────┐
+                                          ↓                           ↓
+                                    #10 (单元测试)              #11 (集成测试)
+                                          └─────────┬─────────────┘
+                                                    ↓
+                                              #12 (质量验收)
+```
+
 ---
 
 ## 遗留事项
@@ -139,5 +217,5 @@
 > 仅保留最近一次，每次会话结束时覆盖更新此节。
 
 - **日期**: 2026-02-09
-- **完成**: M2 里程碑全部完成 — 使用 Agent Teams 4 波执行 (dev-domain → dev-app+dev-infra 并行 → dev-api → reviewer)；agents 模块 9 项任务全部交付；415 测试通过，覆盖率 97.66%（agents 模块 96.96%）；ruff/mypy 全通过；架构合规 15/15 通过；7 个 RESTful 端点 + Agent 状态机 + 领域事件 + 权限校验
-- **决策**: AgentConfig 存储展开为独立列（非 JSON blob）；Agent 归档不可逆（简化状态机 + 审计友好）；仅 DRAFT 状态可物理删除；同 owner 下 Agent 名称唯一（联合索引）；owner_id Domain 层仅 int 不导入 auth 模块（模块隔离）；激活条件为 name + system_prompt 非空；权限异常使用 DomainError(code="FORBIDDEN_AGENT") 保持异常体系一致
+- **完成**: M2 + M3 里程碑全部完成 — Phase 1 MVP 后端全部交付。M2: agents 模块 9 项任务（415 测试，97.66%）。M3: execution 模块 12 项任务（611 测试，94.08%），4 波 Agent Teams 执行 (dev-domain+dev-shared 并行 → dev-app+dev-infra+dev-bridge 三并行 → dev-api → reviewer)。审查修复 SSE 流异常信息泄露安全问题
+- **决策**: Bedrock ConverseStream API（非 AgentCore Runtime，Phase 1 简化）；Message 为独立实体（支持流式更新和独立查询）；跨模块通过 shared/interfaces/IAgentQuerier 解耦（agents 提供 AgentQuerierImpl）；presentation/providers.py 作为 composition root 组装跨模块依赖（通过架构合规测试）；流结束后一次性写数据库；SSE 错误处理区分 DomainError vs Exception 防信息泄露

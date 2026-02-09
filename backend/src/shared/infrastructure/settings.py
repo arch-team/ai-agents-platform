@@ -34,6 +34,9 @@ class Settings(BaseSettings):
     # AWS 配置
     AWS_REGION: str = "us-east-1"
 
+    # Bedrock 配置
+    BEDROCK_DEFAULT_MODEL_ID: str = "anthropic.claude-3-5-sonnet-20241022-v2:0"
+
     # 日志
     LOG_LEVEL: str = "INFO"
 

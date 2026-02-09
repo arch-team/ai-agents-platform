@@ -1,5 +1,8 @@
 """Agent 应用服务。"""
 
+from collections.abc import Callable
+from dataclasses import replace
+
 from src.modules.agents.application.dto.agent_dto import (
     AgentDTO,
     CreateAgentDTO,
@@ -22,6 +25,7 @@ from src.modules.agents.domain.repositories.agent_repository import IAgentReposi
 from src.modules.agents.domain.value_objects.agent_config import AgentConfig
 from src.modules.agents.domain.value_objects.agent_status import AgentStatus
 from src.shared.domain.event_bus import event_bus
+from src.shared.domain.events import DomainEvent
 from src.shared.domain.exceptions import DomainError, InvalidStateTransitionError
 
 
@@ -73,17 +77,22 @@ class AgentService:
         page: int = 1,
         page_size: int = 20,
     ) -> PagedAgentDTO:
-        """获取用户的 Agent 列表, 支持按状态筛选和分页。"""
+        """获取用户的 Agent 列表，支持按状态筛选和分页。"""
         offset = (page - 1) * page_size
 
         if status is not None:
             agents = await self._repository.list_by_owner_and_status(
-                owner_id, status, offset=offset, limit=page_size,
+                owner_id,
+                status,
+                offset=offset,
+                limit=page_size,
             )
             total = await self._repository.count_by_owner_and_status(owner_id, status)
         else:
             agents = await self._repository.list_by_owner(
-                owner_id, offset=offset, limit=page_size,
+                owner_id,
+                offset=offset,
+                limit=page_size,
             )
             total = await self._repository.count_by_owner(owner_id)
 
@@ -139,13 +148,7 @@ class AgentService:
                 changed_fields.append(field)
 
         if config_overrides:
-            agent.config = AgentConfig(
-                model_id=config_overrides.get("model_id", agent.config.model_id),  # type: ignore[arg-type]
-                temperature=config_overrides.get("temperature", agent.config.temperature),  # type: ignore[arg-type]
-                max_tokens=config_overrides.get("max_tokens", agent.config.max_tokens),  # type: ignore[arg-type]
-                top_p=agent.config.top_p,
-                stop_sequences=agent.config.stop_sequences,
-            )
+            agent.config = replace(agent.config, **config_overrides)  # type: ignore[arg-type]
 
         agent.touch()
         updated = await self._repository.update(agent)
@@ -188,13 +191,12 @@ class AgentService:
             AgentNotFoundError, DomainError, InvalidStateTransitionError,
             ValidationError
         """
-        agent = await self._get_owned_agent(agent_id, operator_id)
-        agent.activate()
-        updated = await self._repository.update(agent)
-        await event_bus.publish_async(
-            AgentActivatedEvent(agent_id=updated.id or 0, owner_id=updated.owner_id),
+        return await self._transition_state(
+            agent_id,
+            operator_id,
+            Agent.activate,
+            AgentActivatedEvent,
         )
-        return self._to_dto(updated)
 
     async def archive_agent(self, agent_id: int, operator_id: int) -> AgentDTO:
         """归档 Agent。调用 agent.archive() 进行状态转换。
@@ -202,15 +204,30 @@ class AgentService:
         Raises:
             AgentNotFoundError, DomainError, InvalidStateTransitionError
         """
-        agent = await self._get_owned_agent(agent_id, operator_id)
-        agent.archive()
-        updated = await self._repository.update(agent)
-        await event_bus.publish_async(
-            AgentArchivedEvent(agent_id=updated.id or 0, owner_id=updated.owner_id),
+        return await self._transition_state(
+            agent_id,
+            operator_id,
+            Agent.archive,
+            AgentArchivedEvent,
         )
-        return self._to_dto(updated)
 
     # ── 内部辅助方法 ──
+
+    async def _transition_state(
+        self,
+        agent_id: int,
+        operator_id: int,
+        action: Callable[[Agent], None],
+        event_cls: type[DomainEvent],
+    ) -> AgentDTO:
+        """状态变更通用流程：获取 -> 校验所有权 -> 执行动作 -> 持久化 -> 发布事件。"""
+        agent = await self._get_owned_agent(agent_id, operator_id)
+        action(agent)
+        updated = await self._repository.update(agent)
+        await event_bus.publish_async(
+            event_cls(agent_id=updated.id or 0, owner_id=updated.owner_id),  # type: ignore[call-arg]
+        )
+        return self._to_dto(updated)
 
     async def _get_agent_or_raise(self, agent_id: int) -> Agent:
         agent = await self._repository.get_by_id(agent_id)
@@ -219,7 +236,6 @@ class AgentService:
         return agent
 
     async def _get_owned_agent(self, agent_id: int, operator_id: int) -> Agent:
-        """获取 Agent 并校验所有权。"""
         agent = await self._get_agent_or_raise(agent_id)
         if agent.owner_id != operator_id:
             raise DomainError(

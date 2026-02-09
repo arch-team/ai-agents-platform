@@ -13,6 +13,8 @@ from src.shared.infrastructure.settings import get_settings
 # 导入所有 ORM Model 以注册到 Base.metadata
 from src.modules.auth.infrastructure.persistence.models.user_model import UserModel  # noqa: F401
 from src.modules.agents.infrastructure.persistence.models.agent_model import AgentModel  # noqa: F401
+from src.modules.execution.infrastructure.persistence.models.conversation_model import ConversationModel  # noqa: F401
+from src.modules.execution.infrastructure.persistence.models.message_model import MessageModel  # noqa: F401
 
 config = context.config
 

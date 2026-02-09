@@ -8,6 +8,12 @@ from src.modules.agents.api.endpoints import router as agents_router
 from src.modules.agents.domain.exceptions import AgentNameDuplicateError, AgentNotFoundError
 from src.modules.auth.api.endpoints import router as auth_router
 from src.modules.auth.domain.exceptions import AuthenticationError, AuthorizationError
+from src.modules.execution.api.endpoints import router as execution_router
+from src.modules.execution.domain.exceptions import (
+    AgentNotAvailableError,
+    ConversationNotActiveError,
+    ConversationNotFoundError,
+)
 from src.presentation.api.routes.health import router as health_router
 from src.shared.api.exception_handlers import register_exception_handlers, register_status_mapping
 
@@ -37,6 +43,11 @@ def create_app() -> FastAPI:
     register_status_mapping(AgentNotFoundError, 404)
     register_status_mapping(AgentNameDuplicateError, 409)
 
+    # 注册 execution 模块异常映射
+    register_status_mapping(ConversationNotFoundError, 404)
+    register_status_mapping(ConversationNotActiveError, 409)
+    register_status_mapping(AgentNotAvailableError, 409)
+
     # 统一异常处理
     register_exception_handlers(app)
 
@@ -44,6 +55,7 @@ def create_app() -> FastAPI:
     app.include_router(health_router)
     app.include_router(auth_router)
     app.include_router(agents_router)
+    app.include_router(execution_router)
 
     return app
 
