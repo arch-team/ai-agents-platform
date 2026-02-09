@@ -5,8 +5,8 @@
 ## 当前状态
 
 - **阶段**: Phase 2 核心功能 (3-6 月)
-- **里程碑**: M4 工具目录 — 🔄 进行中
-- **下一步**: 执行 M4 任务 #1 — tool-catalog/domain 实体 + 值对象 + 状态机
+- **里程碑**: M4 工具目录 — ✅ 已完成
+- **下一步**: 拆解 M5 里程碑任务 (knowledge + insights) 或继续 Phase 2 其他模块
 
 ## 模块状态
 
@@ -23,7 +23,7 @@
 
 | 模块 | 状态 | 分支 | 备注 |
 |------|:----:|------|------|
-| `tool-catalog` | 进行中 | ai-agents-factory-v1 | 工具注册/审批, MCP Server 目录, 权限管控 |
+| `tool-catalog` | 已完成 | ai-agents-factory-v1 | 工具注册/审批 (10 端点), 5 状态审批流程, MCP Server/API/Function 三类工具 |
 | `knowledge` | 待开始 | - | 知识库管理, RAG 检索 |
 | `insights` | 待开始 | - | 成本归因, 使用趋势 |
 | `templates` | 待开始 | - | Agent 模板管理 (依赖 tool-catalog + knowledge) |
@@ -208,10 +208,11 @@
                                               #12 (质量验收)
 ```
 
-### M4: 工具目录 (第 13-16 周) — 🔄 进行中
+### M4: 工具目录 (第 13-16 周) — ✅ 已完成
 
 > 交付物: tool-catalog 模块完成，10 个 RESTful 端点，工具审批流程 (draft → pending_review → approved/rejected → deprecated)
 > 验收标准: ruff check + mypy --strict + pytest --cov-fail-under=85 全通过
+> 验收结果: **842 测试通过，覆盖率 94.65%（tool-catalog 97.91%），ruff/mypy 全通过，架构合规 14/14 通过**
 
 #### 领域模型设计摘要
 
@@ -236,15 +237,15 @@
 
 | # | 任务 | 状态 | 依赖 | 参考规范 | 会话 |
 |---|------|:----:|:----:|---------|------|
-| 1 | tool-catalog/domain: Tool 实体 + ToolStatus/ToolType 枚举 + ToolConfig 值对象 + 状态机 (submit/approve/reject/resubmit/deprecate) | 待开始 | - | `rules/architecture.md` §5 DDD 战术模式 | - |
-| 2 | tool-catalog/domain: 领域事件 (Created/Updated/Deleted/Submitted/Approved/Rejected/Deprecated) + 模块异常 + IToolRepository 接口 | 待开始 | #1 | `rules/architecture.md` §4.2 事件驱动, §5.4 仓库接口 | - |
-| 3 | tool-catalog/application: DTO (CreateTool/UpdateTool/Tool/PagedTool) + ToolCatalogService (CRUD + 审批流程 + 列表/搜索 + 权限) | 待开始 | #1, #2 | `rules/architecture.md` §5 + `rules/security.md` §2 RBAC | - |
-| 4 | tool-catalog/infrastructure: ToolModel ORM + ToolRepositoryImpl (含 list_filtered 通用筛选) + Alembic migration | 待开始 | #2 | `rules/tech-stack.md` + `rules/project-structure.md` | - |
-| 5 | tool-catalog/api: Request/Response Schema + dependencies.py + endpoints.py (10 个端点含审批流程) | 待开始 | #3, #4 | `rules/api-design.md` + `rules/security.md` | - |
-| 6 | 模块注册: main.py 路由注册 + tool-catalog 异常映射 + __init__.py 模块导出 | 待开始 | #5 | `rules/architecture.md` §6.3 模块导出 | - |
-| 7 | tests: tool-catalog 模块单元测试 (Domain 状态机全路径 + Application Service 全场景含审批权限) | 待开始 | #1-#3 | `rules/testing.md` TDD + AAA 模式 | - |
-| 8 | tests: tool-catalog 模块集成测试 (Repository 含筛选 + API 端点含审批流程 + 架构合规更新) | 待开始 | #4-#6, #7 | `rules/testing.md` 集成测试 | - |
-| 9 | 质量验收: ruff check + mypy --strict + pytest --cov-fail-under=85 全通过 | 待开始 | #1-#8 | `rules/checklist.md` + roadmap.md §3.6 | - |
+| 1 | tool-catalog/domain: Tool 实体 + ToolStatus/ToolType 枚举 + ToolConfig 值对象 + 状态机 (submit/approve/reject/resubmit/deprecate) | 已完成 | - | `rules/architecture.md` §5 DDD 战术模式 | 2026-02-09 |
+| 2 | tool-catalog/domain: 领域事件 (Created/Updated/Deleted/Submitted/Approved/Rejected/Deprecated) + 模块异常 + IToolRepository 接口 | 已完成 | #1 | `rules/architecture.md` §4.2 事件驱动, §5.4 仓库接口 | 2026-02-09 |
+| 3 | tool-catalog/application: DTO (CreateTool/UpdateTool/Tool/PagedTool) + ToolCatalogService (CRUD + 审批流程 + 列表/搜索 + 权限) | 已完成 | #1, #2 | `rules/architecture.md` §5 + `rules/security.md` §2 RBAC | 2026-02-09 |
+| 4 | tool-catalog/infrastructure: ToolModel ORM + ToolRepositoryImpl (含 list_filtered 通用筛选) + Alembic migration | 已完成 | #2 | `rules/tech-stack.md` + `rules/project-structure.md` | 2026-02-09 |
+| 5 | tool-catalog/api: Request/Response Schema + dependencies.py + endpoints.py (10 个端点含审批流程) | 已完成 | #3, #4 | `rules/api-design.md` + `rules/security.md` | 2026-02-09 |
+| 6 | 模块注册: main.py 路由注册 + tool-catalog 异常映射 + __init__.py 模块导出 | 已完成 | #5 | `rules/architecture.md` §6.3 模块导出 | 2026-02-09 |
+| 7 | tests: tool-catalog 模块单元测试 (Domain 状态机全路径 + Application Service 全场景含审批权限) | 已完成 | #1-#3 | `rules/testing.md` TDD + AAA 模式 | 2026-02-09 |
+| 8 | tests: tool-catalog 模块集成测试 (Repository 含筛选 + API 端点含审批流程 + 架构合规更新) | 已完成 | #4-#6, #7 | `rules/testing.md` 集成测试 | 2026-02-09 |
+| 9 | 质量验收: ruff check + mypy --strict + pytest --cov-fail-under=85 全通过 | 已完成 | #1-#8 | `rules/checklist.md` + roadmap.md §3.6 | 2026-02-09 |
 
 #### 关键设计决策
 
@@ -286,5 +287,5 @@
 > 仅保留最近一次，每次会话结束时覆盖更新此节。
 
 - **日期**: 2026-02-09
-- **完成**: Phase 1 全部交付 + M4 任务拆解。Phase 1: 后端(4 模块, 611 测试) + 前端(FSD, 80 测试) + 基础设施(3 CDK Stacks, 73 测试) + CI/CD(3 workflows) + 安全加固(6 项修复)。M4 任务拆解: 规划团队 (architect/rules-analyst/domain-designer) 设计 tool-catalog 领域模型，产出 9 项任务 + 8 项设计决策
-- **决策**: Tool 审批流程 5 状态机 (DRAFT→PENDING_REVIEW→APPROVED/REJECTED→DEPRECATED)；REJECTED 提供 resubmit() 直接重新提交；ToolConfig 扁平结构展开独立列；权限用 allowed_roles 字段（YAGNI）；Config 验证在 submit 时而非 create 时；IToolQuerier 延迟到 templates 模块
+- **完成**: Phase 1 全部交付 + M4 工具目录完成。M4: tool-catalog 模块 9 项任务全部交付 (4 波 Agent Teams: dev-domain → dev-app+dev-infra 并行 → dev-api → reviewer)。842 测试通过，覆盖率 94.65%（tool-catalog 97.91%）。54 新增文件，4410 行代码
+- **决策**: Tool 审批流程 5 状态机；REJECTED 提供 resubmit() 直接重新提交；ToolConfig 扁平结构展开独立列；权限用 allowed_roles 字段（YAGNI）；Config 验证在 submit 时而非 create 时；list_filtered 通用筛选方法支持 status+type+keyword 组合查询
