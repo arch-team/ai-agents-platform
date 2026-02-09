@@ -1,0 +1,28 @@
+// Zustand store: 当前对话状态 + 流式消息缓冲
+
+import { create } from 'zustand';
+
+import type { ChatState } from './types';
+
+export const useChatStore = create<ChatState>()((set) => ({
+  currentConversationId: null,
+  streamingContent: '',
+  isStreaming: false,
+  setCurrentConversation: (id) => set({ currentConversationId: id }),
+  appendStreamContent: (content) =>
+    set((state) => ({ streamingContent: state.streamingContent + content })),
+  clearStream: () => set({ streamingContent: '', isStreaming: false }),
+  setStreaming: (streaming) => set({ isStreaming: streaming }),
+}));
+
+// 细粒度 selector hooks
+export const useStreamingContent = () => useChatStore((state) => state.streamingContent);
+export const useIsStreaming = () => useChatStore((state) => state.isStreaming);
+export const useCurrentConversationId = () => useChatStore((state) => state.currentConversationId);
+export const useChatActions = () =>
+  useChatStore((state) => ({
+    setCurrentConversation: state.setCurrentConversation,
+    appendStreamContent: state.appendStreamContent,
+    clearStream: state.clearStream,
+    setStreaming: state.setStreaming,
+  }));
