@@ -1,0 +1,20 @@
+"""Auth API response schemas."""
+
+from pydantic import BaseModel
+
+
+class UserResponse(BaseModel):
+    """用户信息响应。"""
+
+    id: int
+    email: str
+    name: str
+    role: str
+    is_active: bool
+
+
+class TokenResponse(BaseModel):
+    """JWT Token 响应。"""
+
+    access_token: str
+    token_type: str = "bearer"  # noqa: S105

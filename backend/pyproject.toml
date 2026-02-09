@@ -33,6 +33,7 @@ dependencies = [
     # 数据库
     "sqlalchemy>=2.0.25",
     "alembic>=1.13.0",
+    "asyncmy>=0.2.9",
 
     # AWS SDK
     "boto3>=1.34.0",
@@ -40,7 +41,7 @@ dependencies = [
 
     # 安全
     "python-jose[cryptography]>=3.3.0",
-    "passlib[bcrypt]>=1.7.4",
+    "bcrypt>=4.0.0",
 
     # 日志
     "structlog>=24.1.0",
@@ -59,10 +60,10 @@ dev = [
     "pytest-mock>=3.12.0",
     "factory-boy>=3.3.0",
     "httpx>=0.26.0",  # FastAPI TestClient 依赖
+    "aiosqlite>=0.20.0",  # SQLite 异步驱动 (测试用)
 
     # 类型检查
     "mypy>=1.8.0",
-    "types-passlib>=1.7.7",
     "boto3-stubs[essential]>=1.34.0",
 
     # 代码检查
@@ -229,9 +230,6 @@ select = [
 
 # 忽略的规则
 ignore = [
-    # 允许 self 和 cls 没有类型注解
-    "ANN101",
-    "ANN102",
     # 允许缺少公共模块/包的 docstring
     "D100",
     "D104",
@@ -259,6 +257,14 @@ ignore = [
     "FBT002",
     # 允许使用 Any
     # "ANN401",
+    # 允许中文 docstring 结尾标点 (中文句号"。"不被识别)
+    "D415",
+    # 允许中文全角字符 (中文逗号、顿号等)
+    "RUF002",
+    # 允许 __init__ 缺少 docstring (类级 docstring 已足够)
+    "D107",
+    # 允许 magic method 缺少 docstring
+    "D105",
 ]
 
 # 每个文件的规则覆盖
@@ -266,10 +272,14 @@ ignore = [
 # 测试文件
 "tests/**/*.py" = [
     "S101",    # 允许 assert
+    "S105",    # 允许硬编码 token/password 字符串
+    "S106",    # 允许硬编码 password 参数
     "ARG001",  # 允许未使用的参数 (fixture)
     "ANN",     # 测试不强制类型注解
     "D",       # 测试不强制 docstring
     "PLR2004", # 允许 magic value
+    "EM101",   # 允许异常字符串字面量
+    "B008",    # 允许 Depends() 在参数默认值
 ]
 # 迁移文件
 "migrations/**/*.py" = ["ALL"]
@@ -337,9 +347,6 @@ testpaths = ["tests"]
 python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
-
-# 异步模式
-asyncio_mode = "auto"
 
 # 默认选项
 addopts = [
