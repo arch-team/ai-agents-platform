@@ -45,6 +45,7 @@ uv.lock
 .pytest_cache/
 .coverage
 htmlcov/
+coverage/
 .tox/
 .nox/
 coverage.xml
@@ -95,6 +96,9 @@ temp/
 # AWS
 .aws/
 aws-credentials
+
+# Node.js
+node_modules/
 
 # CDK
 cdk.out/
