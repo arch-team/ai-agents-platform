@@ -6,7 +6,7 @@
 
 - **阶段**: Phase 1 MVP (0-3 月)
 - **里程碑**: M3 端到端演示 — ✅ 已完成
-- **下一步**: Phase 1 后端+前端完成！可进行基础设施 CDK 开发或端到端集成验证
+- **下一步**: Phase 1 MVP 全部完成（后端+前端+基础设施+CI/CD）！可进入 Phase 2 或端到端集成部署
 
 ## 模块状态
 
@@ -31,9 +31,9 @@
 
 | CDK Stack | 状态 | 备注 |
 |-----------|:----:|------|
-| NetworkStack | 待开始 | VPC, Subnets, NAT Gateway |
-| SecurityStack | 待开始 | Security Groups, KMS, VPC Endpoints |
-| DatabaseStack | 待开始 | Aurora MySQL 3.x |
+| NetworkStack | 已完成 | VPC (3 AZ), Public/Private/Isolated Subnets, NAT Gateway (Dev:1/Prod:3), Flow Log, S3 Endpoint |
+| SecurityStack | 已完成 | KMS 加密密钥 (轮换), API SG (443), DB SG (3306 仅 API), Prod Secrets Manager Endpoint |
+| DatabaseStack | 已完成 | Aurora MySQL 3.x (PRIVATE_ISOLATED), Secrets Manager 凭证, 存储加密, IAM 认证 |
 
 ---
 
@@ -217,5 +217,5 @@
 > 仅保留最近一次，每次会话结束时覆盖更新此节。
 
 - **日期**: 2026-02-09
-- **完成**: Phase 1 前端开发完成 — 使用 Agent Teams 4 波执行 (scaffold-dev → feature-auth+feature-agents+feature-chat 三并行 → integration-dev → reviewer)。101 个文件，8305 行代码，80 测试通过，lint/typecheck/build 全通过。FSD 架构合规，WCAG 无障碍合规。同时完成了后端安全加固（6 项安全修复）
-- **决策**: FSD 架构严格分层；Token 仅存内存（Zustand 不持久化）；API client JWT 通过 setTokenGetter 注入避免 shared→features 反向依赖；SSE 使用 fetch+ReadableStream（非 EventSource，支持自定义 Authorization header）；路由级 lazy 代码分割
+- **完成**: Phase 1 MVP 全部完成 — 后端(M1-M3 + 安全加固) + 前端(FSD React) + 基础设施(CDK 3 Stacks) + CI/CD(3 GitHub Actions)。本次会话完成: 基础设施 CDK 开发（4 波 Agent Teams: scaffold → dev-network+dev-security 并行 → dev-database+CI/CD → reviewer），41 文件，73 测试，100% 覆盖率，CDK Nag 合规
+- **决策**: VPC 3 AZ 三层子网 (Public/Private/Isolated)；Dev 单 NAT Gateway 节省成本；Aurora MySQL PRIVATE_ISOLATED + KMS 加密 + Secrets Manager 凭证；CDK Nag AwsSolutionsChecks 资源级抑制（非 Stack 级）；Stack 间 Props 传递依赖（非 CfnOutput）
