@@ -6,8 +6,8 @@
 
 - **阶段**: Phase 2 核心功能 (3-6 月)
 - **里程碑**: M5 知识库 — 进行中 (14 项任务)
-- **变更积压**: S0 ✅ + 5 S1 + 4 S2 + 2 S3 + 5 S4 = 16 项
-- **下一步**: 执行 M5 任务 #1 (KnowledgeBase 实体), 穿插 S1/S2 变更
+- **变更积压**: S0 ✅ + 4 S1 + 4 S2 + 2 S3 + 5 S4 = 15 项
+- **下一步**: M5 #4 Application 接口 + #5 KnowledgeService, 穿插 S1/S2 变更
 
 ## 模块状态
 
@@ -325,9 +325,9 @@
 
 | # | 任务 | 状态 | 依赖 | 参考规范 | 会话 |
 |---|------|:----:|:----:|---------|------|
-| 1 | knowledge/domain: KnowledgeBase 实体 + KnowledgeBaseStatus 枚举 + 状态机 (create/activate/sync/fail/delete) | 待开始 | - | `rules/architecture.md` §5 DDD 战术模式 | - |
-| 2 | knowledge/domain: Document 实体 + DocumentStatus 枚举 + 状态机 (upload/process/index/fail) | 待开始 | #1 | `rules/architecture.md` §5 | - |
-| 3 | knowledge/domain: 领域事件 (KBCreated/Activated/SyncStarted/DocUploaded/DocIndexed) + 模块异常 + IKnowledgeBaseRepository + IDocumentRepository | 待开始 | #1, #2 | `rules/architecture.md` §4.2, §5.4 | - |
+| 1 | knowledge/domain: KnowledgeBase 实体 + KnowledgeBaseStatus 枚举 + 状态机 (create/activate/sync/fail/delete) | 已完成 | - | `rules/architecture.md` §5 DDD 战术模式 | 2026-02-10 |
+| 2 | knowledge/domain: Document 实体 + DocumentStatus 枚举 + 状态机 (upload/process/index/fail) | 已完成 | #1 | `rules/architecture.md` §5 | 2026-02-10 |
+| 3 | knowledge/domain: 领域事件 (KBCreated/Activated/SyncStarted/DocUploaded/DocIndexed) + 模块异常 + IKnowledgeBaseRepository + IDocumentRepository | 已完成 | #1, #2 | `rules/architecture.md` §4.2, §5.4 | 2026-02-10 |
 | 4 | knowledge/application: IKnowledgeService 接口 (createKB/deleteKB/startSync/retrieve) + IDocumentStorage 接口 (upload/delete/getUrl) | 待开始 | #1, #2 | `rules/architecture.md` §4.3 接口位置 | - |
 | 5 | knowledge/application: DTO (CreateKB/UpdateKB/KB/PagedKB/Document/UploadDoc/QueryRequest/QueryResult) + KnowledgeService (CRUD + 上传 + 同步 + 检索 + 权限) | 待开始 | #3, #4 | `rules/architecture.md` §5 + `rules/security.md` §2 | - |
 | 6 | knowledge/infrastructure/persistence: KnowledgeBaseModel + DocumentModel ORM + Repos 实现 + Alembic migration | 待开始 | #3 | `rules/tech-stack.md` + `rules/project-structure.md` | - |
@@ -401,7 +401,7 @@
 | C-S1-2 | Refresh Token 机制 | 待开始 | - | 安全审查 SEC2+SEC3 (高危) | auth 模块 | `improvement-plan.md` §3 S1-2 | - |
 | C-S1-3 | 基础安全审计日志 | 待开始 | - | 安全审查 SEC7 (高危) | auth + shared | `improvement-plan.md` §3 S1-3 | - |
 | C-S1-4 | 注册端点权限保护 | 待开始 | - | 安全审查 SEC16 (中危) | auth API | `improvement-plan.md` §3 S1-4 | - |
-| C-S1-5 | CORS 运行时校验 | 待开始 | C-S0-6 | 安全审查 SEC17 (中危) | shared/settings | `improvement-plan.md` §3 S1-5 | - |
+| C-S1-5 | CORS 运行时校验 | 已完成 | C-S0-6 | 安全审查 SEC17 (中危) | shared/settings | `improvement-plan.md` §3 S1-5 | 2026-02-10 |
 
 ### S2 — 性能解锁（M5 开发期间并行）
 
@@ -435,11 +435,11 @@
 | 级别 | 数量 | 时间窗口 | 当前进度 |
 |------|:----:|---------|---------|
 | S0 阻断修复 | 6 | 进入 M5 之前 | **6/6 ✅** |
-| S1 安全加固 | 5 | M5 开发期间并行 | 0/5 |
+| S1 安全加固 | 5 | M5 开发期间并行 | 1/5 |
 | S2 性能解锁 | 4 | M5 开发期间并行 | 0/4 |
 | S3 战略决策 | 3 | M5 启动前决策 | 1/3 |
 | S4 中期改进 | 5 | Phase 2 完成前 | 0/5 |
-| **合计** | **23** | - | **7/23** |
+| **合计** | **23** | - | **8/23** |
 
 ---
 
@@ -459,8 +459,8 @@
 
 | # | 日期 | 类型 | 完成项 | 关键决策 |
 |---|------|------|-------|---------|
-| 7 | 2026-02-10 | Milestone | ADR-005 数据库选型 (MySQL + Bedrock KB) + M5 任务拆解 (14 项) | 保留 MySQL; RAG 用 Bedrock KB 全托管; insights 推后 |
+| 8 | 2026-02-10 | Milestone | M5 #1-#3 Domain 层完成 + C-S1-5 CORS 校验 (Agent Team), 932 测试 | 2 实体+状态机, 6 事件, 3 异常, 2 仓库接口, 80+3 新测试 |
+| 7 | 2026-02-10 | Milestone | ADR-005 数据库选型 + M5 任务拆解 (14 项) | MySQL + Bedrock KB; insights 推后 |
 | 6 | 2026-02-10 | 变更 | S0 全部清零: C-S0-3 Dockerfile + C-S0-4 MySQL 测试 | 多阶段构建; --mysql; 共享 fixture |
-| 5 | 2026-02-10 | 变更 | C-S0-1 SSE session + C-S0-2 Alembic 迁移链 | stream_finalize_repos; 迁移链线性化 |
-| 4 | 2026-02-10 | 变更 | C-S0-5 is_active + C-S0-6 JWT Secret | model_validator 密钥校验 |
-| 3 | 2026-02-10 | 工作流优化 | 变更管理机制 + 7 项工作流优化 | C- 前缀; 会话历史 5 条 |
+| 5 | 2026-02-10 | 变更 | C-S0-1 SSE + C-S0-2 Alembic + C-S0-5 is_active + C-S0-6 JWT | stream_finalize_repos; 迁移链; 密钥校验 |
+| 4 | 2026-02-10 | 工作流优化 | 变更管理机制 + 7 项工作流优化 + 深度审查 28 项 | C- 前缀; 会话历史 5 条 |
