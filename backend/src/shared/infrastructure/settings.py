@@ -1,8 +1,9 @@
 """应用配置管理。"""
 
 from functools import lru_cache
+from typing import Self
 
-from pydantic import SecretStr
+from pydantic import SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -42,6 +43,16 @@ class Settings(BaseSettings):
 
     # 日志
     LOG_LEVEL: str = "INFO"
+
+    @model_validator(mode="after")
+    def _validate_secrets(self) -> Self:
+        """非开发环境校验密钥安全性，fail-fast 防止弱密钥上线。"""
+        if self.APP_ENV not in ("development", "test"):
+            jwt_secret = self.JWT_SECRET_KEY.get_secret_value()
+            if jwt_secret == "changeme" or len(jwt_secret) < 32:  # noqa: S105
+                msg = "JWT_SECRET_KEY 在非开发环境下不能使用默认值且长度不得少于 32 字符"
+                raise ValueError(msg)
+        return self
 
     @property
     def database_url(self) -> str:

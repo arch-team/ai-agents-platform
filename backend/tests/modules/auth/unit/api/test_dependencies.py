@@ -97,6 +97,22 @@ class TestGetCurrentUser:
             )
 
     @pytest.mark.asyncio
+    async def test_inactive_user_raises(self) -> None:
+        """停用用户持有有效 Token 时应返回 AuthenticationError。"""
+        token = _make_token(user_id=10)
+        credentials = HTTPAuthorizationCredentials(scheme="Bearer", credentials=token)
+        settings = _test_settings()
+        inactive_user = _make_user_dto(user_id=10, is_active=False)
+
+        mock_service = AsyncMock()
+        mock_service.get_user.return_value = inactive_user
+
+        with pytest.raises(AuthenticationError, match="账户已停用"):
+            await get_current_user(
+                credentials=credentials, service=mock_service, settings=settings,
+            )
+
+    @pytest.mark.asyncio
     async def test_user_not_found_raises(self) -> None:
         token = _make_token(user_id=999)
         credentials = HTTPAuthorizationCredentials(scheme="Bearer", credentials=token)

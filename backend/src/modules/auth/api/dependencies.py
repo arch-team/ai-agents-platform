@@ -59,6 +59,9 @@ async def get_current_user(
     if user is None:
         msg = "用户不存在"
         raise AuthenticationError(msg)
+    if not user.is_active:
+        msg = "账户已停用"
+        raise AuthenticationError(msg)
     return user
 
 

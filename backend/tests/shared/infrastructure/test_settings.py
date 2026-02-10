@@ -72,6 +72,39 @@ class TestSettings:
 
 
 @pytest.mark.unit
+class TestSettingsValidation:
+    """Settings 安全校验测试。"""
+
+    def test_production_with_default_jwt_secret_raises(self) -> None:
+        """生产环境使用默认 JWT_SECRET_KEY 时应启动失败。"""
+        with pytest.raises(ValueError, match="JWT_SECRET_KEY"):
+            Settings(APP_ENV="production", JWT_SECRET_KEY=SecretStr("changeme"))
+
+    def test_production_with_short_jwt_secret_raises(self) -> None:
+        """生产环境 JWT_SECRET_KEY 长度不足 32 字符时应启动失败。"""
+        with pytest.raises(ValueError, match="JWT_SECRET_KEY"):
+            Settings(APP_ENV="production", JWT_SECRET_KEY=SecretStr("short"))
+
+    def test_production_with_strong_jwt_secret_passes(self) -> None:
+        """生产环境配置足够长度的 JWT_SECRET_KEY 时应正常启动。"""
+        settings = Settings(
+            APP_ENV="production",
+            JWT_SECRET_KEY=SecretStr("a-very-strong-secret-key-that-is-at-least-32-chars-long"),
+        )
+        assert settings.APP_ENV == "production"
+
+    def test_development_with_default_jwt_secret_passes(self) -> None:
+        """开发环境允许使用默认 JWT_SECRET_KEY。"""
+        settings = Settings(APP_ENV="development", JWT_SECRET_KEY=SecretStr("changeme"))
+        assert settings.JWT_SECRET_KEY.get_secret_value() == "changeme"
+
+    def test_staging_with_default_jwt_secret_raises(self) -> None:
+        """Staging 环境也不允许使用默认 JWT_SECRET_KEY。"""
+        with pytest.raises(ValueError, match="JWT_SECRET_KEY"):
+            Settings(APP_ENV="staging", JWT_SECRET_KEY=SecretStr("changeme"))
+
+
+@pytest.mark.unit
 class TestGetSettings:
     def test_get_settings_returns_settings_instance(self):
         get_settings.cache_clear()
