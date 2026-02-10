@@ -1,36 +1,30 @@
-"""UserRepositoryImpl 集成测试 (SQLite 内存数据库)。"""
-
-from collections.abc import AsyncGenerator
+"""UserRepositoryImpl 集成测试。"""
 
 import pytest
-import pytest_asyncio
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.modules.auth.domain.entities.user import User
 from src.modules.auth.domain.value_objects.role import Role
-from src.modules.auth.infrastructure.persistence.models.user_model import UserModel
 from src.modules.auth.infrastructure.persistence.repositories.user_repository_impl import (
     UserRepositoryImpl,
 )
-from src.shared.infrastructure.database import Base
 
 
-@pytest_asyncio.fixture
-async def session() -> AsyncGenerator[AsyncSession, None]:
-    engine = create_async_engine("sqlite+aiosqlite:///:memory:", echo=False)
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-    session_factory = async_sessionmaker(engine, expire_on_commit=False)
-    async with session_factory() as s:
-        yield s
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.drop_all)
-    await engine.dispose()
+# 使用全局 conftest.py 中的 sqlite_session fixture
+@pytest.fixture
+def session(sqlite_session: AsyncSession) -> AsyncSession:
+    return sqlite_session
 
 
 @pytest.fixture
 def repo(session: AsyncSession) -> UserRepositoryImpl:
     return UserRepositoryImpl(session=session)
+
+
+# MySQL 版本的 fixture
+@pytest.fixture
+def mysql_repo(mysql_session: AsyncSession) -> UserRepositoryImpl:
+    return UserRepositoryImpl(session=mysql_session)
 
 
 def _make_user(
@@ -160,4 +154,60 @@ class TestUserRepositoryImplList:
         await session.commit()
 
         count = await repo.count()
+        assert count == 2
+
+
+# ── MySQL 集成测试 (需要 --mysql 选项) ──
+
+
+@pytest.mark.mysql
+@pytest.mark.integration
+class TestUserRepositoryMySQLCrud:
+    """UserRepositoryImpl MySQL 集成测试: 验证真实 MySQL 方言兼容性。"""
+
+    @pytest.mark.asyncio
+    async def test_create_and_get(self, mysql_repo: UserRepositoryImpl, mysql_session: AsyncSession) -> None:
+        user = _make_user(email="mysql@example.com")
+        created = await mysql_repo.create(user)
+        await mysql_session.commit()
+
+        assert created.id is not None
+        found = await mysql_repo.get_by_id(created.id)
+        assert found is not None
+        assert found.email == "mysql@example.com"
+
+    @pytest.mark.asyncio
+    async def test_update(self, mysql_repo: UserRepositoryImpl, mysql_session: AsyncSession) -> None:
+        user = _make_user(email="update-mysql@example.com")
+        created = await mysql_repo.create(user)
+        await mysql_session.commit()
+
+        created.change_role(Role.ADMIN)
+        updated = await mysql_repo.update(created)
+        await mysql_session.commit()
+
+        assert updated.role == Role.ADMIN
+
+    @pytest.mark.asyncio
+    async def test_delete(self, mysql_repo: UserRepositoryImpl, mysql_session: AsyncSession) -> None:
+        user = _make_user(email="delete-mysql@example.com")
+        created = await mysql_repo.create(user)
+        await mysql_session.commit()
+
+        await mysql_repo.delete(created.id)
+        await mysql_session.commit()
+
+        found = await mysql_repo.get_by_id(created.id)
+        assert found is None
+
+    @pytest.mark.asyncio
+    async def test_list_and_count(self, mysql_repo: UserRepositoryImpl, mysql_session: AsyncSession) -> None:
+        await mysql_repo.create(_make_user(email="m1@example.com", name="MySQL User 1"))
+        await mysql_repo.create(_make_user(email="m2@example.com", name="MySQL User 2"))
+        await mysql_session.commit()
+
+        users = await mysql_repo.list(offset=0, limit=10)
+        assert len(users) == 2
+
+        count = await mysql_repo.count()
         assert count == 2

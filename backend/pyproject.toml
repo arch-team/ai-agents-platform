@@ -363,6 +363,7 @@ markers = [
     "e2e: 端到端测试",
     "slow: 耗时测试",
     "aws: 需要 AWS 服务的测试",
+    "mysql: 需要 MySQL 数据库的测试 (通过 --mysql 启用)",
 ]
 
 # 过滤警告

@@ -51,5 +51,27 @@ services:
       retries: 3
       start_period: 20s
 
+  # MySQL 测试容器 (集成测试用)
+  mysql-test:
+    image: mysql:8.0
+    container_name: aiagents-mysql-test
+    environment:
+      MYSQL_ROOT_PASSWORD: testroot
+      MYSQL_DATABASE: ai_agents_platform_test
+      MYSQL_USER: test
+      MYSQL_PASSWORD: testpassword
+    ports:
+      - "3307:3306"
+    tmpfs:
+      - /var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-ptestroot"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 15s
+    profiles:
+      - test
+
 volumes:
   mysql_data:
