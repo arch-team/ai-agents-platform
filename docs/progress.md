@@ -5,9 +5,9 @@
 ## 当前状态
 
 - **阶段**: Phase 2 核心功能 (3-6 月)
-- **里程碑**: M5 知识库 — 进行中 (14 项任务)
+- **里程碑**: M5 知识库 — ✅ 已完成
 - **变更积压**: S0 ✅ + 4 S1 + 3 S2 + 2 S3 + 5 S4 = 14 项
-- **下一步**: M5 #12-#14 测试 + 质量验收, 完成 knowledge 模块
+- **下一步**: 拆解 M6 里程碑 (templates 模块) 或穿插 S1/S2 变更
 
 ## 模块状态
 
@@ -25,7 +25,7 @@
 | 模块 | 状态 | 分支 | 备注 |
 |------|:----:|------|------|
 | `tool-catalog` | 已完成 | ai-agents-factory-v1 | 工具注册/审批 (10 端点), 5 状态审批流程, MCP Server/API/Function 三类工具 |
-| `knowledge` | 进行中 | ai-agents-factory-v1 | 知识库管理, RAG 检索 (Bedrock Knowledge Bases, ADR-005) |
+| `knowledge` | 已完成 | ai-agents-factory-v1 | 知识库管理, RAG 检索 (Bedrock Knowledge Bases, ADR-005), 10 端点 |
 | `insights` | 待开始 | - | 成本归因, 使用趋势 |
 | `templates` | 待开始 | - | Agent 模板管理 (依赖 tool-catalog + knowledge) |
 
@@ -286,10 +286,11 @@
 
 </details>
 
-### M5: 知识库 (第 17-20 周) — 进行中
+### M5: 知识库 (第 17-20 周) — ✅ 已完成
 
 > 交付物: knowledge 模块完成 (知识库 CRUD + 文档上传 + RAG 检索集成)
 > 验收标准: ruff check + mypy --strict + pytest --cov-fail-under=85 全通过; Top-5 召回率 >= 80%
+> 验收结果: **1023 测试通过，覆盖率 95.10%，ruff/mypy 全通过，架构合规 14/14 通过**
 > 技术选型: MySQL (关系数据) + Bedrock Knowledge Bases (向量检索), 见 ADR-005
 
 #### 领域模型设计摘要
@@ -336,9 +337,9 @@
 | 9 | knowledge/api: Request/Response Schema + dependencies.py + endpoints.py (10 端点) | 已完成 | #5, #6, #7, #8 | `rules/api-design.md` + `rules/security.md` | 2026-02-10 |
 | 10 | 模块注册: main.py 路由注册 + knowledge 异常映射 + __init__.py 模块导出 | 已完成 | #9 | `rules/architecture.md` §6.3 | 2026-02-10 |
 | 11 | execution 集成: send_message 中检测 Agent 关联的 KnowledgeBase, 自动调用 RAG 检索注入上下文 | 已完成 | #5, #7 | ADR-005 + `rules/architecture.md` §4.1 | 2026-02-10 |
-| 12 | tests: knowledge 模块单元测试 (Domain 实体/状态机 + Application Service mock 外部服务) | 待开始 | #1-#5 | `rules/testing.md` TDD + AAA 模式 | - |
-| 13 | tests: knowledge 模块集成测试 (Repository + API 端点 + 架构合规更新) | 待开始 | #6-#10, #12 | `rules/testing.md` 集成测试 | - |
-| 14 | 质量验收: ruff check + mypy --strict + pytest --cov-fail-under=85 全通过 | 待开始 | #1-#13 | `rules/checklist.md` + roadmap.md §3.6 | - |
+| 12 | tests: knowledge 模块单元测试 (Domain 实体/状态机 + Application Service mock 外部服务) | 已完成 | #1-#5 | `rules/testing.md` TDD + AAA 模式 | 2026-02-10 |
+| 13 | tests: knowledge 模块集成测试 (Repository + API 端点 + 架构合规更新) | 已完成 | #6-#10, #12 | `rules/testing.md` 集成测试 | 2026-02-10 |
+| 14 | 质量验收: ruff check + mypy --strict + pytest --cov-fail-under=85 全通过 | 已完成 | #1-#13 | `rules/checklist.md` + roadmap.md §3.6 | 2026-02-10 |
 
 #### 关键设计决策
 
@@ -459,8 +460,8 @@
 
 | # | 日期 | 类型 | 完成项 | 关键决策 |
 |---|------|------|-------|---------|
-| 11 | 2026-02-10 | Milestone | M5 #9-#11 API+注册+RAG集成 (Agent Team), 997 测试 | 10 端点, IKnowledgeQuerier, RAG 上下文注入 |
-| 10 | 2026-02-10 | Milestone | M5 #6-#8 Infrastructure 层, 994 测试 | ORM, Bedrock 适配器, S3 适配器 |
-| 9 | 2026-02-10 | Milestone | M5 #4-#5 Application 层 + C-S2-3 EventBus, 982 测试 | KnowledgeService; TTLCache |
-| 8 | 2026-02-10 | Milestone | M5 #1-#3 Domain + C-S1-5 CORS + ADR-005, 932 测试 | 实体+事件+仓库; MySQL+Bedrock KB |
-| 7 | 2026-02-10 | 变更 | S0 全清零 + 工作流优化 + 深度审查 | Dockerfile; 密钥校验; 变更管理 |
+| 12 | 2026-02-10 | Milestone | **M5 知识库完成** 14/14 任务, 1023 测试, 覆盖率 95.10% | 26 集成测试 (15 Repo + 11 API); knowledge 模块交付 |
+| 11 | 2026-02-10 | Milestone | M5 #9-#11 API+注册+RAG集成, 997 测试 | 10 端点; RAG 上下文注入 |
+| 10 | 2026-02-10 | Milestone | M5 #6-#8 Infrastructure, 994 测试 | ORM; Bedrock; S3 |
+| 9 | 2026-02-10 | Milestone | M5 #1-#5 Domain+Application + C-S1-5 + C-S2-3, 982 测试 | 实体; KnowledgeService; TTLCache |
+| 8 | 2026-02-10 | 变更 | S0 全清零 + ADR-005 + 工作流优化 + 深度审查 | Dockerfile; MySQL+Bedrock KB |
