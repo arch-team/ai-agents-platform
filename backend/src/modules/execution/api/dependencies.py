@@ -60,6 +60,7 @@ async def get_execution_service(
         ConversationRepositoryImpl(session=stream_session),
     )
 
+    settings = get_settings()
     return ExecutionService(
         conversation_repo=conversation_repo,
         message_repo=message_repo,
@@ -68,4 +69,5 @@ async def get_execution_service(
         stream_finalize_repos=stream_finalize_repos,
         agent_runtime=agent_runtime,
         tool_querier=tool_querier,
+        gateway_url=settings.AGENTCORE_GATEWAY_URL,
     )

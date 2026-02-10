@@ -29,7 +29,7 @@ def get_bedrock_knowledge_client() -> BedrockKnowledgeAdapter:
     settings = get_settings()
     agent_client = boto3.client("bedrock-agent", region_name=settings.AWS_REGION)
     runtime_client = boto3.client("bedrock-agent-runtime", region_name=settings.AWS_REGION)
-    # 有配置时传入 KB 参数，开发环境允许为空（创建时会校验）
+    # 有配置时传入 KB 参数, 开发环境允许为空 (创建时会校验)
     kb_config = None
     if settings.BEDROCK_KB_ROLE_ARN and settings.BEDROCK_KB_EMBEDDING_MODEL_ARN:
         kb_config = BedrockKBConfig(

@@ -18,6 +18,10 @@ from src.modules.execution.application.interfaces import (
     AgentTool,
     IAgentRuntime,
 )
+from src.modules.execution.infrastructure.external.sdk_message_utils import (
+    extract_content,
+    extract_usage,
+)
 from src.shared.domain.exceptions import DomainError
 
 
@@ -40,10 +44,10 @@ class ClaudeAgentAdapter(IAgentRuntime):
 
         try:
             async for message in query(prompt=request.prompt, options=options):
-                msg_content = self._extract_content(message)
+                msg_content = extract_content(message)
                 if msg_content:
                     content_parts.append(msg_content)
-                msg_input, msg_output = self._extract_usage(message)
+                msg_input, msg_output = extract_usage(message)
                 input_tokens += msg_input
                 output_tokens += msg_output
         except DomainError:
@@ -81,10 +85,10 @@ class ClaudeAgentAdapter(IAgentRuntime):
 
         try:
             async for message in query(prompt=prompt, options=options):
-                msg_content = self._extract_content(message)
+                msg_content = extract_content(message)
                 if msg_content:
                     yield AgentResponseChunk(content=msg_content)
-                msg_input, msg_output = self._extract_usage(message)
+                msg_input, msg_output = extract_usage(message)
                 input_tokens += msg_input
                 output_tokens += msg_output
         except DomainError:
@@ -125,8 +129,8 @@ class ClaudeAgentAdapter(IAgentRuntime):
         if allowed_tools:
             kwargs["allowed_tools"] = allowed_tools
 
-        # 权限模式: Agent 场景默认全自动
-        kwargs["permission_mode"] = "auto"
+        # 权限模式: Agent 自动化场景统一 bypassPermissions (与 agent_entrypoint 一致)
+        kwargs["permission_mode"] = "bypassPermissions"
 
         return ClaudeAgentOptions(**kwargs)
 
@@ -190,29 +194,4 @@ class ClaudeAgentAdapter(IAgentRuntime):
 
         return allowed
 
-    @staticmethod
-    def _extract_content(message: Any) -> str:  # noqa: ANN401
-        """从 SDK 消息中提取文本内容。"""
-        if isinstance(message, dict):
-            # SDK 消息格式: {"type": "text", "content": "..."}
-            if message.get("type") == "text":
-                return str(message.get("content", ""))
-            # 备选: 仅含 content 键的 dict
-            content = message.get("content")
-            if isinstance(content, str):
-                return content
-        elif isinstance(message, str):
-            return message
-        return ""
-
-    @staticmethod
-    def _extract_usage(message: Any) -> tuple[int, int]:  # noqa: ANN401
-        """从 SDK 消息中提取 Token 用量 (input_tokens, output_tokens)。"""
-        if isinstance(message, dict):
-            usage = message.get("usage", {})
-            if isinstance(usage, dict):
-                return (
-                    int(usage.get("input_tokens", 0)),
-                    int(usage.get("output_tokens", 0)),
-                )
-        return (0, 0)
+    # SDK 消息解析已抽取到 sdk_message_utils 模块 (extract_content, extract_usage)

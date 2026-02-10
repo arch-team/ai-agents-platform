@@ -75,6 +75,7 @@ class ExecutionService:
         knowledge_querier: IKnowledgeQuerier | None = None,
         agent_runtime: IAgentRuntime | None = None,
         tool_querier: IToolQuerier | None = None,
+        gateway_url: str = "",
     ) -> None:
         self._conversation_repo = conversation_repo
         self._message_repo = message_repo
@@ -83,6 +84,7 @@ class ExecutionService:
         self._knowledge_querier = knowledge_querier
         self._agent_runtime = agent_runtime
         self._tool_querier = tool_querier
+        self._gateway_url = gateway_url
         # 流后 DB 写使用独立 repos (由 API 层通过独立 session 创建)
         self._stream_msg_repo, self._stream_conv_repo = (
             stream_finalize_repos if stream_finalize_repos else (message_repo, conversation_repo)
@@ -450,8 +452,7 @@ class ExecutionService:
             config=config,
         )
 
-    @staticmethod
-    def _build_agent_request(ctx: _SendContext, tools: list[AgentTool]) -> AgentRequest:
+    def _build_agent_request(self, ctx: _SendContext, tools: list[AgentTool]) -> AgentRequest:
         """构建 AgentRequest。"""
         return AgentRequest(
             prompt=ctx.created_user_msg.content,
@@ -461,6 +462,7 @@ class ExecutionService:
             history=ctx.llm_messages,
             temperature=ctx.agent_info.temperature,
             max_tokens=ctx.agent_info.max_tokens,
+            gateway_url=self._gateway_url,
         )
 
     async def _prepare_for_send(
@@ -494,7 +496,7 @@ class ExecutionService:
         history = await self._message_repo.list_by_conversation(conversation_id)
         llm_messages = [LLMMessage(role=m.role.value, content=m.content) for m in history]
 
-        # RAG 上下文注入：将检索结果附加到 system prompt
+        # RAG 上下文注入: 将检索结果附加到 system prompt
         system_prompt = agent_info.system_prompt
         if agent_info.knowledge_base_id and self._knowledge_querier:
             rag_results = await self._knowledge_querier.retrieve(

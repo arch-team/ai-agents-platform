@@ -13,6 +13,10 @@ from src.modules.execution.application.interfaces import (
 from src.modules.execution.infrastructure.external.claude_agent_adapter import (
     ClaudeAgentAdapter,
 )
+from src.modules.execution.infrastructure.external.sdk_message_utils import (
+    extract_content,
+    extract_usage,
+)
 from src.shared.domain.exceptions import DomainError
 
 
@@ -158,7 +162,7 @@ class TestClaudeAgentAdapterExecute:
         assert options.model == "claude-sonnet-4-20250514"
         assert options.max_turns == 5
         assert options.cwd == "/tmp/workspace"
-        assert options.permission_mode == "auto"
+        assert options.permission_mode == "bypassPermissions"
 
 
 # -- execute_stream() 测试 --
@@ -363,36 +367,36 @@ class TestBuildAllowedTools:
 class TestExtractHelpers:
     def test_extract_content_text_type(self):
         msg = {"type": "text", "content": "内容"}
-        assert ClaudeAgentAdapter._extract_content(msg) == "内容"
+        assert extract_content(msg) == "内容"
 
     def test_extract_content_dict_with_content_key(self):
         msg = {"content": "备选"}
-        assert ClaudeAgentAdapter._extract_content(msg) == "备选"
+        assert extract_content(msg) == "备选"
 
     def test_extract_content_string(self):
-        assert ClaudeAgentAdapter._extract_content("纯文本") == "纯文本"
+        assert extract_content("纯文本") == "纯文本"
 
     def test_extract_content_unknown_type(self):
-        assert ClaudeAgentAdapter._extract_content(42) == ""
+        assert extract_content(42) == ""
 
     def test_extract_content_tool_use_type(self):
         msg = {"type": "tool_use", "name": "search"}
-        assert ClaudeAgentAdapter._extract_content(msg) == ""
+        assert extract_content(msg) == ""
 
     def test_extract_usage_with_usage(self):
         msg = {"usage": {"input_tokens": 10, "output_tokens": 20}}
-        assert ClaudeAgentAdapter._extract_usage(msg) == (10, 20)
+        assert extract_usage(msg) == (10, 20)
 
     def test_extract_usage_no_usage(self):
         msg = {"type": "text", "content": "无 usage"}
-        assert ClaudeAgentAdapter._extract_usage(msg) == (0, 0)
+        assert extract_usage(msg) == (0, 0)
 
     def test_extract_usage_non_dict(self):
-        assert ClaudeAgentAdapter._extract_usage("字符串") == (0, 0)
+        assert extract_usage("字符串") == (0, 0)
 
     def test_extract_usage_partial_usage(self):
         msg = {"usage": {"input_tokens": 5}}
-        assert ClaudeAgentAdapter._extract_usage(msg) == (5, 0)
+        assert extract_usage(msg) == (5, 0)
 
 
 # -- _build_options() 测试 --
@@ -405,7 +409,7 @@ class TestBuildOptions:
         request = _make_request()
         options = adapter._build_options(request)
 
-        assert options.permission_mode == "auto"
+        assert options.permission_mode == "bypassPermissions"
 
     def test_full_request(self):
         adapter = ClaudeAgentAdapter()
@@ -423,6 +427,6 @@ class TestBuildOptions:
         assert options.model == "claude-sonnet-4-20250514"
         assert options.max_turns == 10
         assert options.cwd == "/workspace"
-        assert options.permission_mode == "auto"
+        assert options.permission_mode == "bypassPermissions"
         assert options.mcp_servers is not None
         assert options.allowed_tools is not None

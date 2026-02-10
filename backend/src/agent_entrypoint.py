@@ -11,6 +11,11 @@ from typing import Any
 from bedrock_agentcore.runtime import BedrockAgentCoreApp
 from claude_agent_sdk import ClaudeAgentOptions, query
 
+from src.modules.execution.infrastructure.external.sdk_message_utils import (
+    extract_content,
+    extract_usage,
+)
+
 
 app = BedrockAgentCoreApp()
 
@@ -57,32 +62,27 @@ async def invoke(payload: dict[str, object]) -> dict[str, object]:
         cwd=cwd if cwd else None,
     )
 
-    # 收集 Agent 响应
+    # 收集 Agent 响应 (使用统一的 SDK 消息解析工具)
     collected_content = ""
-    usage: dict[str, object] = {}
+    total_input_tokens = 0
+    total_output_tokens = 0
     session_id: str | None = None
 
     async for msg in query(prompt=prompt, options=options):
-        # 提取内容
-        if hasattr(msg, "content"):
-            content = msg.content
-            blocks = content if isinstance(content, list) else [content]
-            for block in blocks:
-                if hasattr(block, "text"):
-                    collected_content += block.text
-                elif isinstance(block, str):
-                    collected_content += block
-        # 提取 usage
-        if hasattr(msg, "usage") and msg.usage:
-            usage = msg.usage if isinstance(msg.usage, dict) else {}
+        msg_content = extract_content(msg)
+        if msg_content:
+            collected_content += msg_content
+        msg_input, msg_output = extract_usage(msg)
+        total_input_tokens += msg_input
+        total_output_tokens += msg_output
         # 提取 session_id
         if hasattr(msg, "session_id"):
             session_id = msg.session_id
 
     return {
         "content": collected_content,
-        "input_tokens": usage.get("input_tokens", 0),
-        "output_tokens": usage.get("output_tokens", 0),
+        "input_tokens": total_input_tokens,
+        "output_tokens": total_output_tokens,
         "session_id": session_id,
     }
 

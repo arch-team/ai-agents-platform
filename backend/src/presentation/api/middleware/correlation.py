@@ -21,7 +21,7 @@ class CorrelationIdMiddleware(BaseHTTPMiddleware):
         """从请求头提取或自动生成 correlation_id，注入 structlog 上下文。"""
         correlation_id = request.headers.get(CORRELATION_ID_HEADER) or str(uuid.uuid4())
 
-        # 注入 structlog contextvars，后续所有 logger 调用自动携带
+        # 注入 structlog contextvars, 后续所有 logger 调用自动携带
         structlog.contextvars.clear_contextvars()
         structlog.contextvars.bind_contextvars(
             correlation_id=correlation_id,

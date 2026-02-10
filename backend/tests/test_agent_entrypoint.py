@@ -173,9 +173,9 @@ class TestInvoke:
             result = await invoke({"prompt": "测试"})
 
         assert result["content"] == "第一段第二段"
-        # usage 取最后一条消息的值
-        assert result["input_tokens"] == 80
-        assert result["output_tokens"] == 40
+        # usage 累加所有消息的值
+        assert result["input_tokens"] == 130  # 50 + 80
+        assert result["output_tokens"] == 60  # 20 + 40
 
     async def test_string_content_block(self):
         """字符串类型的 content block 正确处理。"""

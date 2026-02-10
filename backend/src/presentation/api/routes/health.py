@@ -38,10 +38,10 @@ async def readiness() -> JSONResponse:
             )
         checks["database"] = "ok"
     except RuntimeError:
-        # 数据库未初始化（init_db 未调用）
+        # 数据库未初始化 (init_db 未调用)
         checks["database"] = "not_initialized"
         overall_status = "degraded"
-    except (TimeoutError, asyncio.TimeoutError):
+    except TimeoutError:
         checks["database"] = "timeout"
         overall_status = "degraded"
         logger.warning("readiness_check_failed", check="database", reason="timeout")

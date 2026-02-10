@@ -42,7 +42,7 @@ class BedrockKnowledgeAdapter(IKnowledgeService):
         """创建 Bedrock Knowledge Base。"""
         if self._kb_config is None:
             raise DomainError(
-                message="Bedrock KB 配置缺失，请设置 BEDROCK_KB_* 环境变量",
+                message="Bedrock KB 配置缺失, 请设置 BEDROCK_KB_* 环境变量",
                 code="BEDROCK_KB_CONFIG_MISSING",
             )
         try:

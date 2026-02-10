@@ -41,7 +41,7 @@ def setup_logging(*, log_level: str = "INFO", is_dev: bool = True) -> None:
         cache_logger_on_first_use=True,
     )
 
-    # 配置标准库 logging（拦截第三方库日志 → structlog 格式化输出）
+    # 配置标准库 logging (拦截第三方库日志 -> structlog 格式化输出)
     formatter = structlog.stdlib.ProcessorFormatter(
         processors=[
             structlog.stdlib.ProcessorFormatter.remove_processors_meta,

@@ -41,7 +41,10 @@ class Settings(BaseSettings):
     # Bedrock 配置
     BEDROCK_DEFAULT_MODEL_ID: str = "anthropic.claude-3-5-sonnet-20241022-v2:0"
 
-    # Bedrock Knowledge Base 配置（开发环境允许为空）
+    # AgentCore 配置
+    AGENTCORE_GATEWAY_URL: str = ""  # AgentCore Gateway MCP 端点 (SSE URL)
+
+    # Bedrock Knowledge Base 配置 (开发环境允许为空)
     BEDROCK_KB_ROLE_ARN: str = ""
     BEDROCK_KB_EMBEDDING_MODEL_ARN: str = ""
     BEDROCK_KB_S3_BUCKET: str = ""
