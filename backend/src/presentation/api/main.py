@@ -1,5 +1,8 @@
 """FastAPI 应用入口。"""
 
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
+
 import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -18,7 +21,16 @@ from src.modules.tool_catalog.api.endpoints import router as tool_catalog_router
 from src.modules.tool_catalog.domain.exceptions import ToolNameDuplicateError, ToolNotFoundError
 from src.presentation.api.routes.health import router as health_router
 from src.shared.api.exception_handlers import register_exception_handlers, register_status_mapping
+from src.shared.infrastructure.database import init_db
 from src.shared.infrastructure.settings import get_settings
+
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
+    """应用生命周期: 启动时初始化数据库连接。"""
+    settings = get_settings()
+    init_db(settings.database_url, echo=settings.APP_DEBUG)
+    yield
 
 
 def create_app() -> FastAPI:
@@ -28,6 +40,7 @@ def create_app() -> FastAPI:
         title="AI Agents Platform",
         description="基于 Amazon Bedrock AgentCore 的企业级 AI Agents 平台",
         version="0.1.0",
+        lifespan=lifespan,
         # 非开发环境禁用 docs, 避免暴露 API schema
         docs_url="/docs" if settings.APP_DEBUG else None,
         redoc_url="/redoc" if settings.APP_DEBUG else None,

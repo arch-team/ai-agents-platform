@@ -1,0 +1,49 @@
+# Python
+__pycache__
+*.py[cod]
+*.so
+*.egg-info
+dist
+build
+*.egg
+
+# Virtual environments
+.venv
+venv
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# Testing
+.pytest_cache
+htmlcov
+.coverage
+.coverage.*
+
+# Type checking & lint
+.mypy_cache
+.ruff_cache
+
+# Documentation
+docs/
+*.md
+!README.md
+
+# Claude Code
+.claude
+
+# Git
+.git
+.gitignore
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Docker
+Dockerfile
+docker-compose*.yml
