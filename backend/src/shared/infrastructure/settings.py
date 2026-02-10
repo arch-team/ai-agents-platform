@@ -52,6 +52,10 @@ class Settings(BaseSettings):
             if jwt_secret == "changeme" or len(jwt_secret) < 32:  # noqa: S105
                 msg = "JWT_SECRET_KEY 在非开发环境下不能使用默认值且长度不得少于 32 字符"
                 raise ValueError(msg)
+        # CORS 校验: 禁止通配符 (防止 allow_credentials=True + allow_origins=["*"])
+        if "*" in self.CORS_ALLOWED_ORIGINS:
+            msg = "CORS_ALLOWED_ORIGINS 不允许包含通配符 '*'"
+            raise ValueError(msg)
         return self
 
     @property

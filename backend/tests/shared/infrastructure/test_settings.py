@@ -103,6 +103,21 @@ class TestSettingsValidation:
         with pytest.raises(ValueError, match="JWT_SECRET_KEY"):
             Settings(APP_ENV="staging", JWT_SECRET_KEY=SecretStr("changeme"))
 
+    def test_cors_wildcard_origin_raises(self) -> None:
+        """CORS_ALLOWED_ORIGINS 包含通配符 '*' 时应启动失败。"""
+        with pytest.raises(ValueError, match="CORS_ALLOWED_ORIGINS"):
+            Settings(CORS_ALLOWED_ORIGINS=["*"])
+
+    def test_cors_wildcard_among_others_raises(self) -> None:
+        """CORS_ALLOWED_ORIGINS 混入通配符 '*' 时应启动失败。"""
+        with pytest.raises(ValueError, match="CORS_ALLOWED_ORIGINS"):
+            Settings(CORS_ALLOWED_ORIGINS=["http://localhost:3000", "*"])
+
+    def test_cors_specific_origins_passes(self) -> None:
+        """CORS_ALLOWED_ORIGINS 配置具体域名时应正常启动。"""
+        settings = Settings(CORS_ALLOWED_ORIGINS=["http://localhost:3000"])
+        assert settings.CORS_ALLOWED_ORIGINS == ["http://localhost:3000"]
+
 
 @pytest.mark.unit
 class TestGetSettings:
