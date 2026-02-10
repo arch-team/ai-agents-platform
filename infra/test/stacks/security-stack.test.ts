@@ -1,7 +1,7 @@
 import * as cdk from 'aws-cdk-lib';
-import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import { Template } from 'aws-cdk-lib/assertions';
 import { SecurityStack } from '../../lib/stacks/security-stack';
+import { createVpcDependency } from '../helpers/test-utils';
 
 describe('SecurityStack', () => {
   let template: Template;
@@ -9,8 +9,7 @@ describe('SecurityStack', () => {
   describe('基本配置 (dev 环境)', () => {
     beforeEach(() => {
       const app = new cdk.App();
-      const vpcStack = new cdk.Stack(app, 'VpcStack');
-      const vpc = new ec2.Vpc(vpcStack, 'TestVpc');
+      const vpc = createVpcDependency(app);
 
       const stack = new SecurityStack(app, 'TestSecurityStack', {
         vpc,
@@ -49,8 +48,7 @@ describe('SecurityStack', () => {
   describe('Prod 环境', () => {
     it('应创建 Secrets Manager VPC Endpoint', () => {
       const app = new cdk.App();
-      const vpcStack = new cdk.Stack(app, 'VpcStack');
-      const vpc = new ec2.Vpc(vpcStack, 'TestVpc');
+      const vpc = createVpcDependency(app);
 
       const stack = new SecurityStack(app, 'TestSecurityStack', {
         vpc,
@@ -66,8 +64,7 @@ describe('SecurityStack', () => {
   describe('公开属性', () => {
     it('应暴露 encryptionKey, apiSecurityGroup, dbSecurityGroup', () => {
       const app = new cdk.App();
-      const vpcStack = new cdk.Stack(app, 'VpcStack');
-      const vpc = new ec2.Vpc(vpcStack, 'TestVpc');
+      const vpc = createVpcDependency(app);
 
       const stack = new SecurityStack(app, 'TestSecurityStack', {
         vpc,

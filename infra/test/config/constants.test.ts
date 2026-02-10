@@ -1,4 +1,11 @@
-import { PROJECT_NAME, getRequiredTags } from '../../lib/config/constants';
+import * as cdk from 'aws-cdk-lib';
+import {
+  PROJECT_NAME,
+  getRequiredTags,
+  getRemovalPolicy,
+  isDev,
+  isProd,
+} from '../../lib/config/constants';
 
 describe('constants', () => {
   describe('PROJECT_NAME', () => {
@@ -25,6 +32,40 @@ describe('constants', () => {
 
       const stagingTags = getRequiredTags('staging');
       expect(stagingTags.Environment).toBe('staging');
+    });
+  });
+
+  describe('getRemovalPolicy', () => {
+    it('Dev 环境应返回 DESTROY', () => {
+      expect(getRemovalPolicy('dev')).toBe(cdk.RemovalPolicy.DESTROY);
+    });
+
+    it('Prod 环境应返回 RETAIN', () => {
+      expect(getRemovalPolicy('prod')).toBe(cdk.RemovalPolicy.RETAIN);
+    });
+
+    it('Staging 环境应返回 SNAPSHOT', () => {
+      expect(getRemovalPolicy('staging')).toBe(cdk.RemovalPolicy.SNAPSHOT);
+    });
+  });
+
+  describe('isDev', () => {
+    it.each([
+      ['dev', true],
+      ['prod', false],
+      ['staging', false],
+    ])('环境 "%s" 应返回 %s', (envName, expected) => {
+      expect(isDev(envName)).toBe(expected);
+    });
+  });
+
+  describe('isProd', () => {
+    it.each([
+      ['prod', true],
+      ['dev', false],
+      ['staging', false],
+    ])('环境 "%s" 应返回 %s', (envName, expected) => {
+      expect(isProd(envName)).toBe(expected);
     });
   });
 });

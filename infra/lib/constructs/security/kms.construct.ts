@@ -1,6 +1,6 @@
-import * as cdk from 'aws-cdk-lib';
 import * as kms from 'aws-cdk-lib/aws-kms';
 import { Construct } from 'constructs';
+import { getRemovalPolicy } from '../../config/constants';
 
 export interface KmsConstructProps {
   /** 环境名称 (dev, staging, prod) */
@@ -26,7 +26,7 @@ export class KmsConstruct extends Construct {
       alias,
       enableKeyRotation,
       description: 'AI Agents Platform 数据加密主密钥',
-      removalPolicy: envName === 'dev' ? cdk.RemovalPolicy.DESTROY : cdk.RemovalPolicy.RETAIN,
+      removalPolicy: getRemovalPolicy(envName),
     });
   }
 }

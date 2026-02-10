@@ -37,7 +37,9 @@ class AgentModel(Base):
     top_p: Mapped[float] = mapped_column(Float, nullable=False, default=1.0)
     stop_sequences: Mapped[str] = mapped_column(Text, nullable=False, default="")
     runtime_type: Mapped[str] = mapped_column(
-        String(20), nullable=False, default="agent",
+        String(20),
+        nullable=False,
+        default="agent",
     )
 
     created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=utc_now)

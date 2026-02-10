@@ -6,48 +6,53 @@ from src.shared.domain.events import DomainEvent
 
 
 @dataclass
-class KnowledgeBaseCreatedEvent(DomainEvent):
+class _KnowledgeBaseEvent(DomainEvent):
+    """知识库事件基类，携带 knowledge_base_id。"""
+
+    knowledge_base_id: int = 0
+
+
+@dataclass
+class KnowledgeBaseCreatedEvent(_KnowledgeBaseEvent):
     """知识库创建事件。"""
 
-    knowledge_base_id: int = 0
     owner_id: int = 0
 
 
 @dataclass
-class KnowledgeBaseActivatedEvent(DomainEvent):
+class KnowledgeBaseActivatedEvent(_KnowledgeBaseEvent):
     """知识库激活事件。"""
 
-    knowledge_base_id: int = 0
-
 
 @dataclass
-class KnowledgeBaseSyncStartedEvent(DomainEvent):
+class KnowledgeBaseSyncStartedEvent(_KnowledgeBaseEvent):
     """知识库同步开始事件。"""
 
-    knowledge_base_id: int = 0
-
 
 @dataclass
-class KnowledgeBaseDeletedEvent(DomainEvent):
+class KnowledgeBaseDeletedEvent(_KnowledgeBaseEvent):
     """知识库删除事件。"""
 
-    knowledge_base_id: int = 0
     owner_id: int = 0
 
 
 @dataclass
-class DocumentUploadedEvent(DomainEvent):
-    """文档上传事件。"""
+class _DocumentEvent(DomainEvent):
+    """文档事件基类，携带 document_id 和 knowledge_base_id。"""
 
     document_id: int = 0
     knowledge_base_id: int = 0
+
+
+@dataclass
+class DocumentUploadedEvent(_DocumentEvent):
+    """文档上传事件。"""
+
     filename: str = ""
 
 
 @dataclass
-class DocumentIndexedEvent(DomainEvent):
+class DocumentIndexedEvent(_DocumentEvent):
     """文档索引完成事件。"""
 
-    document_id: int = 0
-    knowledge_base_id: int = 0
     chunk_count: int = 0

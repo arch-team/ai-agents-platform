@@ -1,5 +1,6 @@
 """Agent 应用服务。"""
 
+import asyncio
 from collections.abc import Callable
 from dataclasses import replace
 
@@ -92,20 +93,24 @@ class AgentService:
         offset = (page - 1) * page_size
 
         if status is not None:
-            agents = await self._repository.list_by_owner_and_status(
-                owner_id,
-                status,
-                offset=offset,
-                limit=page_size,
+            agents, total = await asyncio.gather(
+                self._repository.list_by_owner_and_status(
+                    owner_id,
+                    status,
+                    offset=offset,
+                    limit=page_size,
+                ),
+                self._repository.count_by_owner_and_status(owner_id, status),
             )
-            total = await self._repository.count_by_owner_and_status(owner_id, status)
         else:
-            agents = await self._repository.list_by_owner(
-                owner_id,
-                offset=offset,
-                limit=page_size,
+            agents, total = await asyncio.gather(
+                self._repository.list_by_owner(
+                    owner_id,
+                    offset=offset,
+                    limit=page_size,
+                ),
+                self._repository.count_by_owner(owner_id),
             )
-            total = await self._repository.count_by_owner(owner_id)
 
         return PagedAgentDTO(
             items=[self._to_dto(a) for a in agents],

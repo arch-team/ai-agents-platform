@@ -1,5 +1,7 @@
 """Knowledge 应用服务。"""
 
+import asyncio
+
 from src.modules.knowledge.application.dto.knowledge_dto import (
     CreateKnowledgeBaseDTO,
     DocumentDTO,
@@ -42,6 +44,11 @@ from src.modules.knowledge.domain.value_objects.knowledge_base_status import (
 )
 from src.shared.domain.event_bus import event_bus
 from src.shared.domain.exceptions import DomainError, InvalidStateTransitionError
+
+
+_QUERYABLE_STATUSES: frozenset[KnowledgeBaseStatus] = frozenset(
+    {KnowledgeBaseStatus.ACTIVE, KnowledgeBaseStatus.SYNCING},
+)
 
 
 class KnowledgeService:
@@ -93,14 +100,16 @@ class KnowledgeService:
         created.activate()
         updated = await self._kb_repo.update(created)
 
-        await event_bus.publish_async(
-            KnowledgeBaseCreatedEvent(
-                knowledge_base_id=created.id,
-                owner_id=owner_id,
+        await asyncio.gather(
+            event_bus.publish_async(
+                KnowledgeBaseCreatedEvent(
+                    knowledge_base_id=created.id,
+                    owner_id=owner_id,
+                ),
             ),
-        )
-        await event_bus.publish_async(
-            KnowledgeBaseActivatedEvent(knowledge_base_id=created.id),
+            event_bus.publish_async(
+                KnowledgeBaseActivatedEvent(knowledge_base_id=created.id),
+            ),
         )
         return self._to_kb_dto(updated)
 
@@ -110,8 +119,7 @@ class KnowledgeService:
         Raises:
             KnowledgeBaseNotFoundError, DomainError(FORBIDDEN_KNOWLEDGE_BASE)
         """
-        kb = await self._get_kb_or_raise(kb_id)
-        self._check_ownership(kb, user_id)
+        kb = await self._get_owned_kb(kb_id, user_id)
         return self._to_kb_dto(kb)
 
     async def list_knowledge_bases(
@@ -123,8 +131,10 @@ class KnowledgeService:
     ) -> PagedKnowledgeBaseDTO:
         """获取知识库列表。"""
         offset = (page - 1) * page_size
-        items = await self._kb_repo.list_by_owner(user_id, offset=offset, limit=page_size)
-        total = await self._kb_repo.count_by_owner(user_id)
+        items, total = await asyncio.gather(
+            self._kb_repo.list_by_owner(user_id, offset=offset, limit=page_size),
+            self._kb_repo.count_by_owner(user_id),
+        )
         return PagedKnowledgeBaseDTO(
             items=[self._to_kb_dto(kb) for kb in items],
             total=total,
@@ -144,8 +154,7 @@ class KnowledgeService:
             KnowledgeBaseNotFoundError, DomainError(FORBIDDEN_KNOWLEDGE_BASE),
             InvalidStateTransitionError, KnowledgeBaseNameDuplicateError
         """
-        kb = await self._get_kb_or_raise(kb_id)
-        self._check_ownership(kb, user_id)
+        kb = await self._get_owned_kb(kb_id, user_id)
 
         if kb.status != KnowledgeBaseStatus.ACTIVE:
             raise InvalidStateTransitionError(
@@ -175,8 +184,7 @@ class KnowledgeService:
             KnowledgeBaseNotFoundError, DomainError(FORBIDDEN_KNOWLEDGE_BASE),
             InvalidStateTransitionError
         """
-        kb = await self._get_kb_or_raise(kb_id)
-        self._check_ownership(kb, user_id)
+        kb = await self._get_owned_kb(kb_id, user_id)
 
         kb.mark_deleted()
         await self._kb_repo.update(kb)
@@ -204,8 +212,7 @@ class KnowledgeService:
             KnowledgeBaseNotFoundError, DomainError(FORBIDDEN_KNOWLEDGE_BASE),
             InvalidStateTransitionError
         """
-        kb = await self._get_kb_or_raise(kb_id)
-        self._check_ownership(kb, user_id)
+        kb = await self._get_owned_kb(kb_id, user_id)
 
         if kb.status != KnowledgeBaseStatus.ACTIVE:
             raise InvalidStateTransitionError(
@@ -246,12 +253,13 @@ class KnowledgeService:
         page_size: int = 20,
     ) -> tuple[list[DocumentDTO], int]:
         """获取文档列表。校验 KB 所有权。"""
-        kb = await self._get_kb_or_raise(kb_id)
-        self._check_ownership(kb, user_id)
+        await self._get_owned_kb(kb_id, user_id)
 
         offset = (page - 1) * page_size
-        docs = await self._doc_repo.list_by_knowledge_base(kb_id, offset=offset, limit=page_size)
-        total = await self._doc_repo.count_by_knowledge_base(kb_id)
+        docs, total = await asyncio.gather(
+            self._doc_repo.list_by_knowledge_base(kb_id, offset=offset, limit=page_size),
+            self._doc_repo.count_by_knowledge_base(kb_id),
+        )
         return [self._to_doc_dto(d) for d in docs], total
 
     async def delete_document(
@@ -266,8 +274,7 @@ class KnowledgeService:
             KnowledgeBaseNotFoundError, DomainError(FORBIDDEN_KNOWLEDGE_BASE),
             DocumentNotFoundError
         """
-        kb = await self._get_kb_or_raise(kb_id)
-        self._check_ownership(kb, user_id)
+        await self._get_owned_kb(kb_id, user_id)
 
         doc = await self._doc_repo.get_by_id(doc_id)
         if doc is None:
@@ -289,8 +296,7 @@ class KnowledgeService:
             KnowledgeBaseNotFoundError, DomainError(FORBIDDEN_KNOWLEDGE_BASE),
             InvalidStateTransitionError
         """
-        kb = await self._get_kb_or_raise(kb_id)
-        self._check_ownership(kb, user_id)
+        kb = await self._get_owned_kb(kb_id, user_id)
 
         kb.start_sync()
         updated = await self._kb_repo.update(kb)
@@ -314,10 +320,9 @@ class KnowledgeService:
             KnowledgeBaseNotFoundError, DomainError(FORBIDDEN_KNOWLEDGE_BASE),
             InvalidStateTransitionError
         """
-        kb = await self._get_kb_or_raise(kb_id)
-        self._check_ownership(kb, user_id)
+        kb = await self._get_owned_kb(kb_id, user_id)
 
-        if kb.status not in {KnowledgeBaseStatus.ACTIVE, KnowledgeBaseStatus.SYNCING}:
+        if kb.status not in _QUERYABLE_STATUSES:
             raise InvalidStateTransitionError(
                 entity_type="KnowledgeBase",
                 current_state=kb.status.value,
@@ -360,6 +365,12 @@ class KnowledgeService:
                 message="无权操作此知识库",
                 code="FORBIDDEN_KNOWLEDGE_BASE",
             )
+
+    async def _get_owned_kb(self, kb_id: int, user_id: int) -> KnowledgeBase:
+        """获取知识库并校验所有权。"""
+        kb = await self._get_kb_or_raise(kb_id)
+        self._check_ownership(kb, user_id)
+        return kb
 
     async def _check_name_unique(self, name: str, owner_id: int) -> None:
         existing = await self._kb_repo.get_by_name_and_owner(name, owner_id)

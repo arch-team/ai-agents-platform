@@ -1,5 +1,6 @@
 """Tool Catalog 应用服务。"""
 
+import asyncio
 from dataclasses import replace
 
 from src.modules.tool_catalog.application.dto.tool_dto import (
@@ -30,6 +31,9 @@ from src.modules.tool_catalog.domain.value_objects.tool_status import ToolStatus
 from src.modules.tool_catalog.domain.value_objects.tool_type import ToolType
 from src.shared.domain.event_bus import event_bus
 from src.shared.domain.exceptions import DomainError, InvalidStateTransitionError
+
+
+_EDITABLE_STATUSES: frozenset[ToolStatus] = frozenset({ToolStatus.DRAFT, ToolStatus.REJECTED})
 
 
 class ToolCatalogService:
@@ -108,7 +112,7 @@ class ToolCatalogService:
         """
         tool = await self._get_owned_tool(tool_id, operator_id)
 
-        if tool.status not in (ToolStatus.DRAFT, ToolStatus.REJECTED):
+        if tool.status not in _EDITABLE_STATUSES:
             raise InvalidStateTransitionError(
                 entity_type="Tool",
                 current_state=tool.status.value,
@@ -137,7 +141,7 @@ class ToolCatalogService:
 
         # 重建 ToolConfig (frozen 值对象, 任一字段变化需整体替换)
         config_overrides: dict[str, str | tuple[tuple[str, str], ...]] = {}
-        config_str_fields = (
+        for field in (
             "server_url",
             "transport",
             "endpoint_url",
@@ -146,20 +150,18 @@ class ToolCatalogService:
             "handler",
             "code_uri",
             "auth_type",
-        )
-        for field in config_str_fields:
+        ):
             value = getattr(dto, field)
             if value is not None:
                 config_overrides[field] = value
                 changed_fields.append(field)
 
         # headers 和 auth_config 需要转换为 tuple
-        if dto.headers is not None:
-            config_overrides["headers"] = tuple(dto.headers)
-            changed_fields.append("headers")
-        if dto.auth_config is not None:
-            config_overrides["auth_config"] = tuple(dto.auth_config)
-            changed_fields.append("auth_config")
+        for field in ("headers", "auth_config"):
+            value = getattr(dto, field)
+            if value is not None:
+                config_overrides[field] = tuple(value)
+                changed_fields.append(field)
 
         if config_overrides:
             tool.config = replace(tool.config, **config_overrides)  # type: ignore[arg-type]
@@ -213,19 +215,21 @@ class ToolCatalogService:
         """获取 Tool 列表，支持多维筛选和分页。"""
         offset = (page - 1) * page_size
 
-        tools = await self._repository.list_filtered(
-            creator_id=creator_id,
-            status=status,
-            tool_type=tool_type,
-            keyword=keyword,
-            offset=offset,
-            limit=page_size,
-        )
-        total = await self._repository.count_filtered(
-            creator_id=creator_id,
-            status=status,
-            tool_type=tool_type,
-            keyword=keyword,
+        tools, total = await asyncio.gather(
+            self._repository.list_filtered(
+                creator_id=creator_id,
+                status=status,
+                tool_type=tool_type,
+                keyword=keyword,
+                offset=offset,
+                limit=page_size,
+            ),
+            self._repository.count_filtered(
+                creator_id=creator_id,
+                status=status,
+                tool_type=tool_type,
+                keyword=keyword,
+            ),
         )
 
         return PagedToolDTO(
@@ -244,8 +248,10 @@ class ToolCatalogService:
         """获取已批准的 Tool 列表（任意认证用户可访问）。"""
         offset = (page - 1) * page_size
 
-        tools = await self._repository.list_approved(offset=offset, limit=page_size)
-        total = await self._repository.count_approved()
+        tools, total = await asyncio.gather(
+            self._repository.list_approved(offset=offset, limit=page_size),
+            self._repository.count_approved(),
+        )
 
         return PagedToolDTO(
             items=[self._to_dto(t) for t in tools],
@@ -318,13 +324,7 @@ class ToolCatalogService:
         Raises:
             ToolNotFoundError, DomainError, InvalidStateTransitionError
         """
-        tool = await self._get_tool_or_raise(tool_id)
-        # deprecate 允许 creator 或 admin (admin 在 API 层已校验)
-        if tool.creator_id != operator_id:
-            raise DomainError(
-                message="无权操作此 Tool",
-                code="FORBIDDEN_TOOL",
-            )
+        tool = await self._get_owned_tool(tool_id, operator_id)
         tool.deprecate()
         updated = await self._repository.update(tool)
         await event_bus.publish_async(

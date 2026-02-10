@@ -1,7 +1,6 @@
 """FastAPI 统一异常处理。"""
 
-import logging
-
+import structlog
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
@@ -15,7 +14,7 @@ from src.shared.domain.exceptions import (
 )
 
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 # DomainError 子类 -> HTTP 状态码映射
 _EXCEPTION_STATUS_MAP: dict[type[DomainError], int] = {

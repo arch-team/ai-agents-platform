@@ -31,25 +31,28 @@ class TestConversationCreation:
         assert conv.created_at is not None
         assert conv.updated_at is not None
 
-    def test_title_too_long_raises(self) -> None:
-        with pytest.raises(ValidationError, match="title"):
-            Conversation(agent_id=1, user_id=10, title="A" * 201)
+    @pytest.mark.parametrize(
+        "field,kwargs",
+        [
+            ("title", {"agent_id": 1, "user_id": 10, "title": "A" * 201}),
+            ("message_count", {"agent_id": 1, "user_id": 10, "message_count": -1}),
+            ("total_tokens", {"agent_id": 1, "user_id": 10, "total_tokens": -1}),
+        ],
+        ids=["title_too_long", "negative_message_count", "negative_total_tokens"],
+    )
+    def test_field_validation_raises(self, field: str, kwargs: dict) -> None:
+        with pytest.raises(ValidationError, match=field):
+            Conversation(**kwargs)
 
-    def test_negative_message_count_raises(self) -> None:
-        with pytest.raises(ValidationError, match="message_count"):
-            Conversation(agent_id=1, user_id=10, message_count=-1)
 
-    def test_negative_total_tokens_raises(self) -> None:
-        with pytest.raises(ValidationError, match="total_tokens"):
-            Conversation(agent_id=1, user_id=10, total_tokens=-1)
+@pytest.fixture
+def active_conversation() -> Conversation:
+    """活跃状态的 Conversation。"""
+    return Conversation(agent_id=1, user_id=10)
 
 
 @pytest.mark.unit
 class TestConversationComplete:
-    @pytest.fixture
-    def active_conversation(self) -> Conversation:
-        return Conversation(agent_id=1, user_id=10)
-
     def test_complete_from_active_succeeds(
         self, active_conversation: Conversation
     ) -> None:
@@ -65,27 +68,21 @@ class TestConversationComplete:
         assert original is not None
         assert active_conversation.updated_at >= original
 
-    def test_complete_from_completed_raises(
-        self, active_conversation: Conversation
+    @pytest.mark.parametrize(
+        "setup_action",
+        ["complete", "fail"],
+        ids=["from_completed", "from_failed"],
+    )
+    def test_complete_from_terminal_state_raises(
+        self, active_conversation: Conversation, setup_action: str
     ) -> None:
-        active_conversation.complete()
-        with pytest.raises(InvalidStateTransitionError):
-            active_conversation.complete()
-
-    def test_complete_from_failed_raises(
-        self, active_conversation: Conversation
-    ) -> None:
-        active_conversation.fail()
+        getattr(active_conversation, setup_action)()
         with pytest.raises(InvalidStateTransitionError):
             active_conversation.complete()
 
 
 @pytest.mark.unit
 class TestConversationFail:
-    @pytest.fixture
-    def active_conversation(self) -> Conversation:
-        return Conversation(agent_id=1, user_id=10)
-
     def test_fail_from_active_succeeds(
         self, active_conversation: Conversation
     ) -> None:
@@ -101,27 +98,21 @@ class TestConversationFail:
         assert original is not None
         assert active_conversation.updated_at >= original
 
-    def test_fail_from_completed_raises(
-        self, active_conversation: Conversation
+    @pytest.mark.parametrize(
+        "setup_action",
+        ["complete", "fail"],
+        ids=["from_completed", "from_failed"],
+    )
+    def test_fail_from_terminal_state_raises(
+        self, active_conversation: Conversation, setup_action: str
     ) -> None:
-        active_conversation.complete()
-        with pytest.raises(InvalidStateTransitionError):
-            active_conversation.fail()
-
-    def test_fail_from_failed_raises(
-        self, active_conversation: Conversation
-    ) -> None:
-        active_conversation.fail()
+        getattr(active_conversation, setup_action)()
         with pytest.raises(InvalidStateTransitionError):
             active_conversation.fail()
 
 
 @pytest.mark.unit
 class TestConversationAddMessageCount:
-    @pytest.fixture
-    def active_conversation(self) -> Conversation:
-        return Conversation(agent_id=1, user_id=10)
-
     def test_add_message_count_increments(
         self, active_conversation: Conversation
     ) -> None:
@@ -153,16 +144,14 @@ class TestConversationAddMessageCount:
         assert original is not None
         assert active_conversation.updated_at >= original
 
-    def test_add_message_count_when_completed_raises(
-        self, active_conversation: Conversation
+    @pytest.mark.parametrize(
+        "setup_action",
+        ["complete", "fail"],
+        ids=["when_completed", "when_failed"],
+    )
+    def test_add_message_count_when_terminal_raises(
+        self, active_conversation: Conversation, setup_action: str
     ) -> None:
-        active_conversation.complete()
-        with pytest.raises(InvalidStateTransitionError):
-            active_conversation.add_message_count(token_count=10)
-
-    def test_add_message_count_when_failed_raises(
-        self, active_conversation: Conversation
-    ) -> None:
-        active_conversation.fail()
+        getattr(active_conversation, setup_action)()
         with pytest.raises(InvalidStateTransitionError):
             active_conversation.add_message_count(token_count=10)

@@ -1,7 +1,9 @@
 """FastAPI 应用入口。"""
 
-from collections.abc import AsyncIterator
+from __future__ import annotations
+
 from contextlib import asynccontextmanager
+from typing import TYPE_CHECKING
 
 import uvicorn
 from fastapi import FastAPI
@@ -33,6 +35,12 @@ from src.shared.infrastructure.logging import setup_logging
 from src.shared.infrastructure.settings import get_settings
 
 
+if TYPE_CHECKING:
+    from collections.abc import AsyncIterator
+
+    from src.shared.domain.exceptions import DomainError
+
+
 @asynccontextmanager
 async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
     """应用生命周期: 启动时初始化数据库和日志。"""
@@ -58,12 +66,10 @@ def create_app() -> FastAPI:
         redoc_url="/redoc" if settings.APP_DEBUG else None,
     )
 
-    # CORS 中间件 — 禁止 allow_origins=["*"] + allow_credentials=True 组合
-    # 生产环境应通过 CORS_ALLOWED_ORIGINS 环境变量配置具体域名
-    cors_origins = settings.CORS_ALLOWED_ORIGINS
+    # CORS 中间件 — 生产环境应通过 CORS_ALLOWED_ORIGINS 环境变量配置具体域名
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=cors_origins,
+        allow_origins=settings.CORS_ALLOWED_ORIGINS,
         allow_credentials=True,
         allow_methods=["GET", "POST", "PUT", "DELETE"],
         allow_headers=["Authorization", "Content-Type"],
@@ -72,27 +78,28 @@ def create_app() -> FastAPI:
     # Correlation ID 中间件 — 为每个请求绑定唯一追踪 ID
     app.add_middleware(CorrelationIdMiddleware)
 
-    # 注册 auth 模块异常映射
-    register_status_mapping(AuthenticationError, 401)
-    register_status_mapping(AuthorizationError, 403)
-
-    # 注册 agents 模块异常映射
-    register_status_mapping(AgentNotFoundError, 404)
-    register_status_mapping(AgentNameDuplicateError, 409)
-
-    # 注册 execution 模块异常映射
-    register_status_mapping(ConversationNotFoundError, 404)
-    register_status_mapping(ConversationNotActiveError, 409)
-    register_status_mapping(AgentNotAvailableError, 409)
-
-    # 注册 tool_catalog 模块异常映射
-    register_status_mapping(ToolNotFoundError, 404)
-    register_status_mapping(ToolNameDuplicateError, 409)
-
-    # 注册 knowledge 模块异常映射
-    register_status_mapping(KnowledgeBaseNotFoundError, 404)
-    register_status_mapping(KnowledgeBaseNameDuplicateError, 409)
-    register_status_mapping(DocumentNotFoundError, 404)
+    # 注册各模块 DomainError 子类 → HTTP 状态码映射
+    _module_exception_mappings: dict[type[DomainError], int] = {
+        # auth
+        AuthenticationError: 401,
+        AuthorizationError: 403,
+        # agents
+        AgentNotFoundError: 404,
+        AgentNameDuplicateError: 409,
+        # execution
+        ConversationNotFoundError: 404,
+        ConversationNotActiveError: 409,
+        AgentNotAvailableError: 409,
+        # tool_catalog
+        ToolNotFoundError: 404,
+        ToolNameDuplicateError: 409,
+        # knowledge
+        KnowledgeBaseNotFoundError: 404,
+        KnowledgeBaseNameDuplicateError: 409,
+        DocumentNotFoundError: 404,
+    }
+    for exc_type, status_code in _module_exception_mappings.items():
+        register_status_mapping(exc_type, status_code)
 
     # 统一异常处理
     register_exception_handlers(app)

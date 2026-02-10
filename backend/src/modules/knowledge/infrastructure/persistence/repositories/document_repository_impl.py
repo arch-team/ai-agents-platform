@@ -1,12 +1,11 @@
 """Document 仓库实现。"""
 
-from sqlalchemy import func, select
+from sqlalchemy import select
 
 from src.modules.knowledge.domain.entities.document import Document
 from src.modules.knowledge.domain.repositories.document_repository import (
     IDocumentRepository,
 )
-from src.modules.knowledge.domain.value_objects.document_status import DocumentStatus
 from src.modules.knowledge.infrastructure.persistence.models.document_model import (
     DocumentModel,
 )
@@ -21,41 +20,25 @@ class DocumentRepositoryImpl(
 
     entity_class = Document
     model_class = DocumentModel
-    _updatable_fields: frozenset[str] = frozenset({
-        "filename", "s3_key", "file_size", "status",
-        "content_type", "chunk_count",
-    })
-
-    def _to_entity(self, model: DocumentModel) -> Document:
-        return Document(
-            id=model.id,
-            knowledge_base_id=model.knowledge_base_id,
-            filename=model.filename,
-            s3_key=model.s3_key,
-            file_size=model.file_size,
-            status=DocumentStatus(model.status),
-            content_type=model.content_type,
-            chunk_count=model.chunk_count,
-            created_at=model.created_at,
-            updated_at=model.updated_at,
-        )
-
-    def _from_entity(self, entity: Document) -> DocumentModel:
-        return DocumentModel(
-            id=entity.id,
-            knowledge_base_id=entity.knowledge_base_id,
-            filename=entity.filename,
-            s3_key=entity.s3_key,
-            file_size=entity.file_size,
-            status=entity.status.value,
-            content_type=entity.content_type,
-            chunk_count=entity.chunk_count,
-        )
+    _updatable_fields: frozenset[str] = frozenset(
+        {
+            "filename",
+            "s3_key",
+            "file_size",
+            "status",
+            "content_type",
+            "chunk_count",
+        },
+    )
 
     async def list_by_knowledge_base(
-        self, knowledge_base_id: int, *, offset: int = 0, limit: int = 20,
+        self,
+        knowledge_base_id: int,
+        *,
+        offset: int = 0,
+        limit: int = 20,
     ) -> list[Document]:
-        """按知识库查询文档列表。"""
+        """按知识库查询文档列表（按 ID 降序）。"""
         stmt = (
             select(DocumentModel)
             .where(DocumentModel.knowledge_base_id == knowledge_base_id)
@@ -68,8 +51,4 @@ class DocumentRepositoryImpl(
 
     async def count_by_knowledge_base(self, knowledge_base_id: int) -> int:
         """按知识库统计文档数量。"""
-        stmt = select(func.count()).select_from(DocumentModel).where(
-            DocumentModel.knowledge_base_id == knowledge_base_id,
-        )
-        result = await self._session.execute(stmt)
-        return result.scalar_one()
+        return await self._count_where(DocumentModel.knowledge_base_id == knowledge_base_id)

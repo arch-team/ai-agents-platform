@@ -4,6 +4,7 @@ import * as kms from 'aws-cdk-lib/aws-kms';
 import * as rds from 'aws-cdk-lib/aws-rds';
 import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
 import { Construct } from 'constructs';
+import { getRemovalPolicy, isDev, isProd } from '../../config/constants';
 
 export interface AuroraConstructProps {
   /** Aurora 集群所在的 VPC */
@@ -43,8 +44,8 @@ export class AuroraConstruct extends Construct {
       envName,
       databaseName = 'ai_agents_platform',
       instanceType = ec2.InstanceType.of(ec2.InstanceClass.T3, ec2.InstanceSize.SMALL),
-      instances = envName === 'prod' ? 2 : 1,
-      deletionProtection = envName !== 'dev',
+      instances = isProd(envName) ? 2 : 1,
+      deletionProtection = !isDev(envName),
     } = props;
 
     // Aurora MySQL 3.x 集群
@@ -75,9 +76,9 @@ export class AuroraConstruct extends Construct {
       storageEncrypted: true,
       storageEncryptionKey: encryptionKey,
       deletionProtection,
-      removalPolicy: envName === 'dev' ? cdk.RemovalPolicy.DESTROY : cdk.RemovalPolicy.SNAPSHOT,
+      removalPolicy: getRemovalPolicy(envName),
       backup: {
-        retention: envName === 'prod' ? cdk.Duration.days(30) : cdk.Duration.days(7),
+        retention: isProd(envName) ? cdk.Duration.days(30) : cdk.Duration.days(7),
       },
       cloudwatchLogsExports: ['error', 'slowquery'],
       iamAuthentication: true,

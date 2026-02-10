@@ -1,5 +1,6 @@
 """Execution 应用服务。"""
 
+import asyncio
 import json
 from collections.abc import AsyncIterator
 from dataclasses import dataclass
@@ -161,22 +162,24 @@ class ExecutionService:
         ctx.conversation.add_message_count(token_count=total_tokens)
         await self._conversation_repo.update(ctx.conversation)
 
-        # 发布事件
         assert ctx.created_user_msg.id is not None
         assert created_assistant_msg.id is not None
-        await event_bus.publish_async(
-            MessageSentEvent(
-                conversation_id=conversation_id,
-                message_id=ctx.created_user_msg.id,
-                user_id=user_id,
+        # 并行发布独立事件
+        await asyncio.gather(
+            event_bus.publish_async(
+                MessageSentEvent(
+                    conversation_id=conversation_id,
+                    message_id=ctx.created_user_msg.id,
+                    user_id=user_id,
+                ),
             ),
-        )
-        await event_bus.publish_async(
-            MessageReceivedEvent(
-                conversation_id=conversation_id,
-                message_id=created_assistant_msg.id,
-                token_count=total_tokens,
-                model_id=ctx.agent_info.model_id,
+            event_bus.publish_async(
+                MessageReceivedEvent(
+                    conversation_id=conversation_id,
+                    message_id=created_assistant_msg.id,
+                    token_count=total_tokens,
+                    model_id=ctx.agent_info.model_id,
+                ),
             ),
         )
 
@@ -298,22 +301,24 @@ class ExecutionService:
         await self._stream_msg_repo.update(assistant_msg)
         await self._stream_conv_repo.update(conversation)
 
-        # 发布事件 (不依赖 DB session)
+        # 发布事件 (不依赖 DB session, 独立事件并行发布)
         assert user_msg.id is not None
         assert assistant_msg.id is not None
-        await event_bus.publish_async(
-            MessageSentEvent(
-                conversation_id=conversation_id,
-                message_id=user_msg.id,
-                user_id=user_id,
+        await asyncio.gather(
+            event_bus.publish_async(
+                MessageSentEvent(
+                    conversation_id=conversation_id,
+                    message_id=user_msg.id,
+                    user_id=user_id,
+                ),
             ),
-        )
-        await event_bus.publish_async(
-            MessageReceivedEvent(
-                conversation_id=conversation_id,
-                message_id=assistant_msg.id,
-                token_count=total_tokens,
-                model_id=model_id,
+            event_bus.publish_async(
+                MessageReceivedEvent(
+                    conversation_id=conversation_id,
+                    message_id=assistant_msg.id,
+                    token_count=total_tokens,
+                    model_id=model_id,
+                ),
             ),
         )
 
@@ -347,15 +352,17 @@ class ExecutionService:
         """获取对话列表。"""
         offset = (page - 1) * page_size
 
-        conversations = await self._conversation_repo.list_by_user(
-            user_id,
-            agent_id=agent_id,
-            offset=offset,
-            limit=page_size,
-        )
-        total = await self._conversation_repo.count_by_user(
-            user_id,
-            agent_id=agent_id,
+        conversations, total = await asyncio.gather(
+            self._conversation_repo.list_by_user(
+                user_id,
+                agent_id=agent_id,
+                offset=offset,
+                limit=page_size,
+            ),
+            self._conversation_repo.count_by_user(
+                user_id,
+                agent_id=agent_id,
+            ),
         )
 
         return PagedConversationDTO(
@@ -426,22 +433,20 @@ class ExecutionService:
         approved = await self._tool_querier.list_approved_tools()
         return [self._to_agent_tool(t) for t in approved]
 
+    _TOOL_CONFIG_FIELDS: tuple[str, ...] = (
+        "server_url",
+        "transport",
+        "endpoint_url",
+        "method",
+        "runtime",
+        "handler",
+    )
+
     @staticmethod
     def _to_agent_tool(info: ApprovedToolInfo) -> AgentTool:
         """ApprovedToolInfo → AgentTool 转换。"""
-        config: dict[str, str] = {}
-        if info.server_url:
-            config["server_url"] = info.server_url
-        if info.transport:
-            config["transport"] = info.transport
-        if info.endpoint_url:
-            config["endpoint_url"] = info.endpoint_url
-        if info.method:
-            config["method"] = info.method
-        if info.runtime:
-            config["runtime"] = info.runtime
-        if info.handler:
-            config["handler"] = info.handler
+        # 收集非空配置字段
+        config: dict[str, str] = {k: v for k in ExecutionService._TOOL_CONFIG_FIELDS if (v := getattr(info, k))}
         if info.auth_type != "none":
             config["auth_type"] = info.auth_type
         return AgentTool(
@@ -505,9 +510,7 @@ class ExecutionService:
                 top_k=5,
             )
             if rag_results:
-                rag_context = "\n\n".join(
-                    f"[参考文档] {r.content}" for r in rag_results
-                )
+                rag_context = "\n\n".join(f"[参考文档] {r.content}" for r in rag_results)
                 system_prompt = f"{system_prompt}\n\n## 知识库参考资料\n\n{rag_context}"
 
         return _SendContext(

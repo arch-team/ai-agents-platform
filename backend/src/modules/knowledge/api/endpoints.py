@@ -22,6 +22,7 @@ from src.modules.knowledge.api.schemas.responses import (
 )
 from src.modules.knowledge.application.dto.knowledge_dto import (
     CreateKnowledgeBaseDTO,
+    DocumentDTO,
     KnowledgeBaseDTO,
     QueryRequestDTO,
     UpdateKnowledgeBaseDTO,
@@ -39,10 +40,31 @@ CurrentUserDep = Annotated[UserDTO, Depends(get_current_user)]
 
 def _to_kb_response(dto: KnowledgeBaseDTO) -> KnowledgeBaseResponse:
     return KnowledgeBaseResponse(
-        id=dto.id, name=dto.name, description=dto.description,
-        status=dto.status, owner_id=dto.owner_id, agent_id=dto.agent_id,
-        bedrock_kb_id=dto.bedrock_kb_id, s3_prefix=dto.s3_prefix,
-        created_at=dto.created_at, updated_at=dto.updated_at,
+        id=dto.id,
+        name=dto.name,
+        description=dto.description,
+        status=dto.status,
+        owner_id=dto.owner_id,
+        agent_id=dto.agent_id,
+        bedrock_kb_id=dto.bedrock_kb_id,
+        s3_prefix=dto.s3_prefix,
+        created_at=dto.created_at,
+        updated_at=dto.updated_at,
+    )
+
+
+def _to_doc_response(dto: DocumentDTO) -> DocumentResponse:
+    return DocumentResponse(
+        id=dto.id,
+        knowledge_base_id=dto.knowledge_base_id,
+        filename=dto.filename,
+        s3_key=dto.s3_key,
+        file_size=dto.file_size,
+        status=dto.status,
+        content_type=dto.content_type,
+        chunk_count=dto.chunk_count,
+        created_at=dto.created_at,
+        updated_at=dto.updated_at,
     )
 
 
@@ -69,14 +91,18 @@ async def list_knowledge_bases(
     paged = await service.list_knowledge_bases(current_user.id, page=page, page_size=page_size)
     return KnowledgeBaseListResponse(
         items=[_to_kb_response(kb) for kb in paged.items],
-        total=paged.total, page=paged.page, page_size=paged.page_size,
+        total=paged.total,
+        page=paged.page,
+        page_size=paged.page_size,
         total_pages=calc_total_pages(paged.total, page_size),
     )
 
 
 @router.get("/{kb_id}", response_model=KnowledgeBaseResponse)
 async def get_knowledge_base(
-    kb_id: int, service: ServiceDep, current_user: CurrentUserDep,
+    kb_id: int,
+    service: ServiceDep,
+    current_user: CurrentUserDep,
 ) -> KnowledgeBaseResponse:
     """获取知识库详情。"""
     kb = await service.get_knowledge_base(kb_id, current_user.id)
@@ -98,7 +124,9 @@ async def update_knowledge_base(
 
 @router.delete("/{kb_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_knowledge_base(
-    kb_id: int, service: ServiceDep, current_user: CurrentUserDep,
+    kb_id: int,
+    service: ServiceDep,
+    current_user: CurrentUserDep,
 ) -> None:
     """删除知识库。"""
     await service.delete_knowledge_base(kb_id, current_user.id)
@@ -119,12 +147,7 @@ async def upload_document(
         content_type=file.content_type or "application/octet-stream",
     )
     doc = await service.upload_document(kb_id, dto, current_user.id)
-    return DocumentResponse(
-        id=doc.id, knowledge_base_id=doc.knowledge_base_id,
-        filename=doc.filename, s3_key=doc.s3_key, file_size=doc.file_size,
-        status=doc.status, content_type=doc.content_type, chunk_count=doc.chunk_count,
-        created_at=doc.created_at, updated_at=doc.updated_at,
-    )
+    return _to_doc_response(doc)
 
 
 @router.get("/{kb_id}/documents", response_model=DocumentListResponse)
@@ -138,23 +161,20 @@ async def list_documents(
     """获取文档列表。"""
     docs, total = await service.list_documents(kb_id, current_user.id, page=page, page_size=page_size)
     return DocumentListResponse(
-        items=[
-            DocumentResponse(
-                id=d.id, knowledge_base_id=d.knowledge_base_id,
-                filename=d.filename, s3_key=d.s3_key, file_size=d.file_size,
-                status=d.status, content_type=d.content_type, chunk_count=d.chunk_count,
-                created_at=d.created_at, updated_at=d.updated_at,
-            )
-            for d in docs
-        ],
-        total=total, page=page, page_size=page_size,
+        items=[_to_doc_response(d) for d in docs],
+        total=total,
+        page=page,
+        page_size=page_size,
         total_pages=calc_total_pages(total, page_size),
     )
 
 
 @router.delete("/{kb_id}/documents/{doc_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_document(
-    kb_id: int, doc_id: int, service: ServiceDep, current_user: CurrentUserDep,
+    kb_id: int,
+    doc_id: int,
+    service: ServiceDep,
+    current_user: CurrentUserDep,
 ) -> None:
     """删除文档。"""
     await service.delete_document(kb_id, doc_id, current_user.id)
@@ -162,7 +182,9 @@ async def delete_document(
 
 @router.post("/{kb_id}/sync", response_model=KnowledgeBaseResponse)
 async def sync_knowledge_base(
-    kb_id: int, service: ServiceDep, current_user: CurrentUserDep,
+    kb_id: int,
+    service: ServiceDep,
+    current_user: CurrentUserDep,
 ) -> KnowledgeBaseResponse:
     """手动触发知识库同步。"""
     kb = await service.sync_knowledge_base(kb_id, current_user.id)

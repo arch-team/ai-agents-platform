@@ -19,18 +19,24 @@ class KnowledgeBaseModel(Base):
     description: Mapped[str] = mapped_column(String(1000), nullable=False, default="")
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="creating")
     owner_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey("users.id"), nullable=False, index=True,
+        Integer,
+        ForeignKey("users.id"),
+        nullable=False,
+        index=True,
     )
     agent_id: Mapped[int | None] = mapped_column(
-        Integer, ForeignKey("agents.id"), nullable=True,
+        Integer,
+        ForeignKey("agents.id"),
+        nullable=True,
     )
     bedrock_kb_id: Mapped[str] = mapped_column(String(200), nullable=False, default="")
     s3_prefix: Mapped[str] = mapped_column(String(500), nullable=False, default="")
     created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=utc_now)
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime, nullable=False, default=utc_now, onupdate=utc_now,
+        DateTime,
+        nullable=False,
+        default=utc_now,
+        onupdate=utc_now,
     )
 
-    __table_args__ = (
-        UniqueConstraint("owner_id", "name", name="uq_knowledge_bases_owner_name"),
-    )
+    __table_args__ = (UniqueConstraint("owner_id", "name", name="uq_knowledge_bases_owner_name"),)

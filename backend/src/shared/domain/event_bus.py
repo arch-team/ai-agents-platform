@@ -19,7 +19,8 @@ class EventBus:
     def __init__(self) -> None:
         self._handlers: dict[type[DomainEvent], list[Callable[..., object]]] = defaultdict(list)
         self._processed_event_ids: TTLCache[object, bool] = TTLCache(
-            maxsize=_PROCESSED_EVENTS_MAXSIZE, ttl=_PROCESSED_EVENTS_TTL,
+            maxsize=_PROCESSED_EVENTS_MAXSIZE,
+            ttl=_PROCESSED_EVENTS_TTL,
         )
 
     def subscribe(self, event_type: type[DomainEvent], handler: Callable[..., object]) -> None:

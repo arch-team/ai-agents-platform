@@ -2,19 +2,17 @@
 
 from datetime import UTC, datetime
 
-from pydantic import ConfigDict, Field
+from pydantic import Field
 
 from src.modules.tool_catalog.domain.value_objects.tool_config import ToolConfig
 from src.modules.tool_catalog.domain.value_objects.tool_status import ToolStatus
 from src.modules.tool_catalog.domain.value_objects.tool_type import ToolType
 from src.shared.domain.base_entity import PydanticEntity
-from src.shared.domain.exceptions import InvalidStateTransitionError, ValidationError
+from src.shared.domain.exceptions import ValidationError
 
 
 class Tool(PydanticEntity):
     """Tool 实体，包含 5 方法审批状态机。"""
-
-    model_config = ConfigDict(validate_assignment=True)
 
     name: str = Field(min_length=1, max_length=100)
     description: str = Field(max_length=1000, default="")
@@ -30,24 +28,14 @@ class Tool(PydanticEntity):
 
     def submit(self) -> None:
         """DRAFT -> PENDING_REVIEW。需 name + description + config 完整。"""
-        if self.status != ToolStatus.DRAFT:
-            raise InvalidStateTransitionError(
-                entity_type="Tool",
-                current_state=self.status.value,
-                target_state=ToolStatus.PENDING_REVIEW.value,
-            )
+        self._require_status(self.status, ToolStatus.DRAFT, ToolStatus.PENDING_REVIEW.value)
         self._validate_for_submission()
         self.status = ToolStatus.PENDING_REVIEW
         self.touch()
 
     def approve(self, reviewer_id: int) -> None:
         """PENDING_REVIEW -> APPROVED。"""
-        if self.status != ToolStatus.PENDING_REVIEW:
-            raise InvalidStateTransitionError(
-                entity_type="Tool",
-                current_state=self.status.value,
-                target_state=ToolStatus.APPROVED.value,
-            )
+        self._require_status(self.status, ToolStatus.PENDING_REVIEW, ToolStatus.APPROVED.value)
         self.status = ToolStatus.APPROVED
         self.reviewer_id = reviewer_id
         self.reviewed_at = datetime.now(UTC)
@@ -55,12 +43,7 @@ class Tool(PydanticEntity):
 
     def reject(self, reviewer_id: int, comment: str) -> None:
         """PENDING_REVIEW -> REJECTED。"""
-        if self.status != ToolStatus.PENDING_REVIEW:
-            raise InvalidStateTransitionError(
-                entity_type="Tool",
-                current_state=self.status.value,
-                target_state=ToolStatus.REJECTED.value,
-            )
+        self._require_status(self.status, ToolStatus.PENDING_REVIEW, ToolStatus.REJECTED.value)
         self.status = ToolStatus.REJECTED
         self.reviewer_id = reviewer_id
         self.review_comment = comment
@@ -69,12 +52,7 @@ class Tool(PydanticEntity):
 
     def resubmit(self) -> None:
         """REJECTED -> PENDING_REVIEW。清除审批信息，重新提交。"""
-        if self.status != ToolStatus.REJECTED:
-            raise InvalidStateTransitionError(
-                entity_type="Tool",
-                current_state=self.status.value,
-                target_state=ToolStatus.PENDING_REVIEW.value,
-            )
+        self._require_status(self.status, ToolStatus.REJECTED, ToolStatus.PENDING_REVIEW.value)
         self._validate_for_submission()
         self.status = ToolStatus.PENDING_REVIEW
         self.reviewer_id = None
@@ -84,12 +62,7 @@ class Tool(PydanticEntity):
 
     def deprecate(self) -> None:
         """APPROVED -> DEPRECATED。不可逆。"""
-        if self.status != ToolStatus.APPROVED:
-            raise InvalidStateTransitionError(
-                entity_type="Tool",
-                current_state=self.status.value,
-                target_state=ToolStatus.DEPRECATED.value,
-            )
+        self._require_status(self.status, ToolStatus.APPROVED, ToolStatus.DEPRECATED.value)
         self.status = ToolStatus.DEPRECATED
         self.touch()
 

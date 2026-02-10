@@ -2,6 +2,12 @@ import * as cdk from 'aws-cdk-lib';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as kms from 'aws-cdk-lib/aws-kms';
 
+/** 测试用占位符 AWS 环境 */
+export const TEST_ENV: cdk.Environment = { account: '000000000000', region: 'ap-northeast-1' };
+
+/** 测试用默认 VPC CIDR */
+export const TEST_VPC_CIDR = '10.0.0.0/16';
+
 /**
  * 创建测试用 VPC (含 Public/Private/Isolated 子网)。
  * @remarks 供所有需要 VPC 依赖的测试复用
@@ -16,13 +22,30 @@ export function createTestVpc(stack: cdk.Stack): ec2.Vpc {
   });
 }
 
+/** 测试依赖集返回类型 */
+export interface TestDependencies {
+  readonly vpc: ec2.Vpc;
+  readonly securityGroup: ec2.SecurityGroup;
+  readonly encryptionKey: kms.Key;
+}
+
 /**
  * 创建测试用完整依赖集 (VPC + SecurityGroup + KMS Key)。
  * @remarks 供 Aurora Construct 等需要多依赖的测试复用
  */
-export function createTestDependencies(stack: cdk.Stack) {
+export function createTestDependencies(stack: cdk.Stack): TestDependencies {
   const vpc = createTestVpc(stack);
   const securityGroup = new ec2.SecurityGroup(stack, 'TestSg', { vpc });
   const encryptionKey = new kms.Key(stack, 'TestKey');
   return { vpc, securityGroup, encryptionKey };
+}
+
+/**
+ * 创建独立的 VPC Stack + VPC，供跨 Stack 测试使用。
+ * @remarks 返回 VPC 对象，供被测 Stack 作为依赖注入。
+ *          不设置 env 以避免跨 Stack 引用限制（除非被测 Stack 也设置了 env）。
+ */
+export function createVpcDependency(app: cdk.App, env?: cdk.Environment): ec2.Vpc {
+  const vpcStack = new cdk.Stack(app, 'VpcStack', env ? { env } : undefined);
+  return createTestVpc(vpcStack);
 }

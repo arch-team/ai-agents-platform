@@ -1,8 +1,6 @@
-"""共享基础设施工具函数。"""
+"""共享基础设施工具函数 -- utc_now 由 Domain 层定义, 此处重导出供 Infrastructure 层使用。"""
 
-from datetime import UTC, datetime
+from src.shared.domain.base_entity import utc_now
 
 
-def utc_now() -> datetime:
-    """获取当前 UTC 时间。"""
-    return datetime.now(UTC)
+__all__ = ["utc_now"]

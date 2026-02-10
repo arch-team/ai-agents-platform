@@ -1,11 +1,12 @@
 import * as cdk from 'aws-cdk-lib';
 import { Template } from 'aws-cdk-lib/assertions';
 import { NetworkStack } from '../../lib/stacks/network-stack';
+import { TEST_ENV, TEST_VPC_CIDR } from '../helpers/test-utils';
 
 describe('NetworkStack', () => {
   const defaultProps = {
-    env: { account: '000000000000', region: 'ap-northeast-1' },
-    vpcCidr: '10.0.0.0/16',
+    env: TEST_ENV,
+    vpcCidr: TEST_VPC_CIDR,
     envName: 'dev',
   };
 

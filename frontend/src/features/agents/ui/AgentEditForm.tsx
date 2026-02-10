@@ -76,14 +76,13 @@ function AgentEditFormInner({ agent, onSuccess, onCancel }: AgentEditFormInnerPr
 
       {/* 提交错误提示 */}
       {updateMutation.isError && (
-        <div
-          role="alert"
-          className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
-        >
-          {updateMutation.error instanceof Error
-            ? updateMutation.error.message
-            : '更新失败，请重试'}
-        </div>
+        <ErrorMessage
+          error={
+            updateMutation.error instanceof Error
+              ? updateMutation.error.message
+              : '更新失败，请重试'
+          }
+        />
       )}
 
       {/* 操作按钮 */}

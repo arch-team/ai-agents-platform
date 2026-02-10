@@ -8,16 +8,14 @@ import {
   DatabaseStack,
   AgentCoreStack,
 } from '../../lib/stacks';
-import { createTestVpc } from '../helpers/test-utils';
-
-const testEnv = { account: '000000000000', region: 'ap-northeast-1' };
+import { createTestVpc, createVpcDependency, TEST_ENV, TEST_VPC_CIDR } from '../helpers/test-utils';
 
 describe('Snapshot Tests', () => {
   it('NetworkStack 快照匹配', () => {
     const app = new cdk.App();
     const stack = new NetworkStack(app, 'TestNetworkStack', {
-      env: testEnv,
-      vpcCidr: '10.0.0.0/16',
+      env: TEST_ENV,
+      vpcCidr: TEST_VPC_CIDR,
       envName: 'dev',
     });
 
@@ -26,11 +24,10 @@ describe('Snapshot Tests', () => {
 
   it('SecurityStack 快照匹配', () => {
     const app = new cdk.App();
-    const vpcStack = new cdk.Stack(app, 'VpcStack', { env: testEnv });
-    const vpc = createTestVpc(vpcStack);
+    const vpc = createVpcDependency(app, TEST_ENV);
 
     const stack = new SecurityStack(app, 'TestSecurityStack', {
-      env: testEnv,
+      env: TEST_ENV,
       vpc,
       envName: 'dev',
     });
@@ -40,7 +37,7 @@ describe('Snapshot Tests', () => {
 
   it('DatabaseStack 快照匹配', () => {
     const app = new cdk.App();
-    const vpcStack = new cdk.Stack(app, 'VpcStack', { env: testEnv });
+    const vpcStack = new cdk.Stack(app, 'VpcStack', { env: TEST_ENV });
     const vpc = createTestVpc(vpcStack);
     const dbSecurityGroup = new ec2.SecurityGroup(vpcStack, 'TestDbSg', {
       vpc,
@@ -48,7 +45,7 @@ describe('Snapshot Tests', () => {
     const encryptionKey = new kms.Key(vpcStack, 'TestKey');
 
     const stack = new DatabaseStack(app, 'TestDatabaseStack', {
-      env: testEnv,
+      env: TEST_ENV,
       vpc,
       dbSecurityGroup,
       encryptionKey,
@@ -60,11 +57,10 @@ describe('Snapshot Tests', () => {
 
   it('AgentCoreStack 快照匹配', () => {
     const app = new cdk.App();
-    const vpcStack = new cdk.Stack(app, 'VpcStack', { env: testEnv });
-    const vpc = createTestVpc(vpcStack);
+    const vpc = createVpcDependency(app, TEST_ENV);
 
     const stack = new AgentCoreStack(app, 'TestAgentCoreStack', {
-      env: testEnv,
+      env: TEST_ENV,
       vpc,
       envName: 'dev',
     });

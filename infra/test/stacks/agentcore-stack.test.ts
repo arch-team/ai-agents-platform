@@ -1,7 +1,7 @@
 import * as cdk from 'aws-cdk-lib';
 import { Template, Match } from 'aws-cdk-lib/assertions';
 import { AgentCoreStack } from '../../lib/stacks/agentcore-stack';
-import { createTestVpc } from '../helpers/test-utils';
+import { createVpcDependency } from '../helpers/test-utils';
 
 describe('AgentCoreStack', () => {
   let template: Template;
@@ -9,8 +9,7 @@ describe('AgentCoreStack', () => {
 
   beforeEach(() => {
     const app = new cdk.App();
-    const vpcStack = new cdk.Stack(app, 'VpcStack');
-    const vpc = createTestVpc(vpcStack);
+    const vpc = createVpcDependency(app);
 
     stack = new AgentCoreStack(app, 'TestAgentCoreStack', {
       vpc,
@@ -142,8 +141,7 @@ describe('AgentCoreStack', () => {
   describe('Prod 环境配置', () => {
     it('Prod 环境 ECR 应使用 RETAIN 删除策略', () => {
       const app = new cdk.App();
-      const vpcStack = new cdk.Stack(app, 'VpcStack');
-      const vpc = createTestVpc(vpcStack);
+      const vpc = createVpcDependency(app);
 
       const prodStack = new AgentCoreStack(app, 'ProdAgentCoreStack', {
         vpc,

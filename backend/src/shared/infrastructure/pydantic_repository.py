@@ -72,11 +72,7 @@ class PydanticRepository(IRepository[EntityT, IDT], Generic[EntityT, ModelT, IDT
     ) -> list[EntityT]:
         """按条件分页查询实体列表。"""
         stmt = (
-            select(self.model_class)
-            .where(*conditions)
-            .offset(offset)
-            .limit(limit)
-            .order_by(self.model_class.id)  # type: ignore[attr-defined]
+            select(self.model_class).where(*conditions).offset(offset).limit(limit).order_by(self.model_class.id)  # type: ignore[attr-defined]
         )
         result = await self._session.execute(stmt)
         return [self._to_entity(m) for m in result.scalars().all()]

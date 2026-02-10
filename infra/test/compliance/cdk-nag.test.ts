@@ -9,16 +9,21 @@ import {
   DatabaseStack,
   AgentCoreStack,
 } from '../../lib/stacks';
-import { createTestVpc } from '../helpers/test-utils';
+import { createTestVpc, createVpcDependency, TEST_ENV, TEST_VPC_CIDR } from '../helpers/test-utils';
 
-const testEnv = { account: '000000000000', region: 'ap-northeast-1' };
+/** 提取 CDK Nag 错误断言通用逻辑 */
+function expectNoNagErrors(app: cdk.App, stack: cdk.Stack): void {
+  const messages = app.synth().getStackArtifact(stack.artifactId).messages;
+  const errors = messages.filter((m) => m.level === 'error');
+  expect(errors).toHaveLength(0);
+}
 
 describe('CDK Nag 合规测试', () => {
   it('NetworkStack 应通过 AWS Solutions checks', () => {
     const app = new cdk.App();
     const stack = new NetworkStack(app, 'TestNetworkStack', {
-      env: testEnv,
-      vpcCidr: '10.0.0.0/16',
+      env: TEST_ENV,
+      vpcCidr: TEST_VPC_CIDR,
       envName: 'dev',
     });
 
@@ -32,40 +37,33 @@ describe('CDK Nag 合规测试', () => {
       },
     ]);
 
-    const messages = app.synth().getStackArtifact(stack.artifactId).messages;
-    const errors = messages.filter((m) => m.level === 'error');
-
-    expect(errors).toHaveLength(0);
+    expectNoNagErrors(app, stack);
   });
 
   it('SecurityStack 应通过 AWS Solutions checks', () => {
     const app = new cdk.App();
-    const vpcStack = new cdk.Stack(app, 'VpcStack', { env: testEnv });
-    const vpc = createTestVpc(vpcStack);
+    const vpc = createVpcDependency(app, TEST_ENV);
 
     const stack = new SecurityStack(app, 'TestSecurityStack', {
-      env: testEnv,
+      env: TEST_ENV,
       vpc,
       envName: 'dev',
     });
 
     Aspects.of(stack).add(new AwsSolutionsChecks({ verbose: true }));
 
-    const messages = app.synth().getStackArtifact(stack.artifactId).messages;
-    const errors = messages.filter((m) => m.level === 'error');
-
-    expect(errors).toHaveLength(0);
+    expectNoNagErrors(app, stack);
   });
 
   it('DatabaseStack 应通过 AWS Solutions checks', () => {
     const app = new cdk.App();
-    const vpcStack = new cdk.Stack(app, 'VpcStack', { env: testEnv });
+    const vpcStack = new cdk.Stack(app, 'VpcStack', { env: TEST_ENV });
     const vpc = createTestVpc(vpcStack);
     const dbSecurityGroup = new ec2.SecurityGroup(vpcStack, 'TestDbSg', { vpc });
     const encryptionKey = new kms.Key(vpcStack, 'TestKey');
 
     const stack = new DatabaseStack(app, 'TestDatabaseStack', {
-      env: testEnv,
+      env: TEST_ENV,
       vpc,
       dbSecurityGroup,
       encryptionKey,
@@ -83,19 +81,15 @@ describe('CDK Nag 合规测试', () => {
       },
     ]);
 
-    const messages = app.synth().getStackArtifact(stack.artifactId).messages;
-    const errors = messages.filter((m) => m.level === 'error');
-
-    expect(errors).toHaveLength(0);
+    expectNoNagErrors(app, stack);
   });
 
   it('AgentCoreStack 应通过 AWS Solutions checks', () => {
     const app = new cdk.App();
-    const vpcStack = new cdk.Stack(app, 'VpcStack', { env: testEnv });
-    const vpc = createTestVpc(vpcStack);
+    const vpc = createVpcDependency(app, TEST_ENV);
 
     const stack = new AgentCoreStack(app, 'TestAgentCoreStack', {
-      env: testEnv,
+      env: TEST_ENV,
       vpc,
       envName: 'dev',
     });
@@ -103,9 +97,6 @@ describe('CDK Nag 合规测试', () => {
     Aspects.of(stack).add(new AwsSolutionsChecks({ verbose: true }));
 
     // 注意: IAM4, IAM5, COG1, COG2, COG3 的抑制已在 AgentCoreStack 内定义
-    const messages = app.synth().getStackArtifact(stack.artifactId).messages;
-    const errors = messages.filter((m) => m.level === 'error');
-
-    expect(errors).toHaveLength(0);
+    expectNoNagErrors(app, stack);
   });
 });

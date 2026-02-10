@@ -3,6 +3,7 @@ import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as kms from 'aws-cdk-lib/aws-kms';
 import { Construct } from 'constructs';
 import type { BaseStackProps } from '../config/types';
+import { isProd } from '../config/constants';
 import { KmsConstruct, SecurityGroupsConstruct } from '../constructs/security';
 
 export interface SecurityStackProps extends BaseStackProps {
@@ -40,7 +41,7 @@ export class SecurityStack extends cdk.Stack {
     this.dbSecurityGroup = sgConstruct.dbSecurityGroup;
 
     // VPC Endpoints (Secrets Manager - Prod 环境)
-    if (envName === 'prod') {
+    if (isProd(envName)) {
       new ec2.InterfaceVpcEndpoint(this, 'SecretsManagerEndpoint', {
         vpc,
         service: ec2.InterfaceVpcEndpointAwsService.SECRETS_MANAGER,

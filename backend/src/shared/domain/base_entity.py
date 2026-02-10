@@ -1,13 +1,14 @@
 """领域实体基类。"""
 
 from datetime import UTC, datetime
+from enum import StrEnum
 from typing import Any
 
 from pydantic import BaseModel, ConfigDict
 
 
 def utc_now() -> datetime:
-    """获取当前 UTC 时间。Domain 层使用此函数，Infrastructure 层使用 shared.infrastructure.utils.utc_now。"""
+    """获取当前 UTC 时间（唯一实现，Infrastructure 层通过 utils.py 重导出）。"""
     return datetime.now(UTC)
 
 
@@ -31,6 +32,23 @@ class PydanticEntity(BaseModel):
     def touch(self) -> None:
         """更新 updated_at 时间戳。"""
         self.updated_at = utc_now()
+
+    def _require_status(
+        self,
+        current: StrEnum,
+        allowed: StrEnum | frozenset[StrEnum],
+        target: str,
+    ) -> None:
+        """检查状态转换前置条件。不满足时抛出 InvalidStateTransitionError。"""
+        from src.shared.domain.exceptions import InvalidStateTransitionError  # noqa: PLC0415 - 避免循环导入
+
+        valid = allowed if isinstance(allowed, frozenset) else frozenset({allowed})
+        if current not in valid:
+            raise InvalidStateTransitionError(
+                entity_type=type(self).__name__,
+                current_state=current.value,
+                target_state=target if not isinstance(target, StrEnum) else target.value,
+            )
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, PydanticEntity):

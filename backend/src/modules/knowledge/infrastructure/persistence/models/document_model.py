@@ -16,7 +16,10 @@ class DocumentModel(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     knowledge_base_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey("knowledge_bases.id"), nullable=False, index=True,
+        Integer,
+        ForeignKey("knowledge_bases.id"),
+        nullable=False,
+        index=True,
     )
     filename: Mapped[str] = mapped_column(String(255), nullable=False)
     s3_key: Mapped[str] = mapped_column(String(500), nullable=False, default="")
@@ -26,5 +29,8 @@ class DocumentModel(Base):
     chunk_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=utc_now)
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime, nullable=False, default=utc_now, onupdate=utc_now,
+        DateTime,
+        nullable=False,
+        default=utc_now,
+        onupdate=utc_now,
     )

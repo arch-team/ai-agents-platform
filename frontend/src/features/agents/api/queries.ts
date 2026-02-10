@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, type QueryClient } from '@tanstack/react-query';
 
 import type { Agent } from '@/entities/agent';
 import { apiClient } from '@/shared/api';
@@ -15,6 +15,12 @@ export const agentKeys = {
   details: () => [...agentKeys.all, 'detail'] as const,
   detail: (id: number) => [...agentKeys.details(), id] as const,
 };
+
+// 刷新列表缓存并更新详情缓存的通用回调
+function invalidateAndUpdateDetail(queryClient: QueryClient, agent: Agent) {
+  queryClient.invalidateQueries({ queryKey: agentKeys.lists() });
+  queryClient.setQueryData(agentKeys.detail(agent.id), agent);
+}
 
 // 查询 Agent 列表
 export function useAgents(filters?: AgentFilters) {
@@ -63,10 +69,7 @@ export function useUpdateAgent() {
       const { data } = await apiClient.put<Agent>(`/api/v1/agents/${id}`, dto);
       return data;
     },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: agentKeys.lists() });
-      queryClient.setQueryData(agentKeys.detail(data.id), data);
-    },
+    onSuccess: (data) => invalidateAndUpdateDetail(queryClient, data),
   });
 }
 
@@ -92,10 +95,7 @@ export function useActivateAgent() {
       const { data } = await apiClient.post<Agent>(`/api/v1/agents/${id}/activate`);
       return data;
     },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: agentKeys.lists() });
-      queryClient.setQueryData(agentKeys.detail(data.id), data);
-    },
+    onSuccess: (data) => invalidateAndUpdateDetail(queryClient, data),
   });
 }
 
@@ -107,9 +107,6 @@ export function useArchiveAgent() {
       const { data } = await apiClient.post<Agent>(`/api/v1/agents/${id}/archive`);
       return data;
     },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: agentKeys.lists() });
-      queryClient.setQueryData(agentKeys.detail(data.id), data);
-    },
+    onSuccess: (data) => invalidateAndUpdateDetail(queryClient, data),
   });
 }

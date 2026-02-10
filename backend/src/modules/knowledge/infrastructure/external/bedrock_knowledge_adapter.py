@@ -4,6 +4,8 @@ import asyncio
 from dataclasses import dataclass
 from typing import Any
 
+import structlog
+
 from src.modules.knowledge.application.interfaces.knowledge_service import (
     IKnowledgeService,
     KBCreateResult,
@@ -11,6 +13,9 @@ from src.modules.knowledge.application.interfaces.knowledge_service import (
     RetrievalChunk,
 )
 from src.shared.domain.exceptions import DomainError
+
+
+logger = structlog.get_logger(__name__)
 
 
 @dataclass(frozen=True)
@@ -32,12 +37,16 @@ class BedrockKnowledgeAdapter(IKnowledgeService):
         *,
         kb_config: BedrockKBConfig | None = None,
     ) -> None:
-        self._agent = bedrock_agent_client    # boto3.client("bedrock-agent")
+        self._agent = bedrock_agent_client  # boto3.client("bedrock-agent")
         self._runtime = bedrock_runtime_client  # boto3.client("bedrock-agent-runtime")
         self._kb_config = kb_config
 
     async def create_knowledge_base(
-        self, name: str, *, s3_bucket: str, s3_prefix: str,  # noqa: ARG002
+        self,
+        name: str,
+        *,
+        s3_bucket: str,  # noqa: ARG002
+        s3_prefix: str,
     ) -> KBCreateResult:
         """创建 Bedrock Knowledge Base。"""
         if self._kb_config is None:
@@ -77,25 +86,30 @@ class BedrockKnowledgeAdapter(IKnowledgeService):
         except DomainError:
             raise
         except Exception as e:
-            raise DomainError(message=f"Bedrock KB 创建失败: {e}", code="BEDROCK_KB_CREATE_FAILED") from e
+            logger.exception("Bedrock KB 创建失败")
+            raise DomainError(message="Bedrock KB 创建失败, 请稍后重试", code="BEDROCK_KB_CREATE_FAILED") from e
 
     async def delete_knowledge_base(self, bedrock_kb_id: str) -> None:
         """删除 Bedrock Knowledge Base。"""
         try:
             await asyncio.to_thread(self._agent.delete_knowledge_base, knowledgeBaseId=bedrock_kb_id)
         except Exception as e:
-            raise DomainError(message=f"Bedrock KB 删除失败: {e}", code="BEDROCK_KB_DELETE_FAILED") from e
+            logger.exception("Bedrock KB 删除失败")
+            raise DomainError(message="Bedrock KB 删除失败, 请稍后重试", code="BEDROCK_KB_DELETE_FAILED") from e
 
     async def start_sync(self, bedrock_kb_id: str) -> KBSyncResult:
         """触发数据源同步。"""
         try:
             resp = await asyncio.to_thread(
-                self._agent.start_ingestion_job, knowledgeBaseId=bedrock_kb_id, dataSourceId="default",
+                self._agent.start_ingestion_job,
+                knowledgeBaseId=bedrock_kb_id,
+                dataSourceId="default",
             )
             job = resp["ingestionJob"]
             return KBSyncResult(ingestion_job_id=job["ingestionJobId"], status=job["status"])
         except Exception as e:
-            raise DomainError(message=f"Bedrock 同步失败: {e}", code="BEDROCK_SYNC_FAILED") from e
+            logger.exception("Bedrock 同步失败")
+            raise DomainError(message="Bedrock 同步失败, 请稍后重试", code="BEDROCK_SYNC_FAILED") from e
 
     async def retrieve(self, bedrock_kb_id: str, query: str, *, top_k: int = 5) -> list[RetrievalChunk]:
         """语义检索。"""
@@ -115,4 +129,5 @@ class BedrockKnowledgeAdapter(IKnowledgeService):
                 for r in resp.get("retrievalResults", [])
             ]
         except Exception as e:
-            raise DomainError(message=f"Bedrock 检索失败: {e}", code="BEDROCK_RETRIEVE_FAILED") from e
+            logger.exception("Bedrock 检索失败")
+            raise DomainError(message="Bedrock 检索失败, 请稍后重试", code="BEDROCK_RETRIEVE_FAILED") from e

@@ -2,6 +2,7 @@ import * as cdk from 'aws-cdk-lib';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import { Construct } from 'constructs';
 import type { BaseStackProps } from '../config/types';
+import { isProd } from '../config/constants';
 import { VpcConstruct } from '../constructs/vpc';
 
 export interface NetworkStackProps extends BaseStackProps {
@@ -24,7 +25,7 @@ export class NetworkStack extends cdk.Stack {
 
     const vpcConstruct = new VpcConstruct(this, 'VpcConstruct', {
       vpcCidr,
-      natGateways: envName === 'prod' ? 3 : natGateways,
+      natGateways: isProd(envName) ? 3 : natGateways,
     });
 
     this.vpc = vpcConstruct.vpc;

@@ -6,7 +6,9 @@ from src.modules.knowledge.domain.value_objects.document_status import (
     DocumentStatus,
 )
 from src.shared.domain.base_entity import PydanticEntity
-from src.shared.domain.exceptions import InvalidStateTransitionError
+
+
+_FAILABLE = frozenset({DocumentStatus.UPLOADING, DocumentStatus.PROCESSING})
 
 
 class Document(PydanticEntity):
@@ -22,34 +24,19 @@ class Document(PydanticEntity):
 
     def start_processing(self) -> None:
         """开始处理。UPLOADING -> PROCESSING。"""
-        if self.status != DocumentStatus.UPLOADING:
-            raise InvalidStateTransitionError(
-                entity_type="Document",
-                current_state=self.status.value,
-                target_state=DocumentStatus.PROCESSING.value,
-            )
+        self._require_status(self.status, DocumentStatus.UPLOADING, DocumentStatus.PROCESSING.value)
         self.status = DocumentStatus.PROCESSING
         self.touch()
 
     def complete_indexing(self, *, chunk_count: int) -> None:
         """完成索引。PROCESSING -> INDEXED。"""
-        if self.status != DocumentStatus.PROCESSING:
-            raise InvalidStateTransitionError(
-                entity_type="Document",
-                current_state=self.status.value,
-                target_state=DocumentStatus.INDEXED.value,
-            )
+        self._require_status(self.status, DocumentStatus.PROCESSING, DocumentStatus.INDEXED.value)
         self.chunk_count = chunk_count
         self.status = DocumentStatus.INDEXED
         self.touch()
 
     def fail(self) -> None:
         """标记失败。UPLOADING/PROCESSING -> FAILED。"""
-        if self.status not in {DocumentStatus.UPLOADING, DocumentStatus.PROCESSING}:
-            raise InvalidStateTransitionError(
-                entity_type="Document",
-                current_state=self.status.value,
-                target_state=DocumentStatus.FAILED.value,
-            )
+        self._require_status(self.status, _FAILABLE, DocumentStatus.FAILED.value)
         self.status = DocumentStatus.FAILED
         self.touch()

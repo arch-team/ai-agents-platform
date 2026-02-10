@@ -8,7 +8,14 @@ import { apiClient } from '@/shared/api';
 
 import { useAuthActions, useAuthToken } from '../model/store';
 
+import type { User } from '@/entities/user';
+
 import type { LoginRequest, LoginResponse, RegisterRequest } from './types';
+
+// 将 API 返回的用户信息转为完整 User 对象
+function toUser(apiUser: LoginResponse['user']): User {
+  return { ...apiUser, created_at: '', updated_at: '' };
+}
 
 // Query Key Factory
 export const authKeys = {
@@ -26,17 +33,7 @@ export function useLogin() {
       return data;
     },
     onSuccess: (data) => {
-      setAuth(
-        {
-          id: data.user.id,
-          email: data.user.email,
-          name: data.user.name,
-          role: data.user.role,
-          created_at: '',
-          updated_at: '',
-        },
-        data.access_token,
-      );
+      setAuth(toUser(data.user), data.access_token);
     },
   });
 }
@@ -69,17 +66,7 @@ export function useCurrentUser() {
   // 将用户信息同步到 auth store（避免在 queryFn 内执行副作用）
   useEffect(() => {
     if (query.data && token) {
-      setAuth(
-        {
-          id: query.data.id,
-          email: query.data.email,
-          name: query.data.name,
-          role: query.data.role,
-          created_at: '',
-          updated_at: '',
-        },
-        token,
-      );
+      setAuth(toUser(query.data), token);
     }
   }, [query.data, token, setAuth]);
 

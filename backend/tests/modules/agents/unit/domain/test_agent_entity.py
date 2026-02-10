@@ -41,29 +41,29 @@ class TestAgentCreation:
         assert agent.created_at is not None
         assert agent.updated_at is not None
 
-    def test_empty_name_raises(self) -> None:
-        with pytest.raises(ValidationError, match="name"):
-            Agent(name="", owner_id=1)
+    @pytest.mark.parametrize(
+        "field,kwargs",
+        [
+            ("name", {"name": "", "owner_id": 1}),
+            ("name", {"name": "A" * 101, "owner_id": 1}),
+            ("description", {"name": "Test", "owner_id": 1, "description": "A" * 501}),
+            ("system_prompt", {"name": "Test", "owner_id": 1, "system_prompt": "A" * 10001}),
+        ],
+        ids=["empty_name", "name_too_long", "description_too_long", "system_prompt_too_long"],
+    )
+    def test_field_validation_raises(self, field: str, kwargs: dict) -> None:
+        with pytest.raises(ValidationError, match=field):
+            Agent(**kwargs)
 
-    def test_name_too_long_raises(self) -> None:
-        with pytest.raises(ValidationError, match="name"):
-            Agent(name="A" * 101, owner_id=1)
 
-    def test_description_too_long_raises(self) -> None:
-        with pytest.raises(ValidationError, match="description"):
-            Agent(name="Test", owner_id=1, description="A" * 501)
-
-    def test_system_prompt_too_long_raises(self) -> None:
-        with pytest.raises(ValidationError, match="system_prompt"):
-            Agent(name="Test", owner_id=1, system_prompt="A" * 10001)
+@pytest.fixture
+def draft_agent() -> Agent:
+    """可激活的草稿 Agent（带 system_prompt）。"""
+    return Agent(name="Test Agent", owner_id=1, system_prompt="你是助手")
 
 
 @pytest.mark.unit
 class TestAgentActivate:
-    @pytest.fixture
-    def draft_agent(self) -> Agent:
-        return Agent(name="Test Agent", owner_id=1, system_prompt="你是助手")
-
     def test_activate_from_draft_succeeds(self, draft_agent: Agent) -> None:
         draft_agent.activate()
         assert draft_agent.status == AgentStatus.ACTIVE
@@ -85,23 +85,19 @@ class TestAgentActivate:
         with pytest.raises(DomainValidationError, match="系统提示词"):
             agent.activate()
 
-    def test_activate_from_active_raises(self, draft_agent: Agent) -> None:
-        draft_agent.activate()
-        with pytest.raises(InvalidStateTransitionError):
-            draft_agent.activate()
-
-    def test_activate_from_archived_raises(self, draft_agent: Agent) -> None:
-        draft_agent.archive()
+    @pytest.mark.parametrize(
+        "setup_action",
+        ["activate", "archive"],
+        ids=["from_active", "from_archived"],
+    )
+    def test_activate_from_non_draft_raises(self, draft_agent: Agent, setup_action: str) -> None:
+        getattr(draft_agent, setup_action)()
         with pytest.raises(InvalidStateTransitionError):
             draft_agent.activate()
 
 
 @pytest.mark.unit
 class TestAgentArchive:
-    @pytest.fixture
-    def draft_agent(self) -> Agent:
-        return Agent(name="Test Agent", owner_id=1, system_prompt="你是助手")
-
     def test_archive_from_draft_succeeds(self, draft_agent: Agent) -> None:
         draft_agent.archive()
         assert draft_agent.status == AgentStatus.ARCHIVED
