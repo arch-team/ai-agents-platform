@@ -3,7 +3,14 @@
 from collections import defaultdict
 from collections.abc import Callable
 
+from cachetools import TTLCache  # type: ignore[import-untyped]
+
 from src.shared.domain.events import DomainEvent
+
+
+# 已处理事件 ID 缓存配置: 最大 10 万条, 1 小时过期自动清理
+_PROCESSED_EVENTS_MAXSIZE = 100_000
+_PROCESSED_EVENTS_TTL = 3600
 
 
 class EventBus:
@@ -11,7 +18,9 @@ class EventBus:
 
     def __init__(self) -> None:
         self._handlers: dict[type[DomainEvent], list[Callable[..., object]]] = defaultdict(list)
-        self._processed_event_ids: set[object] = set()
+        self._processed_event_ids: TTLCache[object, bool] = TTLCache(
+            maxsize=_PROCESSED_EVENTS_MAXSIZE, ttl=_PROCESSED_EVENTS_TTL,
+        )
 
     def subscribe(self, event_type: type[DomainEvent], handler: Callable[..., object]) -> None:
         """订阅事件类型。"""
@@ -21,7 +30,7 @@ class EventBus:
         """标记事件为已处理，返回是否为首次处理。"""
         if event.event_id in self._processed_event_ids:
             return False
-        self._processed_event_ids.add(event.event_id)
+        self._processed_event_ids[event.event_id] = True
         return True
 
     async def publish_async(self, event: DomainEvent) -> None:

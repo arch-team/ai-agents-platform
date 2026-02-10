@@ -3,6 +3,7 @@
 from dataclasses import dataclass
 
 import pytest
+from cachetools import TTLCache
 
 from src.shared.domain.event_bus import EventBus, event_bus, event_handler
 from src.shared.domain.events import DomainEvent
@@ -124,3 +125,24 @@ class TestEventBus:
 
         # Assert — 清除后不再处理
         assert len(received) == 0
+
+    def test_processed_event_ids_uses_ttl_cache(self) -> None:
+        """_processed_event_ids 使用 TTLCache 实现，防止内存泄漏。"""
+        assert isinstance(self.bus._processed_event_ids, TTLCache)
+
+    def test_ttl_cache_expiry_allows_reprocessing(self) -> None:
+        """TTLCache 过期后，相同 event_id 可被重新处理。"""
+        # Arrange — 创建 TTL=0 的 EventBus 使缓存立即过期
+        bus = EventBus()
+        bus._processed_event_ids = TTLCache(maxsize=100, ttl=0)
+        received: list[_TestEvent] = []
+        bus.subscribe(_TestEvent, received.append)
+        event = _TestEvent(payload="expire-test")
+
+        # Act — 第一次发布
+        bus.publish(event)
+        # TTL=0 表示立即过期，再次发布应能处理
+        bus.publish(event)
+
+        # Assert — 两次都被处理（因为 TTL=0 缓存立即过期）
+        assert len(received) == 2
