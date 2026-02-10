@@ -6,8 +6,8 @@
 
 - **阶段**: Phase 2 核心功能 (3-6 月)
 - **里程碑**: M5 知识库 — 进行中 (14 项任务)
-- **变更积压**: S0 ✅ + 4 S1 + 4 S2 + 2 S3 + 5 S4 = 15 项
-- **下一步**: M5 #4 Application 接口 + #5 KnowledgeService, 穿插 S1/S2 变更
+- **变更积压**: S0 ✅ + 4 S1 + 3 S2 + 2 S3 + 5 S4 = 14 项
+- **下一步**: M5 #6 ORM+迁移 + #7 Bedrock 适配器 + #8 S3 适配器 (Infrastructure 层)
 
 ## 模块状态
 
@@ -328,8 +328,8 @@
 | 1 | knowledge/domain: KnowledgeBase 实体 + KnowledgeBaseStatus 枚举 + 状态机 (create/activate/sync/fail/delete) | 已完成 | - | `rules/architecture.md` §5 DDD 战术模式 | 2026-02-10 |
 | 2 | knowledge/domain: Document 实体 + DocumentStatus 枚举 + 状态机 (upload/process/index/fail) | 已完成 | #1 | `rules/architecture.md` §5 | 2026-02-10 |
 | 3 | knowledge/domain: 领域事件 (KBCreated/Activated/SyncStarted/DocUploaded/DocIndexed) + 模块异常 + IKnowledgeBaseRepository + IDocumentRepository | 已完成 | #1, #2 | `rules/architecture.md` §4.2, §5.4 | 2026-02-10 |
-| 4 | knowledge/application: IKnowledgeService 接口 (createKB/deleteKB/startSync/retrieve) + IDocumentStorage 接口 (upload/delete/getUrl) | 待开始 | #1, #2 | `rules/architecture.md` §4.3 接口位置 | - |
-| 5 | knowledge/application: DTO (CreateKB/UpdateKB/KB/PagedKB/Document/UploadDoc/QueryRequest/QueryResult) + KnowledgeService (CRUD + 上传 + 同步 + 检索 + 权限) | 待开始 | #3, #4 | `rules/architecture.md` §5 + `rules/security.md` §2 | - |
+| 4 | knowledge/application: IKnowledgeService 接口 (createKB/deleteKB/startSync/retrieve) + IDocumentStorage 接口 (upload/delete/getUrl) | 已完成 | #1, #2 | `rules/architecture.md` §4.3 接口位置 | 2026-02-10 |
+| 5 | knowledge/application: DTO (CreateKB/UpdateKB/KB/PagedKB/Document/UploadDoc/QueryRequest/QueryResult) + KnowledgeService (CRUD + 上传 + 同步 + 检索 + 权限) | 已完成 | #3, #4 | `rules/architecture.md` §5 + `rules/security.md` §2 | 2026-02-10 |
 | 6 | knowledge/infrastructure/persistence: KnowledgeBaseModel + DocumentModel ORM + Repos 实现 + Alembic migration | 待开始 | #3 | `rules/tech-stack.md` + `rules/project-structure.md` | - |
 | 7 | knowledge/infrastructure/external: BedrockKnowledgeAdapter (boto3 bedrock-agent 薄封装 < 100 行) | 待开始 | #4 | `rules/sdk-first.md` 封装规则 + ADR-005 | - |
 | 8 | knowledge/infrastructure/external: S3DocumentStorage (boto3 s3 upload/delete/presigned_url) | 待开始 | #4 | `rules/sdk-first.md` | - |
@@ -409,7 +409,7 @@
 |------|---------|:----:|:----:|------|---------|---------|------|
 | C-S2-1 | 自定义线程池 + 连接池调优 | 待开始 | C-S0-1 | 性能审查 PERF1+PERF3 (HIGH) | shared/database + execution | `improvement-plan.md` §4 S2-1 | - |
 | C-S2-2 | 对话历史滑动窗口 | 待开始 | - | 性能审查 PERF4 (CRITICAL) | execution 模块 | `improvement-plan.md` §4 S2-2 | - |
-| C-S2-3 | EventBus 内存泄漏修复 | 待开始 | - | 性能审查 PERF9 + 架构审查 A3 | shared/event_bus | `improvement-plan.md` §4 S2-3 | - |
+| C-S2-3 | EventBus 内存泄漏修复 | 已完成 | - | 性能审查 PERF9 + 架构审查 A3 | shared/event_bus | `improvement-plan.md` §4 S2-3 | 2026-02-10 |
 | C-S2-4 | Agent 配置本地缓存 | 待开始 | - | 性能审查 PERF8 (HIGH) | agents 模块 | `improvement-plan.md` §4 S2-4 | - |
 
 ### S3 — 战略决策（M5 启动前）
@@ -436,10 +436,10 @@
 |------|:----:|---------|---------|
 | S0 阻断修复 | 6 | 进入 M5 之前 | **6/6 ✅** |
 | S1 安全加固 | 5 | M5 开发期间并行 | 1/5 |
-| S2 性能解锁 | 4 | M5 开发期间并行 | 0/4 |
+| S2 性能解锁 | 4 | M5 开发期间并行 | 1/4 |
 | S3 战略决策 | 3 | M5 启动前决策 | 1/3 |
 | S4 中期改进 | 5 | Phase 2 完成前 | 0/5 |
-| **合计** | **23** | - | **8/23** |
+| **合计** | **23** | - | **9/23** |
 
 ---
 
@@ -459,8 +459,8 @@
 
 | # | 日期 | 类型 | 完成项 | 关键决策 |
 |---|------|------|-------|---------|
-| 8 | 2026-02-10 | Milestone | M5 #1-#3 Domain 层完成 + C-S1-5 CORS 校验 (Agent Team), 932 测试 | 2 实体+状态机, 6 事件, 3 异常, 2 仓库接口, 80+3 新测试 |
-| 7 | 2026-02-10 | Milestone | ADR-005 数据库选型 + M5 任务拆解 (14 项) | MySQL + Bedrock KB; insights 推后 |
-| 6 | 2026-02-10 | 变更 | S0 全部清零: C-S0-3 Dockerfile + C-S0-4 MySQL 测试 | 多阶段构建; --mysql; 共享 fixture |
-| 5 | 2026-02-10 | 变更 | C-S0-1 SSE + C-S0-2 Alembic + C-S0-5 is_active + C-S0-6 JWT | stream_finalize_repos; 迁移链; 密钥校验 |
-| 4 | 2026-02-10 | 工作流优化 | 变更管理机制 + 7 项工作流优化 + 深度审查 28 项 | C- 前缀; 会话历史 5 条 |
+| 9 | 2026-02-10 | Milestone | M5 #4-#5 Application 层 + C-S2-3 EventBus TTLCache, 982 测试 | KnowledgeService 10 方法; TTLCache 替换 set |
+| 8 | 2026-02-10 | Milestone | M5 #1-#3 Domain 层 + C-S1-5 CORS (Agent Team), 932 测试 | 2 实体+状态机, 6 事件, 3 异常, 2 仓库接口 |
+| 7 | 2026-02-10 | Milestone | ADR-005 + M5 拆解 + S0 全清零 + C-S0-1~4 | MySQL+Bedrock KB; Dockerfile; MySQL 测试 |
+| 6 | 2026-02-10 | 变更 | C-S0-5 is_active + C-S0-6 JWT + 工作流优化 7 项 | 密钥校验; 变更管理机制 |
+| 5 | 2026-02-09 | Milestone | M4 工具目录: 842 测试, 94.65% | Tool 审批 5 状态机 |
