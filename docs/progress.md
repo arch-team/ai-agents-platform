@@ -489,8 +489,8 @@
 
 | # | 日期 | 类型 | 完成项 | 关键决策 |
 |---|------|------|-------|---------|
-| 14 | 2026-02-10 | AgentCore 集成 | **P0 全完成 (6/6) + P1 全完成 (4/4)** — 965 测试, ClaudeAgentAdapter + ExecutionService 路由 + AgentCore CDK + 入口点 | Agent Teams 并行; Claude Agent SDK → CLI → Bedrock Invoke API |
-| 13 | 2026-02-10 | 架构决策 | **ADR-006 Agent 框架选型** + AgentCore 集成行动计划 (16 项 P0-P3) | Claude Agent SDK + Claude Code CLI 单一框架; agentcore-integration-plan.md |
-| 12 | 2026-02-10 | Milestone | **M5 知识库完成** 14/14 任务, 1023 测试, 覆盖率 95.10% | 26 集成测试 (15 Repo + 11 API); knowledge 模块交付 |
-| 11 | 2026-02-10 | Milestone | M5 #9-#11 API+注册+RAG集成, 997 测试 | 10 端点; RAG 上下文注入 |
-| 10 | 2026-02-10 | Milestone | M5 #6-#8 Infrastructure, 994 测试 | ORM; Bedrock; S3 |
+| 15 | 2026-02-10 | 审查+修复 | P0 修复: gateway_url + permission_mode + SDK 消息解析统一, 1126 测试 | AGENTCORE_GATEWAY_URL; bypassPermissions; sdk_message_utils.py |
+| 14 | 2026-02-10 | AgentCore 集成 | P0 (6/6) + P1 (4/4) 完成, 965 测试, ClaudeAgentAdapter + CDK + 入口点 | Claude Agent SDK; Agent Teams |
+| 13 | 2026-02-10 | 架构决策 | ADR-006 Agent 框架选型 + 集成计划 (16 项) | Claude Agent SDK + CLI |
+| 12 | 2026-02-10 | Milestone | M5 知识库完成 14/14, 1023 测试, 95.10% | knowledge 模块交付 |
+| 11 | 2026-02-10 | Milestone | M5 Domain+App+Infra+API+RAG + S0/S1/S2 变更 | 10 端点; TTLCache; CORS |
