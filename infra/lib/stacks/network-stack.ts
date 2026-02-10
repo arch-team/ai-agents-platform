@@ -1,13 +1,12 @@
 import * as cdk from 'aws-cdk-lib';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import { Construct } from 'constructs';
+import type { BaseStackProps } from '../config/types';
 import { VpcConstruct } from '../constructs/vpc';
 
-export interface NetworkStackProps extends cdk.StackProps {
+export interface NetworkStackProps extends BaseStackProps {
   /** VPC CIDR 地址块 */
   readonly vpcCidr: string;
-  /** 环境名称 (dev, staging, prod) */
-  readonly envName: string;
   /** NAT Gateway 数量 @default 1 */
   readonly natGateways?: number;
 }

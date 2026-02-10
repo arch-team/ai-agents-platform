@@ -7,6 +7,7 @@ from src.shared.infrastructure.database import (
 )
 from src.shared.infrastructure.pydantic_repository import PydanticRepository
 from src.shared.infrastructure.settings import Settings, get_settings
+from src.shared.infrastructure.utils import utc_now
 
 
 __all__ = [
@@ -18,4 +19,5 @@ __all__ = [
     "get_engine",
     "get_settings",
     "init_db",
+    "utc_now",
 ]

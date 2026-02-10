@@ -1,22 +1,12 @@
 // 消息气泡组件 — 用户/AI 不同样式
 
 import { cn } from '@/shared/lib/cn';
+import { formatTime } from '@/shared/lib/formatDate';
 
 import type { Message } from '../api/types';
 
 interface MessageBubbleProps {
   message: Message;
-}
-
-function formatTime(isoString: string): string {
-  try {
-    return new Date(isoString).toLocaleTimeString('zh-CN', {
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  } catch {
-    return '';
-  }
 }
 
 export function MessageBubble({ message }: MessageBubbleProps) {

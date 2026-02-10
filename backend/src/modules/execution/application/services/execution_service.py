@@ -2,6 +2,7 @@
 
 import json
 from collections.abc import AsyncIterator
+from dataclasses import dataclass
 
 from src.modules.execution.application.dto.execution_dto import (
     ConversationDetailDTO,
@@ -40,7 +41,17 @@ from src.modules.execution.domain.value_objects.conversation_status import (
 from src.modules.execution.domain.value_objects.message_role import MessageRole
 from src.shared.domain.event_bus import event_bus
 from src.shared.domain.exceptions import DomainError
-from src.shared.domain.interfaces.agent_querier import IAgentQuerier
+from src.shared.domain.interfaces.agent_querier import ActiveAgentInfo, IAgentQuerier
+
+
+@dataclass
+class _SendContext:
+    """send_message / send_message_stream 共享的前置准备结果。"""
+
+    conversation: Conversation
+    agent_info: ActiveAgentInfo
+    created_user_msg: Message
+    llm_messages: list[LLMMessage]
 
 
 class ExecutionService:
@@ -80,10 +91,11 @@ class ExecutionService:
             user_id=user_id,
         )
         created = await self._conversation_repo.create(conversation)
+        assert created.id is not None
 
         await event_bus.publish_async(
             ConversationCreatedEvent(
-                conversation_id=created.id or 0,
+                conversation_id=created.id,
                 agent_id=dto.agent_id,
                 user_id=user_id,
             ),
@@ -102,35 +114,17 @@ class ExecutionService:
             ConversationNotFoundError, ConversationNotActiveError,
             DomainError(FORBIDDEN_CONVERSATION), AgentNotAvailableError
         """
-        conversation = await self._get_conversation_or_raise(conversation_id)
-        self._check_ownership(conversation, user_id)
-        self._check_active(conversation)
-
-        agent_info = await self._agent_querier.get_active_agent(conversation.agent_id)
-        if agent_info is None:
-            raise AgentNotAvailableError(conversation.agent_id)
-
-        # 创建用户消息
-        user_message = Message(
-            conversation_id=conversation_id,
-            role=MessageRole.USER,
-            content=dto.content,
-        )
-        created_user_msg = await self._message_repo.create(user_message)
-
-        # 加载消息历史 → 构建 LLM 上下文
-        history = await self._message_repo.list_by_conversation(conversation_id)
-        llm_messages = [LLMMessage(role=m.role.value, content=m.content) for m in history]
+        ctx = await self._prepare_for_send(conversation_id, dto.content, user_id)
 
         # 调用 LLM
         response = await self._llm_client.invoke(
-            model_id=agent_info.model_id,
-            messages=llm_messages,
-            system_prompt=agent_info.system_prompt,
-            temperature=agent_info.temperature,
-            max_tokens=agent_info.max_tokens,
-            top_p=agent_info.top_p,
-            stop_sequences=agent_info.stop_sequences,
+            model_id=ctx.agent_info.model_id,
+            messages=ctx.llm_messages,
+            system_prompt=ctx.agent_info.system_prompt,
+            temperature=ctx.agent_info.temperature,
+            max_tokens=ctx.agent_info.max_tokens,
+            top_p=ctx.agent_info.top_p,
+            stop_sequences=ctx.agent_info.stop_sequences,
         )
 
         # 创建助手消息
@@ -143,26 +137,28 @@ class ExecutionService:
         created_assistant_msg = await self._message_repo.create(assistant_message)
 
         # 更新对话统计
-        conversation.add_message_count(token_count=0)  # 用户消息
-        conversation.add_message_count(
+        ctx.conversation.add_message_count(token_count=0)  # 用户消息
+        ctx.conversation.add_message_count(
             token_count=response.input_tokens + response.output_tokens,
         )
-        await self._conversation_repo.update(conversation)
+        await self._conversation_repo.update(ctx.conversation)
 
         # 发布事件
+        assert ctx.created_user_msg.id is not None
+        assert created_assistant_msg.id is not None
         await event_bus.publish_async(
             MessageSentEvent(
                 conversation_id=conversation_id,
-                message_id=created_user_msg.id or 0,
+                message_id=ctx.created_user_msg.id,
                 user_id=user_id,
             ),
         )
         await event_bus.publish_async(
             MessageReceivedEvent(
                 conversation_id=conversation_id,
-                message_id=created_assistant_msg.id or 0,
+                message_id=created_assistant_msg.id,
                 token_count=response.input_tokens + response.output_tokens,
-                model_id=agent_info.model_id,
+                model_id=ctx.agent_info.model_id,
             ),
         )
 
@@ -180,25 +176,7 @@ class ExecutionService:
             ConversationNotFoundError, ConversationNotActiveError,
             DomainError(FORBIDDEN_CONVERSATION), AgentNotAvailableError
         """
-        conversation = await self._get_conversation_or_raise(conversation_id)
-        self._check_ownership(conversation, user_id)
-        self._check_active(conversation)
-
-        agent_info = await self._agent_querier.get_active_agent(conversation.agent_id)
-        if agent_info is None:
-            raise AgentNotAvailableError(conversation.agent_id)
-
-        # 创建用户消息
-        user_message = Message(
-            conversation_id=conversation_id,
-            role=MessageRole.USER,
-            content=dto.content,
-        )
-        created_user_msg = await self._message_repo.create(user_message)
-
-        # 加载消息历史 → 构建 LLM 上下文
-        history = await self._message_repo.list_by_conversation(conversation_id)
-        llm_messages = [LLMMessage(role=m.role.value, content=m.content) for m in history]
+        ctx = await self._prepare_for_send(conversation_id, dto.content, user_id)
 
         # 创建空助手消息占位
         assistant_message = Message(
@@ -214,13 +192,13 @@ class ExecutionService:
             total_output_tokens = 0
 
             stream = await self._llm_client.invoke_stream(
-                model_id=agent_info.model_id,
-                messages=llm_messages,
-                system_prompt=agent_info.system_prompt,
-                temperature=agent_info.temperature,
-                max_tokens=agent_info.max_tokens,
-                top_p=agent_info.top_p,
-                stop_sequences=agent_info.stop_sequences,
+                model_id=ctx.agent_info.model_id,
+                messages=ctx.llm_messages,
+                system_prompt=ctx.agent_info.system_prompt,
+                temperature=ctx.agent_info.temperature,
+                max_tokens=ctx.agent_info.max_tokens,
+                top_p=ctx.agent_info.top_p,
+                stop_sequences=ctx.agent_info.stop_sequences,
             )
 
             async for chunk in stream:
@@ -238,24 +216,26 @@ class ExecutionService:
             await self._message_repo.update(created_assistant_msg)
 
             # 更新对话统计
-            conversation.add_message_count(token_count=0)  # 用户消息
-            conversation.add_message_count(token_count=total_tokens)
-            await self._conversation_repo.update(conversation)
+            ctx.conversation.add_message_count(token_count=0)  # 用户消息
+            ctx.conversation.add_message_count(token_count=total_tokens)
+            await self._conversation_repo.update(ctx.conversation)
 
             # 发布事件
+            assert ctx.created_user_msg.id is not None
+            assert created_assistant_msg.id is not None
             await event_bus.publish_async(
                 MessageSentEvent(
                     conversation_id=conversation_id,
-                    message_id=created_user_msg.id or 0,
+                    message_id=ctx.created_user_msg.id,
                     user_id=user_id,
                 ),
             )
             await event_bus.publish_async(
                 MessageReceivedEvent(
                     conversation_id=conversation_id,
-                    message_id=created_assistant_msg.id or 0,
+                    message_id=created_assistant_msg.id,
                     token_count=total_tokens,
-                    model_id=agent_info.model_id,
+                    model_id=ctx.agent_info.model_id,
                 ),
             )
 
@@ -263,7 +243,7 @@ class ExecutionService:
                 {
                     "content": "",
                     "done": True,
-                    "message_id": created_assistant_msg.id or 0,
+                    "message_id": created_assistant_msg.id,
                     "token_count": total_tokens,
                 },
             )
@@ -346,6 +326,44 @@ class ExecutionService:
 
     # ── 内部辅助方法 ──
 
+    async def _prepare_for_send(
+        self,
+        conversation_id: int,
+        content: str,
+        user_id: int,
+    ) -> _SendContext:
+        """send_message / send_message_stream 共有的前置逻辑。
+
+        校验对话存在、所有权、活跃状态；校验 Agent 可用；
+        创建用户消息；加载历史并构建 LLM 上下文。
+        """
+        conversation = await self._get_conversation_or_raise(conversation_id)
+        self._check_ownership(conversation, user_id)
+        self._check_active(conversation)
+
+        agent_info = await self._agent_querier.get_active_agent(conversation.agent_id)
+        if agent_info is None:
+            raise AgentNotAvailableError(conversation.agent_id)
+
+        # 创建用户消息
+        user_message = Message(
+            conversation_id=conversation_id,
+            role=MessageRole.USER,
+            content=content,
+        )
+        created_user_msg = await self._message_repo.create(user_message)
+
+        # 加载消息历史 → 构建 LLM 上下文
+        history = await self._message_repo.list_by_conversation(conversation_id)
+        llm_messages = [LLMMessage(role=m.role.value, content=m.content) for m in history]
+
+        return _SendContext(
+            conversation=conversation,
+            agent_info=agent_info,
+            created_user_msg=created_user_msg,
+            llm_messages=llm_messages,
+        )
+
     async def _get_conversation_or_raise(
         self,
         conversation_id: int,
@@ -368,29 +386,35 @@ class ExecutionService:
     def _check_active(conversation: Conversation) -> None:
         """校验对话处于活跃状态。"""
         if conversation.status != ConversationStatus.ACTIVE:
-            raise ConversationNotActiveError(conversation.id or 0)
+            assert conversation.id is not None
+            raise ConversationNotActiveError(conversation.id)
 
     @staticmethod
     def _to_conversation_dto(conv: Conversation) -> ConversationDTO:
+        assert conv.id is not None
+        assert conv.created_at is not None
+        assert conv.updated_at is not None
         return ConversationDTO(
-            id=conv.id or 0,
+            id=conv.id,
             title=conv.title,
             agent_id=conv.agent_id,
             user_id=conv.user_id,
             status=conv.status.value,
             message_count=conv.message_count,
             total_tokens=conv.total_tokens,
-            created_at=conv.created_at or conv.updated_at,  # type: ignore[arg-type]
-            updated_at=conv.updated_at,  # type: ignore[arg-type]
+            created_at=conv.created_at,
+            updated_at=conv.updated_at,
         )
 
     @staticmethod
     def _to_message_dto(msg: Message) -> MessageDTO:
+        assert msg.id is not None
+        assert msg.created_at is not None
         return MessageDTO(
-            id=msg.id or 0,
+            id=msg.id,
             conversation_id=msg.conversation_id,
             role=msg.role.value,
             content=msg.content,
             token_count=msg.token_count,
-            created_at=msg.created_at or msg.updated_at,  # type: ignore[arg-type]
+            created_at=msg.created_at,
         )

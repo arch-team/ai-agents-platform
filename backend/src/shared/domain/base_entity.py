@@ -6,7 +6,8 @@ from typing import Any
 from pydantic import BaseModel, ConfigDict
 
 
-def _utc_now() -> datetime:
+def utc_now() -> datetime:
+    """获取当前 UTC 时间。Domain 层使用此函数，Infrastructure 层使用 shared.infrastructure.utils.utc_now。"""
     return datetime.now(UTC)
 
 
@@ -21,7 +22,7 @@ class PydanticEntity(BaseModel):
 
     def model_post_init(self, context: Any, /) -> None:  # noqa: ANN401, ARG002
         """初始化时间戳。"""
-        now = _utc_now()
+        now = utc_now()
         if self.created_at is None:
             object.__setattr__(self, "created_at", now)
         if self.updated_at is None:
@@ -29,7 +30,7 @@ class PydanticEntity(BaseModel):
 
     def touch(self) -> None:
         """更新 updated_at 时间戳。"""
-        self.updated_at = _utc_now()
+        self.updated_at = utc_now()
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, PydanticEntity):

@@ -14,11 +14,13 @@ import { StreamingIndicator } from './StreamingIndicator';
 
 interface ChatInterfaceProps {
   conversationId: number;
+  /** 认证 token，由调用方从 auth store 获取后传入（避免跨 feature 依赖） */
+  token: string | null;
 }
 
-export function ChatInterface({ conversationId }: ChatInterfaceProps) {
+export function ChatInterface({ conversationId, token }: ChatInterfaceProps) {
   const { data, isLoading, error } = useConversation(conversationId);
-  const { sendMessage } = useSendMessageStream();
+  const { sendMessage } = useSendMessageStream(token);
   const streamingContent = useStreamingContent();
   const isStreaming = useIsStreaming();
   const { clearStream } = useChatActions();

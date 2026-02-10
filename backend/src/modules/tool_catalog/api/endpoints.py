@@ -1,6 +1,5 @@
 """Tool Catalog API 端点。"""
 
-import math
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query, status
@@ -28,6 +27,7 @@ from src.modules.tool_catalog.application.dto.tool_dto import (
 from src.modules.tool_catalog.application.services.tool_service import ToolCatalogService
 from src.modules.tool_catalog.domain.value_objects.tool_status import ToolStatus
 from src.modules.tool_catalog.domain.value_objects.tool_type import ToolType
+from src.shared.api.schemas import calc_total_pages
 
 
 router = APIRouter(prefix="/api/v1/tools", tags=["tools"])
@@ -72,7 +72,7 @@ def _to_list_response(paged: PagedToolDTO, page_size: int) -> ToolListResponse:
         total=paged.total,
         page=paged.page,
         page_size=paged.page_size,
-        total_pages=math.ceil(paged.total / page_size) if paged.total else 0,
+        total_pages=calc_total_pages(paged.total, page_size),
     )
 
 

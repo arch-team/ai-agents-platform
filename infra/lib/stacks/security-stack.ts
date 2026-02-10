@@ -1,16 +1,13 @@
 import * as cdk from 'aws-cdk-lib';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as kms from 'aws-cdk-lib/aws-kms';
-import { NagSuppressions } from 'cdk-nag';
 import { Construct } from 'constructs';
-import { KmsConstruct } from '../constructs/security/kms.construct';
-import { SecurityGroupsConstruct } from '../constructs/security/security-groups.construct';
+import type { BaseStackProps } from '../config/types';
+import { KmsConstruct, SecurityGroupsConstruct } from '../constructs/security';
 
-export interface SecurityStackProps extends cdk.StackProps {
+export interface SecurityStackProps extends BaseStackProps {
   /** 安全组所在的 VPC */
   readonly vpc: ec2.IVpc;
-  /** 环境名称 (dev, staging, prod) */
-  readonly envName: string;
 }
 
 /**
@@ -28,12 +25,17 @@ export class SecurityStack extends cdk.Stack {
 
     // KMS 加密密钥
     const kmsConstruct = new KmsConstruct(this, 'Kms', {
+      envName,
       alias: `ai-agents-platform-${envName}`,
     });
     this.encryptionKey = kmsConstruct.key;
 
     // 安全组
-    const sgConstruct = new SecurityGroupsConstruct(this, 'SecurityGroups', { vpc });
+    // TODO: 后续创建 ALB 后将 enablePublicIngress 设为 true
+    const sgConstruct = new SecurityGroupsConstruct(this, 'SecurityGroups', {
+      vpc,
+      enablePublicIngress: false,
+    });
     this.apiSecurityGroup = sgConstruct.apiSecurityGroup;
     this.dbSecurityGroup = sgConstruct.dbSecurityGroup;
 
@@ -44,14 +46,6 @@ export class SecurityStack extends cdk.Stack {
         service: ec2.InterfaceVpcEndpointAwsService.SECRETS_MANAGER,
       });
     }
-
-    // CDK Nag 抑制: API 安全组允许公网 HTTPS 入站
-    NagSuppressions.addResourceSuppressions(this.apiSecurityGroup, [
-      {
-        id: 'AwsSolutions-EC23',
-        reason: 'API 安全组需要接受公网 HTTPS 请求 (443)，实际部署时通过 ALB + WAF 限制流量',
-      },
-    ]);
 
     // Outputs
     new cdk.CfnOutput(this, 'EncryptionKeyArn', {

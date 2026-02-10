@@ -1,15 +1,12 @@
 """Message ORM 模型定义。"""
 
-from datetime import UTC, datetime
+from datetime import datetime
 
 from sqlalchemy import DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from src.shared.infrastructure.database import Base
-
-
-def _utc_now() -> datetime:
-    return datetime.now(UTC)
+from src.shared.infrastructure.utils import utc_now
 
 
 class MessageModel(Base):
@@ -27,10 +24,10 @@ class MessageModel(Base):
     role: Mapped[str] = mapped_column(String(20), nullable=False)
     content: Mapped[str] = mapped_column(Text, nullable=False, default="")
     token_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
-    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=_utc_now)
+    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=utc_now)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime,
         nullable=False,
-        default=_utc_now,
-        onupdate=_utc_now,
+        default=utc_now,
+        onupdate=utc_now,
     )

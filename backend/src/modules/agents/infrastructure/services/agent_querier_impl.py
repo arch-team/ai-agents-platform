@@ -19,8 +19,9 @@ class AgentQuerierImpl(IAgentQuerier):
 
     @staticmethod
     def _to_active_agent_info(agent: Agent) -> ActiveAgentInfo:
+        assert agent.id is not None
         return ActiveAgentInfo(
-            id=agent.id,  # type: ignore[arg-type]
+            id=agent.id,
             name=agent.name,
             system_prompt=agent.system_prompt,
             model_id=agent.config.model_id,

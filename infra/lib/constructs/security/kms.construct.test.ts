@@ -9,7 +9,7 @@ describe('KmsConstruct', () => {
     beforeEach(() => {
       const app = new cdk.App();
       const stack = new cdk.Stack(app, 'TestStack');
-      new KmsConstruct(stack, 'TestKms');
+      new KmsConstruct(stack, 'TestKms', { envName: 'prod' });
       template = Template.fromStack(stack);
     });
 
@@ -43,11 +43,26 @@ describe('KmsConstruct', () => {
     });
   });
 
+  describe('环境区分', () => {
+    it('Dev 环境应设置 RemovalPolicy 为 DESTROY', () => {
+      const app = new cdk.App();
+      const stack = new cdk.Stack(app, 'TestStack');
+      new KmsConstruct(stack, 'TestKms', { envName: 'dev' });
+      const devTemplate = Template.fromStack(stack);
+
+      devTemplate.hasResource('AWS::KMS::Key', {
+        DeletionPolicy: 'Delete',
+        UpdateReplacePolicy: 'Delete',
+      });
+    });
+  });
+
   describe('自定义配置', () => {
     it('应支持自定义别名', () => {
       const app = new cdk.App();
       const stack = new cdk.Stack(app, 'TestStack');
       new KmsConstruct(stack, 'TestKms', {
+        envName: 'prod',
         alias: 'custom-key-alias',
       });
       template = Template.fromStack(stack);
@@ -61,6 +76,7 @@ describe('KmsConstruct', () => {
       const app = new cdk.App();
       const stack = new cdk.Stack(app, 'TestStack');
       new KmsConstruct(stack, 'TestKms', {
+        envName: 'prod',
         enableKeyRotation: false,
       });
       template = Template.fromStack(stack);
@@ -75,7 +91,7 @@ describe('KmsConstruct', () => {
     it('应暴露 key 属性', () => {
       const app = new cdk.App();
       const stack = new cdk.Stack(app, 'TestStack');
-      const construct = new KmsConstruct(stack, 'TestKms');
+      const construct = new KmsConstruct(stack, 'TestKms', { envName: 'dev' });
 
       expect(construct.key).toBeDefined();
     });

@@ -6,6 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useNavigate } from 'react-router-dom';
 
 import { Button, Input, ErrorMessage } from '@/shared/ui';
+import { extractApiError } from '@/shared/lib/extractApiError';
 
 import { useLogin } from '../api/queries';
 import { loginSchema } from '../lib/validation';
@@ -32,12 +33,7 @@ export function LoginForm() {
         navigate('/');
       },
       onError: (error) => {
-        if (error && typeof error === 'object' && 'response' in error) {
-          const axiosError = error as { response?: { data?: { message?: string } } };
-          setApiError(axiosError.response?.data?.message || '登录失败，请重试');
-        } else {
-          setApiError('登录失败，请重试');
-        }
+        setApiError(extractApiError(error, '登录失败，请重试'));
       },
     });
   };

@@ -1,6 +1,6 @@
 """对话会话实体。"""
 
-from pydantic import ConfigDict, Field
+from pydantic import Field
 
 from src.modules.execution.domain.value_objects.conversation_status import (
     ConversationStatus,
@@ -18,8 +18,6 @@ class Conversation(PydanticEntity):
     status: ConversationStatus = ConversationStatus.ACTIVE
     message_count: int = Field(default=0, ge=0)
     total_tokens: int = Field(default=0, ge=0)
-
-    model_config = ConfigDict(validate_assignment=True)
 
     def complete(self) -> None:
         """结束对话。ACTIVE -> COMPLETED。"""

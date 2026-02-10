@@ -1,6 +1,7 @@
 // 对话历史侧边栏列表
 
 import { cn } from '@/shared/lib/cn';
+import { formatShortDateTime } from '@/shared/lib/formatDate';
 import { Button, Spinner, ErrorMessage } from '@/shared/ui';
 
 import { useConversations } from '../api/queries';
@@ -11,19 +12,6 @@ interface ConversationListProps {
   selectedId: number | null;
   onSelect: (id: number) => void;
   onNewConversation: () => void;
-}
-
-function formatDate(isoString: string): string {
-  try {
-    return new Date(isoString).toLocaleDateString('zh-CN', {
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  } catch {
-    return '';
-  }
 }
 
 function ConversationItem({
@@ -51,7 +39,9 @@ function ConversationItem({
       </div>
       <div className="mt-0.5 flex items-center justify-between text-xs text-gray-500">
         <span>{conversation.message_count} 条消息</span>
-        <time dateTime={conversation.updated_at}>{formatDate(conversation.updated_at)}</time>
+        <time dateTime={conversation.updated_at}>
+          {formatShortDateTime(conversation.updated_at)}
+        </time>
       </div>
     </button>
   );

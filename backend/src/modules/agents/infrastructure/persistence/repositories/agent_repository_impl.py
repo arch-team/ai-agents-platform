@@ -3,7 +3,7 @@
 import json
 from collections.abc import Sequence
 
-from sqlalchemy import ColumnElement, func, select
+from sqlalchemy import ColumnElement, select
 
 from src.modules.agents.domain.entities.agent import Agent
 from src.modules.agents.domain.repositories.agent_repository import IAgentRepository
@@ -96,21 +96,6 @@ class AgentRepositoryImpl(PydanticRepository[Agent, AgentModel, int], IAgentRepo
         if status is not None:
             filters.append(AgentModel.status == status.value)
         return filters
-
-    async def _count_where(self, *conditions: ColumnElement[bool]) -> int:
-        stmt = select(func.count()).select_from(AgentModel).where(*conditions)
-        result = await self._session.execute(stmt)
-        return result.scalar_one()
-
-    async def _list_where(
-        self,
-        *conditions: ColumnElement[bool],
-        offset: int = 0,
-        limit: int = 20,
-    ) -> list[Agent]:
-        stmt = select(AgentModel).where(*conditions).offset(offset).limit(limit).order_by(AgentModel.id)
-        result = await self._session.execute(stmt)
-        return [self._to_entity(m) for m in result.scalars().all()]
 
     # ── 接口实现 ──
 

@@ -1,22 +1,17 @@
 import { Card } from '@/shared/ui';
 import { cn } from '@/shared/lib/cn';
+import { formatDate } from '@/shared/lib/formatDate';
 
-import type { Agent, AgentStatus } from '../model/types';
+import { AGENT_STATUS_CONFIG } from '../model/constants';
+import type { Agent } from '../model/types';
 
 interface AgentCardProps {
   agent: Agent;
   onClick?: () => void;
 }
 
-const statusStyles: Record<AgentStatus, { label: string; className: string }> = {
-  draft: { label: '草稿', className: 'bg-gray-100 text-gray-700' },
-  active: { label: '活跃', className: 'bg-green-100 text-green-700' },
-  archived: { label: '已归档', className: 'bg-yellow-100 text-yellow-700' },
-};
-
 export function AgentCard({ agent, onClick }: AgentCardProps) {
-  const status = statusStyles[agent.status];
-  const formattedDate = new Date(agent.created_at).toLocaleDateString('zh-CN');
+  const status = AGENT_STATUS_CONFIG[agent.status];
 
   return (
     <Card className={cn('transition-shadow', onClick && 'cursor-pointer hover:shadow-md')}>
@@ -41,7 +36,7 @@ export function AgentCard({ agent, onClick }: AgentCardProps) {
           </span>
         </div>
         <div className="mt-4 text-xs text-gray-400">
-          <span>创建于 {formattedDate}</span>
+          <span>创建于 {formatDate(agent.created_at)}</span>
         </div>
       </button>
     </Card>

@@ -1,5 +1,7 @@
 // 认证相关 API queries/mutations
 
+import { useEffect } from 'react';
+
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { apiClient } from '@/shared/api';
@@ -29,7 +31,7 @@ export function useLogin() {
           id: data.user.id,
           email: data.user.email,
           name: data.user.name,
-          role: data.user.role as 'admin' | 'developer' | 'viewer',
+          role: data.user.role,
           created_at: '',
           updated_at: '',
         },
@@ -54,29 +56,34 @@ export function useCurrentUser() {
   const token = useAuthToken();
   const { setAuth } = useAuthActions();
 
-  return useQuery({
+  const query = useQuery({
     queryKey: authKeys.me(),
     queryFn: async () => {
       const { data } = await apiClient.get<LoginResponse['user']>('/api/v1/auth/me');
-      // TanStack Query v5 移除了 onSuccess，在 queryFn 内处理副作用
-      if (token) {
-        setAuth(
-          {
-            id: data.id,
-            email: data.email,
-            name: data.name,
-            role: data.role as 'admin' | 'developer' | 'viewer',
-            created_at: '',
-            updated_at: '',
-          },
-          token,
-        );
-      }
       return data;
     },
     enabled: !!token,
     retry: false,
   });
+
+  // 将用户信息同步到 auth store（避免在 queryFn 内执行副作用）
+  useEffect(() => {
+    if (query.data && token) {
+      setAuth(
+        {
+          id: query.data.id,
+          email: query.data.email,
+          name: query.data.name,
+          role: query.data.role,
+          created_at: '',
+          updated_at: '',
+        },
+        token,
+      );
+    }
+  }, [query.data, token, setAuth]);
+
+  return query;
 }
 
 // 登出辅助：清除 auth 缓存

@@ -2,12 +2,14 @@
 
 from pydantic import BaseModel, Field
 
+from src.modules.tool_catalog.domain.value_objects.tool_type import ToolType
+
 
 class CreateToolRequest(BaseModel):
     """创建 Tool 请求。"""
 
     name: str = Field(min_length=1, max_length=100)
-    tool_type: str = Field(...)  # "mcp_server" | "api" | "function"
+    tool_type: ToolType
     description: str = Field(max_length=1000, default="")
     version: str = Field(max_length=50, default="1.0.0")
     server_url: str = Field(max_length=500, default="")

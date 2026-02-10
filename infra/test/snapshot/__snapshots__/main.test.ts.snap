@@ -1161,7 +1161,7 @@ exports[`Snapshot Tests SecurityStack 快照匹配 1`] = `
       "Type": "AWS::KMS::Alias",
     },
     "KmsKeyF138A6A4": {
-      "DeletionPolicy": "Retain",
+      "DeletionPolicy": "Delete",
       "Properties": {
         "Description": "AI Agents Platform 数据加密主密钥",
         "EnableKeyRotation": true,
@@ -1191,20 +1191,9 @@ exports[`Snapshot Tests SecurityStack 快照匹配 1`] = `
         },
       },
       "Type": "AWS::KMS::Key",
-      "UpdateReplacePolicy": "Retain",
+      "UpdateReplacePolicy": "Delete",
     },
     "SecurityGroupsApiSg103453F9": {
-      "Metadata": {
-        "cdk_nag": {
-          "rules_to_suppress": [
-            {
-              "id": "AwsSolutions-EC23",
-              "is_reason_encoded": true,
-              "reason": "QVBJIOWuieWFqOe7hOmcgOimgeaOpeWPl+WFrOe9kSBIVFRQUyDor7fmsYIgKDQ0MynvvIzlrp7pmYXpg6jnvbLml7bpgJrov4cgQUxCICsgV0FGIOmZkOWItua1gemHjw==",
-            },
-          ],
-        },
-      },
       "Properties": {
         "GroupDescription": "API 服务安全组",
         "SecurityGroupEgress": [
@@ -1212,15 +1201,6 @@ exports[`Snapshot Tests SecurityStack 快照匹配 1`] = `
             "CidrIp": "0.0.0.0/0",
             "Description": "Allow all outbound traffic by default",
             "IpProtocol": "-1",
-          },
-        ],
-        "SecurityGroupIngress": [
-          {
-            "CidrIp": "0.0.0.0/0",
-            "Description": "允许 HTTPS 入站",
-            "FromPort": 443,
-            "IpProtocol": "tcp",
-            "ToPort": 443,
           },
         ],
         "VpcId": {

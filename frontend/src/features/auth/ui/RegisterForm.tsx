@@ -6,6 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useNavigate } from 'react-router-dom';
 
 import { Button, Input, ErrorMessage } from '@/shared/ui';
+import { extractApiError } from '@/shared/lib/extractApiError';
 
 import { useRegister } from '../api/queries';
 import { registerSchema } from '../lib/validation';
@@ -34,12 +35,7 @@ export function RegisterForm() {
           navigate('/login');
         },
         onError: (error) => {
-          if (error && typeof error === 'object' && 'response' in error) {
-            const axiosError = error as { response?: { data?: { message?: string } } };
-            setApiError(axiosError.response?.data?.message || '注册失败，请重试');
-          } else {
-            setApiError('注册失败，请重试');
-          }
+          setApiError(extractApiError(error, '注册失败，请重试'));
         },
       },
     );

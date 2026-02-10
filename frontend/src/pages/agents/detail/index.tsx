@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 
 import { useAgent, useActivateAgent, useArchiveAgent, AgentStatusBadge } from '@/features/agents';
 import { useConversations, useCreateConversation } from '@/features/execution';
+import { formatDate, formatDateTime } from '@/shared/lib/formatDate';
 import { Button, Card, Spinner, ErrorMessage } from '@/shared/ui';
 
 export default function AgentDetailPage() {
@@ -111,9 +112,7 @@ export default function AgentDetailPage() {
           </div>
           <div>
             <dt className="text-sm font-medium text-gray-500">创建时间</dt>
-            <dd className="mt-1 text-sm text-gray-900">
-              {new Date(agent.created_at).toLocaleString('zh-CN')}
-            </dd>
+            <dd className="mt-1 text-sm text-gray-900">{formatDateTime(agent.created_at)}</dd>
           </div>
         </dl>
 
@@ -148,7 +147,7 @@ export default function AgentDetailPage() {
                     <p className="text-xs text-gray-500">{conv.message_count} 条消息</p>
                   </div>
                   <time className="text-xs text-gray-400" dateTime={conv.updated_at}>
-                    {new Date(conv.updated_at).toLocaleDateString('zh-CN')}
+                    {formatDate(conv.updated_at)}
                   </time>
                 </button>
               </li>

@@ -1,21 +1,20 @@
 import * as cdk from 'aws-cdk-lib';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as kms from 'aws-cdk-lib/aws-kms';
-import * as rds from 'aws-cdk-lib/aws-rds';
-import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
 import { NagSuppressions } from 'cdk-nag';
 import { Construct } from 'constructs';
+import type { BaseStackProps } from '../config/types';
 import { AuroraConstruct } from '../constructs/aurora';
+import type * as rds from 'aws-cdk-lib/aws-rds';
+import type * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
 
-export interface DatabaseStackProps extends cdk.StackProps {
+export interface DatabaseStackProps extends BaseStackProps {
   /** 数据库所在的 VPC */
   readonly vpc: ec2.IVpc;
   /** 数据库安全组 */
   readonly dbSecurityGroup: ec2.ISecurityGroup;
   /** KMS 加密密钥 */
   readonly encryptionKey?: kms.IKey;
-  /** 环境名称 (dev, staging, prod) */
-  readonly envName: string;
 }
 
 /**

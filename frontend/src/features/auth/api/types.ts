@@ -18,6 +18,6 @@ export interface LoginResponse {
     id: number;
     email: string;
     name: string;
-    role: string;
+    role: 'admin' | 'developer' | 'viewer';
   };
 }

@@ -36,7 +36,7 @@ describe('AgentCard', () => {
 
   it('应该显示活跃状态标签', () => {
     render(<AgentCard agent={mockAgent} />);
-    expect(screen.getByText('活跃')).toBeInTheDocument();
+    expect(screen.getByText('已激活')).toBeInTheDocument();
   });
 
   it('应该显示草稿状态标签', () => {

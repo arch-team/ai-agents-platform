@@ -2,7 +2,7 @@
 
 from typing import Generic, TypeVar
 
-from sqlalchemy import func, select
+from sqlalchemy import ColumnElement, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.shared.domain.base_entity import PydanticEntity
@@ -57,6 +57,29 @@ class PydanticRepository(IRepository[EntityT, IDT], Generic[EntityT, ModelT, IDT
         stmt = select(self.model_class).where(self.model_class.id == entity_id)  # type: ignore[attr-defined]
         result = await self._session.execute(stmt)
         return result.scalar_one_or_none()
+
+    async def _count_where(self, *conditions: ColumnElement[bool]) -> int:
+        """按条件统计数量。"""
+        stmt = select(func.count()).select_from(self.model_class).where(*conditions)
+        result = await self._session.execute(stmt)
+        return result.scalar_one()
+
+    async def _list_where(
+        self,
+        *conditions: ColumnElement[bool],
+        offset: int = 0,
+        limit: int = 20,
+    ) -> list[EntityT]:
+        """按条件分页查询实体列表。"""
+        stmt = (
+            select(self.model_class)
+            .where(*conditions)
+            .offset(offset)
+            .limit(limit)
+            .order_by(self.model_class.id)  # type: ignore[attr-defined]
+        )
+        result = await self._session.execute(stmt)
+        return [self._to_entity(m) for m in result.scalars().all()]
 
     async def get_by_id(self, entity_id: IDT) -> EntityT | None:
         """根据 ID 获取实体。"""

@@ -1,6 +1,5 @@
 """Agents API 端点。"""
 
-import math
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query, status
@@ -17,6 +16,7 @@ from src.modules.agents.application.services.agent_service import AgentService
 from src.modules.agents.domain.value_objects.agent_status import AgentStatus
 from src.modules.auth.api.dependencies import get_current_user
 from src.modules.auth.application.dto.user_dto import UserDTO
+from src.shared.api.schemas import calc_total_pages
 
 
 router = APIRouter(prefix="/api/v1/agents", tags=["agents"])
@@ -77,7 +77,7 @@ async def list_agents(
         total=paged.total,
         page=paged.page,
         page_size=paged.page_size,
-        total_pages=math.ceil(paged.total / page_size) if paged.total else 0,
+        total_pages=calc_total_pages(paged.total, page_size),
     )
 
 

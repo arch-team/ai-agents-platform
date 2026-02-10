@@ -1,15 +1,12 @@
 """Tool ORM 模型。"""
 
-from datetime import UTC, datetime
+from datetime import datetime
 
 from sqlalchemy import DateTime, ForeignKey, Index, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from src.shared.infrastructure.database import Base
-
-
-def _utc_now() -> datetime:
-    return datetime.now(UTC)
+from src.shared.infrastructure.utils import utc_now
 
 
 class ToolModel(Base):
@@ -56,12 +53,12 @@ class ToolModel(Base):
     review_comment: Mapped[str] = mapped_column(String(1000), nullable=False, default="")
     reviewed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
-    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=_utc_now)
+    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=utc_now)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime,
         nullable=False,
-        default=_utc_now,
-        onupdate=_utc_now,
+        default=utc_now,
+        onupdate=utc_now,
     )
 
     __table_args__ = (

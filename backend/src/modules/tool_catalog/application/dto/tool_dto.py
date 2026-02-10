@@ -3,13 +3,15 @@
 from dataclasses import dataclass
 from datetime import datetime
 
+from src.modules.tool_catalog.domain.value_objects.tool_type import ToolType
+
 
 @dataclass
 class CreateToolDTO:
     """创建 Tool 请求数据。"""
 
     name: str
-    tool_type: str  # "mcp_server" | "api" | "function"
+    tool_type: ToolType
     description: str = ""
     version: str = "1.0.0"
     server_url: str = ""

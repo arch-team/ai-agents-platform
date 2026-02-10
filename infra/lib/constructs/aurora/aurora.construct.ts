@@ -83,7 +83,11 @@ export class AuroraConstruct extends Construct {
       iamAuthentication: true,
     });
 
-    this.secret = this.cluster.secret!;
+    const clusterSecret = this.cluster.secret;
+    if (!clusterSecret) {
+      throw new Error('Aurora 集群未生成 Secret，请检查 credentials 配置');
+    }
+    this.secret = clusterSecret;
     this.clusterEndpoint = this.cluster.clusterEndpoint;
   }
 }

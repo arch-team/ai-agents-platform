@@ -1,6 +1,7 @@
 // Zustand store: 当前对话状态 + 流式消息缓冲
 
 import { create } from 'zustand';
+import { useShallow } from 'zustand/shallow';
 
 import type { ChatState } from './types';
 
@@ -20,9 +21,11 @@ export const useStreamingContent = () => useChatStore((state) => state.streaming
 export const useIsStreaming = () => useChatStore((state) => state.isStreaming);
 export const useCurrentConversationId = () => useChatStore((state) => state.currentConversationId);
 export const useChatActions = () =>
-  useChatStore((state) => ({
-    setCurrentConversation: state.setCurrentConversation,
-    appendStreamContent: state.appendStreamContent,
-    clearStream: state.clearStream,
-    setStreaming: state.setStreaming,
-  }));
+  useChatStore(
+    useShallow((state) => ({
+      setCurrentConversation: state.setCurrentConversation,
+      appendStreamContent: state.appendStreamContent,
+      clearStream: state.clearStream,
+      setStreaming: state.setStreaming,
+    })),
+  );

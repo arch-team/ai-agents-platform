@@ -1,7 +1,6 @@
 """Execution API 端点。"""
 
 import json
-import math
 from collections.abc import AsyncIterator
 from typing import Annotated
 
@@ -25,6 +24,7 @@ from src.modules.execution.application.dto.execution_dto import (
     SendMessageDTO,
 )
 from src.modules.execution.application.services.execution_service import ExecutionService
+from src.shared.api.schemas import calc_total_pages
 from src.shared.domain.exceptions import DomainError
 
 
@@ -92,7 +92,7 @@ async def list_conversations(
         total=paged.total,
         page=paged.page,
         page_size=paged.page_size,
-        total_pages=math.ceil(paged.total / page_size) if paged.total else 0,
+        total_pages=calc_total_pages(paged.total, page_size),
     )
 
 

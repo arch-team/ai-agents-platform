@@ -1,15 +1,12 @@
 """Agent ORM 模型。"""
 
-from datetime import UTC, datetime
+from datetime import datetime
 
 from sqlalchemy import DateTime, Float, ForeignKey, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from src.shared.infrastructure.database import Base
-
-
-def _utc_now() -> datetime:
-    return datetime.now(UTC)
+from src.shared.infrastructure.utils import utc_now
 
 
 class AgentModel(Base):
@@ -40,12 +37,12 @@ class AgentModel(Base):
     top_p: Mapped[float] = mapped_column(Float, nullable=False, default=1.0)
     stop_sequences: Mapped[str] = mapped_column(Text, nullable=False, default="")
 
-    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=_utc_now)
+    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=utc_now)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime,
         nullable=False,
-        default=_utc_now,
-        onupdate=_utc_now,
+        default=utc_now,
+        onupdate=utc_now,
     )
 
     __table_args__ = (UniqueConstraint("owner_id", "name", name="uq_agents_owner_name"),)

@@ -21,6 +21,14 @@ export function getEnvironmentConfig(app: cdk.App): EnvironmentConfig {
   }
 
   const config = environments[envName];
+
+  // 检测占位符账户 ID，提醒用户配置真实值
+  if (config.account === '000000000000') {
+    console.warn(
+      `[警告] 环境 "${envName}" 使用了占位符账户 ID (000000000000)，请在 cdk.json 中配置真实的 AWS 账户 ID`,
+    );
+  }
+
   return {
     account: config.account,
     region: config.region,

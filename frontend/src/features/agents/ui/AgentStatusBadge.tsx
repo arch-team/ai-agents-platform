@@ -1,12 +1,7 @@
 import { cn } from '@/shared/lib/cn';
 
+import { AGENT_STATUS_CONFIG } from '@/entities/agent';
 import type { AgentStatus } from '@/entities/agent';
-
-const statusConfig: Record<AgentStatus, { label: string; className: string }> = {
-  draft: { label: '草稿', className: 'bg-gray-100 text-gray-700' },
-  active: { label: '已激活', className: 'bg-green-100 text-green-700' },
-  archived: { label: '已归档', className: 'bg-yellow-100 text-yellow-700' },
-};
 
 interface AgentStatusBadgeProps {
   status: AgentStatus;
@@ -14,7 +9,7 @@ interface AgentStatusBadgeProps {
 }
 
 export function AgentStatusBadge({ status, className }: AgentStatusBadgeProps) {
-  const config = statusConfig[status];
+  const config = AGENT_STATUS_CONFIG[status];
 
   return (
     <span

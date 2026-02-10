@@ -16,6 +16,7 @@ from src.modules.agents.domain.events import (
     AgentCreatedEvent,
     AgentDeletedEvent,
     AgentUpdatedEvent,
+    _AgentEvent,
 )
 from src.modules.agents.domain.exceptions import (
     AgentNameDuplicateError,
@@ -25,7 +26,6 @@ from src.modules.agents.domain.repositories.agent_repository import IAgentReposi
 from src.modules.agents.domain.value_objects.agent_config import AgentConfig
 from src.modules.agents.domain.value_objects.agent_status import AgentStatus
 from src.shared.domain.event_bus import event_bus
-from src.shared.domain.events import DomainEvent
 from src.shared.domain.exceptions import DomainError, InvalidStateTransitionError
 
 
@@ -55,9 +55,10 @@ class AgentService:
             ),
         )
         created = await self._repository.create(agent)
+        assert created.id is not None
         await event_bus.publish_async(
             AgentCreatedEvent(
-                agent_id=created.id or 0,
+                agent_id=created.id,
                 owner_id=owner_id,
                 name=created.name,
             ),
@@ -163,9 +164,10 @@ class AgentService:
         updated = await self._repository.update(agent)
 
         if changed_fields:
+            assert updated.id is not None
             await event_bus.publish_async(
                 AgentUpdatedEvent(
-                    agent_id=updated.id or 0,
+                    agent_id=updated.id,
                     owner_id=updated.owner_id,
                     changed_fields=tuple(changed_fields),
                 ),
@@ -227,14 +229,15 @@ class AgentService:
         agent_id: int,
         operator_id: int,
         action: Callable[[Agent], None],
-        event_cls: type[DomainEvent],
+        event_cls: type[_AgentEvent],
     ) -> AgentDTO:
         """状态变更通用流程：获取 -> 校验所有权 -> 执行动作 -> 持久化 -> 发布事件。"""
         agent = await self._get_owned_agent(agent_id, operator_id)
         action(agent)
         updated = await self._repository.update(agent)
+        assert updated.id is not None
         await event_bus.publish_async(
-            event_cls(agent_id=updated.id or 0, owner_id=updated.owner_id),  # type: ignore[call-arg]
+            event_cls(agent_id=updated.id, owner_id=updated.owner_id),
         )
         return self._to_dto(updated)
 
@@ -260,8 +263,11 @@ class AgentService:
 
     @staticmethod
     def _to_dto(agent: Agent) -> AgentDTO:
+        assert agent.id is not None
+        assert agent.created_at is not None
+        assert agent.updated_at is not None
         return AgentDTO(
-            id=agent.id or 0,
+            id=agent.id,
             name=agent.name,
             description=agent.description,
             system_prompt=agent.system_prompt,
@@ -271,6 +277,6 @@ class AgentService:
             temperature=agent.config.temperature,
             max_tokens=agent.config.max_tokens,
             top_p=agent.config.top_p,
-            created_at=agent.created_at or agent.updated_at,  # type: ignore[arg-type]
-            updated_at=agent.updated_at,  # type: ignore[arg-type]
+            created_at=agent.created_at,
+            updated_at=agent.updated_at,
         )

@@ -3,17 +3,7 @@ import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as kms from 'aws-cdk-lib/aws-kms';
 import { Template } from 'aws-cdk-lib/assertions';
 import { DatabaseStack } from '../../lib/stacks/database-stack';
-
-// 辅助函数: 创建含 Isolated 子网的 VPC
-function createTestVpc(stack: cdk.Stack) {
-  return new ec2.Vpc(stack, 'TestVpc', {
-    subnetConfiguration: [
-      { name: 'Public', subnetType: ec2.SubnetType.PUBLIC, cidrMask: 24 },
-      { name: 'Private', subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS, cidrMask: 24 },
-      { name: 'Isolated', subnetType: ec2.SubnetType.PRIVATE_ISOLATED, cidrMask: 24 },
-    ],
-  });
-}
+import { createTestVpc } from '../helpers/test-utils';
 
 describe('DatabaseStack', () => {
   let template: Template;

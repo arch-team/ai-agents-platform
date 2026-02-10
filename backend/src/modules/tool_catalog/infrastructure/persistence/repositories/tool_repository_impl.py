@@ -3,7 +3,7 @@
 import json
 from collections.abc import Sequence
 
-from sqlalchemy import ColumnElement, func, select
+from sqlalchemy import ColumnElement, select
 
 from src.modules.tool_catalog.domain.entities.tool import Tool
 from src.modules.tool_catalog.domain.repositories.tool_repository import IToolRepository
@@ -148,21 +148,6 @@ class ToolRepositoryImpl(PydanticRepository[Tool, ToolModel, int], IToolReposito
         if creator_id is not None:
             filters.append(ToolModel.creator_id == creator_id)
         return filters
-
-    async def _count_where(self, *conditions: ColumnElement[bool]) -> int:
-        stmt = select(func.count()).select_from(ToolModel).where(*conditions)
-        result = await self._session.execute(stmt)
-        return result.scalar_one()
-
-    async def _list_where(
-        self,
-        *conditions: ColumnElement[bool],
-        offset: int = 0,
-        limit: int = 20,
-    ) -> list[Tool]:
-        stmt = select(ToolModel).where(*conditions).offset(offset).limit(limit).order_by(ToolModel.id)
-        result = await self._session.execute(stmt)
-        return [self._to_entity(m) for m in result.scalars().all()]
 
     # -- 接口实现 --
 

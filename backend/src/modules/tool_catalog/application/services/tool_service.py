@@ -51,7 +51,7 @@ class ToolCatalogService:
         tool = Tool(
             name=dto.name,
             description=dto.description,
-            tool_type=ToolType(dto.tool_type),
+            tool_type=dto.tool_type,
             version=dto.version,
             creator_id=creator_id,
             config=ToolConfig(
@@ -69,9 +69,10 @@ class ToolCatalogService:
             allowed_roles=tuple(dto.allowed_roles) if dto.allowed_roles else ("admin", "developer"),
         )
         created = await self._repository.create(tool)
+        assert created.id is not None
         await event_bus.publish_async(
             ToolCreatedEvent(
-                tool_id=created.id or 0,
+                tool_id=created.id,
                 creator_id=creator_id,
                 name=created.name,
                 tool_type=created.tool_type.value,
@@ -169,7 +170,7 @@ class ToolCatalogService:
         if changed_fields:
             await event_bus.publish_async(
                 ToolUpdatedEvent(
-                    tool_id=updated.id or 0,
+                    tool_id=tool_id,
                     creator_id=updated.creator_id,
                     changed_fields=tuple(changed_fields),
                 ),
@@ -266,7 +267,7 @@ class ToolCatalogService:
         updated = await self._repository.update(tool)
         await event_bus.publish_async(
             ToolSubmittedEvent(
-                tool_id=updated.id or 0,
+                tool_id=tool_id,
                 creator_id=updated.creator_id,
             ),
         )
@@ -283,7 +284,7 @@ class ToolCatalogService:
         updated = await self._repository.update(tool)
         await event_bus.publish_async(
             ToolApprovedEvent(
-                tool_id=updated.id or 0,
+                tool_id=tool_id,
                 creator_id=updated.creator_id,
                 reviewer_id=reviewer_id,
             ),
@@ -301,7 +302,7 @@ class ToolCatalogService:
         updated = await self._repository.update(tool)
         await event_bus.publish_async(
             ToolRejectedEvent(
-                tool_id=updated.id or 0,
+                tool_id=tool_id,
                 creator_id=updated.creator_id,
                 reviewer_id=reviewer_id,
                 comment=comment,
@@ -328,7 +329,7 @@ class ToolCatalogService:
         updated = await self._repository.update(tool)
         await event_bus.publish_async(
             ToolDeprecatedEvent(
-                tool_id=updated.id or 0,
+                tool_id=tool_id,
                 creator_id=updated.creator_id,
             ),
         )
@@ -358,8 +359,11 @@ class ToolCatalogService:
 
     @staticmethod
     def _to_dto(tool: Tool) -> ToolDTO:
+        assert tool.id is not None
+        assert tool.created_at is not None
+        assert tool.updated_at is not None
         return ToolDTO(
-            id=tool.id or 0,
+            id=tool.id,
             name=tool.name,
             description=tool.description,
             tool_type=tool.tool_type.value,
@@ -380,6 +384,6 @@ class ToolCatalogService:
             reviewer_id=tool.reviewer_id,
             review_comment=tool.review_comment,
             reviewed_at=tool.reviewed_at,
-            created_at=tool.created_at or tool.updated_at,  # type: ignore[arg-type]
-            updated_at=tool.updated_at,  # type: ignore[arg-type]
+            created_at=tool.created_at,
+            updated_at=tool.updated_at,
         )

@@ -3,19 +3,9 @@ import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as kms from 'aws-cdk-lib/aws-kms';
 import { Template } from 'aws-cdk-lib/assertions';
 import { NetworkStack, SecurityStack, DatabaseStack } from '../../lib/stacks';
+import { createTestVpc } from '../helpers/test-utils';
 
 const testEnv = { account: '000000000000', region: 'ap-northeast-1' };
-
-// 辅助函数: 创建含 Isolated 子网的 VPC
-function createTestVpc(stack: cdk.Stack) {
-  return new ec2.Vpc(stack, 'TestVpc', {
-    subnetConfiguration: [
-      { name: 'Public', subnetType: ec2.SubnetType.PUBLIC, cidrMask: 24 },
-      { name: 'Private', subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS, cidrMask: 24 },
-      { name: 'Isolated', subnetType: ec2.SubnetType.PRIVATE_ISOLATED, cidrMask: 24 },
-    ],
-  });
-}
 
 describe('Snapshot Tests', () => {
   it('NetworkStack 快照匹配', () => {

@@ -32,8 +32,25 @@ describe('SecurityGroupsConstruct', () => {
     template.resourceCountIs('AWS::EC2::SecurityGroup', 2);
   });
 
-  it('API 安全组应允许 HTTPS (443) 入站', () => {
-    template.hasResourceProperties('AWS::EC2::SecurityGroup', {
+  it('默认不应添加公网 HTTPS 入站规则', () => {
+    // enablePublicIngress 默认为 false，不应有 0.0.0.0/0 入站规则
+    const sgResources = template.findResources('AWS::EC2::SecurityGroup', {
+      Properties: {
+        GroupDescription: 'API 服务安全组',
+      },
+    });
+    const apiSg = Object.values(sgResources)[0];
+    expect(apiSg.Properties.SecurityGroupIngress).toBeUndefined();
+  });
+
+  it('enablePublicIngress 为 true 时应允许 HTTPS (443) 入站', () => {
+    const app = new cdk.App();
+    const stack = new cdk.Stack(app, 'TestStackPublic');
+    const vpc = new ec2.Vpc(stack, 'TestVpc');
+    new SecurityGroupsConstruct(stack, 'TestSg', { vpc, enablePublicIngress: true });
+    const publicTemplate = Template.fromStack(stack);
+
+    publicTemplate.hasResourceProperties('AWS::EC2::SecurityGroup', {
       GroupDescription: 'API 服务安全组',
       SecurityGroupIngress: Match.arrayWith([
         Match.objectLike({
