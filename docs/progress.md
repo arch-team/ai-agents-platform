@@ -5,9 +5,9 @@
 ## 当前状态
 
 - **阶段**: Phase 2 核心功能 (3-6 月)
-- **里程碑**: M4 工具目录 — ✅ 已完成
-- **变更积压**: ~~S0 全部完成~~ + 5 S1 + 4 S2 + 3 S3 + 5 S4 = 17 项（S0 阻断已清零）
-- **下一步**: 拆解 M5 里程碑任务 (knowledge 模块), 并行穿插 S1/S2 变更
+- **里程碑**: M5 知识库 — 进行中 (14 项任务)
+- **变更积压**: S0 ✅ + 5 S1 + 4 S2 + 2 S3 + 5 S4 = 16 项
+- **下一步**: 执行 M5 任务 #1 (KnowledgeBase 实体), 穿插 S1/S2 变更
 
 ## 模块状态
 
@@ -25,7 +25,7 @@
 | 模块 | 状态 | 分支 | 备注 |
 |------|:----:|------|------|
 | `tool-catalog` | 已完成 | ai-agents-factory-v1 | 工具注册/审批 (10 端点), 5 状态审批流程, MCP Server/API/Function 三类工具 |
-| `knowledge` | 待开始 | - | 知识库管理, RAG 检索 |
+| `knowledge` | 进行中 | ai-agents-factory-v1 | 知识库管理, RAG 检索 (Bedrock Knowledge Bases, ADR-005) |
 | `insights` | 待开始 | - | 成本归因, 使用趋势 |
 | `templates` | 待开始 | - | Agent 模板管理 (依赖 tool-catalog + knowledge) |
 
@@ -286,6 +286,87 @@
 
 </details>
 
+### M5: 知识库 (第 17-20 周) — 进行中
+
+> 交付物: knowledge 模块完成 (知识库 CRUD + 文档上传 + RAG 检索集成)
+> 验收标准: ruff check + mypy --strict + pytest --cov-fail-under=85 全通过; Top-5 召回率 >= 80%
+> 技术选型: MySQL (关系数据) + Bedrock Knowledge Bases (向量检索), 见 ADR-005
+
+#### 领域模型设计摘要
+
+**KnowledgeBase 实体**: name, description, status(KnowledgeBaseStatus), owner_id, agent_id(可选绑定), bedrock_kb_id(Bedrock KB 资源 ID), s3_prefix(文档存储路径)
+**Document 实体**: knowledge_base_id, filename, s3_key, file_size, status(DocumentStatus), content_type, chunk_count
+**KnowledgeBaseStatus 枚举**: CREATING → ACTIVE → SYNCING → FAILED → DELETED
+**DocumentStatus 枚举**: UPLOADING → PROCESSING → INDEXED → FAILED
+
+**核心流程**:
+- 创建知识库: 创建 KnowledgeBase 记录 + 调用 Bedrock CreateKnowledgeBase API
+- 上传文档: 上传到 S3 + 创建 Document 记录 + 触发 Bedrock StartIngestionJob
+- RAG 检索: 调用 Bedrock Retrieve API (语义搜索) → 返回相关文档片段
+- 与 Agent 集成: Agent 对话时自动检索关联知识库, 将结果作为上下文注入 LLM
+
+**外部服务抽象**:
+- `IKnowledgeService` → `BedrockKnowledgeAdapter` (Bedrock Knowledge Bases API 薄封装)
+- `IDocumentStorage` → `S3DocumentStorage` (S3 上传/下载)
+
+**API 端点**:
+- `POST /knowledge-bases` — 创建知识库
+- `GET /knowledge-bases` — 列表
+- `GET /knowledge-bases/{id}` — 详情
+- `PUT /knowledge-bases/{id}` — 更新
+- `DELETE /knowledge-bases/{id}` — 删除
+- `POST /knowledge-bases/{id}/documents` — 上传文档
+- `GET /knowledge-bases/{id}/documents` — 文档列表
+- `DELETE /knowledge-bases/{id}/documents/{doc_id}` — 删除文档
+- `POST /knowledge-bases/{id}/sync` — 手动触发同步
+- `POST /knowledge-bases/{id}/query` — RAG 检索
+
+#### 任务拆解
+
+| # | 任务 | 状态 | 依赖 | 参考规范 | 会话 |
+|---|------|:----:|:----:|---------|------|
+| 1 | knowledge/domain: KnowledgeBase 实体 + KnowledgeBaseStatus 枚举 + 状态机 (create/activate/sync/fail/delete) | 待开始 | - | `rules/architecture.md` §5 DDD 战术模式 | - |
+| 2 | knowledge/domain: Document 实体 + DocumentStatus 枚举 + 状态机 (upload/process/index/fail) | 待开始 | #1 | `rules/architecture.md` §5 | - |
+| 3 | knowledge/domain: 领域事件 (KBCreated/Activated/SyncStarted/DocUploaded/DocIndexed) + 模块异常 + IKnowledgeBaseRepository + IDocumentRepository | 待开始 | #1, #2 | `rules/architecture.md` §4.2, §5.4 | - |
+| 4 | knowledge/application: IKnowledgeService 接口 (createKB/deleteKB/startSync/retrieve) + IDocumentStorage 接口 (upload/delete/getUrl) | 待开始 | #1, #2 | `rules/architecture.md` §4.3 接口位置 | - |
+| 5 | knowledge/application: DTO (CreateKB/UpdateKB/KB/PagedKB/Document/UploadDoc/QueryRequest/QueryResult) + KnowledgeService (CRUD + 上传 + 同步 + 检索 + 权限) | 待开始 | #3, #4 | `rules/architecture.md` §5 + `rules/security.md` §2 | - |
+| 6 | knowledge/infrastructure/persistence: KnowledgeBaseModel + DocumentModel ORM + Repos 实现 + Alembic migration | 待开始 | #3 | `rules/tech-stack.md` + `rules/project-structure.md` | - |
+| 7 | knowledge/infrastructure/external: BedrockKnowledgeAdapter (boto3 bedrock-agent 薄封装 < 100 行) | 待开始 | #4 | `rules/sdk-first.md` 封装规则 + ADR-005 | - |
+| 8 | knowledge/infrastructure/external: S3DocumentStorage (boto3 s3 upload/delete/presigned_url) | 待开始 | #4 | `rules/sdk-first.md` | - |
+| 9 | knowledge/api: Request/Response Schema + dependencies.py + endpoints.py (10 端点) | 待开始 | #5, #6, #7, #8 | `rules/api-design.md` + `rules/security.md` | - |
+| 10 | 模块注册: main.py 路由注册 + knowledge 异常映射 + __init__.py 模块导出 | 待开始 | #9 | `rules/architecture.md` §6.3 | - |
+| 11 | execution 集成: send_message 中检测 Agent 关联的 KnowledgeBase, 自动调用 RAG 检索注入上下文 | 待开始 | #5, #7 | ADR-005 + `rules/architecture.md` §4.1 | - |
+| 12 | tests: knowledge 模块单元测试 (Domain 实体/状态机 + Application Service mock 外部服务) | 待开始 | #1-#5 | `rules/testing.md` TDD + AAA 模式 | - |
+| 13 | tests: knowledge 模块集成测试 (Repository + API 端点 + 架构合规更新) | 待开始 | #6-#10, #12 | `rules/testing.md` 集成测试 | - |
+| 14 | 质量验收: ruff check + mypy --strict + pytest --cov-fail-under=85 全通过 | 待开始 | #1-#13 | `rules/checklist.md` + roadmap.md §3.6 | - |
+
+#### 关键设计决策
+
+| 决策 | 选择 | 理由 |
+|------|------|------|
+| 向量存储 | Bedrock Knowledge Bases (非 pgvector/OpenSearch) | ADR-005: 全托管零运维, 与现有 MySQL 无冲突, SDK-First |
+| 文档存储 | S3 | product-architecture.md §6.2 数据存储策略 |
+| KnowledgeBase 元数据 | MySQL | 关系数据, 与其他模块一致 |
+| 与 Agent 绑定 | agent_id 可选字段 | 一个 KB 可被多个 Agent 引用; 对话时按 Agent 关联 KB 检索 |
+| RAG 注入时机 | send_message 前自动检索 | 透明集成, 用户无需手动调用检索 API |
+| 文档同步 | 异步 (Bedrock IngestionJob) | 文档处理耗时, 不阻塞用户操作 |
+| 跨模块通信 | shared/interfaces/IKnowledgeQuerier | 遵循模块隔离 R1/R3, execution 不直接依赖 knowledge |
+
+#### 依赖关系图
+
+```
+#1 (KB 实体) ──► #2 (Document 实体) ──► #3 (事件/异常/仓库接口) ──► #5 (Application)
+                                                            └──► #6 (ORM + 迁移)
+#4 (外部服务接口) ──► #5 (KnowledgeService)
+                  ├──► #7 (Bedrock 适配器)
+                  └──► #8 (S3 适配器)
+#5-#8 ──► #9 (API 端点) ──► #10 (模块注册)
+#5, #7 ──► #11 (execution 集成)
+#1-#5 ──► #12 (单元测试)
+#6-#12 ──► #13 (集成测试)
+#1-#13 ──► #14 (质量验收)
+```
+
 ---
 
 ## 变更积压 (Change Backlog)
@@ -335,7 +416,7 @@
 
 | 编号 | 变更描述 | 状态 | 依赖 | 来源 | 影响范围 | 参考规范 | 会话 |
 |------|---------|:----:|:----:|------|---------|---------|------|
-| C-S3-1 | MySQL vs PostgreSQL 技术选型 (ADR) | 待开始 | - | DevOps D4 + 性能 PERF10 | 全项目数据库 | `improvement-plan.md` §5 S3-1 | - |
+| C-S3-1 | MySQL vs PostgreSQL 技术选型 (ADR) | 已完成 | - | DevOps D4 + 性能 PERF10 | 全项目数据库 | `improvement-plan.md` §5 S3-1 | 2026-02-10 |
 | C-S3-2 | 端到端集成验证 (M4.5) | 待开始 | C-S0-3 | 产品审查 P2 | 前后端联调 | `improvement-plan.md` §5 S3-2 | - |
 | C-S3-3 | 路线图调整评审 | 待开始 | C-S3-1 | 产品审查 P1+P3+P10 | roadmap.md | `improvement-plan.md` §5 S3-3 | - |
 
@@ -356,9 +437,9 @@
 | S0 阻断修复 | 6 | 进入 M5 之前 | **6/6 ✅** |
 | S1 安全加固 | 5 | M5 开发期间并行 | 0/5 |
 | S2 性能解锁 | 4 | M5 开发期间并行 | 0/4 |
-| S3 战略决策 | 3 | M5 启动前决策 | 0/3 |
+| S3 战略决策 | 3 | M5 启动前决策 | 1/3 |
 | S4 中期改进 | 5 | Phase 2 完成前 | 0/5 |
-| **合计** | **23** | - | **6/23** |
+| **合计** | **23** | - | **7/23** |
 
 ---
 
@@ -378,8 +459,8 @@
 
 | # | 日期 | 类型 | 完成项 | 关键决策 |
 |---|------|------|-------|---------|
-| 6 | 2026-02-10 | 变更 | **S0 全部清零**: C-S0-3 Dockerfile + C-S0-4 MySQL 测试, 849+4skip, lifespan init_db | 多阶段构建; --mysql 选项控制; 共享 sqlite/mysql fixture; tmpfs 测试容器 |
-| 5 | 2026-02-10 | 变更 | C-S0-1 SSE session + C-S0-2 Alembic 迁移链, 849 测试, 94.80% | stream_finalize_repos 独立 session; 迁移链线性化 |
-| 4 | 2026-02-10 | 变更 | C-S0-5 is_active + C-S0-6 JWT Secret, 848 测试, 94.99% | model_validator 非开发环境密钥校验 |
-| 3 | 2026-02-10 | 工作流优化 | 变更管理机制 + 7 项工作流优化 | progress.md 唯一驱动器; C- 前缀; 会话历史 5 条 |
-| 2 | 2026-02-10 | 深度审查 | 五维度审查, improvement-plan.md (28 项) | S0 阻断 6 项 → 已全部清零 |
+| 7 | 2026-02-10 | Milestone | ADR-005 数据库选型 (MySQL + Bedrock KB) + M5 任务拆解 (14 项) | 保留 MySQL; RAG 用 Bedrock KB 全托管; insights 推后 |
+| 6 | 2026-02-10 | 变更 | S0 全部清零: C-S0-3 Dockerfile + C-S0-4 MySQL 测试 | 多阶段构建; --mysql; 共享 fixture |
+| 5 | 2026-02-10 | 变更 | C-S0-1 SSE session + C-S0-2 Alembic 迁移链 | stream_finalize_repos; 迁移链线性化 |
+| 4 | 2026-02-10 | 变更 | C-S0-5 is_active + C-S0-6 JWT Secret | model_validator 密钥校验 |
+| 3 | 2026-02-10 | 工作流优化 | 变更管理机制 + 7 项工作流优化 | C- 前缀; 会话历史 5 条 |
