@@ -7,7 +7,7 @@
 - **阶段**: Phase 2 核心功能 (3-6 月)
 - **里程碑**: M5 知识库 — 进行中 (14 项任务)
 - **变更积压**: S0 ✅ + 4 S1 + 3 S2 + 2 S3 + 5 S4 = 14 项
-- **下一步**: M5 #6 ORM+迁移 + #7 Bedrock 适配器 + #8 S3 适配器 (Infrastructure 层)
+- **下一步**: M5 #9 API 端点 + #10 模块注册, 然后 #11 execution 集成
 
 ## 模块状态
 
@@ -330,9 +330,9 @@
 | 3 | knowledge/domain: 领域事件 (KBCreated/Activated/SyncStarted/DocUploaded/DocIndexed) + 模块异常 + IKnowledgeBaseRepository + IDocumentRepository | 已完成 | #1, #2 | `rules/architecture.md` §4.2, §5.4 | 2026-02-10 |
 | 4 | knowledge/application: IKnowledgeService 接口 (createKB/deleteKB/startSync/retrieve) + IDocumentStorage 接口 (upload/delete/getUrl) | 已完成 | #1, #2 | `rules/architecture.md` §4.3 接口位置 | 2026-02-10 |
 | 5 | knowledge/application: DTO (CreateKB/UpdateKB/KB/PagedKB/Document/UploadDoc/QueryRequest/QueryResult) + KnowledgeService (CRUD + 上传 + 同步 + 检索 + 权限) | 已完成 | #3, #4 | `rules/architecture.md` §5 + `rules/security.md` §2 | 2026-02-10 |
-| 6 | knowledge/infrastructure/persistence: KnowledgeBaseModel + DocumentModel ORM + Repos 实现 + Alembic migration | 待开始 | #3 | `rules/tech-stack.md` + `rules/project-structure.md` | - |
-| 7 | knowledge/infrastructure/external: BedrockKnowledgeAdapter (boto3 bedrock-agent 薄封装 < 100 行) | 待开始 | #4 | `rules/sdk-first.md` 封装规则 + ADR-005 | - |
-| 8 | knowledge/infrastructure/external: S3DocumentStorage (boto3 s3 upload/delete/presigned_url) | 待开始 | #4 | `rules/sdk-first.md` | - |
+| 6 | knowledge/infrastructure/persistence: KnowledgeBaseModel + DocumentModel ORM + Repos 实现 + Alembic migration | 已完成 | #3 | `rules/tech-stack.md` + `rules/project-structure.md` | 2026-02-10 |
+| 7 | knowledge/infrastructure/external: BedrockKnowledgeAdapter (boto3 bedrock-agent 薄封装 < 100 行) | 已完成 | #4 | `rules/sdk-first.md` 封装规则 + ADR-005 | 2026-02-10 |
+| 8 | knowledge/infrastructure/external: S3DocumentStorage (boto3 s3 upload/delete/presigned_url) | 已完成 | #4 | `rules/sdk-first.md` | 2026-02-10 |
 | 9 | knowledge/api: Request/Response Schema + dependencies.py + endpoints.py (10 端点) | 待开始 | #5, #6, #7, #8 | `rules/api-design.md` + `rules/security.md` | - |
 | 10 | 模块注册: main.py 路由注册 + knowledge 异常映射 + __init__.py 模块导出 | 待开始 | #9 | `rules/architecture.md` §6.3 | - |
 | 11 | execution 集成: send_message 中检测 Agent 关联的 KnowledgeBase, 自动调用 RAG 检索注入上下文 | 待开始 | #5, #7 | ADR-005 + `rules/architecture.md` §4.1 | - |
@@ -459,8 +459,8 @@
 
 | # | 日期 | 类型 | 完成项 | 关键决策 |
 |---|------|------|-------|---------|
-| 9 | 2026-02-10 | Milestone | M5 #4-#5 Application 层 + C-S2-3 EventBus TTLCache, 982 测试 | KnowledgeService 10 方法; TTLCache 替换 set |
-| 8 | 2026-02-10 | Milestone | M5 #1-#3 Domain 层 + C-S1-5 CORS (Agent Team), 932 测试 | 2 实体+状态机, 6 事件, 3 异常, 2 仓库接口 |
-| 7 | 2026-02-10 | Milestone | ADR-005 + M5 拆解 + S0 全清零 + C-S0-1~4 | MySQL+Bedrock KB; Dockerfile; MySQL 测试 |
-| 6 | 2026-02-10 | 变更 | C-S0-5 is_active + C-S0-6 JWT + 工作流优化 7 项 | 密钥校验; 变更管理机制 |
-| 5 | 2026-02-09 | Milestone | M4 工具目录: 842 测试, 94.65% | Tool 审批 5 状态机 |
+| 10 | 2026-02-10 | Milestone | M5 #6-#8 Infrastructure 层完成 (ORM+迁移+Bedrock+S3), 994 测试 | 2 ORM Model, 2 Repo Impl, 2 适配器, 迁移 d4e5f6a7b8c9 |
+| 9 | 2026-02-10 | Milestone | M5 #4-#5 Application 层 + C-S2-3 EventBus TTLCache, 982 测试 | KnowledgeService 10 方法; TTLCache |
+| 8 | 2026-02-10 | Milestone | M5 #1-#3 Domain 层 + C-S1-5 CORS, 932 测试 | 2 实体, 6 事件, 3 异常, 2 仓库 |
+| 7 | 2026-02-10 | Milestone | ADR-005 + M5 拆解 + S0 全清零 | MySQL+Bedrock KB |
+| 6 | 2026-02-10 | 变更 | C-S0-5/6 + 工作流优化 + 深度审查 | 密钥校验; 变更管理; 28 行动项 |
