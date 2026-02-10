@@ -6,8 +6,8 @@
 
 - **阶段**: Phase 2 核心功能 (3-6 月)
 - **里程碑**: M4 工具目录 — ✅ 已完成
-- **变更积压**: 2 S0 + 5 S1 + 4 S2 + 3 S3 + 5 S4 = 19 项（S0 阻断: 2 项待完成）
-- **下一步**: 执行 C-S0-3 (Dockerfile), 然后 C-S0-4 (MySQL 测试)
+- **变更积压**: ~~S0 全部完成~~ + 5 S1 + 4 S2 + 3 S3 + 5 S4 = 17 项（S0 阻断已清零）
+- **下一步**: 拆解 M5 里程碑任务 (knowledge 模块), 并行穿插 S1/S2 变更
 
 ## 模块状态
 
@@ -307,8 +307,8 @@
 |------|---------|:----:|:----:|------|---------|---------|------|
 | C-S0-1 | SSE 流式 session 生命周期修复 | 已完成 | - | 架构审查 A1 (P0) | execution 模块 | `improvement-plan.md` §2 S0-1 | 2026-02-10 |
 | C-S0-2 | Alembic 迁移 ID 冲突修复 | 已完成 | - | 架构审查 A2 (P0) | migrations/ | `improvement-plan.md` §2 S0-2 | 2026-02-10 |
-| C-S0-3 | Dockerfile + docker-compose 创建 | 待开始 | C-S0-2 | DevOps 审查 D7 (阻塞级) | 项目根目录 | `improvement-plan.md` §2 S0-3 | - |
-| C-S0-4 | MySQL 集成测试添加 | 待开始 | C-S0-3 | DevOps 审查 D2 (阻塞级) | tests/ + CI | `improvement-plan.md` §2 S0-4 | - |
+| C-S0-3 | Dockerfile + docker-compose 创建 | 已完成 | C-S0-2 | DevOps 审查 D7 (阻塞级) | 项目根目录 | `improvement-plan.md` §2 S0-3 | 2026-02-10 |
+| C-S0-4 | MySQL 集成测试添加 | 已完成 | C-S0-3 | DevOps 审查 D2 (阻塞级) | tests/ + CI | `improvement-plan.md` §2 S0-4 | 2026-02-10 |
 | C-S0-5 | `get_current_user` 添加 `is_active` 检查 | 已完成 | - | 安全审查 SEC11 (中危) | auth 模块 | `improvement-plan.md` §2 S0-5 | 2026-02-10 |
 | C-S0-6 | JWT Secret 启动校验 | 已完成 | - | 安全审查 SEC1 (高危) | shared/settings | `improvement-plan.md` §2 S0-6 | 2026-02-10 |
 
@@ -353,12 +353,12 @@
 
 | 级别 | 数量 | 时间窗口 | 当前进度 |
 |------|:----:|---------|---------|
-| S0 阻断修复 | 6 | 进入 M5 之前 | 4/6 |
+| S0 阻断修复 | 6 | 进入 M5 之前 | **6/6 ✅** |
 | S1 安全加固 | 5 | M5 开发期间并行 | 0/5 |
 | S2 性能解锁 | 4 | M5 开发期间并行 | 0/4 |
 | S3 战略决策 | 3 | M5 启动前决策 | 0/3 |
 | S4 中期改进 | 5 | Phase 2 完成前 | 0/5 |
-| **合计** | **23** | - | **4/23** |
+| **合计** | **23** | - | **6/23** |
 
 ---
 
@@ -378,8 +378,8 @@
 
 | # | 日期 | 类型 | 完成项 | 关键决策 |
 |---|------|------|-------|---------|
-| 5 | 2026-02-10 | 变更 | C-S0-1 SSE session 修复 + C-S0-2 Alembic 迁移链修复，849 测试，94.80% 覆盖率 | stream_finalize_repos 独立 session 写; 迁移链线性化 users→agents→conv→tools |
-| 4 | 2026-02-10 | 变更 | C-S0-5 is_active 检查 + C-S0-6 JWT Secret 启动校验，848 测试，94.99% 覆盖率 | model_validator 校验非开发环境密钥安全; APP_ENV=test 豁免 |
-| 3 | 2026-02-10 | 工作流优化 | 变更管理机制 + 7 项工作流优化 | progress.md 唯一驱动器; C- 前缀编号; 会话历史保留 5 条 |
-| 2 | 2026-02-10 | 深度审查 | 五维度深度审查完成, 产出 improvement-plan.md (28 项, S0-S5) | S0 阻断 6 项必须在 M5 前完成 |
-| 1 | 2026-02-09 | Milestone | M4 工具目录完成: 842 测试, 94.65% 覆盖率 | Tool 审批 5 状态机; ToolConfig 扁平结构 |
+| 6 | 2026-02-10 | 变更 | **S0 全部清零**: C-S0-3 Dockerfile + C-S0-4 MySQL 测试, 849+4skip, lifespan init_db | 多阶段构建; --mysql 选项控制; 共享 sqlite/mysql fixture; tmpfs 测试容器 |
+| 5 | 2026-02-10 | 变更 | C-S0-1 SSE session + C-S0-2 Alembic 迁移链, 849 测试, 94.80% | stream_finalize_repos 独立 session; 迁移链线性化 |
+| 4 | 2026-02-10 | 变更 | C-S0-5 is_active + C-S0-6 JWT Secret, 848 测试, 94.99% | model_validator 非开发环境密钥校验 |
+| 3 | 2026-02-10 | 工作流优化 | 变更管理机制 + 7 项工作流优化 | progress.md 唯一驱动器; C- 前缀; 会话历史 5 条 |
+| 2 | 2026-02-10 | 深度审查 | 五维度审查, improvement-plan.md (28 项) | S0 阻断 6 项 → 已全部清零 |
