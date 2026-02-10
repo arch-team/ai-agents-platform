@@ -7,7 +7,7 @@
 - **阶段**: Phase 2 核心功能 (3-6 月)
 - **里程碑**: M5 知识库 — 进行中 (14 项任务)
 - **变更积压**: S0 ✅ + 4 S1 + 3 S2 + 2 S3 + 5 S4 = 14 项
-- **下一步**: M5 #9 API 端点 + #10 模块注册, 然后 #11 execution 集成
+- **下一步**: M5 #12-#14 测试 + 质量验收, 完成 knowledge 模块
 
 ## 模块状态
 
@@ -333,9 +333,9 @@
 | 6 | knowledge/infrastructure/persistence: KnowledgeBaseModel + DocumentModel ORM + Repos 实现 + Alembic migration | 已完成 | #3 | `rules/tech-stack.md` + `rules/project-structure.md` | 2026-02-10 |
 | 7 | knowledge/infrastructure/external: BedrockKnowledgeAdapter (boto3 bedrock-agent 薄封装 < 100 行) | 已完成 | #4 | `rules/sdk-first.md` 封装规则 + ADR-005 | 2026-02-10 |
 | 8 | knowledge/infrastructure/external: S3DocumentStorage (boto3 s3 upload/delete/presigned_url) | 已完成 | #4 | `rules/sdk-first.md` | 2026-02-10 |
-| 9 | knowledge/api: Request/Response Schema + dependencies.py + endpoints.py (10 端点) | 待开始 | #5, #6, #7, #8 | `rules/api-design.md` + `rules/security.md` | - |
-| 10 | 模块注册: main.py 路由注册 + knowledge 异常映射 + __init__.py 模块导出 | 待开始 | #9 | `rules/architecture.md` §6.3 | - |
-| 11 | execution 集成: send_message 中检测 Agent 关联的 KnowledgeBase, 自动调用 RAG 检索注入上下文 | 待开始 | #5, #7 | ADR-005 + `rules/architecture.md` §4.1 | - |
+| 9 | knowledge/api: Request/Response Schema + dependencies.py + endpoints.py (10 端点) | 已完成 | #5, #6, #7, #8 | `rules/api-design.md` + `rules/security.md` | 2026-02-10 |
+| 10 | 模块注册: main.py 路由注册 + knowledge 异常映射 + __init__.py 模块导出 | 已完成 | #9 | `rules/architecture.md` §6.3 | 2026-02-10 |
+| 11 | execution 集成: send_message 中检测 Agent 关联的 KnowledgeBase, 自动调用 RAG 检索注入上下文 | 已完成 | #5, #7 | ADR-005 + `rules/architecture.md` §4.1 | 2026-02-10 |
 | 12 | tests: knowledge 模块单元测试 (Domain 实体/状态机 + Application Service mock 外部服务) | 待开始 | #1-#5 | `rules/testing.md` TDD + AAA 模式 | - |
 | 13 | tests: knowledge 模块集成测试 (Repository + API 端点 + 架构合规更新) | 待开始 | #6-#10, #12 | `rules/testing.md` 集成测试 | - |
 | 14 | 质量验收: ruff check + mypy --strict + pytest --cov-fail-under=85 全通过 | 待开始 | #1-#13 | `rules/checklist.md` + roadmap.md §3.6 | - |
@@ -459,8 +459,8 @@
 
 | # | 日期 | 类型 | 完成项 | 关键决策 |
 |---|------|------|-------|---------|
-| 10 | 2026-02-10 | Milestone | M5 #6-#8 Infrastructure 层完成 (ORM+迁移+Bedrock+S3), 994 测试 | 2 ORM Model, 2 Repo Impl, 2 适配器, 迁移 d4e5f6a7b8c9 |
-| 9 | 2026-02-10 | Milestone | M5 #4-#5 Application 层 + C-S2-3 EventBus TTLCache, 982 测试 | KnowledgeService 10 方法; TTLCache |
-| 8 | 2026-02-10 | Milestone | M5 #1-#3 Domain 层 + C-S1-5 CORS, 932 测试 | 2 实体, 6 事件, 3 异常, 2 仓库 |
-| 7 | 2026-02-10 | Milestone | ADR-005 + M5 拆解 + S0 全清零 | MySQL+Bedrock KB |
-| 6 | 2026-02-10 | 变更 | C-S0-5/6 + 工作流优化 + 深度审查 | 密钥校验; 变更管理; 28 行动项 |
+| 11 | 2026-02-10 | Milestone | M5 #9-#11 API+注册+RAG集成 (Agent Team), 997 测试 | 10 端点, IKnowledgeQuerier, RAG 上下文注入 |
+| 10 | 2026-02-10 | Milestone | M5 #6-#8 Infrastructure 层, 994 测试 | ORM, Bedrock 适配器, S3 适配器 |
+| 9 | 2026-02-10 | Milestone | M5 #4-#5 Application 层 + C-S2-3 EventBus, 982 测试 | KnowledgeService; TTLCache |
+| 8 | 2026-02-10 | Milestone | M5 #1-#3 Domain + C-S1-5 CORS + ADR-005, 932 测试 | 实体+事件+仓库; MySQL+Bedrock KB |
+| 7 | 2026-02-10 | 变更 | S0 全清零 + 工作流优化 + 深度审查 | Dockerfile; 密钥校验; 变更管理 |
