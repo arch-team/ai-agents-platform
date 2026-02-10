@@ -24,6 +24,7 @@ class ActiveAgentInfo:
     max_tokens: int
     top_p: float
     stop_sequences: tuple[str, ...] = ()
+    knowledge_base_id: int | None = None
 
 
 class IAgentQuerier(ABC):

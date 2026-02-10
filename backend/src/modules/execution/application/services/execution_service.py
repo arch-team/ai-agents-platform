@@ -42,6 +42,7 @@ from src.modules.execution.domain.value_objects.message_role import MessageRole
 from src.shared.domain.event_bus import event_bus
 from src.shared.domain.exceptions import DomainError
 from src.shared.domain.interfaces.agent_querier import ActiveAgentInfo, IAgentQuerier
+from src.shared.domain.interfaces.knowledge_querier import IKnowledgeQuerier
 
 
 @dataclass
@@ -64,11 +65,13 @@ class ExecutionService:
         llm_client: ILLMClient,
         agent_querier: IAgentQuerier,
         stream_finalize_repos: tuple[IMessageRepository, IConversationRepository] | None = None,
+        knowledge_querier: IKnowledgeQuerier | None = None,
     ) -> None:
         self._conversation_repo = conversation_repo
         self._message_repo = message_repo
         self._llm_client = llm_client
         self._agent_querier = agent_querier
+        self._knowledge_querier = knowledge_querier
         # 流后 DB 写使用独立 repos (由 API 层通过独立 session 创建)
         self._stream_msg_repo, self._stream_conv_repo = (
             stream_finalize_repos if stream_finalize_repos else (message_repo, conversation_repo)
@@ -386,6 +389,25 @@ class ExecutionService:
         # 加载消息历史 → 构建 LLM 上下文
         history = await self._message_repo.list_by_conversation(conversation_id)
         llm_messages = [LLMMessage(role=m.role.value, content=m.content) for m in history]
+
+        # RAG 上下文注入
+        if agent_info.knowledge_base_id and self._knowledge_querier:
+            rag_results = await self._knowledge_querier.retrieve(
+                agent_info.knowledge_base_id,
+                content,
+                top_k=5,
+            )
+            if rag_results:
+                rag_context = "\n\n".join(
+                    f"[参考文档] {r.content}" for r in rag_results
+                )
+                llm_messages.insert(
+                    0,
+                    LLMMessage(
+                        role="user",
+                        content=f"以下是相关参考资料:\n{rag_context}",
+                    ),
+                )
 
         return _SendContext(
             conversation=conversation,

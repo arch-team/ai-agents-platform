@@ -17,6 +17,12 @@ from src.modules.execution.domain.exceptions import (
     ConversationNotActiveError,
     ConversationNotFoundError,
 )
+from src.modules.knowledge.api.endpoints import router as knowledge_router
+from src.modules.knowledge.domain.exceptions import (
+    DocumentNotFoundError,
+    KnowledgeBaseNameDuplicateError,
+    KnowledgeBaseNotFoundError,
+)
 from src.modules.tool_catalog.api.endpoints import router as tool_catalog_router
 from src.modules.tool_catalog.domain.exceptions import ToolNameDuplicateError, ToolNotFoundError
 from src.presentation.api.routes.health import router as health_router
@@ -74,6 +80,11 @@ def create_app() -> FastAPI:
     register_status_mapping(ToolNotFoundError, 404)
     register_status_mapping(ToolNameDuplicateError, 409)
 
+    # 注册 knowledge 模块异常映射
+    register_status_mapping(KnowledgeBaseNotFoundError, 404)
+    register_status_mapping(KnowledgeBaseNameDuplicateError, 409)
+    register_status_mapping(DocumentNotFoundError, 404)
+
     # 统一异常处理
     register_exception_handlers(app)
 
@@ -83,6 +94,7 @@ def create_app() -> FastAPI:
     app.include_router(agents_router)
     app.include_router(execution_router)
     app.include_router(tool_catalog_router)
+    app.include_router(knowledge_router)
 
     return app
 

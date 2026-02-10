@@ -39,6 +39,10 @@ from src.shared.domain.interfaces.agent_querier import (
     ActiveAgentInfo,
     IAgentQuerier,
 )
+from src.shared.domain.interfaces.knowledge_querier import (
+    IKnowledgeQuerier,
+    RetrievalResult,
+)
 
 
 def _make_agent_info(
@@ -51,6 +55,7 @@ def _make_agent_info(
     max_tokens: int = 2048,
     top_p: float = 1.0,
     stop_sequences: tuple[str, ...] = (),
+    knowledge_base_id: int | None = None,
 ) -> ActiveAgentInfo:
     return ActiveAgentInfo(
         id=agent_id,
@@ -61,6 +66,7 @@ def _make_agent_info(
         max_tokens=max_tokens,
         top_p=top_p,
         stop_sequences=stop_sequences,
+        knowledge_base_id=knowledge_base_id,
     )
 
 
@@ -109,6 +115,7 @@ def _make_service(
     llm_client: AsyncMock | None = None,
     agent_querier: AsyncMock | None = None,
     stream_finalize_repos: tuple[AsyncMock, AsyncMock] | None = None,
+    knowledge_querier: AsyncMock | None = None,
 ) -> ExecutionService:
     return ExecutionService(
         conversation_repo=conv_repo or AsyncMock(spec=IConversationRepository),
@@ -116,6 +123,7 @@ def _make_service(
         llm_client=llm_client or AsyncMock(spec=ILLMClient),
         agent_querier=agent_querier or AsyncMock(spec=IAgentQuerier),
         stream_finalize_repos=stream_finalize_repos,
+        knowledge_querier=knowledge_querier,
     )
 
 
@@ -537,3 +545,190 @@ class TestCompleteConversation:
 
         with pytest.raises(DomainError, match="无权操作"):
             await service.complete_conversation(1, user_id=999)
+
+
+@pytest.mark.unit
+class TestRAGIntegration:
+    """RAG 检索集成测试。"""
+
+    @pytest.mark.asyncio
+    async def test_send_message_with_rag_injects_context(self) -> None:
+        """Agent 有 knowledge_base_id 时, LLM 收到的消息包含 RAG 上下文。"""
+        conv_repo = AsyncMock(spec=IConversationRepository)
+        conv_repo.get_by_id.return_value = _make_conversation()
+        conv_repo.update.side_effect = lambda c: c
+
+        msg_repo = AsyncMock(spec=IMessageRepository)
+        msg_repo.create.side_effect = lambda m: _make_message(
+            conversation_id=m.conversation_id,
+            role=m.role,
+            content=m.content,
+            token_count=m.token_count,
+        )
+        msg_repo.list_by_conversation.return_value = [
+            _make_message(content="你好"),
+        ]
+
+        llm_client = AsyncMock(spec=ILLMClient)
+        llm_client.invoke.return_value = LLMResponse(
+            content="回复内容",
+            input_tokens=10,
+            output_tokens=20,
+        )
+
+        agent_querier = AsyncMock(spec=IAgentQuerier)
+        agent_querier.get_active_agent.return_value = _make_agent_info(
+            knowledge_base_id=42,
+        )
+
+        knowledge_querier = AsyncMock(spec=IKnowledgeQuerier)
+        knowledge_querier.retrieve.return_value = [
+            RetrievalResult(content="文档片段1", score=0.95),
+            RetrievalResult(content="文档片段2", score=0.85),
+        ]
+
+        service = _make_service(
+            conv_repo=conv_repo,
+            msg_repo=msg_repo,
+            llm_client=llm_client,
+            agent_querier=agent_querier,
+            knowledge_querier=knowledge_querier,
+        )
+
+        with patch(
+            "src.modules.execution.application.services.execution_service.event_bus"
+        ) as mock_bus:
+            mock_bus.publish_async = AsyncMock()
+            await service.send_message(1, SendMessageDTO(content="你好"), user_id=100)
+
+        # 验证 knowledge_querier 被调用
+        knowledge_querier.retrieve.assert_called_once_with(42, "你好", top_k=5)
+
+        # 验证 LLM 收到的消息列表第一条是 RAG 上下文
+        call_kwargs = llm_client.invoke.call_args
+        messages = call_kwargs.kwargs["messages"]
+        assert messages[0].role == "user"
+        assert "参考资料" in messages[0].content
+        assert "文档片段1" in messages[0].content
+        assert "文档片段2" in messages[0].content
+
+    @pytest.mark.asyncio
+    async def test_send_message_without_kb_no_rag(self) -> None:
+        """Agent 无 knowledge_base_id 时, 正常发送无 RAG。"""
+        conv_repo = AsyncMock(spec=IConversationRepository)
+        conv_repo.get_by_id.return_value = _make_conversation()
+        conv_repo.update.side_effect = lambda c: c
+
+        msg_repo = AsyncMock(spec=IMessageRepository)
+        msg_repo.create.side_effect = lambda m: _make_message(
+            conversation_id=m.conversation_id,
+            role=m.role,
+            content=m.content,
+            token_count=m.token_count,
+        )
+        msg_repo.list_by_conversation.return_value = [
+            _make_message(content="你好"),
+        ]
+
+        llm_client = AsyncMock(spec=ILLMClient)
+        llm_client.invoke.return_value = LLMResponse(
+            content="回复内容",
+            input_tokens=10,
+            output_tokens=20,
+        )
+
+        agent_querier = AsyncMock(spec=IAgentQuerier)
+        agent_querier.get_active_agent.return_value = _make_agent_info()
+
+        knowledge_querier = AsyncMock(spec=IKnowledgeQuerier)
+
+        service = _make_service(
+            conv_repo=conv_repo,
+            msg_repo=msg_repo,
+            llm_client=llm_client,
+            agent_querier=agent_querier,
+            knowledge_querier=knowledge_querier,
+        )
+
+        with patch(
+            "src.modules.execution.application.services.execution_service.event_bus"
+        ) as mock_bus:
+            mock_bus.publish_async = AsyncMock()
+            await service.send_message(1, SendMessageDTO(content="你好"), user_id=100)
+
+        # knowledge_querier 不应被调用
+        knowledge_querier.retrieve.assert_not_called()
+
+        # LLM 消息列表不应包含 RAG 上下文
+        call_kwargs = llm_client.invoke.call_args
+        messages = call_kwargs.kwargs["messages"]
+        for msg in messages:
+            assert "参考资料" not in msg.content
+
+    @pytest.mark.asyncio
+    async def test_send_message_stream_with_rag(self) -> None:
+        """流式消息也注入 RAG 上下文。"""
+        conv_repo = AsyncMock(spec=IConversationRepository)
+        conv_repo.get_by_id.return_value = _make_conversation()
+        conv_repo.update.side_effect = lambda c: c
+
+        msg_repo = AsyncMock(spec=IMessageRepository)
+        msg_repo.create.side_effect = lambda m: _make_message(
+            conversation_id=m.conversation_id,
+            role=m.role,
+            content=m.content,
+            token_count=m.token_count,
+        )
+        msg_repo.list_by_conversation.return_value = [
+            _make_message(content="你好"),
+        ]
+        msg_repo.update.side_effect = lambda m: m
+
+        async def _mock_stream(*_args: object, **_kwargs: object) -> object:
+            async def _gen():  # type: ignore[no-untyped-def]
+                yield LLMStreamChunk(content="回复")
+                yield LLMStreamChunk(done=True, input_tokens=5, output_tokens=10)
+            return _gen()
+
+        llm_client = AsyncMock(spec=ILLMClient)
+        llm_client.invoke_stream.side_effect = _mock_stream
+
+        agent_querier = AsyncMock(spec=IAgentQuerier)
+        agent_querier.get_active_agent.return_value = _make_agent_info(
+            knowledge_base_id=42,
+        )
+
+        knowledge_querier = AsyncMock(spec=IKnowledgeQuerier)
+        knowledge_querier.retrieve.return_value = [
+            RetrievalResult(content="流式文档片段", score=0.9),
+        ]
+
+        service = _make_service(
+            conv_repo=conv_repo,
+            msg_repo=msg_repo,
+            llm_client=llm_client,
+            agent_querier=agent_querier,
+            knowledge_querier=knowledge_querier,
+        )
+
+        with patch(
+            "src.modules.execution.application.services.execution_service.event_bus"
+        ) as mock_bus:
+            mock_bus.publish_async = AsyncMock()
+            stream = await service.send_message_stream(
+                1, SendMessageDTO(content="你好"), user_id=100,
+            )
+
+            events: list[str] = []
+            async for event in stream:
+                events.append(event)
+
+        # 验证 knowledge_querier 被调用
+        knowledge_querier.retrieve.assert_called_once_with(42, "你好", top_k=5)
+
+        # 验证 LLM 流式调用收到的消息包含 RAG 上下文
+        call_kwargs = llm_client.invoke_stream.call_args
+        messages = call_kwargs.kwargs["messages"]
+        assert messages[0].role == "user"
+        assert "参考资料" in messages[0].content
+        assert "流式文档片段" in messages[0].content
