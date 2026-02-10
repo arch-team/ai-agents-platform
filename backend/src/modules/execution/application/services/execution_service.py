@@ -63,11 +63,16 @@ class ExecutionService:
         message_repo: IMessageRepository,
         llm_client: ILLMClient,
         agent_querier: IAgentQuerier,
+        stream_finalize_repos: tuple[IMessageRepository, IConversationRepository] | None = None,
     ) -> None:
         self._conversation_repo = conversation_repo
         self._message_repo = message_repo
         self._llm_client = llm_client
         self._agent_querier = agent_querier
+        # 流后 DB 写使用独立 repos (由 API 层通过独立 session 创建)
+        self._stream_msg_repo, self._stream_conv_repo = (
+            stream_finalize_repos if stream_finalize_repos else (message_repo, conversation_repo)
+        )
 
     async def create_conversation(
         self,
@@ -210,33 +215,17 @@ class ExecutionService:
                     total_input_tokens = chunk.input_tokens
                     total_output_tokens = chunk.output_tokens
 
+            # 流后 DB 写操作: 使用独立 session, 避免 DI session 已关闭的问题
             total_tokens = total_input_tokens + total_output_tokens
-            created_assistant_msg.content = collected_content
-            created_assistant_msg.token_count = total_tokens
-            await self._message_repo.update(created_assistant_msg)
-
-            # 更新对话统计
-            ctx.conversation.add_message_count(token_count=0)  # 用户消息
-            ctx.conversation.add_message_count(token_count=total_tokens)
-            await self._conversation_repo.update(ctx.conversation)
-
-            # 发布事件
-            assert ctx.created_user_msg.id is not None
-            assert created_assistant_msg.id is not None
-            await event_bus.publish_async(
-                MessageSentEvent(
-                    conversation_id=conversation_id,
-                    message_id=ctx.created_user_msg.id,
-                    user_id=user_id,
-                ),
-            )
-            await event_bus.publish_async(
-                MessageReceivedEvent(
-                    conversation_id=conversation_id,
-                    message_id=created_assistant_msg.id,
-                    token_count=total_tokens,
-                    model_id=ctx.agent_info.model_id,
-                ),
+            await self._finalize_stream(
+                conversation_id=conversation_id,
+                conversation=ctx.conversation,
+                user_msg=ctx.created_user_msg,
+                assistant_msg=created_assistant_msg,
+                collected_content=collected_content,
+                total_tokens=total_tokens,
+                model_id=ctx.agent_info.model_id,
+                user_id=user_id,
             )
 
             done_data = json.dumps(
@@ -250,6 +239,47 @@ class ExecutionService:
             yield f"data: {done_data}\n\n"
 
         return _generate()
+
+    async def _finalize_stream(
+        self,
+        *,
+        conversation_id: int,
+        conversation: Conversation,
+        user_msg: Message,
+        assistant_msg: Message,
+        collected_content: str,
+        total_tokens: int,
+        model_id: str,
+        user_id: int,
+    ) -> None:
+        """流式传输完成后，使用独立 session 执行 DB 写操作和事件发布。"""
+        assistant_msg.content = collected_content
+        assistant_msg.token_count = total_tokens
+        conversation.add_message_count(token_count=0)  # 用户消息
+        conversation.add_message_count(token_count=total_tokens)
+
+        # 使用流专用 repos 写入 (由 API 层通过独立 session 创建, 避免 DI session 已关闭)
+        await self._stream_msg_repo.update(assistant_msg)
+        await self._stream_conv_repo.update(conversation)
+
+        # 发布事件 (不依赖 DB session)
+        assert user_msg.id is not None
+        assert assistant_msg.id is not None
+        await event_bus.publish_async(
+            MessageSentEvent(
+                conversation_id=conversation_id,
+                message_id=user_msg.id,
+                user_id=user_id,
+            ),
+        )
+        await event_bus.publish_async(
+            MessageReceivedEvent(
+                conversation_id=conversation_id,
+                message_id=assistant_msg.id,
+                token_count=total_tokens,
+                model_id=model_id,
+            ),
+        )
 
     async def get_conversation(
         self,

@@ -36,6 +36,13 @@ def get_engine() -> AsyncEngine:
     return _engine
 
 
+def get_session_factory() -> async_sessionmaker[AsyncSession]:
+    """获取 session factory（用于流式等需要独立管理 session 生命周期的场景）。"""
+    if _session_factory is None:
+        raise RuntimeError(_NOT_INITIALIZED_MSG)
+    return _session_factory
+
+
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
     """FastAPI 依赖注入: 获取异步数据库会话。"""
     if _session_factory is None:

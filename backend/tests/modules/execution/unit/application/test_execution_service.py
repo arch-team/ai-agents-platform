@@ -3,7 +3,7 @@
 import json
 
 import pytest
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 from src.modules.execution.application.dto.execution_dto import (
     CreateConversationDTO,
@@ -108,12 +108,14 @@ def _make_service(
     msg_repo: AsyncMock | None = None,
     llm_client: AsyncMock | None = None,
     agent_querier: AsyncMock | None = None,
+    stream_finalize_repos: tuple[AsyncMock, AsyncMock] | None = None,
 ) -> ExecutionService:
     return ExecutionService(
         conversation_repo=conv_repo or AsyncMock(spec=IConversationRepository),
         message_repo=msg_repo or AsyncMock(spec=IMessageRepository),
         llm_client=llm_client or AsyncMock(spec=ILLMClient),
         agent_querier=agent_querier or AsyncMock(spec=IAgentQuerier),
+        stream_finalize_repos=stream_finalize_repos,
     )
 
 
@@ -325,6 +327,66 @@ class TestSendMessageStream:
         # 验证更新调用
         msg_repo.update.assert_called_once()
         conv_repo.update.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_stream_post_write_uses_independent_repos(self) -> None:
+        """流后 DB 写操作应使用 stream_finalize_repos, 不依赖 DI repos。"""
+        di_conv_repo = AsyncMock(spec=IConversationRepository)
+        di_conv_repo.get_by_id.return_value = _make_conversation()
+
+        di_msg_repo = AsyncMock(spec=IMessageRepository)
+        di_msg_repo.create.side_effect = lambda m: _make_message(
+            conversation_id=m.conversation_id,
+            role=m.role,
+            content=m.content,
+            token_count=m.token_count,
+        )
+        di_msg_repo.list_by_conversation.return_value = [_make_message(content="你好")]
+
+        async def _mock_stream(*_args: object, **_kwargs: object) -> object:
+            async def _gen():  # type: ignore[no-untyped-def]
+                yield LLMStreamChunk(content="回复")
+                yield LLMStreamChunk(done=True, input_tokens=5, output_tokens=10)
+            return _gen()
+
+        llm_client = AsyncMock(spec=ILLMClient)
+        llm_client.invoke_stream.side_effect = _mock_stream
+
+        agent_querier = AsyncMock(spec=IAgentQuerier)
+        agent_querier.get_active_agent.return_value = _make_agent_info()
+
+        # 独立 session 的 repos (模拟 API 层通过独立 session 创建)
+        stream_msg_repo = AsyncMock(spec=IMessageRepository)
+        stream_msg_repo.update.side_effect = lambda m: m
+        stream_conv_repo = AsyncMock(spec=IConversationRepository)
+        stream_conv_repo.update.side_effect = lambda c: c
+
+        service = _make_service(
+            conv_repo=di_conv_repo,
+            msg_repo=di_msg_repo,
+            llm_client=llm_client,
+            agent_querier=agent_querier,
+            stream_finalize_repos=(stream_msg_repo, stream_conv_repo),
+        )
+
+        with patch(
+            "src.modules.execution.application.services.execution_service.event_bus"
+        ) as mock_bus:
+            mock_bus.publish_async = AsyncMock()
+            stream = await service.send_message_stream(
+                1, SendMessageDTO(content="你好"), user_id=100,
+            )
+
+            events: list[str] = []
+            async for event in stream:
+                events.append(event)
+
+        # 验证: stream repos 执行了写操作
+        stream_msg_repo.update.assert_called_once()
+        stream_conv_repo.update.assert_called_once()
+        # 验证: DI repos 的 update 未被调用
+        di_msg_repo.update.assert_not_called()
+        di_conv_repo.update.assert_not_called()
 
     @pytest.mark.asyncio
     async def test_send_message_stream_conversation_not_found(self) -> None:

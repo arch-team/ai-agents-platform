@@ -17,7 +17,7 @@ from src.modules.execution.infrastructure.persistence.repositories.message_repos
 )
 from src.presentation.api.providers import get_agent_querier
 from src.shared.domain.interfaces.agent_querier import IAgentQuerier
-from src.shared.infrastructure.database import get_db
+from src.shared.infrastructure.database import get_db, get_session_factory
 from src.shared.infrastructure.settings import get_settings
 
 
@@ -33,13 +33,26 @@ async def get_execution_service(
     session: Annotated[AsyncSession, Depends(get_db)],
     agent_querier: Annotated[IAgentQuerier, Depends(get_agent_querier)],
 ) -> ExecutionService:
-    """创建 ExecutionService 实例。"""
+    """创建 ExecutionService 实例。
+
+    stream_finalize_repos 使用独立 session 创建, 避免 SSE 流式响应中
+    DI session 已关闭后 DB 写操作失败的问题。
+    """
     conversation_repo = ConversationRepositoryImpl(session=session)
     message_repo = MessageRepositoryImpl(session=session)
     llm_client = get_bedrock_client()
+
+    # 为流后 DB 写操作创建独立 session 的 repos
+    stream_session = get_session_factory()()
+    stream_finalize_repos = (
+        MessageRepositoryImpl(session=stream_session),
+        ConversationRepositoryImpl(session=stream_session),
+    )
+
     return ExecutionService(
         conversation_repo=conversation_repo,
         message_repo=message_repo,
         llm_client=llm_client,
         agent_querier=agent_querier,
+        stream_finalize_repos=stream_finalize_repos,
     )

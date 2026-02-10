@@ -1,6 +1,6 @@
 """Execution API dependencies 单元测试。"""
 
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -23,9 +23,16 @@ class TestGetExecutionService:
     async def test_returns_execution_service_instance(self) -> None:
         mock_session = AsyncMock()
         mock_agent_querier = AsyncMock()
-        with patch(
-            "src.modules.execution.api.dependencies.get_bedrock_client",
-        ) as mock_get_bedrock:
+        mock_session_factory = MagicMock(return_value=AsyncMock())
+        with (
+            patch(
+                "src.modules.execution.api.dependencies.get_bedrock_client",
+            ) as mock_get_bedrock,
+            patch(
+                "src.modules.execution.api.dependencies.get_session_factory",
+                return_value=mock_session_factory,
+            ),
+        ):
             mock_get_bedrock.return_value = AsyncMock()
             service = await get_execution_service(
                 session=mock_session,
