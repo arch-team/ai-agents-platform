@@ -7,16 +7,19 @@ import boto3
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.modules.execution.application.interfaces.agent_runtime import IAgentRuntime
 from src.modules.execution.application.services.execution_service import ExecutionService
 from src.modules.execution.infrastructure.external.bedrock_llm_client import BedrockLLMClient
+from src.modules.execution.infrastructure.external.claude_agent_adapter import ClaudeAgentAdapter
 from src.modules.execution.infrastructure.persistence.repositories.conversation_repository_impl import (
     ConversationRepositoryImpl,
 )
 from src.modules.execution.infrastructure.persistence.repositories.message_repository_impl import (
     MessageRepositoryImpl,
 )
-from src.presentation.api.providers import get_agent_querier
+from src.presentation.api.providers import get_agent_querier, get_tool_querier
 from src.shared.domain.interfaces.agent_querier import IAgentQuerier
+from src.shared.domain.interfaces.tool_querier import IToolQuerier
 from src.shared.infrastructure.database import get_db, get_session_factory
 from src.shared.infrastructure.settings import get_settings
 
@@ -29,9 +32,16 @@ def get_bedrock_client() -> BedrockLLMClient:
     return BedrockLLMClient(client=client)
 
 
+@lru_cache
+def get_agent_runtime() -> IAgentRuntime:
+    """创建 ClaudeAgentAdapter 单例。"""
+    return ClaudeAgentAdapter()
+
+
 async def get_execution_service(
     session: Annotated[AsyncSession, Depends(get_db)],
     agent_querier: Annotated[IAgentQuerier, Depends(get_agent_querier)],
+    tool_querier: Annotated[IToolQuerier, Depends(get_tool_querier)],
 ) -> ExecutionService:
     """创建 ExecutionService 实例。
 
@@ -41,6 +51,7 @@ async def get_execution_service(
     conversation_repo = ConversationRepositoryImpl(session=session)
     message_repo = MessageRepositoryImpl(session=session)
     llm_client = get_bedrock_client()
+    agent_runtime = get_agent_runtime()
 
     # 为流后 DB 写操作创建独立 session 的 repos
     stream_session = get_session_factory()()
@@ -55,4 +66,6 @@ async def get_execution_service(
         llm_client=llm_client,
         agent_querier=agent_querier,
         stream_finalize_repos=stream_finalize_repos,
+        agent_runtime=agent_runtime,
+        tool_querier=tool_querier,
     )

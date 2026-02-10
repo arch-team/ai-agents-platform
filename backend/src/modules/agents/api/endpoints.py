@@ -39,6 +39,7 @@ def _to_response(dto: AgentDTO) -> AgentResponse:
             temperature=dto.temperature,
             max_tokens=dto.max_tokens,
             top_p=dto.top_p,
+            runtime_type=dto.runtime_type,
         ),
         created_at=dto.created_at,
         updated_at=dto.updated_at,

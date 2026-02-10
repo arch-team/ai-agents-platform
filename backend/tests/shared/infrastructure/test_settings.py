@@ -120,6 +120,32 @@ class TestSettingsValidation:
 
 
 @pytest.mark.unit
+class TestBedrockKBSettings:
+    """Bedrock Knowledge Base 配置字段测试。"""
+
+    def test_kb_defaults_empty_string(self) -> None:
+        """开发环境 KB 配置默认为空字符串。"""
+        settings = Settings()
+        assert settings.BEDROCK_KB_ROLE_ARN == ""
+        assert settings.BEDROCK_KB_EMBEDDING_MODEL_ARN == ""
+        assert settings.BEDROCK_KB_S3_BUCKET == ""
+        assert settings.BEDROCK_KB_COLLECTION_ARN == ""
+
+    def test_kb_configurable(self) -> None:
+        """KB 配置可通过构造参数设置。"""
+        settings = Settings(
+            BEDROCK_KB_ROLE_ARN="arn:aws:iam::123:role/test",
+            BEDROCK_KB_EMBEDDING_MODEL_ARN="arn:aws:bedrock:us-east-1::foundation-model/titan",
+            BEDROCK_KB_S3_BUCKET="my-kb-bucket",
+            BEDROCK_KB_COLLECTION_ARN="arn:aws:aoss:us-east-1:123:collection/col1",
+        )
+        assert settings.BEDROCK_KB_ROLE_ARN == "arn:aws:iam::123:role/test"
+        assert settings.BEDROCK_KB_EMBEDDING_MODEL_ARN.endswith("titan")
+        assert settings.BEDROCK_KB_S3_BUCKET == "my-kb-bucket"
+        assert settings.BEDROCK_KB_COLLECTION_ARN.endswith("col1")
+
+
+@pytest.mark.unit
 class TestGetSettings:
     def test_get_settings_returns_settings_instance(self):
         get_settings.cache_clear()

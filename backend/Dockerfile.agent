@@ -1,0 +1,69 @@
+# ============================================================
+# Agent 应用 Docker 镜像
+# Python + Node.js 18+ 双运行时 (Claude Code CLI 依赖 Node.js)
+# ============================================================
+
+# -- Stage 1: Builder --
+FROM python:3.12-slim AS builder
+
+# 安装 Node.js 18+ — Claude Code CLI 运行时依赖
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends curl ca-certificates && \
+    curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
+    apt-get install -y --no-install-recommends nodejs && \
+    rm -rf /var/lib/apt/lists/*
+
+# 安装 uv
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
+
+WORKDIR /app
+
+# 先复制依赖定义，利用 Docker 缓存
+COPY pyproject.toml uv.lock* ./
+
+# 安装生产依赖 (不含 dev 依赖)
+# claude-agent-sdk 安装时自动捆绑 Claude Code CLI
+RUN uv sync --no-dev --frozen --no-install-project
+
+# 复制源代码
+COPY src/ src/
+
+# 安装项目本身
+RUN uv sync --no-dev --frozen
+
+# -- Stage 2: Runtime --
+FROM python:3.12-slim AS runtime
+
+# 安装 Node.js 18+ — Claude Code CLI 运行时依赖
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends curl ca-certificates && \
+    curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
+    apt-get install -y --no-install-recommends nodejs && \
+    rm -rf /var/lib/apt/lists/*
+
+# 安全: 非 root 用户运行
+RUN groupadd --gid 1000 appuser && \
+    useradd --uid 1000 --gid 1000 --create-home appuser
+
+WORKDIR /app
+
+# 从 builder 复制虚拟环境和源码
+COPY --from=builder /app/.venv /app/.venv
+COPY --from=builder /app/src /app/src
+
+# 设置 PATH 使用虚拟环境
+ENV PATH="/app/.venv/bin:$PATH" \
+    PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1
+
+# Bedrock 认证通过 AWS 凭证链 (IAM Role / 环境变量)
+# 不需要 ANTHROPIC_API_KEY
+ENV CLAUDE_CODE_USE_BEDROCK=1
+# AWS_REGION 由部署时注入
+
+# 切换到非 root 用户
+USER appuser
+
+EXPOSE 8080
+
+CMD ["python", "src/agent_entrypoint.py"]

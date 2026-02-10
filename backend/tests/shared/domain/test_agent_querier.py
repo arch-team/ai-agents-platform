@@ -27,6 +27,7 @@ class TestActiveAgentInfo:
         assert info.max_tokens == 2048
         assert info.top_p == 1.0
         assert info.stop_sequences == ()
+        assert info.runtime_type == "agent"
 
     def test_create_with_stop_sequences(self) -> None:
         info = ActiveAgentInfo(
@@ -40,6 +41,19 @@ class TestActiveAgentInfo:
             stop_sequences=("Human:", "Assistant:"),
         )
         assert info.stop_sequences == ("Human:", "Assistant:")
+
+    def test_create_with_runtime_type_basic(self) -> None:
+        info = ActiveAgentInfo(
+            id=3,
+            name="Basic Agent",
+            system_prompt="Prompt",
+            model_id="model",
+            temperature=0.7,
+            max_tokens=2048,
+            top_p=1.0,
+            runtime_type="basic",
+        )
+        assert info.runtime_type == "basic"
 
     def test_frozen_immutable(self) -> None:
         info = ActiveAgentInfo(

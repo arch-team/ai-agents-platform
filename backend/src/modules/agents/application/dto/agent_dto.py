@@ -14,6 +14,7 @@ class CreateAgentDTO:
     model_id: str = "anthropic.claude-3-5-sonnet-20241022-v2:0"
     temperature: float = 0.7
     max_tokens: int = 2048
+    runtime_type: str = "agent"
 
 
 @dataclass
@@ -26,6 +27,7 @@ class UpdateAgentDTO:
     model_id: str | None = None
     temperature: float | None = None
     max_tokens: int | None = None
+    runtime_type: str | None = None
 
 
 @dataclass
@@ -42,6 +44,7 @@ class AgentDTO:
     temperature: float
     max_tokens: int
     top_p: float
+    runtime_type: str
     created_at: datetime
     updated_at: datetime
 

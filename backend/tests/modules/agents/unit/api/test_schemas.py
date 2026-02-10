@@ -25,6 +25,7 @@ class TestCreateAgentRequest:
         assert req.model_id == "anthropic.claude-3-5-sonnet-20241022-v2:0"
         assert req.temperature == 0.7
         assert req.max_tokens == 2048
+        assert req.runtime_type == "agent"
 
     def test_valid_request_with_all_fields(self) -> None:
         req = CreateAgentRequest(
@@ -67,6 +68,18 @@ class TestCreateAgentRequest:
         with pytest.raises(ValidationError, match="max_tokens"):
             CreateAgentRequest(name="test", max_tokens=4097)
 
+    def test_runtime_type_agent(self) -> None:
+        req = CreateAgentRequest(name="test", runtime_type="agent")
+        assert req.runtime_type == "agent"
+
+    def test_runtime_type_basic(self) -> None:
+        req = CreateAgentRequest(name="test", runtime_type="basic")
+        assert req.runtime_type == "basic"
+
+    def test_runtime_type_invalid_raises(self) -> None:
+        with pytest.raises(ValidationError, match="runtime_type"):
+            CreateAgentRequest(name="test", runtime_type="invalid")
+
 
 @pytest.mark.unit
 class TestUpdateAgentRequest:
@@ -80,6 +93,7 @@ class TestUpdateAgentRequest:
         assert req.model_id is None
         assert req.temperature is None
         assert req.max_tokens is None
+        assert req.runtime_type is None
 
     def test_partial_update(self) -> None:
         req = UpdateAgentRequest(name="new-name", temperature=0.3)
@@ -95,6 +109,14 @@ class TestUpdateAgentRequest:
         with pytest.raises(ValidationError, match="temperature"):
             UpdateAgentRequest(temperature=2.0)
 
+    def test_update_runtime_type_valid(self) -> None:
+        req = UpdateAgentRequest(runtime_type="basic")
+        assert req.runtime_type == "basic"
+
+    def test_update_runtime_type_invalid_raises(self) -> None:
+        with pytest.raises(ValidationError, match="runtime_type"):
+            UpdateAgentRequest(runtime_type="invalid")
+
 
 @pytest.mark.unit
 class TestAgentConfigResponse:
@@ -103,9 +125,11 @@ class TestAgentConfigResponse:
     def test_valid_response(self) -> None:
         resp = AgentConfigResponse(
             model_id="test-model", temperature=0.7, max_tokens=2048, top_p=1.0,
+            runtime_type="agent",
         )
         assert resp.model_id == "test-model"
         assert resp.top_p == 1.0
+        assert resp.runtime_type == "agent"
 
 
 @pytest.mark.unit
@@ -123,12 +147,14 @@ class TestAgentResponse:
             owner_id=10,
             config=AgentConfigResponse(
                 model_id="model", temperature=0.7, max_tokens=2048, top_p=1.0,
+                runtime_type="agent",
             ),
             created_at=now,
             updated_at=now,
         )
         assert resp.id == 1
         assert resp.config.model_id == "model"
+        assert resp.config.runtime_type == "agent"
 
 
 @pytest.mark.unit
@@ -153,6 +179,7 @@ class TestAgentListResponse:
             owner_id=1,
             config=AgentConfigResponse(
                 model_id="m", temperature=0.7, max_tokens=2048, top_p=1.0,
+                runtime_type="agent",
             ),
             created_at=now,
             updated_at=now,

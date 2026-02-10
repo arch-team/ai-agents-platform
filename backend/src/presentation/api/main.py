@@ -25,16 +25,22 @@ from src.modules.knowledge.domain.exceptions import (
 )
 from src.modules.tool_catalog.api.endpoints import router as tool_catalog_router
 from src.modules.tool_catalog.domain.exceptions import ToolNameDuplicateError, ToolNotFoundError
+from src.presentation.api.middleware.correlation import CorrelationIdMiddleware
 from src.presentation.api.routes.health import router as health_router
 from src.shared.api.exception_handlers import register_exception_handlers, register_status_mapping
 from src.shared.infrastructure.database import init_db
+from src.shared.infrastructure.logging import setup_logging
 from src.shared.infrastructure.settings import get_settings
 
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
-    """应用生命周期: 启动时初始化数据库连接。"""
+    """应用生命周期: 启动时初始化数据库和日志。"""
     settings = get_settings()
+    setup_logging(
+        log_level=settings.LOG_LEVEL,
+        is_dev=settings.APP_ENV in ("development", "test"),
+    )
     init_db(settings.database_url, echo=settings.APP_DEBUG)
     yield
 
@@ -62,6 +68,9 @@ def create_app() -> FastAPI:
         allow_methods=["GET", "POST", "PUT", "DELETE"],
         allow_headers=["Authorization", "Content-Type"],
     )
+
+    # Correlation ID 中间件 — 为每个请求绑定唯一追踪 ID
+    app.add_middleware(CorrelationIdMiddleware)
 
     # 注册 auth 模块异常映射
     register_status_mapping(AuthenticationError, 401)

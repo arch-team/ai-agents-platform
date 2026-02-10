@@ -15,6 +15,8 @@
 | [product-architecture.md](product-architecture.md) | 产品能力模块、三层技术映射 | ~4000 字 |
 | [goals-metrics.md](goals-metrics.md) | 北极星指标、分层指标、分阶段目标 | ~3500 字 |
 | [roadmap.md](roadmap.md) | 四阶段路线图 (MVP→V1→V2→V3) | ~3500 字 |
+| [improvement-plan.md](improvement-plan.md) | 五维度审查改进行动计划 (S0-S5 分级) | ~4500 字 |
+| [agentcore-integration-plan.md](agentcore-integration-plan.md) | AgentCore 集成行动计划 (P0-P3 分级, 基于 ADR-006) | ~5000 字 |
 
 ---
 
@@ -30,6 +32,10 @@
 4. goals-metrics.md         如何衡量成功？各阶段目标是什么？
        ↓
 5. roadmap.md               具体怎么做？分几步？每步做什么？
+       ↓
+6. improvement-plan.md      审查发现了什么？如何分级修复？
+       ↓
+7. agentcore-integration-plan.md  AgentCore 如何集成？分几步？
 ```
 
 **逻辑链条**: 愿景驱动 → 竞品验证定位 → 架构承载能力 → 指标衡量成功 → 路线图指导执行

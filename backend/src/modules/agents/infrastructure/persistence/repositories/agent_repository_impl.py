@@ -37,6 +37,7 @@ class AgentRepositoryImpl(PydanticRepository[Agent, AgentModel, int], IAgentRepo
             "max_tokens",
             "top_p",
             "stop_sequences",
+            "runtime_type",
         },
     )
 
@@ -54,6 +55,7 @@ class AgentRepositoryImpl(PydanticRepository[Agent, AgentModel, int], IAgentRepo
                 max_tokens=model.max_tokens,
                 top_p=model.top_p,
                 stop_sequences=_deserialize_stop_sequences(model.stop_sequences),
+                runtime_type=model.runtime_type,
             ),
             created_at=model.created_at,
             updated_at=model.updated_at,
@@ -70,6 +72,7 @@ class AgentRepositoryImpl(PydanticRepository[Agent, AgentModel, int], IAgentRepo
             "max_tokens": entity.config.max_tokens,
             "top_p": entity.config.top_p,
             "stop_sequences": _serialize_stop_sequences(entity.config.stop_sequences),
+            "runtime_type": entity.config.runtime_type,
         }
 
     def _to_model(self, entity: Agent) -> AgentModel:

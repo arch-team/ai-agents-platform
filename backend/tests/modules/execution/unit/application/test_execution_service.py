@@ -9,6 +9,10 @@ from src.modules.execution.application.dto.execution_dto import (
     CreateConversationDTO,
     SendMessageDTO,
 )
+from src.modules.execution.application.interfaces.agent_runtime import (
+    AgentResponseChunk,
+    IAgentRuntime,
+)
 from src.modules.execution.application.interfaces.llm_client import (
     ILLMClient,
     LLMResponse,
@@ -43,6 +47,10 @@ from src.shared.domain.interfaces.knowledge_querier import (
     IKnowledgeQuerier,
     RetrievalResult,
 )
+from src.shared.domain.interfaces.tool_querier import (
+    ApprovedToolInfo,
+    IToolQuerier,
+)
 
 
 def _make_agent_info(
@@ -55,6 +63,7 @@ def _make_agent_info(
     max_tokens: int = 2048,
     top_p: float = 1.0,
     stop_sequences: tuple[str, ...] = (),
+    runtime_type: str = "agent",
     knowledge_base_id: int | None = None,
 ) -> ActiveAgentInfo:
     return ActiveAgentInfo(
@@ -66,6 +75,7 @@ def _make_agent_info(
         max_tokens=max_tokens,
         top_p=top_p,
         stop_sequences=stop_sequences,
+        runtime_type=runtime_type,
         knowledge_base_id=knowledge_base_id,
     )
 
@@ -116,6 +126,8 @@ def _make_service(
     agent_querier: AsyncMock | None = None,
     stream_finalize_repos: tuple[AsyncMock, AsyncMock] | None = None,
     knowledge_querier: AsyncMock | None = None,
+    agent_runtime: AsyncMock | None = None,
+    tool_querier: AsyncMock | None = None,
 ) -> ExecutionService:
     return ExecutionService(
         conversation_repo=conv_repo or AsyncMock(spec=IConversationRepository),
@@ -124,6 +136,8 @@ def _make_service(
         agent_querier=agent_querier or AsyncMock(spec=IAgentQuerier),
         stream_finalize_repos=stream_finalize_repos,
         knowledge_querier=knowledge_querier,
+        agent_runtime=agent_runtime,
+        tool_querier=tool_querier,
     )
 
 
@@ -604,13 +618,17 @@ class TestRAGIntegration:
         # 验证 knowledge_querier 被调用
         knowledge_querier.retrieve.assert_called_once_with(42, "你好", top_k=5)
 
-        # 验证 LLM 收到的消息列表第一条是 RAG 上下文
+        # 验证 RAG 上下文注入到 system_prompt 而非 user 消息
         call_kwargs = llm_client.invoke.call_args
+        system_prompt = call_kwargs.kwargs["system_prompt"]
+        assert "知识库参考资料" in system_prompt
+        assert "文档片段1" in system_prompt
+        assert "文档片段2" in system_prompt
+
+        # 验证消息列表中没有伪造的 RAG user 消息
         messages = call_kwargs.kwargs["messages"]
-        assert messages[0].role == "user"
-        assert "参考资料" in messages[0].content
-        assert "文档片段1" in messages[0].content
-        assert "文档片段2" in messages[0].content
+        for msg in messages:
+            assert "参考资料" not in msg.content or msg.role != "user" or msg.content == "你好"
 
     @pytest.mark.asyncio
     async def test_send_message_without_kb_no_rag(self) -> None:
@@ -726,9 +744,348 @@ class TestRAGIntegration:
         # 验证 knowledge_querier 被调用
         knowledge_querier.retrieve.assert_called_once_with(42, "你好", top_k=5)
 
-        # 验证 LLM 流式调用收到的消息包含 RAG 上下文
+        # 验证 RAG 上下文注入到 system_prompt 而非 user 消息
         call_kwargs = llm_client.invoke_stream.call_args
+        system_prompt = call_kwargs.kwargs["system_prompt"]
+        assert "知识库参考资料" in system_prompt
+        assert "流式文档片段" in system_prompt
+
+        # 验证消息列表中没有伪造的 RAG user 消息
         messages = call_kwargs.kwargs["messages"]
-        assert messages[0].role == "user"
-        assert "参考资料" in messages[0].content
-        assert "流式文档片段" in messages[0].content
+        for msg in messages:
+            assert "参考资料" not in msg.content
+
+
+def _make_approved_tool(
+    *,
+    tool_id: int = 1,
+    name: str = "search_tool",
+    description: str = "搜索工具",
+    tool_type: str = "mcp_server",
+) -> ApprovedToolInfo:
+    return ApprovedToolInfo(
+        id=tool_id,
+        name=name,
+        description=description,
+        tool_type=tool_type,
+    )
+
+
+def _setup_basic_mocks(
+    *,
+    runtime_type: str = "agent",
+) -> tuple[AsyncMock, AsyncMock, AsyncMock, AsyncMock]:
+    """创建 send_message 路由测试的基础 Mock 对象。"""
+    conv_repo = AsyncMock(spec=IConversationRepository)
+    conv_repo.get_by_id.return_value = _make_conversation()
+    conv_repo.update.side_effect = lambda c: c
+
+    msg_repo = AsyncMock(spec=IMessageRepository)
+    msg_repo.create.side_effect = lambda m: _make_message(
+        conversation_id=m.conversation_id,
+        role=m.role,
+        content=m.content,
+        token_count=m.token_count,
+    )
+    msg_repo.list_by_conversation.return_value = [
+        _make_message(content="你好"),
+    ]
+
+    agent_querier = AsyncMock(spec=IAgentQuerier)
+    agent_querier.get_active_agent.return_value = _make_agent_info(
+        runtime_type=runtime_type,
+    )
+
+    llm_client = AsyncMock(spec=ILLMClient)
+    llm_client.invoke.return_value = LLMResponse(
+        content="LLM 回复",
+        input_tokens=10,
+        output_tokens=20,
+    )
+
+    return conv_repo, msg_repo, agent_querier, llm_client
+
+
+@pytest.mark.unit
+class TestAgentRuntimeRouting:
+    """runtime_type 路由测试: Agent 模式 vs 降级路径。"""
+
+    @pytest.mark.asyncio
+    async def test_send_message_agent_mode_uses_agent_runtime(self) -> None:
+        """runtime_type="agent" 且 agent_runtime 可用时, 调用 IAgentRuntime.execute()。"""
+        conv_repo, msg_repo, agent_querier, llm_client = _setup_basic_mocks(
+            runtime_type="agent",
+        )
+
+        agent_runtime = AsyncMock(spec=IAgentRuntime)
+        agent_runtime.execute.return_value = AgentResponseChunk(
+            content="Agent 回复",
+            done=True,
+            input_tokens=15,
+            output_tokens=25,
+        )
+
+        tool_querier = AsyncMock(spec=IToolQuerier)
+        tool_querier.list_approved_tools.return_value = [
+            _make_approved_tool(),
+        ]
+
+        service = _make_service(
+            conv_repo=conv_repo,
+            msg_repo=msg_repo,
+            llm_client=llm_client,
+            agent_querier=agent_querier,
+            agent_runtime=agent_runtime,
+            tool_querier=tool_querier,
+        )
+
+        with patch(
+            "src.modules.execution.application.services.execution_service.event_bus"
+        ) as mock_bus:
+            mock_bus.publish_async = AsyncMock()
+            result = await service.send_message(1, SendMessageDTO(content="你好"), user_id=100)
+
+        assert result.content == "Agent 回复"
+        assert result.token_count == 40
+        agent_runtime.execute.assert_called_once()
+        # LLM 不应被调用
+        llm_client.invoke.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_send_message_basic_mode_uses_llm_client(self) -> None:
+        """runtime_type="basic" 时, 调用 ILLMClient.invoke()（降级路径）。"""
+        conv_repo, msg_repo, agent_querier, llm_client = _setup_basic_mocks(
+            runtime_type="basic",
+        )
+
+        agent_runtime = AsyncMock(spec=IAgentRuntime)
+
+        service = _make_service(
+            conv_repo=conv_repo,
+            msg_repo=msg_repo,
+            llm_client=llm_client,
+            agent_querier=agent_querier,
+            agent_runtime=agent_runtime,
+        )
+
+        with patch(
+            "src.modules.execution.application.services.execution_service.event_bus"
+        ) as mock_bus:
+            mock_bus.publish_async = AsyncMock()
+            result = await service.send_message(1, SendMessageDTO(content="你好"), user_id=100)
+
+        assert result.content == "LLM 回复"
+        assert result.token_count == 30
+        llm_client.invoke.assert_called_once()
+        # Agent runtime 不应被调用
+        agent_runtime.execute.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_send_message_agent_mode_fallback_when_runtime_none(self) -> None:
+        """runtime_type="agent" 但 agent_runtime 为 None 时, 降级到 ILLMClient。"""
+        conv_repo, msg_repo, agent_querier, llm_client = _setup_basic_mocks(
+            runtime_type="agent",
+        )
+
+        service = _make_service(
+            conv_repo=conv_repo,
+            msg_repo=msg_repo,
+            llm_client=llm_client,
+            agent_querier=agent_querier,
+            agent_runtime=None,
+        )
+
+        with patch(
+            "src.modules.execution.application.services.execution_service.event_bus"
+        ) as mock_bus:
+            mock_bus.publish_async = AsyncMock()
+            result = await service.send_message(1, SendMessageDTO(content="你好"), user_id=100)
+
+        assert result.content == "LLM 回复"
+        llm_client.invoke.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_send_message_stream_agent_mode(self) -> None:
+        """流式消息 runtime_type="agent" 时, 使用 IAgentRuntime.execute_stream()。"""
+        conv_repo, msg_repo, agent_querier, llm_client = _setup_basic_mocks(
+            runtime_type="agent",
+        )
+        msg_repo.update.side_effect = lambda m: m
+
+        async def _agent_gen():  # type: ignore[no-untyped-def]
+            yield AgentResponseChunk(content="Agent 流式")
+            yield AgentResponseChunk(content="回复")
+            yield AgentResponseChunk(done=True, input_tokens=12, output_tokens=18)
+
+        # execute_stream 是普通方法（非 async），返回 AsyncIterator
+        agent_runtime = AsyncMock(spec=IAgentRuntime)
+        agent_runtime.execute_stream = MagicMock(return_value=_agent_gen())
+
+        tool_querier = AsyncMock(spec=IToolQuerier)
+        tool_querier.list_approved_tools.return_value = []
+
+        service = _make_service(
+            conv_repo=conv_repo,
+            msg_repo=msg_repo,
+            llm_client=llm_client,
+            agent_querier=agent_querier,
+            agent_runtime=agent_runtime,
+            tool_querier=tool_querier,
+        )
+
+        with patch(
+            "src.modules.execution.application.services.execution_service.event_bus"
+        ) as mock_bus:
+            mock_bus.publish_async = AsyncMock()
+            stream = await service.send_message_stream(
+                1, SendMessageDTO(content="你好"), user_id=100,
+            )
+
+            events: list[str] = []
+            async for event in stream:
+                events.append(event)
+
+        # 验证 SSE 事件: 2 content + 1 done
+        assert len(events) == 3
+        first_data = json.loads(events[0].replace("data: ", "").strip())
+        assert first_data["content"] == "Agent 流式"
+        assert first_data["done"] is False
+
+        last_data = json.loads(events[-1].replace("data: ", "").strip())
+        assert last_data["done"] is True
+        assert last_data["token_count"] == 30
+
+        # Agent runtime 被调用, LLM 不应被调用
+        agent_runtime.execute_stream.assert_called_once()
+        llm_client.invoke_stream.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_send_message_stream_basic_mode(self) -> None:
+        """流式消息 runtime_type="basic" 时, 使用 ILLMClient.invoke_stream()。"""
+        conv_repo, msg_repo, agent_querier, llm_client = _setup_basic_mocks(
+            runtime_type="basic",
+        )
+        msg_repo.update.side_effect = lambda m: m
+
+        async def _mock_llm_stream(*_args: object, **_kwargs: object) -> object:
+            async def _gen():  # type: ignore[no-untyped-def]
+                yield LLMStreamChunk(content="LLM 流式")
+                yield LLMStreamChunk(done=True, input_tokens=8, output_tokens=12)
+            return _gen()
+
+        llm_client.invoke_stream.side_effect = _mock_llm_stream
+        agent_runtime = AsyncMock(spec=IAgentRuntime)
+
+        service = _make_service(
+            conv_repo=conv_repo,
+            msg_repo=msg_repo,
+            llm_client=llm_client,
+            agent_querier=agent_querier,
+            agent_runtime=agent_runtime,
+        )
+
+        with patch(
+            "src.modules.execution.application.services.execution_service.event_bus"
+        ) as mock_bus:
+            mock_bus.publish_async = AsyncMock()
+            stream = await service.send_message_stream(
+                1, SendMessageDTO(content="你好"), user_id=100,
+            )
+
+            events: list[str] = []
+            async for event in stream:
+                events.append(event)
+
+        # 验证 SSE 事件
+        assert len(events) == 2  # 1 content + 1 done
+        first_data = json.loads(events[0].replace("data: ", "").strip())
+        assert first_data["content"] == "LLM 流式"
+
+        last_data = json.loads(events[-1].replace("data: ", "").strip())
+        assert last_data["done"] is True
+        assert last_data["token_count"] == 20
+
+        # LLM 被调用, Agent runtime 不应被调用
+        llm_client.invoke_stream.assert_called_once()
+        agent_runtime.execute_stream.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_agent_mode_calls_tool_querier(self) -> None:
+        """Agent 模式下, tool_querier.list_approved_tools() 被调用。"""
+        conv_repo, msg_repo, agent_querier, llm_client = _setup_basic_mocks(
+            runtime_type="agent",
+        )
+
+        agent_runtime = AsyncMock(spec=IAgentRuntime)
+        agent_runtime.execute.return_value = AgentResponseChunk(
+            content="Agent 回复",
+            done=True,
+            input_tokens=10,
+            output_tokens=20,
+        )
+
+        tool_querier = AsyncMock(spec=IToolQuerier)
+        tool_querier.list_approved_tools.return_value = [
+            _make_approved_tool(tool_id=1, name="search", tool_type="mcp_server"),
+            _make_approved_tool(tool_id=2, name="calculator", tool_type="api"),
+        ]
+
+        service = _make_service(
+            conv_repo=conv_repo,
+            msg_repo=msg_repo,
+            llm_client=llm_client,
+            agent_querier=agent_querier,
+            agent_runtime=agent_runtime,
+            tool_querier=tool_querier,
+        )
+
+        with patch(
+            "src.modules.execution.application.services.execution_service.event_bus"
+        ) as mock_bus:
+            mock_bus.publish_async = AsyncMock()
+            await service.send_message(1, SendMessageDTO(content="你好"), user_id=100)
+
+        # 验证 tool_querier 被调用
+        tool_querier.list_approved_tools.assert_called_once()
+
+        # 验证 agent_runtime.execute 的 request 包含工具
+        call_args = agent_runtime.execute.call_args
+        request = call_args.args[0]
+        assert len(request.tools) == 2
+        assert request.tools[0].name == "search"
+        assert request.tools[1].name == "calculator"
+
+    @pytest.mark.asyncio
+    async def test_agent_mode_without_tool_querier(self) -> None:
+        """Agent 模式下, tool_querier 为 None 时, 工具列表为空。"""
+        conv_repo, msg_repo, agent_querier, llm_client = _setup_basic_mocks(
+            runtime_type="agent",
+        )
+
+        agent_runtime = AsyncMock(spec=IAgentRuntime)
+        agent_runtime.execute.return_value = AgentResponseChunk(
+            content="无工具回复",
+            done=True,
+            input_tokens=5,
+            output_tokens=10,
+        )
+
+        service = _make_service(
+            conv_repo=conv_repo,
+            msg_repo=msg_repo,
+            llm_client=llm_client,
+            agent_querier=agent_querier,
+            agent_runtime=agent_runtime,
+            tool_querier=None,
+        )
+
+        with patch(
+            "src.modules.execution.application.services.execution_service.event_bus"
+        ) as mock_bus:
+            mock_bus.publish_async = AsyncMock()
+            result = await service.send_message(1, SendMessageDTO(content="你好"), user_id=100)
+
+        assert result.content == "无工具回复"
+        call_args = agent_runtime.execute.call_args
+        request = call_args.args[0]
+        assert request.tools == []

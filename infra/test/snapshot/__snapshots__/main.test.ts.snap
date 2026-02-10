@@ -1,5 +1,817 @@
 // Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
 
+exports[`Snapshot Tests AgentCoreStack 快照匹配 1`] = `
+{
+  "Metadata": {
+    "cdk_nag": {
+      "rules_to_suppress": [
+        {
+          "id": "AwsSolutions-IAM4",
+          "is_reason_encoded": true,
+          "reason": "QWdlbnRDb3JlIEwyIENvbnN0cnVjdCDlhoXpg6jkvb/nlKggQVdTIOaJmOeuoeetlueVpeaYr+ivpeacjeWKoeeahOacgOS9s+Wunui3tQ==",
+        },
+      ],
+    },
+  },
+  "Outputs": {
+    "EcrRepositoryUri": {
+      "Description": "Agent 容器镜像仓库 URI",
+      "Value": {
+        "Fn::Join": [
+          "",
+          [
+            {
+              "Fn::Select": [
+                4,
+                {
+                  "Fn::Split": [
+                    ":",
+                    {
+                      "Fn::GetAtt": [
+                        "AgentEcrRepo348BC794",
+                        "Arn",
+                      ],
+                    },
+                  ],
+                },
+              ],
+            },
+            ".dkr.ecr.",
+            {
+              "Fn::Select": [
+                3,
+                {
+                  "Fn::Split": [
+                    ":",
+                    {
+                      "Fn::GetAtt": [
+                        "AgentEcrRepo348BC794",
+                        "Arn",
+                      ],
+                    },
+                  ],
+                },
+              ],
+            },
+            ".",
+            {
+              "Ref": "AWS::URLSuffix",
+            },
+            "/",
+            {
+              "Ref": "AgentEcrRepo348BC794",
+            },
+          ],
+        ],
+      },
+    },
+    "GatewayUrl": {
+      "Description": "AgentCore Gateway URL",
+      "Value": {
+        "Fn::GetAtt": [
+          "AgentGatewayAFA101B7",
+          "GatewayUrl",
+        ],
+      },
+    },
+    "RuntimeArn": {
+      "Description": "AgentCore Runtime ARN",
+      "Value": {
+        "Fn::GetAtt": [
+          "AgentRuntime917DDB48",
+          "AgentRuntimeArn",
+        ],
+      },
+    },
+  },
+  "Parameters": {
+    "BootstrapVersion": {
+      "Default": "/cdk-bootstrap/hnb659fds/version",
+      "Description": "Version of the CDK Bootstrap resources in this environment, automatically retrieved from SSM Parameter Store. [cdk:skip]",
+      "Type": "AWS::SSM::Parameter::Value<String>",
+    },
+  },
+  "Resources": {
+    "AgentEcrRepo348BC794": {
+      "DeletionPolicy": "Delete",
+      "Properties": {
+        "EmptyOnDelete": true,
+        "ImageScanningConfiguration": {
+          "ScanOnPush": true,
+        },
+        "LifecyclePolicy": {
+          "LifecyclePolicyText": "{"rules":[{"rulePriority":1,"description":"最多保留 10 个镜像","selection":{"tagStatus":"any","countType":"imageCountMoreThan","countNumber":10},"action":{"type":"expire"}}]}",
+        },
+        "RepositoryName": "ai-agents-platform-agent-dev",
+      },
+      "Type": "AWS::ECR::Repository",
+      "UpdateReplacePolicy": "Delete",
+    },
+    "AgentGatewayAFA101B7": {
+      "Metadata": {
+        "cdk_nag": {
+          "rules_to_suppress": [
+            {
+              "id": "AwsSolutions-IAM5",
+              "is_reason_encoded": true,
+              "reason": "R2F0ZXdheSDmnI3liqHop5LoibLnlLEgTDIgQ29uc3RydWN0IOiHquWKqOWIm+W7uu+8jOmAmumFjeespuadg+mZkOaYryBBZ2VudENvcmUg5pyN5Yqh5omA6ZyA",
+            },
+            {
+              "id": "AwsSolutions-COG1",
+              "is_reason_encoded": true,
+              "reason": "R2F0ZXdheSDpu5jorqQgQ29nbml0byBVc2VyIFBvb2wg5a+G56CB562W55Wl55SxIEwyIENvbnN0cnVjdCDnrqHnkIY=",
+            },
+            {
+              "id": "AwsSolutions-COG2",
+              "is_reason_encoded": true,
+              "reason": "R2F0ZXdheSDpu5jorqQgQ29nbml0byBVc2VyIFBvb2wg55So5LqOIE0yTSDorqTor4EgKENsaWVudCBDcmVkZW50aWFscynvvIzml6DpnIAgTUZB",
+            },
+            {
+              "id": "AwsSolutions-COG3",
+              "is_reason_encoded": true,
+              "reason": "R2F0ZXdheSDpu5jorqQgQ29nbml0byBVc2VyIFBvb2wg55So5LqOIE0yTSDorqTor4HvvIzkuI3mtonlj4rnlKjmiLfkuqTkupI=",
+            },
+          ],
+        },
+      },
+      "Properties": {
+        "AuthorizerConfiguration": {
+          "CustomJWTAuthorizer": {
+            "AllowedClients": [
+              {
+                "Ref": "AgentGatewayUserPoolDefaultClient29A51579",
+              },
+            ],
+            "DiscoveryUrl": {
+              "Fn::Join": [
+                "",
+                [
+                  "https://cognito-idp.ap-northeast-1.amazonaws.com/",
+                  {
+                    "Ref": "AgentGatewayUserPoolBFAAC7BD",
+                  },
+                  "/.well-known/openid-configuration",
+                ],
+              ],
+            },
+          },
+        },
+        "AuthorizerType": "CUSTOM_JWT",
+        "Description": "AI Agents Platform - dev 环境 MCP Gateway",
+        "Name": "ai-agents-platform-gateway-dev",
+        "ProtocolConfiguration": {
+          "Mcp": {
+            "Instructions": "AI Agents Platform MCP Gateway - 提供统一工具接入入口",
+            "SearchType": "SEMANTIC",
+            "SupportedVersions": [
+              "2025-03-26",
+            ],
+          },
+        },
+        "ProtocolType": "MCP",
+        "RoleArn": {
+          "Fn::GetAtt": [
+            "AgentGatewayServiceRole00BC1CD2",
+            "Arn",
+          ],
+        },
+      },
+      "Type": "AWS::BedrockAgentCore::Gateway",
+    },
+    "AgentGatewayServiceRole00BC1CD2": {
+      "Metadata": {
+        "cdk_nag": {
+          "rules_to_suppress": [
+            {
+              "id": "AwsSolutions-IAM5",
+              "is_reason_encoded": true,
+              "reason": "R2F0ZXdheSDmnI3liqHop5LoibLnlLEgTDIgQ29uc3RydWN0IOiHquWKqOWIm+W7uu+8jOmAmumFjeespuadg+mZkOaYryBBZ2VudENvcmUg5pyN5Yqh5omA6ZyA",
+            },
+            {
+              "id": "AwsSolutions-COG1",
+              "is_reason_encoded": true,
+              "reason": "R2F0ZXdheSDpu5jorqQgQ29nbml0byBVc2VyIFBvb2wg5a+G56CB562W55Wl55SxIEwyIENvbnN0cnVjdCDnrqHnkIY=",
+            },
+            {
+              "id": "AwsSolutions-COG2",
+              "is_reason_encoded": true,
+              "reason": "R2F0ZXdheSDpu5jorqQgQ29nbml0byBVc2VyIFBvb2wg55So5LqOIE0yTSDorqTor4EgKENsaWVudCBDcmVkZW50aWFscynvvIzml6DpnIAgTUZB",
+            },
+            {
+              "id": "AwsSolutions-COG3",
+              "is_reason_encoded": true,
+              "reason": "R2F0ZXdheSDpu5jorqQgQ29nbml0byBVc2VyIFBvb2wg55So5LqOIE0yTSDorqTor4HvvIzkuI3mtonlj4rnlKjmiLfkuqTkupI=",
+            },
+          ],
+        },
+      },
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "bedrock-agentcore.amazonaws.com",
+              },
+            },
+            {
+              "Action": "sts:AssumeRole",
+              "Condition": {
+                "ArnLike": {
+                  "aws:SourceArn": {
+                    "Fn::Join": [
+                      "",
+                      [
+                        "arn:",
+                        {
+                          "Ref": "AWS::Partition",
+                        },
+                        ":bedrock-agentcore:ap-northeast-1:000000000000:gateway/ai-agents-platform-gateway-dev*",
+                      ],
+                    ],
+                  },
+                },
+                "StringEquals": {
+                  "aws:SourceAccount": "000000000000",
+                },
+              },
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "bedrock-agentcore.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "Description": "Service role for Bedrock AgentCore Gateway ai-agents-platform-gateway-dev",
+      },
+      "Type": "AWS::IAM::Role",
+    },
+    "AgentGatewayUserPoolBFAAC7BD": {
+      "DeletionPolicy": "Retain",
+      "Metadata": {
+        "cdk_nag": {
+          "rules_to_suppress": [
+            {
+              "id": "AwsSolutions-IAM5",
+              "is_reason_encoded": true,
+              "reason": "R2F0ZXdheSDmnI3liqHop5LoibLnlLEgTDIgQ29uc3RydWN0IOiHquWKqOWIm+W7uu+8jOmAmumFjeespuadg+mZkOaYryBBZ2VudENvcmUg5pyN5Yqh5omA6ZyA",
+            },
+            {
+              "id": "AwsSolutions-COG1",
+              "is_reason_encoded": true,
+              "reason": "R2F0ZXdheSDpu5jorqQgQ29nbml0byBVc2VyIFBvb2wg5a+G56CB562W55Wl55SxIEwyIENvbnN0cnVjdCDnrqHnkIY=",
+            },
+            {
+              "id": "AwsSolutions-COG2",
+              "is_reason_encoded": true,
+              "reason": "R2F0ZXdheSDpu5jorqQgQ29nbml0byBVc2VyIFBvb2wg55So5LqOIE0yTSDorqTor4EgKENsaWVudCBDcmVkZW50aWFscynvvIzml6DpnIAgTUZB",
+            },
+            {
+              "id": "AwsSolutions-COG3",
+              "is_reason_encoded": true,
+              "reason": "R2F0ZXdheSDpu5jorqQgQ29nbml0byBVc2VyIFBvb2wg55So5LqOIE0yTSDorqTor4HvvIzkuI3mtonlj4rnlKjmiLfkuqTkupI=",
+            },
+          ],
+        },
+      },
+      "Properties": {
+        "AccountRecoverySetting": {
+          "RecoveryMechanisms": [
+            {
+              "Name": "verified_phone_number",
+              "Priority": 1,
+            },
+            {
+              "Name": "verified_email",
+              "Priority": 2,
+            },
+          ],
+        },
+        "AdminCreateUserConfig": {
+          "AllowAdminCreateUserOnly": true,
+        },
+        "EmailVerificationMessage": "The verification code to your new account is {####}",
+        "EmailVerificationSubject": "Verify your new account",
+        "SmsVerificationMessage": "The verification code to your new account is {####}",
+        "UsernameConfiguration": {
+          "CaseSensitive": false,
+        },
+        "VerificationMessageTemplate": {
+          "DefaultEmailOption": "CONFIRM_WITH_CODE",
+          "EmailMessage": "The verification code to your new account is {####}",
+          "EmailSubject": "Verify your new account",
+          "SmsMessage": "The verification code to your new account is {####}",
+        },
+      },
+      "Type": "AWS::Cognito::UserPool",
+      "UpdateReplacePolicy": "Retain",
+    },
+    "AgentGatewayUserPoolDefaultClient29A51579": {
+      "Metadata": {
+        "cdk_nag": {
+          "rules_to_suppress": [
+            {
+              "id": "AwsSolutions-IAM5",
+              "is_reason_encoded": true,
+              "reason": "R2F0ZXdheSDmnI3liqHop5LoibLnlLEgTDIgQ29uc3RydWN0IOiHquWKqOWIm+W7uu+8jOmAmumFjeespuadg+mZkOaYryBBZ2VudENvcmUg5pyN5Yqh5omA6ZyA",
+            },
+            {
+              "id": "AwsSolutions-COG1",
+              "is_reason_encoded": true,
+              "reason": "R2F0ZXdheSDpu5jorqQgQ29nbml0byBVc2VyIFBvb2wg5a+G56CB562W55Wl55SxIEwyIENvbnN0cnVjdCDnrqHnkIY=",
+            },
+            {
+              "id": "AwsSolutions-COG2",
+              "is_reason_encoded": true,
+              "reason": "R2F0ZXdheSDpu5jorqQgQ29nbml0byBVc2VyIFBvb2wg55So5LqOIE0yTSDorqTor4EgKENsaWVudCBDcmVkZW50aWFscynvvIzml6DpnIAgTUZB",
+            },
+            {
+              "id": "AwsSolutions-COG3",
+              "is_reason_encoded": true,
+              "reason": "R2F0ZXdheSDpu5jorqQgQ29nbml0byBVc2VyIFBvb2wg55So5LqOIE0yTSDorqTor4HvvIzkuI3mtonlj4rnlKjmiLfkuqTkupI=",
+            },
+          ],
+        },
+      },
+      "Properties": {
+        "AllowedOAuthFlows": [
+          "client_credentials",
+        ],
+        "AllowedOAuthFlowsUserPoolClient": true,
+        "AllowedOAuthScopes": [
+          {
+            "Fn::Join": [
+              "",
+              [
+                {
+                  "Ref": "AgentGatewayUserPoolResourceServerAD76A708",
+                },
+                "/read",
+              ],
+            ],
+          },
+          {
+            "Fn::Join": [
+              "",
+              [
+                {
+                  "Ref": "AgentGatewayUserPoolResourceServerAD76A708",
+                },
+                "/write",
+              ],
+            ],
+          },
+        ],
+        "GenerateSecret": true,
+        "SupportedIdentityProviders": [
+          "COGNITO",
+        ],
+        "UserPoolId": {
+          "Ref": "AgentGatewayUserPoolBFAAC7BD",
+        },
+      },
+      "Type": "AWS::Cognito::UserPoolClient",
+    },
+    "AgentGatewayUserPoolDomain356D4F1B": {
+      "Metadata": {
+        "cdk_nag": {
+          "rules_to_suppress": [
+            {
+              "id": "AwsSolutions-IAM5",
+              "is_reason_encoded": true,
+              "reason": "R2F0ZXdheSDmnI3liqHop5LoibLnlLEgTDIgQ29uc3RydWN0IOiHquWKqOWIm+W7uu+8jOmAmumFjeespuadg+mZkOaYryBBZ2VudENvcmUg5pyN5Yqh5omA6ZyA",
+            },
+            {
+              "id": "AwsSolutions-COG1",
+              "is_reason_encoded": true,
+              "reason": "R2F0ZXdheSDpu5jorqQgQ29nbml0byBVc2VyIFBvb2wg5a+G56CB562W55Wl55SxIEwyIENvbnN0cnVjdCDnrqHnkIY=",
+            },
+            {
+              "id": "AwsSolutions-COG2",
+              "is_reason_encoded": true,
+              "reason": "R2F0ZXdheSDpu5jorqQgQ29nbml0byBVc2VyIFBvb2wg55So5LqOIE0yTSDorqTor4EgKENsaWVudCBDcmVkZW50aWFscynvvIzml6DpnIAgTUZB",
+            },
+            {
+              "id": "AwsSolutions-COG3",
+              "is_reason_encoded": true,
+              "reason": "R2F0ZXdheSDpu5jorqQgQ29nbml0byBVc2VyIFBvb2wg55So5LqOIE0yTSDorqTor4HvvIzkuI3mtonlj4rnlKjmiLfkuqTkupI=",
+            },
+          ],
+        },
+      },
+      "Properties": {
+        "Domain": "testagentcorestack-agentgateway-e61f54ff",
+        "UserPoolId": {
+          "Ref": "AgentGatewayUserPoolBFAAC7BD",
+        },
+      },
+      "Type": "AWS::Cognito::UserPoolDomain",
+    },
+    "AgentGatewayUserPoolResourceServerAD76A708": {
+      "Metadata": {
+        "cdk_nag": {
+          "rules_to_suppress": [
+            {
+              "id": "AwsSolutions-IAM5",
+              "is_reason_encoded": true,
+              "reason": "R2F0ZXdheSDmnI3liqHop5LoibLnlLEgTDIgQ29uc3RydWN0IOiHquWKqOWIm+W7uu+8jOmAmumFjeespuadg+mZkOaYryBBZ2VudENvcmUg5pyN5Yqh5omA6ZyA",
+            },
+            {
+              "id": "AwsSolutions-COG1",
+              "is_reason_encoded": true,
+              "reason": "R2F0ZXdheSDpu5jorqQgQ29nbml0byBVc2VyIFBvb2wg5a+G56CB562W55Wl55SxIEwyIENvbnN0cnVjdCDnrqHnkIY=",
+            },
+            {
+              "id": "AwsSolutions-COG2",
+              "is_reason_encoded": true,
+              "reason": "R2F0ZXdheSDpu5jorqQgQ29nbml0byBVc2VyIFBvb2wg55So5LqOIE0yTSDorqTor4EgKENsaWVudCBDcmVkZW50aWFscynvvIzml6DpnIAgTUZB",
+            },
+            {
+              "id": "AwsSolutions-COG3",
+              "is_reason_encoded": true,
+              "reason": "R2F0ZXdheSDpu5jorqQgQ29nbml0byBVc2VyIFBvb2wg55So5LqOIE0yTSDorqTor4HvvIzkuI3mtonlj4rnlKjmiLfkuqTkupI=",
+            },
+          ],
+        },
+      },
+      "Properties": {
+        "Identifier": "TestAgentCoreStack-AgentGateway-E61F54FF",
+        "Name": "TestAgentCoreStack-AgentGateway-E61F54FF",
+        "Scopes": [
+          {
+            "ScopeDescription": "Read access to gateway tools",
+            "ScopeName": "read",
+          },
+          {
+            "ScopeDescription": "Write access to gateway tools",
+            "ScopeName": "write",
+          },
+        ],
+        "UserPoolId": {
+          "Ref": "AgentGatewayUserPoolBFAAC7BD",
+        },
+      },
+      "Type": "AWS::Cognito::UserPoolResourceServer",
+    },
+    "AgentRuntime917DDB48": {
+      "DependsOn": [
+        "AgentRuntimeExecutionRoleDefaultPolicy392B5DE7",
+        "AgentRuntimeExecutionRole23B45D24",
+      ],
+      "Metadata": {
+        "cdk_nag": {
+          "rules_to_suppress": [
+            {
+              "id": "AwsSolutions-IAM5",
+              "is_reason_encoded": true,
+              "reason": "QmVkcm9jayBJbnZva2VNb2RlbCDpnIDopoHpgJrphY3nrKbotYTmupDku6XmlK/mjIHlpJrmqKHlnovosIPnlKg7IFJ1bnRpbWUg5omn6KGM6KeS6Imy55SxIEwyIENvbnN0cnVjdCDoh6rliqjliJvlu7o=",
+            },
+          ],
+        },
+      },
+      "Properties": {
+        "AgentRuntimeArtifact": {
+          "ContainerConfiguration": {
+            "ContainerUri": {
+              "Fn::Join": [
+                "",
+                [
+                  {
+                    "Fn::Select": [
+                      4,
+                      {
+                        "Fn::Split": [
+                          ":",
+                          {
+                            "Fn::GetAtt": [
+                              "AgentEcrRepo348BC794",
+                              "Arn",
+                            ],
+                          },
+                        ],
+                      },
+                    ],
+                  },
+                  ".dkr.ecr.",
+                  {
+                    "Fn::Select": [
+                      3,
+                      {
+                        "Fn::Split": [
+                          ":",
+                          {
+                            "Fn::GetAtt": [
+                              "AgentEcrRepo348BC794",
+                              "Arn",
+                            ],
+                          },
+                        ],
+                      },
+                    ],
+                  },
+                  ".",
+                  {
+                    "Ref": "AWS::URLSuffix",
+                  },
+                  "/",
+                  {
+                    "Ref": "AgentEcrRepo348BC794",
+                  },
+                  ":latest",
+                ],
+              ],
+            },
+          },
+        },
+        "AgentRuntimeName": "ai_agents_platform_dev",
+        "Description": "AI Agents Platform - dev 环境 Agent Runtime",
+        "EnvironmentVariables": {
+          "ENV_NAME": "dev",
+          "PROJECT_NAME": "ai-agents-platform",
+        },
+        "LifecycleConfiguration": {},
+        "NetworkConfiguration": {
+          "NetworkMode": "VPC",
+          "NetworkModeConfig": {
+            "SecurityGroups": [
+              {
+                "Fn::GetAtt": [
+                  "SecurityGroupDD263621",
+                  "GroupId",
+                ],
+              },
+            ],
+            "Subnets": [
+              {
+                "Fn::ImportValue": "VpcStack:ExportsOutputRefTestVpcPrivateSubnet1SubnetCC65D7717F2BDF55",
+              },
+              {
+                "Fn::ImportValue": "VpcStack:ExportsOutputRefTestVpcPrivateSubnet2SubnetDE0C64A2F7B9B6B1",
+              },
+              {
+                "Fn::ImportValue": "VpcStack:ExportsOutputRefTestVpcPrivateSubnet3Subnet2311D32FD57B696C",
+              },
+            ],
+          },
+        },
+        "ProtocolConfiguration": "HTTP",
+        "RoleArn": {
+          "Fn::GetAtt": [
+            "AgentRuntimeExecutionRole23B45D24",
+            "Arn",
+          ],
+        },
+      },
+      "Type": "AWS::BedrockAgentCore::Runtime",
+    },
+    "AgentRuntimeExecutionRole23B45D24": {
+      "Metadata": {
+        "cdk_nag": {
+          "rules_to_suppress": [
+            {
+              "id": "AwsSolutions-IAM5",
+              "is_reason_encoded": true,
+              "reason": "QmVkcm9jayBJbnZva2VNb2RlbCDpnIDopoHpgJrphY3nrKbotYTmupDku6XmlK/mjIHlpJrmqKHlnovosIPnlKg7IFJ1bnRpbWUg5omn6KGM6KeS6Imy55SxIEwyIENvbnN0cnVjdCDoh6rliqjliJvlu7o=",
+            },
+          ],
+        },
+      },
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "bedrock-agentcore.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "Description": "Execution role for Bedrock Agent Core Runtime",
+        "MaxSessionDuration": 28800,
+      },
+      "Type": "AWS::IAM::Role",
+    },
+    "AgentRuntimeExecutionRoleDefaultPolicy392B5DE7": {
+      "Metadata": {
+        "cdk_nag": {
+          "rules_to_suppress": [
+            {
+              "id": "AwsSolutions-IAM5",
+              "is_reason_encoded": true,
+              "reason": "QmVkcm9jayBJbnZva2VNb2RlbCDpnIDopoHpgJrphY3nrKbotYTmupDku6XmlK/mjIHlpJrmqKHlnovosIPnlKg7IFJ1bnRpbWUg5omn6KGM6KeS6Imy55SxIEwyIENvbnN0cnVjdCDoh6rliqjliJvlu7o=",
+            },
+          ],
+        },
+      },
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": [
+                "logs:DescribeLogStreams",
+                "logs:CreateLogGroup",
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::Join": [
+                  "",
+                  [
+                    "arn:",
+                    {
+                      "Ref": "AWS::Partition",
+                    },
+                    ":logs:ap-northeast-1:000000000000:log-group:/aws/bedrock-agentcore/runtimes/*",
+                  ],
+                ],
+              },
+              "Sid": "LogGroupAccess",
+            },
+            {
+              "Action": "logs:DescribeLogGroups",
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::Join": [
+                  "",
+                  [
+                    "arn:",
+                    {
+                      "Ref": "AWS::Partition",
+                    },
+                    ":logs:ap-northeast-1:000000000000:log-group:*",
+                  ],
+                ],
+              },
+              "Sid": "DescribeLogGroups",
+            },
+            {
+              "Action": [
+                "logs:CreateLogStream",
+                "logs:PutLogEvents",
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::Join": [
+                  "",
+                  [
+                    "arn:",
+                    {
+                      "Ref": "AWS::Partition",
+                    },
+                    ":logs:ap-northeast-1:000000000000:log-group:/aws/bedrock-agentcore/runtimes/*:log-stream:*",
+                  ],
+                ],
+              },
+              "Sid": "LogStreamAccess",
+            },
+            {
+              "Action": [
+                "xray:PutTraceSegments",
+                "xray:PutTelemetryRecords",
+                "xray:GetSamplingRules",
+                "xray:GetSamplingTargets",
+              ],
+              "Effect": "Allow",
+              "Resource": "*",
+              "Sid": "XRayAccess",
+            },
+            {
+              "Action": "cloudwatch:PutMetricData",
+              "Condition": {
+                "StringEquals": {
+                  "cloudwatch:namespace": "bedrock-agentcore",
+                },
+              },
+              "Effect": "Allow",
+              "Resource": "*",
+              "Sid": "CloudWatchMetrics",
+            },
+            {
+              "Action": [
+                "bedrock-agentcore:GetWorkloadAccessToken",
+                "bedrock-agentcore:GetWorkloadAccessTokenForJWT",
+                "bedrock-agentcore:GetWorkloadAccessTokenForUserId",
+              ],
+              "Effect": "Allow",
+              "Resource": [
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "arn:",
+                      {
+                        "Ref": "AWS::Partition",
+                      },
+                      ":bedrock-agentcore:ap-northeast-1:000000000000:workload-identity-directory/default",
+                    ],
+                  ],
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "arn:",
+                      {
+                        "Ref": "AWS::Partition",
+                      },
+                      ":bedrock-agentcore:ap-northeast-1:000000000000:workload-identity-directory/default/workload-identity/*",
+                    ],
+                  ],
+                },
+              ],
+              "Sid": "GetAgentAccessToken",
+            },
+            {
+              "Action": [
+                "bedrock:InvokeModel",
+                "bedrock:InvokeModelWithResponseStream",
+                "bedrock:ListInferenceProfiles",
+              ],
+              "Effect": "Allow",
+              "Resource": "*",
+            },
+            {
+              "Action": [
+                "ecr:BatchCheckLayerAvailability",
+                "ecr:GetDownloadUrlForLayer",
+                "ecr:BatchGetImage",
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::GetAtt": [
+                  "AgentEcrRepo348BC794",
+                  "Arn",
+                ],
+              },
+            },
+            {
+              "Action": "ecr:GetAuthorizationToken",
+              "Effect": "Allow",
+              "Resource": "*",
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "AgentRuntimeExecutionRoleDefaultPolicy392B5DE7",
+        "Roles": [
+          {
+            "Ref": "AgentRuntimeExecutionRole23B45D24",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
+    },
+    "SecurityGroupDD263621": {
+      "Properties": {
+        "GroupDescription": "TestAgentCoreStack/SecurityGroup",
+        "SecurityGroupEgress": [
+          {
+            "CidrIp": "0.0.0.0/0",
+            "Description": "Allow all outbound traffic by default",
+            "IpProtocol": "-1",
+          },
+        ],
+        "VpcId": {
+          "Fn::ImportValue": "VpcStack:ExportsOutputRefTestVpcE77CE67811D13B85",
+        },
+      },
+      "Type": "AWS::EC2::SecurityGroup",
+    },
+  },
+  "Rules": {
+    "CheckBootstrapVersion": {
+      "Assertions": [
+        {
+          "Assert": {
+            "Fn::Not": [
+              {
+                "Fn::Contains": [
+                  [
+                    "1",
+                    "2",
+                    "3",
+                    "4",
+                    "5",
+                  ],
+                  {
+                    "Ref": "BootstrapVersion",
+                  },
+                ],
+              },
+            ],
+          },
+          "AssertDescription": "CDK bootstrap stack version 6 required. Please run 'cdk bootstrap' with a recent version of the CDK CLI.",
+        },
+      ],
+    },
+  },
+}
+`;
+
 exports[`Snapshot Tests DatabaseStack 快照匹配 1`] = `
 {
   "Outputs": {

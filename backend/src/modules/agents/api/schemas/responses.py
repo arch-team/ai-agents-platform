@@ -12,6 +12,7 @@ class AgentConfigResponse(BaseModel):
     temperature: float
     max_tokens: int
     top_p: float
+    runtime_type: str
 
 
 class AgentResponse(BaseModel):

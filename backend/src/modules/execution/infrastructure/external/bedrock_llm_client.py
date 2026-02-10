@@ -5,9 +5,10 @@ SDK-First: < 100 行，暴露原生类型，
 """
 
 import asyncio
-import logging
 from collections.abc import AsyncIterator
 from typing import Any, Protocol
+
+import structlog
 
 from src.modules.execution.application.interfaces import (
     ILLMClient,
@@ -18,7 +19,7 @@ from src.modules.execution.application.interfaces import (
 from src.shared.domain.exceptions import DomainError
 
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 class _BedrockRuntimeClient(Protocol):

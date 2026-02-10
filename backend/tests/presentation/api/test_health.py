@@ -10,38 +10,48 @@ from src.presentation.api.main import create_app
 class TestHealthEndpoints:
     """Health check endpoint tests."""
 
-    def setup_method(self):
+    def setup_method(self) -> None:
         """Create test app and client."""
         self.app = create_app()
         self.client = TestClient(self.app)
 
-    def test_liveness_returns_ok(self):
+    def test_liveness_returns_ok(self) -> None:
         """GET /health returns status ok."""
-        # Act
         response = self.client.get("/health")
 
-        # Assert
         assert response.status_code == 200
         data = response.json()
         assert data["status"] == "ok"
 
-    def test_readiness_returns_ok_with_checks(self):
-        """GET /health/ready returns status and checks dict."""
-        # Act
+    def test_readiness_without_db_returns_degraded(self) -> None:
+        """GET /health/ready 数据库未初始化时返回 503 degraded。"""
         response = self.client.get("/health/ready")
 
-        # Assert
-        assert response.status_code == 200
+        assert response.status_code == 503
         data = response.json()
-        assert data["status"] == "ok"
+        assert data["status"] == "degraded"
         assert "checks" in data
         assert isinstance(data["checks"], dict)
+        assert data["checks"]["database"] == "not_initialized"
 
-    def test_readiness_status_field(self):
-        """GET /health/ready status is ok when all checks pass."""
-        # Act
+    def test_readiness_response_has_correlation_id(self) -> None:
+        """GET /health/ready 响应包含 X-Correlation-ID 头。"""
         response = self.client.get("/health/ready")
 
-        # Assert
-        data = response.json()
-        assert data["status"] in ("ok", "degraded")
+        assert "X-Correlation-ID" in response.headers
+
+    def test_readiness_preserves_incoming_correlation_id(self) -> None:
+        """请求携带 X-Correlation-ID 时，响应原样返回。"""
+        test_id = "test-correlation-123"
+        response = self.client.get(
+            "/health/ready",
+            headers={"X-Correlation-ID": test_id},
+        )
+
+        assert response.headers["X-Correlation-ID"] == test_id
+
+    def test_liveness_has_correlation_id(self) -> None:
+        """GET /health 响应包含 X-Correlation-ID 头。"""
+        response = self.client.get("/health")
+
+        assert "X-Correlation-ID" in response.headers

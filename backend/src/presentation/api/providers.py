@@ -14,7 +14,12 @@ from src.modules.agents.infrastructure.persistence.repositories.agent_repository
     AgentRepositoryImpl,
 )
 from src.modules.agents.infrastructure.services.agent_querier_impl import AgentQuerierImpl
+from src.modules.tool_catalog.infrastructure.persistence.repositories.tool_repository_impl import (
+    ToolRepositoryImpl,
+)
+from src.modules.tool_catalog.infrastructure.services.tool_querier_impl import ToolQuerierImpl
 from src.shared.domain.interfaces.agent_querier import IAgentQuerier
+from src.shared.domain.interfaces.tool_querier import IToolQuerier
 from src.shared.infrastructure.database import get_db
 
 
@@ -24,3 +29,11 @@ async def get_agent_querier(
     """创建 IAgentQuerier 实例。"""
     agent_repo = AgentRepositoryImpl(session=session)
     return AgentQuerierImpl(agent_repository=agent_repo)
+
+
+async def get_tool_querier(
+    session: Annotated[AsyncSession, Depends(get_db)],
+) -> IToolQuerier:
+    """创建 IToolQuerier 实例。"""
+    tool_repo = ToolRepositoryImpl(session=session)
+    return ToolQuerierImpl(tool_repository=tool_repo)

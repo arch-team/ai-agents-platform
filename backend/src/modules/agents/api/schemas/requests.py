@@ -12,6 +12,7 @@ class CreateAgentRequest(BaseModel):
     model_id: str = Field(default="anthropic.claude-3-5-sonnet-20241022-v2:0", max_length=200)
     temperature: float = Field(default=0.7, ge=0.0, le=1.0)
     max_tokens: int = Field(default=2048, ge=1, le=4096)
+    runtime_type: str = Field(default="agent", pattern=r"^(agent|basic)$")
 
 
 class UpdateAgentRequest(BaseModel):
@@ -23,3 +24,4 @@ class UpdateAgentRequest(BaseModel):
     model_id: str | None = Field(default=None, max_length=200)
     temperature: float | None = Field(default=None, ge=0.0, le=1.0)
     max_tokens: int | None = Field(default=None, ge=1, le=4096)
+    runtime_type: str | None = Field(default=None, pattern=r"^(agent|basic)$")

@@ -1,6 +1,6 @@
 # 四阶段迭代路线图
 
-> **文档类型**: 战略规划 | **维护者**: 后端架构师 | **状态**: 初始版本
+> **文档类型**: 战略规划 | **维护者**: 后端架构师 | **状态**: v1.1 — 已纳入 ADR-006 Agent 框架选型
 
 ---
 
@@ -25,8 +25,9 @@ Phase 1: MVP 基础        Phase 2: 核心功能        Phase 3: 生态扩展   
 
 CDK Stacks:            CDK Stacks:             CDK Stacks:             CDK Stacks:
   Network + Security    Compute + Api           Monitoring 增强         多区域部署
-  Database              Staging 环境            Prod 环境              灾备方案
-  基础 CI/CD                                    蓝绿部署
+  Database              AgentCore (Runtime      Prod 环境              灾备方案
+  基础 CI/CD              + Gateway)            蓝绿部署
+                        Staging 环境
 ```
 
 ### 1.2 核心设计原则
@@ -56,7 +57,7 @@ CDK Stacks:            CDK Stacks:             CDK Stacks:             CDK Stack
 | 1 | `shared` | 共享内核 - `PydanticEntity` 基类、`IRepository` 泛型接口、`EventBus`、`DomainError` 异常体系、`get_db` 数据库会话 | 无 |
 | 2 | `auth` | 用户认证授权 - JWT Token 签发/验证、RBAC 角色权限、`get_current_user` 依赖注入 | shared |
 | 3 | `agents` | Agent 管理 - Agent CRUD、配置管理、状态机 (draft → active → archived) | shared, auth |
-| 4 | `execution` | 任务执行引擎 - 单 Agent 对话执行、Bedrock AgentCore 集成、SSE 流式响应 | shared, auth, agents |
+| 4 | `execution` | 任务执行引擎 - 单 Agent 对话执行、SSE 流式响应。**ADR-006**: IAgentRuntime 接口 + Claude Agent SDK (ClaudeAgentAdapter)，通过 AgentCore Runtime 部署 | shared, auth, agents |
 
 每个模块严格遵循四层结构: `api/ → application/ → domain/ ← infrastructure/`，模块间通过 EventBus 异步解耦或 `shared/domain/interfaces/` 同步调用。
 
@@ -133,10 +134,11 @@ CI/CD: GitHub Actions 基础 Pipeline (lint → test → cdk synth → deploy de
 
 | CDK Stack | 新增资源 | 说明 |
 |-----------|---------|------|
-| **ComputeStack** | ECS Fargate Service (后端 API)、ALB、Auto Scaling | 容器化部署 |
+| **ComputeStack** | ECS Fargate Service (Platform API)、ALB、Auto Scaling | 平台 API 容器化部署 |
+| **AgentCoreStack** | AgentCore Runtime (Agent 执行层)、AgentCore Gateway (MCP 统一入口) | Agent 运行时部署 (ADR-006) |
 | **ApiStack** | API Gateway、WAF 规则、访问日志 | API 入口层 |
 
-新增 Staging 环境，资源配置参考环境矩阵 (db.t3.medium 多 AZ)。集成 CloudWatch 监控 (日志组、基础告警)。
+新增 Staging 环境，资源配置参考环境矩阵 (db.t3.medium 多 AZ)。集成 CloudWatch 监控 (日志组、基础告警)。AgentCore CDK 使用 `@aws-cdk/aws-bedrock-agentcore-alpha` L2 Construct。
 
 ### 3.5 关键里程碑
 
@@ -144,7 +146,8 @@ CI/CD: GitHub Actions 基础 Pipeline (lint → test → cdk synth → deploy de
 |--------|---------|--------|
 | **M4: 工具目录** | 第 13-16 周 | tool-catalog 模块完成；MCP Server 注册与审批流程；前端工具目录界面 |
 | **M5: 知识库 + 业务洞察** | 第 17-20 周 | knowledge 模块 (RAG 集成)；insights 模块 (成本归因/使用趋势)；前端仪表板 |
-| **M6: 模板生态** | 第 21-24 周 | templates 模块 + 10 个预置模板；ComputeStack + ApiStack 部署 Staging |
+| **M5.5: AgentCore 基础集成** | M5 完成后 | AgentCore 集成 P0 (依赖升级 + IAgentRuntime/IToolQuerier 接口 + runtime_type + 可观测性基础) + P1 (StrandsAgentAdapter + AgentCore Runtime CDK) — 详见 `agentcore-integration-plan.md` |
+| **M6: 模板生态** | 第 21-24 周 | templates 模块 + 10 个预置模板；ComputeStack + AgentCoreStack + ApiStack 部署 Staging |
 
 ### 3.6 验收标准
 
@@ -169,7 +172,7 @@ CI/CD: GitHub Actions 基础 Pipeline (lint → test → cdk synth → deploy de
 
 | 顺序 | 模块 | 职责 | 依赖 |
 |:----:|------|------|------|
-| 9 | `orchestration` | Multi-Agent 工作流编排 - DAG 定义/执行引擎、Agent 间消息路由、并行/串行执行策略 | shared, auth, agents, execution, tool-catalog |
+| 9 | `orchestration` | Multi-Agent 工作流编排 - DAG 定义/执行引擎、Agent 间消息路由、并行/串行执行策略。基于 Claude Agent SDK 子 Agent (Task 工具) + AgentCore Runtime A2A 协议 | shared, auth, agents, execution, tool-catalog |
 | 10 | `evaluation` | Agent 质量评估 - 消费 AgentCore Evaluations 评估数据、自定义业务评估指标、评估报告可视化 | shared, auth, agents, execution, insights |
 
 `orchestration` 优先于 `evaluation`，因为 Multi-Agent 编排是本阶段核心差异化能力。模型选择策略和 fallback 配置已合并到 `agents` 模块的 AgentConfig 中（Bedrock 原生提供多模型路由），不再作为独立模块。
@@ -185,7 +188,7 @@ CI/CD: GitHub Actions 基础 Pipeline (lint → test → cdk synth → deploy de
 
 | CDK Stack | 变更 | 说明 |
 |-----------|------|------|
-| **MonitoringStack** | 增强: CloudWatch Dashboards、SNS 告警通知、X-Ray 分布式追踪 | 全链路可观测 |
+| **MonitoringStack** | 增强: AgentCore Observability (OpenTelemetry + CloudWatch)、SNS 告警通知、分布式追踪 | 全链路可观测 (ADR-006 P2-3) |
 | **ComputeStack** | 增强: 蓝绿部署 (CodeDeploy)、Auto Scaling 策略优化 | 零停机部署 |
 | **Prod 环境** | 全量 Stack 部署: db.r6g.large 多 AZ、每 AZ 一个 NAT Gateway | 生产就绪 |
 
@@ -193,7 +196,7 @@ CI/CD: GitHub Actions 基础 Pipeline (lint → test → cdk synth → deploy de
 
 | 里程碑 | 时间窗口 | 交付物 |
 |--------|---------|--------|
-| **M7: Multi-Agent 编排** | 第 25-32 周 | orchestration 模块完成；可视化编排器 MVP；支持串行/并行/条件分支 |
+| **M7: Multi-Agent 编排** | 第 25-32 周 | orchestration 模块完成；可视化编排器 MVP；支持串行/并行/条件分支；AgentCore Memory 集成 (短期+长期记忆, P2-2/P3-1) |
 | **M8: 评估体系** | 第 33-40 周 | evaluation 模块 + 自动化评估 Pipeline；Agent 模型配置增强（fallback 策略） |
 | **M9: 生产部署** | 第 41-48 周 | Prod 环境部署；蓝绿部署验证；全公司推广启动 (目标 50+ 活跃用户) |
 
@@ -286,16 +289,16 @@ CI/CD: GitHub Actions 基础 Pipeline (lint → test → cdk synth → deploy de
 ### 6.3 架构演进路径
 
 ```
-Phase 1: Modular Monolith (单体部署)
+Phase 1: Modular Monolith (单体部署, boto3 Converse API)
    ↓ 模块边界已通过 DDD + EventBus 清晰定义
-Phase 2: Modular Monolith (容器化部署, ECS Fargate)
-   ↓ 如果特定模块有独立扩展需求
-Phase 3: 可选微服务拆分 (execution/orchestration 模块独立部署)
-   ↓ 基于实际负载数据决策
-Phase 4: 混合架构 (核心单体 + 高负载模块微服务化)
+Phase 2: Platform API (ECS Fargate) + Agent 执行 (AgentCore Runtime)  ← ADR-006
+   ↓ Claude Agent SDK + IAgentRuntime 接口抽象
+Phase 3: 多 Agent 编排 (AgentCore Runtime A2A + Agents-as-Tools)
+   ↓ AgentCore Memory/Gateway/Observability 全套集成
+Phase 4: 混合架构 (Platform API 单体 + Agent Runtime 按需扩展)
 ```
 
-**关键原则**: 不预设微服务拆分时间点。DDD 模块隔离确保了随时可拆分的能力，但只有当监控数据证明单模块成为瓶颈时才执行拆分。
+**关键原则**: Platform API 层保持 Modular Monolith 部署；Agent 执行层通过 AgentCore Runtime 独立部署和扩展。两者通过 `invoke_agent_runtime()` API 通信。拆分决策基于 ADR-006 和实际负载数据。
 
 ---
 
@@ -315,10 +318,13 @@ Phase 4: 混合架构 (核心单体 + 高负载模块微服务化)
 
 | 依赖 | 影响范围 | 当前状态 | 备选方案 |
 |------|---------|---------|---------|
-| Amazon Bedrock AgentCore | execution, orchestration 模块 | 依赖 GA 版本稳定性 | Claude Agent SDK 独立部署（ECS/Docker，不经过 AgentCore Runtime） |
-| Aurora MySQL 3.x | 全部数据存储 | 稳定可用 | 标准 MySQL 8.0 (降级方案) |
-| Claude Agent SDK | Agent 执行核心 | 关注 SDK 版本更新 | Bedrock Converse API 作为降级路径 |
+| Amazon Bedrock AgentCore | execution, orchestration 模块 | GA (9 区域), boto3>=1.36.0 | Bedrock Converse API 降级路径 (ADR-003) |
+| Claude Agent SDK | Agent 执行层 (唯一框架, ADR-006) | 正式版, 需 Node.js CLI 依赖 | BedrockLLMClient 降级到单轮对话 |
+| AgentCore SDK (`bedrock-agentcore`) | Runtime 部署 | Python SDK 已发布 | 直接 boto3 调用 |
+| Aurora MySQL 3.x | 全部关系数据存储 | 稳定可用 (ADR-005) | 标准 MySQL 8.0 (降级方案) |
+| Bedrock Knowledge Bases | RAG 向量检索 (ADR-005) | GA | 自建 OpenSearch (降级方案 B) |
 | AWS CDK 生态 | 全部基础设施 | 稳定 (>= 2.130) | 版本锁定 + 定期升级评估 |
+| `@aws-cdk/aws-bedrock-agentcore-alpha` | AgentCore CDK 资源 | alpha (NPM 已发布) | L1 CfnResource 降级 |
 
 ### 7.3 团队依赖
 
@@ -334,11 +340,14 @@ Phase 4: 混合架构 (核心单体 + 高负载模块微服务化)
 
 ## 附录: 模块与六大核心能力映射
 
-| 核心能力 | 对应后端模块 | 首次交付阶段 |
-|---------|-------------|:----------:|
-| Agent 管理 | agents, templates | Phase 1/2 |
-| 运行时引擎 | execution, tool-catalog | Phase 1/2 |
-| 编排协作 | orchestration | Phase 3 |
-| 监控评估 | insights, evaluation | Phase 2/3 |
-| 用户权限 | auth, audit | Phase 1/4 |
-| 平台基础 | shared, knowledge, marketplace, analytics | Phase 1/2/3/4 |
+| 核心能力 | 对应后端模块 | AgentCore 服务 | 首次交付阶段 |
+|---------|-------------|---------------|:----------:|
+| Agent 管理 | agents, templates | - | Phase 1/2 |
+| 运行时引擎 | execution + IAgentRuntime | **AgentCore Runtime** + Claude Agent SDK | Phase 1/2 |
+| 工具集成 | tool-catalog | **AgentCore Gateway** (MCP) | Phase 2 |
+| 编排协作 | orchestration | AgentCore Runtime (A2A) | Phase 3 |
+| 记忆管理 | execution (Conversation/Message) | **AgentCore Memory** | Phase 2/3 |
+| 监控评估 | insights, evaluation | **AgentCore Observability** | Phase 2/3 |
+| 知识库 | knowledge | **Bedrock Knowledge Base** | Phase 2 |
+| 用户权限 | auth, audit | AgentCore Identity (Phase 3+) | Phase 1/4 |
+| 平台基础 | shared, marketplace, analytics | - | Phase 1/2/3/4 |

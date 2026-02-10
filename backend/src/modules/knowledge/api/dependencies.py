@@ -8,7 +8,10 @@ from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.modules.knowledge.application.services.knowledge_service import KnowledgeService
-from src.modules.knowledge.infrastructure.external.bedrock_knowledge_adapter import BedrockKnowledgeAdapter
+from src.modules.knowledge.infrastructure.external.bedrock_knowledge_adapter import (
+    BedrockKBConfig,
+    BedrockKnowledgeAdapter,
+)
 from src.modules.knowledge.infrastructure.external.s3_document_storage import S3DocumentStorage
 from src.modules.knowledge.infrastructure.persistence.repositories.document_repository_impl import (
     DocumentRepositoryImpl,
@@ -26,7 +29,15 @@ def get_bedrock_knowledge_client() -> BedrockKnowledgeAdapter:
     settings = get_settings()
     agent_client = boto3.client("bedrock-agent", region_name=settings.AWS_REGION)
     runtime_client = boto3.client("bedrock-agent-runtime", region_name=settings.AWS_REGION)
-    return BedrockKnowledgeAdapter(agent_client, runtime_client)
+    # 有配置时传入 KB 参数，开发环境允许为空（创建时会校验）
+    kb_config = None
+    if settings.BEDROCK_KB_ROLE_ARN and settings.BEDROCK_KB_EMBEDDING_MODEL_ARN:
+        kb_config = BedrockKBConfig(
+            role_arn=settings.BEDROCK_KB_ROLE_ARN,
+            embedding_model_arn=settings.BEDROCK_KB_EMBEDDING_MODEL_ARN,
+            collection_arn=settings.BEDROCK_KB_COLLECTION_ARN,
+        )
+    return BedrockKnowledgeAdapter(agent_client, runtime_client, kb_config=kb_config)
 
 
 @lru_cache

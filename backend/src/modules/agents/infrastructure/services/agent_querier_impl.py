@@ -29,4 +29,5 @@ class AgentQuerierImpl(IAgentQuerier):
             max_tokens=agent.config.max_tokens,
             top_p=agent.config.top_p,
             stop_sequences=agent.config.stop_sequences,
+            runtime_type=agent.config.runtime_type,
         )

@@ -38,6 +38,7 @@ def _make_agent_dto(
     temperature: float = 0.7,
     max_tokens: int = 2048,
     top_p: float = 1.0,
+    runtime_type: str = "agent",
 ) -> AgentDTO:
     now = datetime.now()
     return AgentDTO(
@@ -51,6 +52,7 @@ def _make_agent_dto(
         temperature=temperature,
         max_tokens=max_tokens,
         top_p=top_p,
+        runtime_type=runtime_type,
         created_at=now,
         updated_at=now,
     )

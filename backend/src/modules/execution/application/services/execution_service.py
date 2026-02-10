@@ -12,6 +12,11 @@ from src.modules.execution.application.dto.execution_dto import (
     PagedConversationDTO,
     SendMessageDTO,
 )
+from src.modules.execution.application.interfaces.agent_runtime import (
+    AgentRequest,
+    AgentTool,
+    IAgentRuntime,
+)
 from src.modules.execution.application.interfaces.llm_client import (
     ILLMClient,
     LLMMessage,
@@ -43,6 +48,7 @@ from src.shared.domain.event_bus import event_bus
 from src.shared.domain.exceptions import DomainError
 from src.shared.domain.interfaces.agent_querier import ActiveAgentInfo, IAgentQuerier
 from src.shared.domain.interfaces.knowledge_querier import IKnowledgeQuerier
+from src.shared.domain.interfaces.tool_querier import ApprovedToolInfo, IToolQuerier
 
 
 @dataclass
@@ -53,6 +59,7 @@ class _SendContext:
     agent_info: ActiveAgentInfo
     created_user_msg: Message
     llm_messages: list[LLMMessage]
+    system_prompt: str = ""
 
 
 class ExecutionService:
@@ -66,12 +73,16 @@ class ExecutionService:
         agent_querier: IAgentQuerier,
         stream_finalize_repos: tuple[IMessageRepository, IConversationRepository] | None = None,
         knowledge_querier: IKnowledgeQuerier | None = None,
+        agent_runtime: IAgentRuntime | None = None,
+        tool_querier: IToolQuerier | None = None,
     ) -> None:
         self._conversation_repo = conversation_repo
         self._message_repo = message_repo
         self._llm_client = llm_client
         self._agent_querier = agent_querier
         self._knowledge_querier = knowledge_querier
+        self._agent_runtime = agent_runtime
+        self._tool_querier = tool_querier
         # 流后 DB 写使用独立 repos (由 API 层通过独立 session 创建)
         self._stream_msg_repo, self._stream_conv_repo = (
             stream_finalize_repos if stream_finalize_repos else (message_repo, conversation_repo)
@@ -118,37 +129,34 @@ class ExecutionService:
     ) -> MessageDTO:
         """发送消息（同步）。
 
+        根据 runtime_type 路由:
+        - "agent" 且 agent_runtime 可用 → IAgentRuntime.execute()
+        - 其他情况 → ILLMClient.invoke()（降级路径）
+
         Raises:
             ConversationNotFoundError, ConversationNotActiveError,
             DomainError(FORBIDDEN_CONVERSATION), AgentNotAvailableError
         """
         ctx = await self._prepare_for_send(conversation_id, dto.content, user_id)
 
-        # 调用 LLM
-        response = await self._llm_client.invoke(
-            model_id=ctx.agent_info.model_id,
-            messages=ctx.llm_messages,
-            system_prompt=ctx.agent_info.system_prompt,
-            temperature=ctx.agent_info.temperature,
-            max_tokens=ctx.agent_info.max_tokens,
-            top_p=ctx.agent_info.top_p,
-            stop_sequences=ctx.agent_info.stop_sequences,
-        )
+        # 根据 runtime_type 路由执行
+        if self._should_use_agent_runtime(ctx.agent_info):
+            response_content, total_tokens = await self._execute_agent(ctx)
+        else:
+            response_content, total_tokens = await self._execute_llm(ctx)
 
         # 创建助手消息
         assistant_message = Message(
             conversation_id=conversation_id,
             role=MessageRole.ASSISTANT,
-            content=response.content,
-            token_count=response.input_tokens + response.output_tokens,
+            content=response_content,
+            token_count=total_tokens,
         )
         created_assistant_msg = await self._message_repo.create(assistant_message)
 
         # 更新对话统计
         ctx.conversation.add_message_count(token_count=0)  # 用户消息
-        ctx.conversation.add_message_count(
-            token_count=response.input_tokens + response.output_tokens,
-        )
+        ctx.conversation.add_message_count(token_count=total_tokens)
         await self._conversation_repo.update(ctx.conversation)
 
         # 发布事件
@@ -165,7 +173,7 @@ class ExecutionService:
             MessageReceivedEvent(
                 conversation_id=conversation_id,
                 message_id=created_assistant_msg.id,
-                token_count=response.input_tokens + response.output_tokens,
+                token_count=total_tokens,
                 model_id=ctx.agent_info.model_id,
             ),
         )
@@ -179,6 +187,10 @@ class ExecutionService:
         user_id: int,
     ) -> AsyncIterator[str]:
         """发送消息（SSE 流式）。
+
+        根据 runtime_type 路由:
+        - "agent" 且 agent_runtime 可用 → IAgentRuntime.execute_stream()
+        - 其他情况 → ILLMClient.invoke_stream()（降级路径）
 
         Raises:
             ConversationNotFoundError, ConversationNotActiveError,
@@ -194,29 +206,48 @@ class ExecutionService:
         )
         created_assistant_msg = await self._message_repo.create(assistant_message)
 
+        use_agent = self._should_use_agent_runtime(ctx.agent_info)
+
         async def _generate() -> AsyncIterator[str]:
             collected_content = ""
             total_input_tokens = 0
             total_output_tokens = 0
 
-            stream = await self._llm_client.invoke_stream(
-                model_id=ctx.agent_info.model_id,
-                messages=ctx.llm_messages,
-                system_prompt=ctx.agent_info.system_prompt,
-                temperature=ctx.agent_info.temperature,
-                max_tokens=ctx.agent_info.max_tokens,
-                top_p=ctx.agent_info.top_p,
-                stop_sequences=ctx.agent_info.stop_sequences,
-            )
+            if use_agent:
+                # Agent 模式: 通过 IAgentRuntime 流式执行
+                assert self._agent_runtime is not None
+                tools = await self._get_agent_tools()
+                request = self._build_agent_request(ctx, tools)
+                agent_stream = self._agent_runtime.execute_stream(request)
 
-            async for chunk in stream:
-                if chunk.content:
-                    collected_content += chunk.content
-                    yield f"data: {json.dumps({'content': chunk.content, 'done': False})}\n\n"
+                async for chunk in agent_stream:
+                    if chunk.content:
+                        collected_content += chunk.content
+                        yield f"data: {json.dumps({'content': chunk.content, 'done': False})}\n\n"
 
-                if chunk.done:
-                    total_input_tokens = chunk.input_tokens
-                    total_output_tokens = chunk.output_tokens
+                    if chunk.done:
+                        total_input_tokens = chunk.input_tokens
+                        total_output_tokens = chunk.output_tokens
+            else:
+                # 降级路径: 通过 ILLMClient 流式调用
+                stream = await self._llm_client.invoke_stream(
+                    model_id=ctx.agent_info.model_id,
+                    messages=ctx.llm_messages,
+                    system_prompt=ctx.system_prompt,
+                    temperature=ctx.agent_info.temperature,
+                    max_tokens=ctx.agent_info.max_tokens,
+                    top_p=ctx.agent_info.top_p,
+                    stop_sequences=ctx.agent_info.stop_sequences,
+                )
+
+                async for llm_chunk in stream:
+                    if llm_chunk.content:
+                        collected_content += llm_chunk.content
+                        yield f"data: {json.dumps({'content': llm_chunk.content, 'done': False})}\n\n"
+
+                    if llm_chunk.done:
+                        total_input_tokens = llm_chunk.input_tokens
+                        total_output_tokens = llm_chunk.output_tokens
 
             # 流后 DB 写操作: 使用独立 session, 避免 DI session 已关闭的问题
             total_tokens = total_input_tokens + total_output_tokens
@@ -359,6 +390,79 @@ class ExecutionService:
 
     # ── 内部辅助方法 ──
 
+    def _should_use_agent_runtime(self, agent_info: ActiveAgentInfo) -> bool:
+        """判断是否使用 Agent 运行时路径。"""
+        return agent_info.runtime_type == "agent" and self._agent_runtime is not None
+
+    async def _execute_agent(self, ctx: _SendContext) -> tuple[str, int]:
+        """通过 IAgentRuntime 执行（Agent 模式）。返回 (content, total_tokens)。"""
+        assert self._agent_runtime is not None
+        tools = await self._get_agent_tools()
+        request = self._build_agent_request(ctx, tools)
+        response = await self._agent_runtime.execute(request)
+        total_tokens = response.input_tokens + response.output_tokens
+        return response.content, total_tokens
+
+    async def _execute_llm(self, ctx: _SendContext) -> tuple[str, int]:
+        """通过 ILLMClient 执行（降级路径）。返回 (content, total_tokens)。"""
+        response = await self._llm_client.invoke(
+            model_id=ctx.agent_info.model_id,
+            messages=ctx.llm_messages,
+            system_prompt=ctx.system_prompt,
+            temperature=ctx.agent_info.temperature,
+            max_tokens=ctx.agent_info.max_tokens,
+            top_p=ctx.agent_info.top_p,
+            stop_sequences=ctx.agent_info.stop_sequences,
+        )
+        total_tokens = response.input_tokens + response.output_tokens
+        return response.content, total_tokens
+
+    async def _get_agent_tools(self) -> list[AgentTool]:
+        """通过 IToolQuerier 获取已审批工具并转换为 AgentTool。"""
+        if self._tool_querier is None:
+            return []
+        approved = await self._tool_querier.list_approved_tools()
+        return [self._to_agent_tool(t) for t in approved]
+
+    @staticmethod
+    def _to_agent_tool(info: ApprovedToolInfo) -> AgentTool:
+        """ApprovedToolInfo → AgentTool 转换。"""
+        config: dict[str, str] = {}
+        if info.server_url:
+            config["server_url"] = info.server_url
+        if info.transport:
+            config["transport"] = info.transport
+        if info.endpoint_url:
+            config["endpoint_url"] = info.endpoint_url
+        if info.method:
+            config["method"] = info.method
+        if info.runtime:
+            config["runtime"] = info.runtime
+        if info.handler:
+            config["handler"] = info.handler
+        if info.auth_type != "none":
+            config["auth_type"] = info.auth_type
+        return AgentTool(
+            name=info.name,
+            description=info.description,
+            input_schema={},
+            tool_type=info.tool_type,
+            config=config,
+        )
+
+    @staticmethod
+    def _build_agent_request(ctx: _SendContext, tools: list[AgentTool]) -> AgentRequest:
+        """构建 AgentRequest。"""
+        return AgentRequest(
+            prompt=ctx.created_user_msg.content,
+            system_prompt=ctx.system_prompt,
+            model_id=ctx.agent_info.model_id,
+            tools=tools,
+            history=ctx.llm_messages,
+            temperature=ctx.agent_info.temperature,
+            max_tokens=ctx.agent_info.max_tokens,
+        )
+
     async def _prepare_for_send(
         self,
         conversation_id: int,
@@ -390,7 +494,8 @@ class ExecutionService:
         history = await self._message_repo.list_by_conversation(conversation_id)
         llm_messages = [LLMMessage(role=m.role.value, content=m.content) for m in history]
 
-        # RAG 上下文注入
+        # RAG 上下文注入：将检索结果附加到 system prompt
+        system_prompt = agent_info.system_prompt
         if agent_info.knowledge_base_id and self._knowledge_querier:
             rag_results = await self._knowledge_querier.retrieve(
                 agent_info.knowledge_base_id,
@@ -401,19 +506,14 @@ class ExecutionService:
                 rag_context = "\n\n".join(
                     f"[参考文档] {r.content}" for r in rag_results
                 )
-                llm_messages.insert(
-                    0,
-                    LLMMessage(
-                        role="user",
-                        content=f"以下是相关参考资料:\n{rag_context}",
-                    ),
-                )
+                system_prompt = f"{system_prompt}\n\n## 知识库参考资料\n\n{rag_context}"
 
         return _SendContext(
             conversation=conversation,
             agent_info=agent_info,
             created_user_msg=created_user_msg,
             llm_messages=llm_messages,
+            system_prompt=system_prompt,
         )
 
     async def _get_conversation_or_raise(

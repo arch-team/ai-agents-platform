@@ -3,7 +3,12 @@ import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as kms from 'aws-cdk-lib/aws-kms';
 import { Aspects } from 'aws-cdk-lib';
 import { AwsSolutionsChecks, NagSuppressions } from 'cdk-nag';
-import { NetworkStack, SecurityStack, DatabaseStack } from '../../lib/stacks';
+import {
+  NetworkStack,
+  SecurityStack,
+  DatabaseStack,
+  AgentCoreStack,
+} from '../../lib/stacks';
 import { createTestVpc } from '../helpers/test-utils';
 
 const testEnv = { account: '000000000000', region: 'ap-northeast-1' };
@@ -78,6 +83,26 @@ describe('CDK Nag 合规测试', () => {
       },
     ]);
 
+    const messages = app.synth().getStackArtifact(stack.artifactId).messages;
+    const errors = messages.filter((m) => m.level === 'error');
+
+    expect(errors).toHaveLength(0);
+  });
+
+  it('AgentCoreStack 应通过 AWS Solutions checks', () => {
+    const app = new cdk.App();
+    const vpcStack = new cdk.Stack(app, 'VpcStack', { env: testEnv });
+    const vpc = createTestVpc(vpcStack);
+
+    const stack = new AgentCoreStack(app, 'TestAgentCoreStack', {
+      env: testEnv,
+      vpc,
+      envName: 'dev',
+    });
+
+    Aspects.of(stack).add(new AwsSolutionsChecks({ verbose: true }));
+
+    // 注意: IAM4, IAM5, COG1, COG2, COG3 的抑制已在 AgentCoreStack 内定义
     const messages = app.synth().getStackArtifact(stack.artifactId).messages;
     const errors = messages.filter((m) => m.level === 'error');
 

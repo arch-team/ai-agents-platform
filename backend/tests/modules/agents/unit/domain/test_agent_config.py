@@ -27,6 +27,10 @@ class TestAgentConfigDefaults:
         config = AgentConfig()
         assert config.stop_sequences == ()
 
+    def test_default_runtime_type(self) -> None:
+        config = AgentConfig()
+        assert config.runtime_type == "agent"
+
 
 @pytest.mark.unit
 class TestAgentConfigCustom:
@@ -43,6 +47,14 @@ class TestAgentConfigCustom:
         assert config.max_tokens == 4096
         assert config.top_p == 0.9
         assert config.stop_sequences == ("</output>",)
+
+    def test_custom_runtime_type_basic(self) -> None:
+        config = AgentConfig(runtime_type="basic")
+        assert config.runtime_type == "basic"
+
+    def test_custom_runtime_type_agent(self) -> None:
+        config = AgentConfig(runtime_type="agent")
+        assert config.runtime_type == "agent"
 
 
 @pytest.mark.unit

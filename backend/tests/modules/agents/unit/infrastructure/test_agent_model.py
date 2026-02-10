@@ -28,6 +28,7 @@ class TestAgentModel:
             "max_tokens",
             "top_p",
             "stop_sequences",
+            "runtime_type",
             "created_at",
             "updated_at",
         }
@@ -65,6 +66,14 @@ class TestAgentModel:
     def test_max_tokens_has_default(self) -> None:
         max_tokens_col = AgentModel.__table__.columns["max_tokens"]
         assert max_tokens_col.default is not None
+
+    def test_runtime_type_has_default(self) -> None:
+        runtime_type_col = AgentModel.__table__.columns["runtime_type"]
+        assert runtime_type_col.default is not None
+
+    def test_runtime_type_is_not_nullable(self) -> None:
+        runtime_type_col = AgentModel.__table__.columns["runtime_type"]
+        assert runtime_type_col.nullable is False
 
     def test_unique_constraint_owner_name(self) -> None:
         constraint_names = {

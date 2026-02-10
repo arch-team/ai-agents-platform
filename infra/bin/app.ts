@@ -5,7 +5,12 @@ import { Aspects } from 'aws-cdk-lib';
 import { AwsSolutionsChecks } from 'cdk-nag';
 import { getEnvironmentConfig } from '../lib/config/environments';
 import { getRequiredTags } from '../lib/config/constants';
-import { NetworkStack, SecurityStack, DatabaseStack } from '../lib/stacks';
+import {
+  NetworkStack,
+  SecurityStack,
+  DatabaseStack,
+  AgentCoreStack,
+} from '../lib/stacks';
 
 const app = new cdk.App();
 const envConfig = getEnvironmentConfig(app);
@@ -45,5 +50,16 @@ const databaseStack = new DatabaseStack(app, `Database-${envConfig.envName}`, {
 });
 databaseStack.addDependency(networkStack);
 databaseStack.addDependency(securityStack);
+
+const agentCoreStack = new AgentCoreStack(
+  app,
+  `AgentCore-${envConfig.envName}`,
+  {
+    env: cdkEnv,
+    vpc: networkStack.vpc,
+    envName: envConfig.envName,
+  },
+);
+agentCoreStack.addDependency(networkStack);
 
 app.synth();

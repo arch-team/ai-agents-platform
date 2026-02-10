@@ -1,0 +1,428 @@
+"""ClaudeAgentAdapter 单元测试。"""
+
+from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
+
+from src.modules.execution.application.interfaces import (
+    AgentRequest,
+    AgentResponseChunk,
+    AgentTool,
+    IAgentRuntime,
+)
+from src.modules.execution.infrastructure.external.claude_agent_adapter import (
+    ClaudeAgentAdapter,
+)
+from src.shared.domain.exceptions import DomainError
+
+
+# -- 测试辅助 --
+
+
+def _make_request(**overrides) -> AgentRequest:
+    defaults = {"prompt": "你好"}
+    defaults.update(overrides)
+    return AgentRequest(**defaults)
+
+
+def _make_tool(name: str = "search", tool_type: str = "mcp_server", **kwargs) -> AgentTool:
+    defaults = {
+        "name": name,
+        "description": f"{name} 工具",
+        "input_schema": {"type": "object"},
+        "tool_type": tool_type,
+    }
+    defaults.update(kwargs)
+    return AgentTool(**defaults)
+
+
+async def _async_iter(items):
+    for item in items:
+        yield item
+
+
+# -- 结构测试 --
+
+
+@pytest.mark.unit
+class TestClaudeAgentAdapterStructure:
+    def test_implements_iagent_runtime(self):
+        assert issubclass(ClaudeAgentAdapter, IAgentRuntime)
+
+    def test_can_instantiate(self):
+        adapter = ClaudeAgentAdapter()
+        assert adapter is not None
+
+
+# -- execute() 测试 --
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio(loop_scope="class")
+class TestClaudeAgentAdapterExecute:
+    @patch("src.modules.execution.infrastructure.external.claude_agent_adapter.query")
+    async def test_execute_normal_response(self, mock_query):
+        mock_query.return_value = _async_iter([
+            {"type": "text", "content": "你好！"},
+            {"type": "text", "content": "有什么可以帮助你？", "usage": {"input_tokens": 10, "output_tokens": 20}},
+        ])
+
+        adapter = ClaudeAgentAdapter()
+        result = await adapter.execute(_make_request())
+
+        assert isinstance(result, AgentResponseChunk)
+        assert result.content == "你好！有什么可以帮助你？"
+        assert result.done is True
+        assert result.input_tokens == 10
+        assert result.output_tokens == 20
+        mock_query.assert_called_once()
+
+    @patch("src.modules.execution.infrastructure.external.claude_agent_adapter.query")
+    async def test_execute_empty_response(self, mock_query):
+        mock_query.return_value = _async_iter([])
+
+        adapter = ClaudeAgentAdapter()
+        result = await adapter.execute(_make_request())
+
+        assert result.content == ""
+        assert result.done is True
+        assert result.input_tokens == 0
+        assert result.output_tokens == 0
+
+    @patch("src.modules.execution.infrastructure.external.claude_agent_adapter.query")
+    async def test_execute_sdk_exception_raises_domain_error(self, mock_query):
+        mock_query.return_value = _async_iter([])
+
+        async def _raise_error(*args, **kwargs):
+            raise RuntimeError("SDK 连接失败")
+            yield  # noqa: RET503 - 使其成为异步生成器
+
+        mock_query.return_value = _raise_error()
+
+        adapter = ClaudeAgentAdapter()
+        with pytest.raises(DomainError, match="Agent 服务暂时不可用") as exc_info:
+            await adapter.execute(_make_request())
+
+        assert exc_info.value.code == "AGENT_SDK_ERROR"
+
+    @patch("src.modules.execution.infrastructure.external.claude_agent_adapter.query")
+    async def test_execute_domain_error_passthrough(self, mock_query):
+        async def _raise_domain_error(*args, **kwargs):
+            raise DomainError(message="配额超限", code="QUOTA_EXCEEDED")
+            yield  # noqa: RET503
+
+        mock_query.return_value = _raise_domain_error()
+
+        adapter = ClaudeAgentAdapter()
+        with pytest.raises(DomainError, match="配额超限") as exc_info:
+            await adapter.execute(_make_request())
+
+        assert exc_info.value.code == "QUOTA_EXCEEDED"
+
+    @patch("src.modules.execution.infrastructure.external.claude_agent_adapter.query")
+    async def test_execute_string_message(self, mock_query):
+        mock_query.return_value = _async_iter(["纯文本响应"])
+
+        adapter = ClaudeAgentAdapter()
+        result = await adapter.execute(_make_request())
+
+        assert result.content == "纯文本响应"
+        assert result.done is True
+
+    @patch("src.modules.execution.infrastructure.external.claude_agent_adapter.query")
+    async def test_execute_dict_with_content_key(self, mock_query):
+        mock_query.return_value = _async_iter([{"content": "备选格式"}])
+
+        adapter = ClaudeAgentAdapter()
+        result = await adapter.execute(_make_request())
+
+        assert result.content == "备选格式"
+
+    @patch("src.modules.execution.infrastructure.external.claude_agent_adapter.query")
+    async def test_execute_passes_options(self, mock_query):
+        mock_query.return_value = _async_iter([])
+
+        adapter = ClaudeAgentAdapter()
+        request = _make_request(
+            system_prompt="你是助手",
+            model_id="claude-sonnet-4-20250514",
+            max_turns=5,
+            cwd="/tmp/workspace",
+        )
+        await adapter.execute(request)
+
+        call_kwargs = mock_query.call_args
+        assert call_kwargs.kwargs["prompt"] == "你好"
+        options = call_kwargs.kwargs["options"]
+        assert options.system_prompt == "你是助手"
+        assert options.model == "claude-sonnet-4-20250514"
+        assert options.max_turns == 5
+        assert options.cwd == "/tmp/workspace"
+        assert options.permission_mode == "auto"
+
+
+# -- execute_stream() 测试 --
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio(loop_scope="class")
+class TestClaudeAgentAdapterExecuteStream:
+    @patch("src.modules.execution.infrastructure.external.claude_agent_adapter.query")
+    async def test_stream_multi_chunk_response(self, mock_query):
+        mock_query.return_value = _async_iter([
+            {"type": "text", "content": "第一段"},
+            {"type": "text", "content": "第二段", "usage": {"input_tokens": 5, "output_tokens": 15}},
+        ])
+
+        adapter = ClaudeAgentAdapter()
+        chunks = []
+        async for chunk in await adapter.execute_stream(_make_request()):
+            chunks.append(chunk)
+
+        # 2 个内容 chunk + 1 个 done chunk
+        assert len(chunks) == 3
+        assert chunks[0].content == "第一段"
+        assert chunks[0].done is False
+        assert chunks[1].content == "第二段"
+        assert chunks[1].done is False
+        assert chunks[2].done is True
+        assert chunks[2].input_tokens == 5
+        assert chunks[2].output_tokens == 15
+
+    @patch("src.modules.execution.infrastructure.external.claude_agent_adapter.query")
+    async def test_stream_empty_response(self, mock_query):
+        mock_query.return_value = _async_iter([])
+
+        adapter = ClaudeAgentAdapter()
+        chunks = []
+        async for chunk in await adapter.execute_stream(_make_request()):
+            chunks.append(chunk)
+
+        assert len(chunks) == 1
+        assert chunks[0].done is True
+        assert chunks[0].input_tokens == 0
+
+    @patch("src.modules.execution.infrastructure.external.claude_agent_adapter.query")
+    async def test_stream_sdk_exception_raises_domain_error(self, mock_query):
+        async def _raise_error(*args, **kwargs):
+            raise ConnectionError("网络中断")
+            yield  # noqa: RET503
+
+        mock_query.return_value = _raise_error()
+
+        adapter = ClaudeAgentAdapter()
+        with pytest.raises(DomainError, match="Agent 服务暂时不可用"):
+            async for _ in await adapter.execute_stream(_make_request()):
+                pass
+
+    @patch("src.modules.execution.infrastructure.external.claude_agent_adapter.query")
+    async def test_stream_accumulates_usage(self, mock_query):
+        mock_query.return_value = _async_iter([
+            {"type": "text", "content": "A", "usage": {"input_tokens": 3, "output_tokens": 5}},
+            {"type": "text", "content": "B", "usage": {"input_tokens": 2, "output_tokens": 4}},
+        ])
+
+        adapter = ClaudeAgentAdapter()
+        chunks = []
+        async for chunk in await adapter.execute_stream(_make_request()):
+            chunks.append(chunk)
+
+        done_chunk = chunks[-1]
+        assert done_chunk.done is True
+        assert done_chunk.input_tokens == 5
+        assert done_chunk.output_tokens == 9
+
+
+# -- _build_mcp_config() 测试 --
+
+
+@pytest.mark.unit
+class TestBuildMcpConfig:
+    def test_no_tools_returns_empty(self):
+        adapter = ClaudeAgentAdapter()
+        request = _make_request()
+        result = adapter._build_mcp_config(request)
+        assert result == {}
+
+    def test_mcp_tools_with_gateway_url(self):
+        adapter = ClaudeAgentAdapter()
+        request = _make_request(
+            tools=[_make_tool("search", "mcp_server")],
+            gateway_url="https://gateway.example.com/mcp",
+        )
+        result = adapter._build_mcp_config(request)
+
+        assert "gateway" in result
+        assert result["gateway"]["type"] == "sse"
+        assert result["gateway"]["url"] == "https://gateway.example.com/mcp"
+
+    def test_mcp_tools_without_gateway_url_no_gateway_config(self):
+        adapter = ClaudeAgentAdapter()
+        request = _make_request(
+            tools=[_make_tool("search", "mcp_server")],
+            gateway_url="",
+        )
+        result = adapter._build_mcp_config(request)
+
+        assert "gateway" not in result
+
+    def test_api_tools_create_platform_tools_config(self):
+        adapter = ClaudeAgentAdapter()
+        request = _make_request(
+            tools=[_make_tool("calculator", "api")],
+        )
+        result = adapter._build_mcp_config(request)
+
+        assert "platform-tools" in result
+        assert result["platform-tools"]["type"] == "stdio"
+
+    def test_function_tools_create_platform_tools_config(self):
+        adapter = ClaudeAgentAdapter()
+        request = _make_request(
+            tools=[_make_tool("validator", "function")],
+        )
+        result = adapter._build_mcp_config(request)
+
+        assert "platform-tools" in result
+
+    def test_mixed_tools_create_both_configs(self):
+        adapter = ClaudeAgentAdapter()
+        request = _make_request(
+            tools=[
+                _make_tool("search", "mcp_server"),
+                _make_tool("calculator", "api"),
+            ],
+            gateway_url="https://gw.example.com",
+        )
+        result = adapter._build_mcp_config(request)
+
+        assert "gateway" in result
+        assert "platform-tools" in result
+
+
+# -- _build_allowed_tools() 测试 --
+
+
+@pytest.mark.unit
+class TestBuildAllowedTools:
+    def test_empty_tools(self):
+        adapter = ClaudeAgentAdapter()
+        request = _make_request()
+        result = adapter._build_allowed_tools(request)
+        assert result == []
+
+    def test_mcp_server_tool(self):
+        adapter = ClaudeAgentAdapter()
+        request = _make_request(
+            tools=[_make_tool("search", "mcp_server")],
+        )
+        result = adapter._build_allowed_tools(request)
+
+        assert result == ["mcp__gateway__search"]
+
+    def test_api_tool(self):
+        adapter = ClaudeAgentAdapter()
+        request = _make_request(
+            tools=[_make_tool("calculator", "api")],
+        )
+        result = adapter._build_allowed_tools(request)
+
+        assert result == ["mcp__platform-tools__calculator"]
+
+    def test_function_tool(self):
+        adapter = ClaudeAgentAdapter()
+        request = _make_request(
+            tools=[_make_tool("validator", "function")],
+        )
+        result = adapter._build_allowed_tools(request)
+
+        assert result == ["mcp__platform-tools__validator"]
+
+    def test_mixed_tools(self):
+        adapter = ClaudeAgentAdapter()
+        request = _make_request(
+            tools=[
+                _make_tool("search", "mcp_server"),
+                _make_tool("calc", "api"),
+                _make_tool("check", "function"),
+            ],
+        )
+        result = adapter._build_allowed_tools(request)
+
+        assert result == [
+            "mcp__gateway__search",
+            "mcp__platform-tools__calc",
+            "mcp__platform-tools__check",
+        ]
+
+
+# -- _extract_content() / _extract_usage() 测试 --
+
+
+@pytest.mark.unit
+class TestExtractHelpers:
+    def test_extract_content_text_type(self):
+        msg = {"type": "text", "content": "内容"}
+        assert ClaudeAgentAdapter._extract_content(msg) == "内容"
+
+    def test_extract_content_dict_with_content_key(self):
+        msg = {"content": "备选"}
+        assert ClaudeAgentAdapter._extract_content(msg) == "备选"
+
+    def test_extract_content_string(self):
+        assert ClaudeAgentAdapter._extract_content("纯文本") == "纯文本"
+
+    def test_extract_content_unknown_type(self):
+        assert ClaudeAgentAdapter._extract_content(42) == ""
+
+    def test_extract_content_tool_use_type(self):
+        msg = {"type": "tool_use", "name": "search"}
+        assert ClaudeAgentAdapter._extract_content(msg) == ""
+
+    def test_extract_usage_with_usage(self):
+        msg = {"usage": {"input_tokens": 10, "output_tokens": 20}}
+        assert ClaudeAgentAdapter._extract_usage(msg) == (10, 20)
+
+    def test_extract_usage_no_usage(self):
+        msg = {"type": "text", "content": "无 usage"}
+        assert ClaudeAgentAdapter._extract_usage(msg) == (0, 0)
+
+    def test_extract_usage_non_dict(self):
+        assert ClaudeAgentAdapter._extract_usage("字符串") == (0, 0)
+
+    def test_extract_usage_partial_usage(self):
+        msg = {"usage": {"input_tokens": 5}}
+        assert ClaudeAgentAdapter._extract_usage(msg) == (5, 0)
+
+
+# -- _build_options() 测试 --
+
+
+@pytest.mark.unit
+class TestBuildOptions:
+    def test_minimal_request(self):
+        adapter = ClaudeAgentAdapter()
+        request = _make_request()
+        options = adapter._build_options(request)
+
+        assert options.permission_mode == "auto"
+
+    def test_full_request(self):
+        adapter = ClaudeAgentAdapter()
+        request = _make_request(
+            system_prompt="你是助手",
+            model_id="claude-sonnet-4-20250514",
+            max_turns=10,
+            cwd="/workspace",
+            tools=[_make_tool("search", "mcp_server")],
+            gateway_url="https://gw.example.com",
+        )
+        options = adapter._build_options(request)
+
+        assert options.system_prompt == "你是助手"
+        assert options.model == "claude-sonnet-4-20250514"
+        assert options.max_turns == 10
+        assert options.cwd == "/workspace"
+        assert options.permission_mode == "auto"
+        assert options.mcp_servers is not None
+        assert options.allowed_tools is not None

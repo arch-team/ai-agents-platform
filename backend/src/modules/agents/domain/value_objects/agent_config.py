@@ -12,3 +12,4 @@ class AgentConfig:
     max_tokens: int = 2048
     top_p: float = 1.0
     stop_sequences: tuple[str, ...] = ()
+    runtime_type: str = "agent"

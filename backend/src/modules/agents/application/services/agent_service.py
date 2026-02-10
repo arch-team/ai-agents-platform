@@ -52,6 +52,7 @@ class AgentService:
                 model_id=dto.model_id,
                 temperature=dto.temperature,
                 max_tokens=dto.max_tokens,
+                runtime_type=dto.runtime_type,
             ),
         )
         created = await self._repository.create(agent)
@@ -151,7 +152,7 @@ class AgentService:
 
         # 重建 AgentConfig (frozen 值对象, 任一字段变化需整体替换)
         config_overrides: dict[str, str | float | int] = {}
-        for field in ("model_id", "temperature", "max_tokens"):
+        for field in ("model_id", "temperature", "max_tokens", "runtime_type"):
             value = getattr(dto, field)
             if value is not None:
                 config_overrides[field] = value
@@ -277,6 +278,7 @@ class AgentService:
             temperature=agent.config.temperature,
             max_tokens=agent.config.max_tokens,
             top_p=agent.config.top_p,
+            runtime_type=agent.config.runtime_type,
             created_at=agent.created_at,
             updated_at=agent.updated_at,
         )

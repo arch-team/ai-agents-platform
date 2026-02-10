@@ -43,6 +43,7 @@ class TestAgentRepositoryImplStructure:
                 "max_tokens",
                 "top_p",
                 "stop_sequences",
+                "runtime_type",
             }
         )
         assert AgentRepositoryImpl._updatable_fields == expected
@@ -64,6 +65,7 @@ class TestAgentRepositoryImplToEntity:
             max_tokens=2048,
             top_p=1.0,
             stop_sequences="",
+            runtime_type="agent",
             created_at=now,
             updated_at=now,
         )
@@ -82,6 +84,7 @@ class TestAgentRepositoryImplToEntity:
         assert entity.config.max_tokens == 2048
         assert entity.config.top_p == 1.0
         assert entity.config.stop_sequences == ()
+        assert entity.config.runtime_type == "agent"
 
     def test_to_entity_parses_stop_sequences_json(self) -> None:
         now = datetime.now(UTC)
@@ -97,6 +100,7 @@ class TestAgentRepositoryImplToEntity:
             max_tokens=1024,
             top_p=0.9,
             stop_sequences=json.dumps(["stop1", "stop2"]),
+            runtime_type="agent",
             created_at=now,
             updated_at=now,
         )
@@ -128,6 +132,7 @@ class TestAgentRepositoryImplToModel:
         assert model.owner_id == 42
         assert model.model_id == "anthropic.claude-3-5-sonnet-20241022-v2:0"
         assert model.stop_sequences == ""
+        assert model.runtime_type == "agent"
 
     def test_to_model_serializes_stop_sequences_to_json(self) -> None:
         agent = Agent(
@@ -170,6 +175,7 @@ class TestAgentRepositoryImplGetUpdateData:
         assert data["max_tokens"] == 1024
         assert data["top_p"] == 1.0
         assert data["stop_sequences"] == ""
+        assert data["runtime_type"] == "agent"
 
     def test_get_update_data_only_includes_updatable_fields(self) -> None:
         agent = Agent(
@@ -228,6 +234,7 @@ class TestAgentRepositoryImplQueryMethods:
             max_tokens=2048,
             top_p=1.0,
             stop_sequences="",
+            runtime_type="agent",
             created_at=now,
             updated_at=now,
         )

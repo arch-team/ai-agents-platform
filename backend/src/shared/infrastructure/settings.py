@@ -41,6 +41,12 @@ class Settings(BaseSettings):
     # Bedrock 配置
     BEDROCK_DEFAULT_MODEL_ID: str = "anthropic.claude-3-5-sonnet-20241022-v2:0"
 
+    # Bedrock Knowledge Base 配置（开发环境允许为空）
+    BEDROCK_KB_ROLE_ARN: str = ""
+    BEDROCK_KB_EMBEDDING_MODEL_ARN: str = ""
+    BEDROCK_KB_S3_BUCKET: str = ""
+    BEDROCK_KB_COLLECTION_ARN: str = ""  # OpenSearch Serverless 集合 ARN
+
     # 日志
     LOG_LEVEL: str = "INFO"
 

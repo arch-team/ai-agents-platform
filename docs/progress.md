@@ -6,8 +6,9 @@
 
 - **阶段**: Phase 2 核心功能 (3-6 月)
 - **里程碑**: M5 知识库 — ✅ 已完成
-- **变更积压**: S0 ✅ + 4 S1 + 3 S2 + 2 S3 + 5 S4 = 14 项
-- **下一步**: 拆解 M6 里程碑 (templates 模块) 或穿插 S1/S2 变更
+- **变更积压**: S0 ✅ + 4 S1 + 3 S2 + 2 S3 + 5 S4 = 14 项 | AgentCore 集成: P0 (0/6) + P1 (0/4) + P2 (0/3) + P3 (0/3) = 16 项
+- **关键决策**: ADR-006 已采纳 — Agent 框架选型: Claude Agent SDK + Claude Code CLI (单一框架)
+- **下一步**: 执行 AgentCore 集成 P0 基础就绪 (依赖升级 → 接口定义 → runtime_type → 可观测性基础)，与 M6 拆解并行
 
 ## 模块状态
 
@@ -18,7 +19,7 @@
 | `shared` | 已完成 | ai-agents-factory-v1 | PydanticEntity, IRepository, EventBus, DomainError, get_db, get_settings, PydanticRepository, exception_handlers, schemas |
 | `auth` | 已完成 | ai-agents-factory-v1 | User, Role, JWT, RBAC, get_current_user, 登录/注册/me 端点 |
 | `agents` | 已完成 | ai-agents-factory-v1 | Agent CRUD (7 端点), 状态机 (draft → active → archived), AgentConfig, 领域事件 |
-| `execution` | 已完成 | ai-agents-factory-v1 | 单 Agent 对话 (6 端点), Bedrock ConverseStream, SSE 流式, IAgentQuerier 跨模块 |
+| `execution` | 已完成 | ai-agents-factory-v1 | 单 Agent 对话 (6 端点), Bedrock ConverseStream, SSE 流式, IAgentQuerier 跨模块。**待升级**: ADR-006 → IAgentRuntime + StrandsAgentAdapter |
 
 ### Phase 2 (3-6 月)
 
@@ -43,6 +44,7 @@
 | NetworkStack | 已完成 | VPC (3 AZ), Public/Private/Isolated Subnets, NAT Gateway (Dev:1/Prod:3), Flow Log, S3 Endpoint |
 | SecurityStack | 已完成 | KMS 加密密钥 (轮换), API SG (443), DB SG (3306 仅 API), Prod Secrets Manager Endpoint |
 | DatabaseStack | 已完成 | Aurora MySQL 3.x (PRIVATE_ISOLATED), Secrets Manager 凭证, 存储加密, IAM 认证 |
+| AgentCoreStack | 待开始 | AgentCore Runtime + Gateway CDK 资源 (ADR-006, P1-3) |
 
 ---
 
@@ -442,6 +444,33 @@
 | S4 中期改进 | 5 | Phase 2 完成前 | 0/5 |
 | **合计** | **23** | - | **9/23** |
 
+### AgentCore 集成积压 (来源: ADR-006 + agentcore-integration-plan.md)
+
+> **注入日期**: 2026-02-10 | **来源**: 技术选型审查 + ADR-006
+
+| 编号 | 行动项 | 状态 | 依赖 | 影响范围 | 参考规范 | 会话 |
+|------|--------|:----:|:----:|---------|---------|------|
+| C-P0-1 | 升级 boto3 + 引入 claude-agent-sdk / bedrock-agentcore 依赖 | 已完成 | - | pyproject.toml + tech-stack.md | `agentcore-integration-plan.md` §2 P0-1 | 2026-02-10 |
+| C-P0-2 | 定义 IAgentRuntime 接口 (Agent Loop 抽象) | 已完成 | C-P0-1 | execution 模块 | `agentcore-integration-plan.md` §2 P0-2 | 2026-02-10 |
+| C-P0-3 | 定义 IToolQuerier 跨模块接口 + ToolQuerierImpl | 已完成 | - | shared + tool_catalog | `agentcore-integration-plan.md` §2 P0-3 | 2026-02-10 |
+| C-P0-4 | AgentConfig 新增 runtime_type 字段 + migration | 已完成 | - | agents 模块 | `agentcore-integration-plan.md` §2 P0-4 | 2026-02-10 |
+| C-P0-5 | 落实可观测性基础 (structlog 配置 + Correlation ID + readiness) | 已完成 | - | shared + presentation | `agentcore-integration-plan.md` §2 P0-5 | 2026-02-10 |
+| C-P0-6 | 完善 Bedrock KB 创建参数 + RAG 注入优化 | 已完成 | - | knowledge + execution | `agentcore-integration-plan.md` §2 P0-6 | 2026-02-10 |
+| C-P1-1 | 实现 ClaudeAgentAdapter | 已完成 | C-P0-1~3 | execution 模块 | `agentcore-integration-plan.md` §3 P1-1 | 2026-02-10 |
+| C-P1-2 | 扩展 ExecutionService 支持 IAgentRuntime | 已完成 | C-P0-2~4, C-P1-1 | execution 模块 | `agentcore-integration-plan.md` §3 P1-2 | 2026-02-10 |
+| C-P1-3 | AgentCore Runtime CDK 资源 | 已完成 | C-P1-1 | infra/ | `agentcore-integration-plan.md` §3 P1-3 | 2026-02-10 |
+| C-P1-4 | Agent 应用入口点 (BedrockAgentCoreApp + Claude Agent SDK) | 已完成 | C-P1-1, C-P1-3 | backend/agent_entrypoint | `agentcore-integration-plan.md` §3 P1-4 | 2026-02-10 |
+
+> P2/P3 行动项（Gateway、Memory、Observability、Claude Agent SDK 等）详见 `agentcore-integration-plan.md` §4-5，Phase 3 前启动。
+
+| 级别 | 数量 | 时间窗口 | 当前进度 |
+|------|:----:|---------|---------|
+| P0 基础就绪 | 6 | M6 之前 | **6/6 ✅** |
+| P1 核心集成 | 4 | M6 期间 | **4/4 ✅** |
+| P2 平台能力 | 3 | Phase 3 前 | 0/3 |
+| P3 深度集成 | 3 | Phase 3-4 | 0/3 |
+| **合计** | **16** | - | **10/16** |
+
 ---
 
 ## 遗留事项
@@ -460,8 +489,8 @@
 
 | # | 日期 | 类型 | 完成项 | 关键决策 |
 |---|------|------|-------|---------|
+| 14 | 2026-02-10 | AgentCore 集成 | **P0 全完成 (6/6) + P1 全完成 (4/4)** — 965 测试, ClaudeAgentAdapter + ExecutionService 路由 + AgentCore CDK + 入口点 | Agent Teams 并行; Claude Agent SDK → CLI → Bedrock Invoke API |
+| 13 | 2026-02-10 | 架构决策 | **ADR-006 Agent 框架选型** + AgentCore 集成行动计划 (16 项 P0-P3) | Claude Agent SDK + Claude Code CLI 单一框架; agentcore-integration-plan.md |
 | 12 | 2026-02-10 | Milestone | **M5 知识库完成** 14/14 任务, 1023 测试, 覆盖率 95.10% | 26 集成测试 (15 Repo + 11 API); knowledge 模块交付 |
 | 11 | 2026-02-10 | Milestone | M5 #9-#11 API+注册+RAG集成, 997 测试 | 10 端点; RAG 上下文注入 |
 | 10 | 2026-02-10 | Milestone | M5 #6-#8 Infrastructure, 994 测试 | ORM; Bedrock; S3 |
-| 9 | 2026-02-10 | Milestone | M5 #1-#5 Domain+Application + C-S1-5 + C-S2-3, 982 测试 | 实体; KnowledgeService; TTLCache |
-| 8 | 2026-02-10 | 变更 | S0 全清零 + ADR-005 + 工作流优化 + 深度审查 | Dockerfile; MySQL+Bedrock KB |

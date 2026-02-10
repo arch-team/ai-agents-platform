@@ -23,6 +23,7 @@ class TestGetExecutionService:
     async def test_returns_execution_service_instance(self) -> None:
         mock_session = AsyncMock()
         mock_agent_querier = AsyncMock()
+        mock_tool_querier = AsyncMock()
         mock_session_factory = MagicMock(return_value=AsyncMock())
         with (
             patch(
@@ -32,11 +33,16 @@ class TestGetExecutionService:
                 "src.modules.execution.api.dependencies.get_session_factory",
                 return_value=mock_session_factory,
             ),
+            patch(
+                "src.modules.execution.api.dependencies.get_agent_runtime",
+            ) as mock_get_agent_runtime,
         ):
             mock_get_bedrock.return_value = AsyncMock()
+            mock_get_agent_runtime.return_value = AsyncMock()
             service = await get_execution_service(
                 session=mock_session,
                 agent_querier=mock_agent_querier,
+                tool_querier=mock_tool_querier,
             )
             assert service is not None
             assert hasattr(service, "create_conversation")

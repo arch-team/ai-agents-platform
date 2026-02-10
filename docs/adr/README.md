@@ -10,6 +10,7 @@
 | [002](002-tech-stack.md) | 技术栈选型 | 2026-02-08 | 已采纳 |
 | [003](003-agentcore-infrastructure.md) | AgentCore 作为运行时基础设施 | 2026-02-08 | 已采纳 |
 | [005](005-database-engine-selection.md) | 数据库引擎选型: MySQL + Bedrock Knowledge Bases | 2026-02-10 | 已采纳 |
+| [006](006-agent-framework-selection.md) | Agent 框架选型: Claude Agent SDK + Claude Code CLI | 2026-02-10 | 已采纳 |
 
 ## ADR 模板
 

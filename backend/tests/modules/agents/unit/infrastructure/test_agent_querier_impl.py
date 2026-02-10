@@ -100,3 +100,17 @@ class TestAgentQuerierImpl:
         assert result.max_tokens == 1024
         assert result.top_p == 0.9
         assert result.stop_sequences == ("stop1", "stop2")
+        assert result.runtime_type == "agent"
+
+    @pytest.mark.asyncio
+    async def test_maps_runtime_type(self) -> None:
+        agent = _make_agent()
+        agent.config = AgentConfig(runtime_type="basic")
+        repo = AsyncMock(spec=IAgentRepository)
+        repo.get_by_id.return_value = agent
+        querier = AgentQuerierImpl(agent_repository=repo)
+
+        result = await querier.get_active_agent(1)
+
+        assert result is not None
+        assert result.runtime_type == "basic"
