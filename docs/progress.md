@@ -6,7 +6,8 @@
 
 - **阶段**: Phase 2 核心功能 (3-6 月)
 - **里程碑**: M4 工具目录 — ✅ 已完成
-- **下一步**: 拆解 M5 里程碑任务 (knowledge + insights) 或继续 Phase 2 其他模块
+- **变更积压**: 6 S0 + 5 S1 + 4 S2 + 3 S3 + 5 S4 = 23 项（S0 阻断: 需在 M5 前完成）
+- **下一步**: 执行 S0 阻断修复（C-S0-1 ~ C-S0-6），然后拆解 M5
 
 ## 模块状态
 
@@ -80,6 +81,9 @@
 > 验收标准: ruff check + mypy --strict + pytest --cov-fail-under=85 全通过
 > 验收结果: **415 测试通过，覆盖率 97.66%，ruff/mypy 全通过，架构合规 15/15 通过**
 
+<details>
+<summary>展开查看 M2 任务详情</summary>
+
 #### 领域模型设计摘要
 
 **Agent 实体**: name, description, system_prompt, status(AgentStatus), owner_id, config(AgentConfig)
@@ -130,11 +134,16 @@
 #1-#8 ──► #9 (质量验收)
 ```
 
+</details>
+
 ### M3: 端到端演示 (第 9-12 周) — ✅ 已完成
 
 > 交付物: execution 模块完成（单 Agent 对话）+ SSE 流式响应 + 跨模块集成
 > 验收标准: ruff check + mypy --strict + pytest --cov-fail-under=85 全通过；用户可与 ACTIVE Agent 对话
 > 验收结果: **611 测试通过，覆盖率 94.08%，ruff/mypy 全通过，架构合规全通过**
+
+<details>
+<summary>展开查看 M3 任务详情</summary>
 
 #### 领域模型设计摘要
 
@@ -208,11 +217,16 @@
                                               #12 (质量验收)
 ```
 
+</details>
+
 ### M4: 工具目录 (第 13-16 周) — ✅ 已完成
 
 > 交付物: tool-catalog 模块完成，10 个 RESTful 端点，工具审批流程 (draft → pending_review → approved/rejected → deprecated)
 > 验收标准: ruff check + mypy --strict + pytest --cov-fail-under=85 全通过
 > 验收结果: **842 测试通过，覆盖率 94.65%（tool-catalog 97.91%），ruff/mypy 全通过，架构合规 14/14 通过**
+
+<details>
+<summary>展开查看 M4 任务详情</summary>
 
 #### 领域模型设计摘要
 
@@ -270,6 +284,82 @@
 #1-#8 ──► #9 (质量验收)
 ```
 
+</details>
+
+---
+
+## 变更积压 (Change Backlog)
+
+> **来源**: `docs/strategy/improvement-plan.md` 五维度深度审查
+> **注入日期**: 2026-02-10
+> **S5 不入积压表**，保留在 improvement-plan.md 按季度评审
+
+### 执行规则
+
+1. **S0 阻断优先**: 有未完成 S0 时，必须优先完成，不得开始 M5 任务
+2. **S1/S2 穿插执行**: 每 2-3 个 Milestone 任务后，穿插 1 个 S1 或 S2 变更
+3. **S3 阻塞决策**: S3 不自动触发，需用户主动发起；但当 Milestone 任务依赖某 S3 决策时需提醒
+4. **S4/S5 技术债务窗口**: Phase 结束时集中处理，或在相关模块开发时顺带修复
+
+### S0 — 阻断修复（进入 M5 之前）
+
+| 编号 | 变更描述 | 状态 | 依赖 | 来源 | 影响范围 | 参考规范 | 会话 |
+|------|---------|:----:|:----:|------|---------|---------|------|
+| C-S0-1 | SSE 流式 session 生命周期修复 | 待开始 | - | 架构审查 A1 (P0) | execution 模块 | `improvement-plan.md` §2 S0-1 | - |
+| C-S0-2 | Alembic 迁移 ID 冲突修复 | 待开始 | - | 架构审查 A2 (P0) | migrations/ | `improvement-plan.md` §2 S0-2 | - |
+| C-S0-3 | Dockerfile + docker-compose 创建 | 待开始 | C-S0-2 | DevOps 审查 D7 (阻塞级) | 项目根目录 | `improvement-plan.md` §2 S0-3 | - |
+| C-S0-4 | MySQL 集成测试添加 | 待开始 | C-S0-3 | DevOps 审查 D2 (阻塞级) | tests/ + CI | `improvement-plan.md` §2 S0-4 | - |
+| C-S0-5 | `get_current_user` 添加 `is_active` 检查 | 待开始 | - | 安全审查 SEC11 (中危) | auth 模块 | `improvement-plan.md` §2 S0-5 | - |
+| C-S0-6 | JWT Secret 启动校验 | 待开始 | - | 安全审查 SEC1 (高危) | shared/settings | `improvement-plan.md` §2 S0-6 | - |
+
+### S1 — 安全加固（M5 开发期间并行）
+
+| 编号 | 变更描述 | 状态 | 依赖 | 来源 | 影响范围 | 参考规范 | 会话 |
+|------|---------|:----:|:----:|------|---------|---------|------|
+| C-S1-1 | 登录 Rate Limiting + 账户锁定 | 待开始 | - | 安全审查 SEC4+SEC5 (高危) | auth + 中间件 | `improvement-plan.md` §3 S1-1 | - |
+| C-S1-2 | Refresh Token 机制 | 待开始 | - | 安全审查 SEC2+SEC3 (高危) | auth 模块 | `improvement-plan.md` §3 S1-2 | - |
+| C-S1-3 | 基础安全审计日志 | 待开始 | - | 安全审查 SEC7 (高危) | auth + shared | `improvement-plan.md` §3 S1-3 | - |
+| C-S1-4 | 注册端点权限保护 | 待开始 | - | 安全审查 SEC16 (中危) | auth API | `improvement-plan.md` §3 S1-4 | - |
+| C-S1-5 | CORS 运行时校验 | 待开始 | C-S0-6 | 安全审查 SEC17 (中危) | shared/settings | `improvement-plan.md` §3 S1-5 | - |
+
+### S2 — 性能解锁（M5 开发期间并行）
+
+| 编号 | 变更描述 | 状态 | 依赖 | 来源 | 影响范围 | 参考规范 | 会话 |
+|------|---------|:----:|:----:|------|---------|---------|------|
+| C-S2-1 | 自定义线程池 + 连接池调优 | 待开始 | C-S0-1 | 性能审查 PERF1+PERF3 (HIGH) | shared/database + execution | `improvement-plan.md` §4 S2-1 | - |
+| C-S2-2 | 对话历史滑动窗口 | 待开始 | - | 性能审查 PERF4 (CRITICAL) | execution 模块 | `improvement-plan.md` §4 S2-2 | - |
+| C-S2-3 | EventBus 内存泄漏修复 | 待开始 | - | 性能审查 PERF9 + 架构审查 A3 | shared/event_bus | `improvement-plan.md` §4 S2-3 | - |
+| C-S2-4 | Agent 配置本地缓存 | 待开始 | - | 性能审查 PERF8 (HIGH) | agents 模块 | `improvement-plan.md` §4 S2-4 | - |
+
+### S3 — 战略决策（M5 启动前）
+
+| 编号 | 变更描述 | 状态 | 依赖 | 来源 | 影响范围 | 参考规范 | 会话 |
+|------|---------|:----:|:----:|------|---------|---------|------|
+| C-S3-1 | MySQL vs PostgreSQL 技术选型 (ADR) | 待开始 | - | DevOps D4 + 性能 PERF10 | 全项目数据库 | `improvement-plan.md` §5 S3-1 | - |
+| C-S3-2 | 端到端集成验证 (M4.5) | 待开始 | C-S0-3 | 产品审查 P2 | 前后端联调 | `improvement-plan.md` §5 S3-2 | - |
+| C-S3-3 | 路线图调整评审 | 待开始 | C-S3-1 | 产品审查 P1+P3+P10 | roadmap.md | `improvement-plan.md` §5 S3-3 | - |
+
+### S4 — 中期改进（Phase 2 完成前）
+
+| 编号 | 变更描述 | 状态 | 依赖 | 来源 | 影响范围 | 参考规范 | 会话 |
+|------|---------|:----:|:----:|------|---------|---------|------|
+| C-S4-1 | CI/CD Pipeline 完善 | 待开始 | C-S0-3, C-S0-4 | DevOps 审查 D3 | .github/workflows/ | `improvement-plan.md` §6 S4-1 | - |
+| C-S4-2 | CDK 首次部署验证 | 待开始 | C-S0-3 | DevOps 审查 D1 (阻塞级) | infra/ | `improvement-plan.md` §6 S4-2 | - |
+| C-S4-3 | Secrets 管理统一 | 待开始 | C-S0-6 | DevOps 审查 D6 | shared/settings + infra | `improvement-plan.md` §6 S4-3 | - |
+| C-S4-4 | 基础监控告警 | 待开始 | C-S4-2 | DevOps 审查 D8 | infra/ CDK | `improvement-plan.md` §6 S4-4 | - |
+| C-S4-5 | python-jose 迁移到 PyJWT | 待开始 | - | 安全审查 SEC19 | auth 模块 | `improvement-plan.md` §6 S4-5 | - |
+
+### 变更统计
+
+| 级别 | 数量 | 时间窗口 | 当前进度 |
+|------|:----:|---------|---------|
+| S0 阻断修复 | 6 | 进入 M5 之前 | 0/6 |
+| S1 安全加固 | 5 | M5 开发期间并行 | 0/5 |
+| S2 性能解锁 | 4 | M5 开发期间并行 | 0/4 |
+| S3 战略决策 | 3 | M5 启动前决策 | 0/3 |
+| S4 中期改进 | 5 | Phase 2 完成前 | 0/5 |
+| **合计** | **23** | - | **0/23** |
+
 ---
 
 ## 遗留事项
@@ -282,10 +372,12 @@
 
 ---
 
-## 上次会话
+## 近期会话
 
-> 仅保留最近一次，每次会话结束时覆盖更新此节。
+> 保留最近 5 条，超出时删除最旧记录。用于穿插计数、卡点检测和决策回溯。
 
-- **日期**: 2026-02-09
-- **完成**: Phase 1 全部交付 + M4 工具目录完成。M4: tool-catalog 模块 9 项任务全部交付 (4 波 Agent Teams: dev-domain → dev-app+dev-infra 并行 → dev-api → reviewer)。842 测试通过，覆盖率 94.65%（tool-catalog 97.91%）。54 新增文件，4410 行代码
-- **决策**: Tool 审批流程 5 状态机；REJECTED 提供 resubmit() 直接重新提交；ToolConfig 扁平结构展开独立列；权限用 allowed_roles 字段（YAGNI）；Config 验证在 submit 时而非 create 时；list_filtered 通用筛选方法支持 status+type+keyword 组合查询
+| # | 日期 | 类型 | 完成项 | 关键决策 |
+|---|------|------|-------|---------|
+| 1 | 2026-02-10 | 工作流优化 | 变更管理机制实施：progress.md 变更积压区 + session-workflow 变更感知协议 + workflow-guide 场景 5；工作流二次优化：折叠 M2-M4、变更依赖列、开发发现协议、会话历史扩展、变更验证/回归检测/模块亲和性协议 | progress.md 仍为唯一驱动器；C- 前缀编号区分变更与任务；会话历史保留 5 条 |
+| 2 | 2026-02-10 | 深度审查 | 五维度深度审查完成（架构、安全、产品、DevOps、性能），产出 improvement-plan.md（28 个行动项，S0-S5 分级） | S0 阻断修复 6 项必须在 M5 前完成 |
+| 3 | 2026-02-09 | Milestone | M4 工具目录完成：tool-catalog 模块 9 项任务全部交付，842 测试通过，覆盖率 94.65% | Tool 审批 5 状态机；ToolConfig 扁平结构；Config 验证在 submit 时 |
