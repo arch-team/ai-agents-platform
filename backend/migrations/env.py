@@ -12,10 +12,15 @@ from src.shared.infrastructure.settings import get_settings
 
 # 导入所有 ORM Model 以注册到 Base.metadata
 from src.modules.auth.infrastructure.persistence.models.user_model import UserModel  # noqa: F401
+from src.modules.auth.infrastructure.persistence.models.refresh_token_model import RefreshTokenModel  # noqa: F401
 from src.modules.agents.infrastructure.persistence.models.agent_model import AgentModel  # noqa: F401
 from src.modules.execution.infrastructure.persistence.models.conversation_model import ConversationModel  # noqa: F401
 from src.modules.execution.infrastructure.persistence.models.message_model import MessageModel  # noqa: F401
 from src.modules.tool_catalog.infrastructure.persistence.models.tool_model import ToolModel  # noqa: F401
+from src.modules.knowledge.infrastructure.persistence.models.knowledge_base_model import KnowledgeBaseModel  # noqa: F401
+from src.modules.knowledge.infrastructure.persistence.models.document_model import DocumentModel  # noqa: F401
+from src.modules.insights.infrastructure.persistence.models.usage_record_model import UsageRecordModel  # noqa: F401
+from src.modules.templates.infrastructure.persistence.models.template_model import TemplateModel  # noqa: F401
 
 config = context.config
 
