@@ -59,13 +59,20 @@ export class AgentCoreStack extends cdk.Stack {
     // 2. AgentCore Runtime — 部署 Claude Agent SDK Agent 容器
     const runtimeName = `${PROJECT_NAME.replace(/-/g, '_')}_${envName}`;
 
+    // AgentCore Runtime 仅支持部分 AZ (us-east-1 不支持 use1-az6)
+    // 限制为前 2 个 AZ 的私有子网，避免部署失败
+    const runtimeSubnets = vpc.selectSubnets({
+      subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
+      availabilityZones: vpc.availabilityZones.slice(0, 2),
+    });
+
     this.runtime = new Runtime(this, 'AgentRuntime', {
       runtimeName,
       description: `AI Agents Platform - ${envName} Agent Runtime`,
       agentRuntimeArtifact: AgentRuntimeArtifact.fromEcrRepository(this.ecrRepository, 'latest'),
       networkConfiguration: RuntimeNetworkConfiguration.usingVpc(this, {
         vpc,
-        vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
+        vpcSubnets: { subnets: runtimeSubnets.subnets },
       }),
       protocolConfiguration: ProtocolType.HTTP,
       environmentVariables: {

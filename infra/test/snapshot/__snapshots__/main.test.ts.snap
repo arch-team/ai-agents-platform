@@ -550,9 +550,6 @@ exports[`Snapshot Tests AgentCoreStack 快照匹配 1`] = `
               {
                 "Fn::ImportValue": "VpcStack:ExportsOutputRefTestVpcPrivateSubnet2SubnetDE0C64A2F7B9B6B1",
               },
-              {
-                "Fn::ImportValue": "VpcStack:ExportsOutputRefTestVpcPrivateSubnet3Subnet2311D32FD57B696C",
-              },
             ],
           },
         },
