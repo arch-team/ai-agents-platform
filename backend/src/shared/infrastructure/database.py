@@ -71,11 +71,19 @@ def get_session_factory() -> async_sessionmaker[AsyncSession]:
 
 
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
-    """FastAPI 依赖注入: 获取异步数据库会话。"""
+    """FastAPI 依赖注入: 获取异步数据库会话。
+
+    请求结束后自动提交事务；发生异常时自动回滚。
+    """
     if _session_factory is None:
         raise RuntimeError(_NOT_INITIALIZED_MSG)
     async with _session_factory() as session:
-        yield session
+        try:
+            yield session
+            await session.commit()
+        except Exception:
+            await session.rollback()
+            raise
 
 
 async def create_all_tables() -> None:
