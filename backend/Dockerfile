@@ -3,7 +3,7 @@
 # ============================================================
 
 # -- Stage 1: Builder --
-FROM python:3.12-slim AS builder
+FROM public.ecr.aws/docker/library/python:3.12-slim AS builder
 
 # 安装构建依赖 (asyncmy 需要 gcc 编译 Cython 扩展)
 RUN apt-get update && apt-get install -y --no-install-recommends gcc libc6-dev && rm -rf /var/lib/apt/lists/*
@@ -29,7 +29,7 @@ COPY README.md .
 RUN uv sync --no-dev --frozen
 
 # -- Stage 2: Runtime --
-FROM python:3.12-slim AS runtime
+FROM public.ecr.aws/docker/library/python:3.12-slim AS runtime
 
 # 安全: 非 root 用户运行
 RUN groupadd --gid 1000 appuser && \

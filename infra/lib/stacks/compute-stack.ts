@@ -50,7 +50,9 @@ export class ComputeStack extends cdk.Stack {
       vpc,
       albSecurityGroup: albConstruct.albSecurityGroup,
       envName,
-      containerImage: ecs.ContainerImage.fromAsset(path.join(__dirname, '../../..', 'backend')),
+      containerImage: ecs.ContainerImage.fromAsset(path.join(__dirname, '../../..', 'backend'), {
+        platform: cdk.aws_ecr_assets.Platform.LINUX_AMD64,
+      }),
       environment: {
         APP_ENV: envName === 'prod' ? 'production' : 'development',
         DATABASE_HOST: databaseEndpoint,
