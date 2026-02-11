@@ -2,8 +2,7 @@ import * as cdk from 'aws-cdk-lib';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as kms from 'aws-cdk-lib/aws-kms';
 import { Construct } from 'constructs';
-import type { BaseStackProps } from '../config/types';
-import { isProd } from '../config/constants';
+import { isProd, type BaseStackProps } from '../config';
 import { KmsConstruct, SecurityGroupsConstruct } from '../constructs/security';
 
 export interface SecurityStackProps extends BaseStackProps {

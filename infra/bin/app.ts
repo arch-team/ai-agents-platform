@@ -3,8 +3,7 @@ import 'source-map-support/register';
 import * as cdk from 'aws-cdk-lib';
 import { Aspects } from 'aws-cdk-lib';
 import { AwsSolutionsChecks } from 'cdk-nag';
-import { getEnvironmentConfig } from '../lib/config/environments';
-import { getRequiredTags } from '../lib/config/constants';
+import { getEnvironmentConfig, getRequiredTags } from '../lib/config';
 import {
   NetworkStack,
   SecurityStack,

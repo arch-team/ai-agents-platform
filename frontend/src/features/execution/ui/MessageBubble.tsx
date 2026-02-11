@@ -1,5 +1,7 @@
 // 消息气泡组件 — 用户/AI 不同样式
 
+import { memo } from 'react';
+
 import { cn } from '@/shared/lib/cn';
 import { formatTime } from '@/shared/lib/formatDate';
 
@@ -9,7 +11,8 @@ interface MessageBubbleProps {
   message: Message;
 }
 
-export function MessageBubble({ message }: MessageBubbleProps) {
+// memo: 消息列表中的每条消息在渲染后 props 不再变化，避免父组件更新时无意义重渲染
+export const MessageBubble = memo(function MessageBubble({ message }: MessageBubbleProps) {
   const isUser = message.role === 'user';
 
   return (
@@ -30,16 +33,15 @@ export function MessageBubble({ message }: MessageBubbleProps) {
       </div>
     </div>
   );
-}
+});
 
 // 流式消息气泡 — 显示累积中的 AI 响应
+// 调用方已确保 content 非空才渲染，此处无需重复检查
 interface StreamingBubbleProps {
   content: string;
 }
 
 export function StreamingBubble({ content }: StreamingBubbleProps) {
-  if (!content) return null;
-
   return (
     <div className="flex w-full justify-start">
       <div className="max-w-[75%] rounded-lg bg-gray-100 px-4 py-2 text-gray-900">

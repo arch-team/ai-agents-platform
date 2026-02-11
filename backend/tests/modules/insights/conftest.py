@@ -1,6 +1,6 @@
 """Insights 模块测试配置和 Fixture。"""
 
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
@@ -69,13 +69,3 @@ def insights_service(
         usage_repo=mock_usage_repo,
         cost_calculator=mock_cost_calculator,
     )
-
-
-@pytest.fixture
-def mock_event_bus():
-    """Mock event_bus，自动 patch InsightsService 中的 event_bus。"""
-    with patch(
-        "src.modules.insights.application.services.insights_service.event_bus",
-    ) as mock_bus:
-        mock_bus.publish_async = AsyncMock()
-        yield mock_bus

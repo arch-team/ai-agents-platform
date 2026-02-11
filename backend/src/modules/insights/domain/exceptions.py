@@ -14,12 +14,15 @@ class InvalidDateRangeError(InsightsError):
     """日期范围无效异常。"""
 
     def __init__(self) -> None:
-        super().__init__(message="日期范围无效: 开始日期不能晚于结束日期")
-        self.code = "INVALID_DATE_RANGE"
+        DomainError.__init__(
+            self,
+            message="日期范围无效: 开始日期不能晚于结束日期",
+            code="INVALID_DATE_RANGE",
+        )
 
 
-class UsageRecordNotFoundError(EntityNotFoundError):
+class UsageRecordNotFoundError(InsightsError, EntityNotFoundError):
     """使用记录不存在。"""
 
     def __init__(self, record_id: int) -> None:
-        super().__init__(entity_type="UsageRecord", entity_id=record_id)
+        EntityNotFoundError.__init__(self, entity_type="UsageRecord", entity_id=record_id)

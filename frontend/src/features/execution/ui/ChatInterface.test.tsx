@@ -62,7 +62,7 @@ describe('ChatInterface', () => {
       error: null,
     } as ReturnType<typeof useConversation>);
 
-    render(<ChatInterface conversationId={1} />, { wrapper: createWrapper() });
+    render(<ChatInterface conversationId={1} token={null} />, { wrapper: createWrapper() });
     expect(screen.getByRole('status', { name: '加载中' })).toBeInTheDocument();
   });
 
@@ -73,7 +73,7 @@ describe('ChatInterface', () => {
       error: new Error('请求失败'),
     } as ReturnType<typeof useConversation>);
 
-    render(<ChatInterface conversationId={1} />, { wrapper: createWrapper() });
+    render(<ChatInterface conversationId={1} token={null} />, { wrapper: createWrapper() });
     expect(screen.getByRole('alert')).toHaveTextContent('加载对话失败');
   });
 
@@ -114,7 +114,7 @@ describe('ChatInterface', () => {
       error: null,
     } as ReturnType<typeof useConversation>);
 
-    render(<ChatInterface conversationId={1} />, { wrapper: createWrapper() });
+    render(<ChatInterface conversationId={1} token={null} />, { wrapper: createWrapper() });
 
     expect(screen.getByText('测试对话')).toBeInTheDocument();
     expect(screen.getByText('你好')).toBeInTheDocument();
@@ -141,7 +141,7 @@ describe('ChatInterface', () => {
       error: null,
     } as ReturnType<typeof useConversation>);
 
-    render(<ChatInterface conversationId={1} />, { wrapper: createWrapper() });
+    render(<ChatInterface conversationId={1} token={null} />, { wrapper: createWrapper() });
     expect(screen.getByText('开始新的对话吧')).toBeInTheDocument();
   });
 
@@ -165,7 +165,7 @@ describe('ChatInterface', () => {
       error: null,
     } as ReturnType<typeof useConversation>);
 
-    render(<ChatInterface conversationId={1} />, { wrapper: createWrapper() });
+    render(<ChatInterface conversationId={1} token={null} />, { wrapper: createWrapper() });
     expect(screen.getByLabelText('消息输入')).toBeInTheDocument();
   });
 
@@ -189,7 +189,7 @@ describe('ChatInterface', () => {
       error: null,
     } as ReturnType<typeof useConversation>);
 
-    render(<ChatInterface conversationId={1} />, { wrapper: createWrapper() });
+    render(<ChatInterface conversationId={1} token={null} />, { wrapper: createWrapper() });
     expect(screen.queryByLabelText('消息输入')).not.toBeInTheDocument();
     expect(screen.getByText('对话已结束')).toBeInTheDocument();
   });

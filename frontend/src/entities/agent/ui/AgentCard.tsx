@@ -1,3 +1,5 @@
+import { memo } from 'react';
+
 import { Card } from '@/shared/ui';
 import { cn } from '@/shared/lib/cn';
 import { formatDate } from '@/shared/lib/formatDate';
@@ -10,7 +12,8 @@ interface AgentCardProps {
   onClick?: () => void;
 }
 
-export function AgentCard({ agent, onClick }: AgentCardProps) {
+// memo: AgentList 中的列表项，筛选/分页操作时未变化的卡片跳过重渲染
+export const AgentCard = memo(function AgentCard({ agent, onClick }: AgentCardProps) {
   const status = AGENT_STATUS_CONFIG[agent.status];
 
   return (
@@ -41,4 +44,4 @@ export function AgentCard({ agent, onClick }: AgentCardProps) {
       </button>
     </Card>
   );
-}
+});

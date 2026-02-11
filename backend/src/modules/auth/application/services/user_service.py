@@ -194,9 +194,8 @@ class UserService:
         user = await self._repository.get_by_id(rt.user_id)
         if user is None or not user.is_active:
             # 用户不存在或已停用, 撤销 Token
-            if rt is not None:
-                rt.revoke()
-                await self._refresh_token_repository.update(rt)
+            rt.revoke()
+            await self._refresh_token_repository.update(rt)
             logger.warning(
                 "security_event",
                 event_type="token_refresh_failed",

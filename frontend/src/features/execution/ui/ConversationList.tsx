@@ -1,5 +1,7 @@
 // 对话历史侧边栏列表
 
+import { memo } from 'react';
+
 import { cn } from '@/shared/lib/cn';
 import { formatShortDateTime } from '@/shared/lib/formatDate';
 import { Button, Spinner, ErrorMessage } from '@/shared/ui';
@@ -14,19 +16,21 @@ interface ConversationListProps {
   onNewConversation: () => void;
 }
 
-function ConversationItem({
+// memo: 列表项在对话数据未变化时跳过重渲染
+// onSelect 接收 id 参数而非无参闭包，避免父组件 map 中创建新函数引用导致 memo 失效
+const ConversationItem = memo(function ConversationItem({
   conversation,
   isSelected,
   onSelect,
 }: {
   conversation: Conversation;
   isSelected: boolean;
-  onSelect: () => void;
+  onSelect: (id: number) => void;
 }) {
   return (
     <button
       type="button"
-      onClick={onSelect}
+      onClick={() => onSelect(conversation.id)}
       aria-current={isSelected ? 'true' : undefined}
       className={cn(
         'w-full rounded-lg px-3 py-2 text-left transition-colors',
@@ -45,7 +49,7 @@ function ConversationItem({
       </div>
     </button>
   );
-}
+});
 
 export function ConversationList({
   agentId,
@@ -86,7 +90,7 @@ export function ConversationList({
                 key={conversation.id}
                 conversation={conversation}
                 isSelected={selectedId === conversation.id}
-                onSelect={() => onSelect(conversation.id)}
+                onSelect={onSelect}
               />
             ))}
           </nav>

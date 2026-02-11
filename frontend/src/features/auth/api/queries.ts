@@ -1,6 +1,6 @@
 // 认证相关 API queries/mutations
 
-import { useEffect } from 'react';
+import { useCallback, useEffect } from 'react';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
@@ -78,8 +78,8 @@ export function useLogout() {
   const { logout } = useAuthActions();
   const queryClient = useQueryClient();
 
-  return () => {
+  return useCallback(() => {
     logout();
     queryClient.removeQueries({ queryKey: authKeys.all });
-  };
+  }, [logout, queryClient]);
 }

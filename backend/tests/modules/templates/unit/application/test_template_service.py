@@ -9,40 +9,14 @@ from src.modules.templates.application.dto.template_dto import (
     UpdateTemplateDTO,
 )
 from src.modules.templates.application.services.template_service import TemplateService
-from src.modules.templates.domain.entities.template import Template
 from src.modules.templates.domain.exceptions import (
     DuplicateTemplateNameError,
     TemplateNotFoundError,
 )
-from src.modules.templates.domain.value_objects.template_category import (
-    TemplateCategory,
-)
-from src.modules.templates.domain.value_objects.template_config import TemplateConfig
 from src.modules.templates.domain.value_objects.template_status import TemplateStatus
 from src.shared.domain.exceptions import DomainError, InvalidStateTransitionError
 
-
-def _make_template(
-    *,
-    template_id: int = 1,
-    name: str = "测试模板",
-    creator_id: int = 10,
-    status: TemplateStatus = TemplateStatus.DRAFT,
-    category: TemplateCategory = TemplateCategory.GENERAL,
-) -> Template:
-    """创建测试用 Template。"""
-    t = Template(
-        name=name,
-        description="测试描述",
-        category=category,
-        creator_id=creator_id,
-        config=TemplateConfig(system_prompt="你是助手", model_id="model-1"),
-        tags=["测试"],
-    )
-    object.__setattr__(t, "id", template_id)
-    if status != TemplateStatus.DRAFT:
-        object.__setattr__(t, "status", status)
-    return t
+from tests.modules.templates.conftest import make_template
 
 
 def _make_service(
@@ -61,7 +35,7 @@ class TestCreateTemplate:
     async def test_create_template_succeeds(self) -> None:
         service, mock_repo = _make_service()
         mock_repo.get_by_name.return_value = None
-        created = _make_template(template_id=1)
+        created = make_template(template_id=1)
         mock_repo.create.return_value = created
 
         dto = CreateTemplateDTO(
@@ -81,7 +55,7 @@ class TestCreateTemplate:
     @pytest.mark.asyncio
     async def test_create_template_duplicate_name_raises(self) -> None:
         service, mock_repo = _make_service()
-        existing = _make_template(name="已存在")
+        existing = make_template(name="已存在")
         mock_repo.get_by_name.return_value = existing
 
         dto = CreateTemplateDTO(
@@ -102,7 +76,7 @@ class TestGetTemplate:
     @pytest.mark.asyncio
     async def test_get_template_succeeds(self) -> None:
         service, mock_repo = _make_service()
-        template = _make_template()
+        template = make_template()
         mock_repo.get_by_id.return_value = template
 
         result = await service.get_template(1)
@@ -124,7 +98,7 @@ class TestUpdateTemplate:
     @pytest.mark.asyncio
     async def test_update_template_succeeds(self) -> None:
         service, mock_repo = _make_service()
-        template = _make_template(creator_id=10)
+        template = make_template(creator_id=10)
         mock_repo.get_by_id.return_value = template
         mock_repo.get_by_name.return_value = None
         mock_repo.update.return_value = template
@@ -136,7 +110,7 @@ class TestUpdateTemplate:
     @pytest.mark.asyncio
     async def test_update_non_draft_raises(self) -> None:
         service, mock_repo = _make_service()
-        template = _make_template(creator_id=10, status=TemplateStatus.PUBLISHED)
+        template = make_template(creator_id=10, status=TemplateStatus.PUBLISHED)
         mock_repo.get_by_id.return_value = template
 
         dto = UpdateTemplateDTO(name="新名称")
@@ -146,7 +120,7 @@ class TestUpdateTemplate:
     @pytest.mark.asyncio
     async def test_update_other_user_template_raises(self) -> None:
         service, mock_repo = _make_service()
-        template = _make_template(creator_id=10)
+        template = make_template(creator_id=10)
         mock_repo.get_by_id.return_value = template
 
         dto = UpdateTemplateDTO(name="新名称")
@@ -161,7 +135,7 @@ class TestDeleteTemplate:
     @pytest.mark.asyncio
     async def test_delete_draft_template_succeeds(self) -> None:
         service, mock_repo = _make_service()
-        template = _make_template(creator_id=10)
+        template = make_template(creator_id=10)
         mock_repo.get_by_id.return_value = template
 
         await service.delete_template(1, current_user_id=10)
@@ -170,7 +144,7 @@ class TestDeleteTemplate:
     @pytest.mark.asyncio
     async def test_delete_published_template_raises(self) -> None:
         service, mock_repo = _make_service()
-        template = _make_template(creator_id=10, status=TemplateStatus.PUBLISHED)
+        template = make_template(creator_id=10, status=TemplateStatus.PUBLISHED)
         mock_repo.get_by_id.return_value = template
 
         with pytest.raises(DomainError, match="仅 DRAFT"):
@@ -184,7 +158,7 @@ class TestPublishTemplate:
     @pytest.mark.asyncio
     async def test_publish_template_succeeds(self) -> None:
         service, mock_repo = _make_service()
-        template = _make_template(creator_id=10)
+        template = make_template(creator_id=10)
         mock_repo.get_by_id.return_value = template
         mock_repo.update.return_value = template
 
@@ -194,7 +168,7 @@ class TestPublishTemplate:
     @pytest.mark.asyncio
     async def test_publish_already_published_raises(self) -> None:
         service, mock_repo = _make_service()
-        template = _make_template(creator_id=10, status=TemplateStatus.PUBLISHED)
+        template = make_template(creator_id=10, status=TemplateStatus.PUBLISHED)
         mock_repo.get_by_id.return_value = template
 
         with pytest.raises(InvalidStateTransitionError):
@@ -208,7 +182,7 @@ class TestArchiveTemplate:
     @pytest.mark.asyncio
     async def test_archive_template_succeeds(self) -> None:
         service, mock_repo = _make_service()
-        template = _make_template(creator_id=10, status=TemplateStatus.PUBLISHED)
+        template = make_template(creator_id=10, status=TemplateStatus.PUBLISHED)
         mock_repo.get_by_id.return_value = template
         mock_repo.update.return_value = template
 
@@ -223,7 +197,7 @@ class TestListTemplates:
     @pytest.mark.asyncio
     async def test_list_templates_succeeds(self) -> None:
         service, mock_repo = _make_service()
-        templates = [_make_template(template_id=i) for i in range(3)]
+        templates = [make_template(template_id=i) for i in range(3)]
         mock_repo.search.return_value = templates
         mock_repo.count.return_value = 3
 
@@ -234,7 +208,7 @@ class TestListTemplates:
     @pytest.mark.asyncio
     async def test_list_my_templates_succeeds(self) -> None:
         service, mock_repo = _make_service()
-        templates = [_make_template(template_id=1, creator_id=10)]
+        templates = [make_template(template_id=1, creator_id=10)]
         mock_repo.list_by_creator.return_value = templates
         mock_repo.count.return_value = 1
 

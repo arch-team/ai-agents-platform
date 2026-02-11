@@ -1,12 +1,5 @@
 import * as cdk from 'aws-cdk-lib';
-
-/** 环境配置接口 */
-export interface EnvironmentConfig {
-  readonly account: string;
-  readonly region: string;
-  readonly vpcCidr: string;
-  readonly envName: string;
-}
+import type { EnvironmentConfig } from './types';
 
 /**
  * 从 CDK Context 读取环境配置。

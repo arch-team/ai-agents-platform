@@ -3,10 +3,10 @@ import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as kms from 'aws-cdk-lib/aws-kms';
 import { NagSuppressions } from 'cdk-nag';
 import { Construct } from 'constructs';
-import type { BaseStackProps } from '../config/types';
+import type { BaseStackProps } from '../config';
 import { AuroraConstruct } from '../constructs/aurora';
-import type * as rds from 'aws-cdk-lib/aws-rds';
-import type * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
+import type { DatabaseCluster } from 'aws-cdk-lib/aws-rds';
+import type { ISecret } from 'aws-cdk-lib/aws-secretsmanager';
 
 export interface DatabaseStackProps extends BaseStackProps {
   /** 数据库所在的 VPC */
@@ -22,8 +22,8 @@ export interface DatabaseStackProps extends BaseStackProps {
  * @remarks 包含 Aurora MySQL 集群。通过 Props 接收 VPC 和安全组依赖。
  */
 export class DatabaseStack extends cdk.Stack {
-  public readonly cluster: rds.DatabaseCluster;
-  public readonly dbSecret: secretsmanager.ISecret;
+  public readonly cluster: DatabaseCluster;
+  public readonly dbSecret: ISecret;
 
   constructor(scope: Construct, id: string, props: DatabaseStackProps) {
     super(scope, id, props);
@@ -38,7 +38,22 @@ export class DatabaseStack extends cdk.Stack {
     this.cluster = auroraConstruct.cluster;
     this.dbSecret = auroraConstruct.secret;
 
-    // CDK Nag 抑制: Aurora 集群合理的安全规则豁免
+    // CDK Nag 抑制
+    this.suppressNagRules(auroraConstruct);
+
+    // Outputs
+    new cdk.CfnOutput(this, 'ClusterEndpoint', {
+      value: auroraConstruct.clusterEndpoint.hostname,
+      description: 'Aurora 集群端点',
+    });
+    new cdk.CfnOutput(this, 'SecretArn', {
+      value: auroraConstruct.secret.secretArn,
+      description: '数据库凭证 Secret ARN',
+    });
+  }
+
+  /** CDK Nag 合规规则抑制 — Aurora 集群相关安全规则的合理豁免 */
+  private suppressNagRules(auroraConstruct: AuroraConstruct): void {
     NagSuppressions.addResourceSuppressions(
       auroraConstruct.cluster,
       [
@@ -59,8 +74,9 @@ export class DatabaseStack extends cdk.Stack {
           reason: 'db.t3.small 实例类型不支持 Performance Insights，后续升级实例类型后启用',
         },
       ],
-      true, // applyToChildren
+      true,
     );
+
     NagSuppressions.addResourceSuppressions(
       auroraConstruct,
       [
@@ -69,17 +85,7 @@ export class DatabaseStack extends cdk.Stack {
           reason: '数据库凭证 Secret 的自动轮换将在后续迭代中配置 Lambda 轮换函数',
         },
       ],
-      true, // applyToChildren - Secret 是集群的子资源
+      true,
     );
-
-    // Outputs
-    new cdk.CfnOutput(this, 'ClusterEndpoint', {
-      value: auroraConstruct.clusterEndpoint.hostname,
-      description: 'Aurora 集群端点',
-    });
-    new cdk.CfnOutput(this, 'SecretArn', {
-      value: auroraConstruct.secret.secretArn,
-      description: '数据库凭证 Secret ARN',
-    });
   }
 }
