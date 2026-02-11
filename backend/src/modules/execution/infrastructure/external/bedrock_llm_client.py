@@ -17,6 +17,11 @@ from src.modules.execution.application.interfaces import (
     LLMResponse,
     LLMStreamChunk,
 )
+from src.shared.domain.constants import (
+    AGENT_DEFAULT_MAX_TOKENS,
+    AGENT_DEFAULT_TEMPERATURE,
+    AGENT_DEFAULT_TOP_P,
+)
 from src.shared.domain.exceptions import DomainError
 
 
@@ -52,9 +57,9 @@ class BedrockLLMClient(ILLMClient):
         messages: list[LLMMessage],
         *,
         system_prompt: str = "",
-        temperature: float = 0.7,
-        max_tokens: int = 2048,
-        top_p: float = 1.0,
+        temperature: float = AGENT_DEFAULT_TEMPERATURE,
+        max_tokens: int = AGENT_DEFAULT_MAX_TOKENS,
+        top_p: float = AGENT_DEFAULT_TOP_P,
         stop_sequences: tuple[str, ...] = (),
     ) -> LLMResponse:
         """同步调用 Bedrock Converse API。"""
@@ -100,9 +105,9 @@ class BedrockLLMClient(ILLMClient):
         messages: list[LLMMessage],
         *,
         system_prompt: str = "",
-        temperature: float = 0.7,
-        max_tokens: int = 2048,
-        top_p: float = 1.0,
+        temperature: float = AGENT_DEFAULT_TEMPERATURE,
+        max_tokens: int = AGENT_DEFAULT_MAX_TOKENS,
+        top_p: float = AGENT_DEFAULT_TOP_P,
         stop_sequences: tuple[str, ...] = (),
     ) -> AsyncIterator[LLMStreamChunk]:
         """流式调用 Bedrock ConverseStream API。"""

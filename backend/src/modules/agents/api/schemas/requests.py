@@ -2,6 +2,13 @@
 
 from pydantic import BaseModel, Field
 
+from src.shared.domain.constants import (
+    AGENT_DEFAULT_MAX_TOKENS,
+    AGENT_DEFAULT_MODEL_ID,
+    AGENT_DEFAULT_RUNTIME_TYPE,
+    AGENT_DEFAULT_TEMPERATURE,
+)
+
 
 class CreateAgentRequest(BaseModel):
     """创建 Agent 请求。"""
@@ -9,10 +16,10 @@ class CreateAgentRequest(BaseModel):
     name: str = Field(min_length=1, max_length=100)
     description: str = Field(max_length=500, default="")
     system_prompt: str = Field(max_length=10000, default="")
-    model_id: str = Field(default="anthropic.claude-3-5-sonnet-20241022-v2:0", max_length=200)
-    temperature: float = Field(default=0.7, ge=0.0, le=1.0)
-    max_tokens: int = Field(default=2048, ge=1, le=4096)
-    runtime_type: str = Field(default="agent", pattern=r"^(agent|basic)$")
+    model_id: str = Field(default=AGENT_DEFAULT_MODEL_ID, max_length=200)
+    temperature: float = Field(default=AGENT_DEFAULT_TEMPERATURE, ge=0.0, le=1.0)
+    max_tokens: int = Field(default=AGENT_DEFAULT_MAX_TOKENS, ge=1, le=4096)
+    runtime_type: str = Field(default=AGENT_DEFAULT_RUNTIME_TYPE, pattern=r"^(agent|basic)$")
 
 
 class UpdateAgentRequest(BaseModel):

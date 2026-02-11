@@ -46,7 +46,7 @@ def _to_response(dto: AgentDTO) -> AgentResponse:
     )
 
 
-@router.post("", response_model=AgentResponse, status_code=status.HTTP_201_CREATED)
+@router.post("", status_code=status.HTTP_201_CREATED)
 async def create_agent(
     request: CreateAgentRequest,
     service: ServiceDep,
@@ -58,7 +58,7 @@ async def create_agent(
     return _to_response(agent)
 
 
-@router.get("", response_model=AgentListResponse)
+@router.get("")
 async def list_agents(
     service: ServiceDep,
     current_user: CurrentUserDep,
@@ -82,7 +82,7 @@ async def list_agents(
     )
 
 
-@router.get("/{agent_id}", response_model=AgentResponse)
+@router.get("/{agent_id}")
 async def get_agent(
     agent_id: int,
     service: ServiceDep,
@@ -93,7 +93,7 @@ async def get_agent(
     return _to_response(agent)
 
 
-@router.put("/{agent_id}", response_model=AgentResponse)
+@router.put("/{agent_id}")
 async def update_agent(
     agent_id: int,
     request: UpdateAgentRequest,
@@ -116,7 +116,7 @@ async def delete_agent(
     await service.delete_agent(agent_id, current_user.id)
 
 
-@router.post("/{agent_id}/activate", response_model=AgentResponse)
+@router.post("/{agent_id}/activate")
 async def activate_agent(
     agent_id: int,
     service: ServiceDep,
@@ -127,7 +127,7 @@ async def activate_agent(
     return _to_response(agent)
 
 
-@router.post("/{agent_id}/archive", response_model=AgentResponse)
+@router.post("/{agent_id}/archive")
 async def archive_agent(
     agent_id: int,
     service: ServiceDep,

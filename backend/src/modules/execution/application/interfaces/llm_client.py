@@ -4,6 +4,12 @@ from abc import ABC, abstractmethod
 from collections.abc import AsyncIterator
 from dataclasses import dataclass
 
+from src.shared.domain.constants import (
+    AGENT_DEFAULT_MAX_TOKENS,
+    AGENT_DEFAULT_TEMPERATURE,
+    AGENT_DEFAULT_TOP_P,
+)
+
 
 @dataclass
 class LLMMessage:
@@ -42,9 +48,9 @@ class ILLMClient(ABC):
         messages: list[LLMMessage],
         *,
         system_prompt: str = "",
-        temperature: float = 0.7,
-        max_tokens: int = 2048,
-        top_p: float = 1.0,
+        temperature: float = AGENT_DEFAULT_TEMPERATURE,
+        max_tokens: int = AGENT_DEFAULT_MAX_TOKENS,
+        top_p: float = AGENT_DEFAULT_TOP_P,
         stop_sequences: tuple[str, ...] = (),
     ) -> LLMResponse:
         """同步调用 LLM。"""
@@ -56,9 +62,9 @@ class ILLMClient(ABC):
         messages: list[LLMMessage],
         *,
         system_prompt: str = "",
-        temperature: float = 0.7,
-        max_tokens: int = 2048,
-        top_p: float = 1.0,
+        temperature: float = AGENT_DEFAULT_TEMPERATURE,
+        max_tokens: int = AGENT_DEFAULT_MAX_TOKENS,
+        top_p: float = AGENT_DEFAULT_TOP_P,
         stop_sequences: tuple[str, ...] = (),
     ) -> AsyncIterator[LLMStreamChunk]:
         """流式调用 LLM。"""

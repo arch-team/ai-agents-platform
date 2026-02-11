@@ -60,7 +60,7 @@ def _to_message_response(dto: MessageDTO) -> MessageResponse:
     )
 
 
-@router.post("", response_model=ConversationResponse, status_code=status.HTTP_201_CREATED)
+@router.post("", status_code=status.HTTP_201_CREATED)
 async def create_conversation(
     request: CreateConversationRequest,
     service: ServiceDep,
@@ -72,7 +72,7 @@ async def create_conversation(
     return _to_conversation_response(conversation)
 
 
-@router.get("", response_model=ConversationListResponse)
+@router.get("")
 async def list_conversations(
     service: ServiceDep,
     current_user: CurrentUserDep,
@@ -96,7 +96,7 @@ async def list_conversations(
     )
 
 
-@router.get("/{conversation_id}", response_model=ConversationDetailResponse)
+@router.get("/{conversation_id}")
 async def get_conversation(
     conversation_id: int,
     service: ServiceDep,
@@ -112,7 +112,6 @@ async def get_conversation(
 
 @router.post(
     "/{conversation_id}/messages",
-    response_model=MessageResponse,
     status_code=status.HTTP_201_CREATED,
 )
 async def send_message(
@@ -159,7 +158,7 @@ async def send_message_stream(
     )
 
 
-@router.post("/{conversation_id}/complete", response_model=ConversationResponse)
+@router.post("/{conversation_id}/complete")
 async def complete_conversation(
     conversation_id: int,
     service: ServiceDep,

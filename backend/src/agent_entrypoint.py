@@ -4,8 +4,6 @@
 部署到 AgentCore Runtime 后，通过 invoke_agent_runtime() API 调用。
 """
 
-from __future__ import annotations
-
 from typing import Any
 
 from bedrock_agentcore.runtime import BedrockAgentCoreApp
@@ -59,7 +57,7 @@ async def invoke(payload: dict[str, object]) -> dict[str, object]:
         mcp_servers=mcp_servers,
         permission_mode="bypassPermissions",
         max_turns=max_turns,
-        cwd=cwd if cwd else None,
+        cwd=cwd or None,
     )
 
     # 收集 Agent 响应 (使用统一的 SDK 消息解析工具)

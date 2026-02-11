@@ -76,7 +76,7 @@ def _to_list_response(paged: PagedToolDTO, page_size: int) -> ToolListResponse:
     )
 
 
-@router.post("", response_model=ToolResponse, status_code=status.HTTP_201_CREATED)
+@router.post("", status_code=status.HTTP_201_CREATED)
 async def create_tool(
     request: CreateToolRequest,
     service: ServiceDep,
@@ -88,7 +88,7 @@ async def create_tool(
     return _to_response(tool)
 
 
-@router.get("", response_model=ToolListResponse)
+@router.get("")
 async def list_tools(
     service: ServiceDep,
     current_user: CurrentUserDep,  # noqa: ARG001
@@ -110,7 +110,7 @@ async def list_tools(
 
 
 # NOTE: /approved must be registered before /{tool_id}
-@router.get("/approved", response_model=ToolListResponse)
+@router.get("/approved")
 async def list_approved_tools(
     service: ServiceDep,
     current_user: CurrentUserDep,  # noqa: ARG001
@@ -122,7 +122,7 @@ async def list_approved_tools(
     return _to_list_response(paged, page_size)
 
 
-@router.get("/{tool_id}", response_model=ToolResponse)
+@router.get("/{tool_id}")
 async def get_tool(
     tool_id: int,
     service: ServiceDep,
@@ -133,7 +133,7 @@ async def get_tool(
     return _to_response(tool)
 
 
-@router.put("/{tool_id}", response_model=ToolResponse)
+@router.put("/{tool_id}")
 async def update_tool(
     tool_id: int,
     request: UpdateToolRequest,
@@ -156,7 +156,7 @@ async def delete_tool(
     await service.delete_tool(tool_id, current_user.id)
 
 
-@router.post("/{tool_id}/submit", response_model=ToolResponse)
+@router.post("/{tool_id}/submit")
 async def submit_for_review(
     tool_id: int,
     service: ServiceDep,
@@ -167,7 +167,7 @@ async def submit_for_review(
     return _to_response(tool)
 
 
-@router.post("/{tool_id}/approve", response_model=ToolResponse)
+@router.post("/{tool_id}/approve")
 async def approve_tool(
     tool_id: int,
     service: ServiceDep,
@@ -178,7 +178,7 @@ async def approve_tool(
     return _to_response(tool)
 
 
-@router.post("/{tool_id}/reject", response_model=ToolResponse)
+@router.post("/{tool_id}/reject")
 async def reject_tool(
     tool_id: int,
     request: RejectToolRequest,
@@ -190,7 +190,7 @@ async def reject_tool(
     return _to_response(tool)
 
 
-@router.post("/{tool_id}/deprecate", response_model=ToolResponse)
+@router.post("/{tool_id}/deprecate")
 async def deprecate_tool(
     tool_id: int,
     service: ServiceDep,

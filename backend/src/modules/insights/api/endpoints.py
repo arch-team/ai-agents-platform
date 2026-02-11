@@ -41,7 +41,7 @@ def _to_record_response(dto: UsageRecordDTO) -> UsageRecordResponse:
     )
 
 
-@router.get("/usage-records", response_model=UsageRecordListResponse)
+@router.get("/usage-records")
 async def list_usage_records(
     service: ServiceDep,
     current_user: CurrentUserDep,
@@ -69,7 +69,7 @@ async def list_usage_records(
     )
 
 
-@router.get("/usage-records/{record_id}", response_model=UsageRecordResponse)
+@router.get("/usage-records/{record_id}")
 async def get_usage_record(
     record_id: int,
     service: ServiceDep,
@@ -80,7 +80,7 @@ async def get_usage_record(
     return _to_record_response(dto)
 
 
-@router.get("/summary", response_model=UsageSummaryResponse)
+@router.get("/summary")
 async def get_usage_summary(
     service: ServiceDep,
     current_user: CurrentUserDep,

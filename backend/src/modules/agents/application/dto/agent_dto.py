@@ -3,6 +3,13 @@
 from dataclasses import dataclass
 from datetime import datetime
 
+from src.shared.domain.constants import (
+    AGENT_DEFAULT_MAX_TOKENS,
+    AGENT_DEFAULT_MODEL_ID,
+    AGENT_DEFAULT_RUNTIME_TYPE,
+    AGENT_DEFAULT_TEMPERATURE,
+)
+
 
 @dataclass
 class CreateAgentDTO:
@@ -11,10 +18,10 @@ class CreateAgentDTO:
     name: str
     description: str = ""
     system_prompt: str = ""
-    model_id: str = "anthropic.claude-3-5-sonnet-20241022-v2:0"
-    temperature: float = 0.7
-    max_tokens: int = 2048
-    runtime_type: str = "agent"
+    model_id: str = AGENT_DEFAULT_MODEL_ID
+    temperature: float = AGENT_DEFAULT_TEMPERATURE
+    max_tokens: int = AGENT_DEFAULT_MAX_TOKENS
+    runtime_type: str = AGENT_DEFAULT_RUNTIME_TYPE
 
 
 @dataclass

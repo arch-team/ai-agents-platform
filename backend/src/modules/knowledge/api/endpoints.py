@@ -68,7 +68,7 @@ def _to_doc_response(dto: DocumentDTO) -> DocumentResponse:
     )
 
 
-@router.post("", response_model=KnowledgeBaseResponse, status_code=status.HTTP_201_CREATED)
+@router.post("", status_code=status.HTTP_201_CREATED)
 async def create_knowledge_base(
     request: CreateKnowledgeBaseRequest,
     service: ServiceDep,
@@ -80,7 +80,7 @@ async def create_knowledge_base(
     return _to_kb_response(kb)
 
 
-@router.get("", response_model=KnowledgeBaseListResponse)
+@router.get("")
 async def list_knowledge_bases(
     service: ServiceDep,
     current_user: CurrentUserDep,
@@ -98,7 +98,7 @@ async def list_knowledge_bases(
     )
 
 
-@router.get("/{kb_id}", response_model=KnowledgeBaseResponse)
+@router.get("/{kb_id}")
 async def get_knowledge_base(
     kb_id: int,
     service: ServiceDep,
@@ -109,7 +109,7 @@ async def get_knowledge_base(
     return _to_kb_response(kb)
 
 
-@router.put("/{kb_id}", response_model=KnowledgeBaseResponse)
+@router.put("/{kb_id}")
 async def update_knowledge_base(
     kb_id: int,
     request: UpdateKnowledgeBaseRequest,
@@ -132,7 +132,7 @@ async def delete_knowledge_base(
     await service.delete_knowledge_base(kb_id, current_user.id)
 
 
-@router.post("/{kb_id}/documents", response_model=DocumentResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/{kb_id}/documents", status_code=status.HTTP_201_CREATED)
 async def upload_document(
     kb_id: int,
     file: UploadFile,
@@ -150,7 +150,7 @@ async def upload_document(
     return _to_doc_response(doc)
 
 
-@router.get("/{kb_id}/documents", response_model=DocumentListResponse)
+@router.get("/{kb_id}/documents")
 async def list_documents(
     kb_id: int,
     service: ServiceDep,
@@ -180,7 +180,7 @@ async def delete_document(
     await service.delete_document(kb_id, doc_id, current_user.id)
 
 
-@router.post("/{kb_id}/sync", response_model=KnowledgeBaseResponse)
+@router.post("/{kb_id}/sync")
 async def sync_knowledge_base(
     kb_id: int,
     service: ServiceDep,
@@ -191,7 +191,7 @@ async def sync_knowledge_base(
     return _to_kb_response(kb)
 
 
-@router.post("/{kb_id}/query", response_model=QueryResponse)
+@router.post("/{kb_id}/query")
 async def query_knowledge_base(
     kb_id: int,
     request: QueryRequest,

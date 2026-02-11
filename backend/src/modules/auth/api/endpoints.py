@@ -63,7 +63,7 @@ async def register(
     return _user_response(user)
 
 
-@router.post("/login", response_model=TokenResponse)
+@router.post("/login")
 @limiter.limit("5/minute")
 async def login(
     request: Request,
@@ -81,7 +81,7 @@ async def login(
     )
 
 
-@router.post("/refresh", response_model=TokenResponse)
+@router.post("/refresh")
 @limiter.limit("10/minute")
 async def refresh_token(
     request: Request,
@@ -99,7 +99,7 @@ async def refresh_token(
     )
 
 
-@router.post("/logout", response_model=MessageResponse)
+@router.post("/logout")
 async def logout(
     request: Request,
     body: LogoutRequest,
@@ -111,7 +111,7 @@ async def logout(
     return MessageResponse(message="已成功登出")
 
 
-@router.get("/me", response_model=UserResponse)
+@router.get("/me")
 async def get_me(
     current_user: Annotated[UserDTO, Depends(get_current_user)],
 ) -> UserResponse:

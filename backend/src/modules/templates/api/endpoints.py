@@ -52,7 +52,7 @@ def _to_response(dto: TemplateDTO) -> TemplateResponse:
     )
 
 
-@router.post("", response_model=TemplateResponse, status_code=status.HTTP_201_CREATED)
+@router.post("", status_code=status.HTTP_201_CREATED)
 async def create_template(
     request: CreateTemplateRequest,
     service: ServiceDep,
@@ -75,7 +75,7 @@ async def create_template(
     return _to_response(result)
 
 
-@router.get("", response_model=TemplateListResponse)
+@router.get("")
 async def list_templates(
     service: ServiceDep,
     page: Annotated[int, Query(ge=1)] = 1,
@@ -99,7 +99,7 @@ async def list_templates(
     )
 
 
-@router.get("/mine", response_model=TemplateListResponse)
+@router.get("/mine")
 async def list_my_templates(
     service: ServiceDep,
     current_user: CurrentUserDep,
@@ -121,7 +121,7 @@ async def list_my_templates(
     )
 
 
-@router.get("/{template_id}", response_model=TemplateResponse)
+@router.get("/{template_id}")
 async def get_template(
     template_id: int,
     service: ServiceDep,
@@ -131,7 +131,7 @@ async def get_template(
     return _to_response(result)
 
 
-@router.put("/{template_id}", response_model=TemplateResponse)
+@router.put("/{template_id}")
 async def update_template(
     template_id: int,
     request: UpdateTemplateRequest,
@@ -165,7 +165,7 @@ async def delete_template(
     await service.delete_template(template_id, current_user.id)
 
 
-@router.post("/{template_id}/publish", response_model=TemplateResponse)
+@router.post("/{template_id}/publish")
 async def publish_template(
     template_id: int,
     service: ServiceDep,
@@ -176,7 +176,7 @@ async def publish_template(
     return _to_response(result)
 
 
-@router.post("/{template_id}/archive", response_model=TemplateResponse)
+@router.post("/{template_id}/archive")
 async def archive_template(
     template_id: int,
     service: ServiceDep,

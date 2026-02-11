@@ -96,7 +96,7 @@ class ExecutionService:
         self._system_prompt_token_budget = system_prompt_token_budget
         # 流后 DB 写使用独立 repos (由 API 层通过独立 session 创建)
         self._stream_msg_repo, self._stream_conv_repo = (
-            stream_finalize_repos if stream_finalize_repos else (message_repo, conversation_repo)
+            stream_finalize_repos or (message_repo, conversation_repo)
         )
 
     async def create_conversation(

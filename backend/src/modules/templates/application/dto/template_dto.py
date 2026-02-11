@@ -3,6 +3,8 @@
 from dataclasses import dataclass, field
 from datetime import datetime
 
+from src.shared.domain.constants import TEMPLATE_DEFAULT_MAX_TOKENS, TEMPLATE_DEFAULT_TEMPERATURE
+
 
 @dataclass
 class CreateTemplateDTO:
@@ -13,8 +15,8 @@ class CreateTemplateDTO:
     category: str
     system_prompt: str
     model_id: str
-    temperature: float = 0.7
-    max_tokens: int = 4096
+    temperature: float = TEMPLATE_DEFAULT_TEMPERATURE
+    max_tokens: int = TEMPLATE_DEFAULT_MAX_TOKENS
     tool_ids: list[int] = field(default_factory=list)
     knowledge_base_ids: list[int] = field(default_factory=list)
     tags: list[str] = field(default_factory=list)

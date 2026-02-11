@@ -11,6 +11,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from src.modules.execution.application.interfaces.llm_client import LLMMessage
+from src.shared.domain.constants import AGENT_DEFAULT_MAX_TOKENS, AGENT_DEFAULT_TEMPERATURE
 
 
 @dataclass
@@ -33,8 +34,8 @@ class AgentRequest:
     model_id: str = ""
     tools: list[AgentTool] = field(default_factory=list)
     history: list[LLMMessage] = field(default_factory=list)
-    temperature: float = 0.7
-    max_tokens: int = 2048
+    temperature: float = AGENT_DEFAULT_TEMPERATURE
+    max_tokens: int = AGENT_DEFAULT_MAX_TOKENS
     gateway_url: str = ""  # AgentCore Gateway MCP 端点
     max_turns: int = 20  # Agent Loop 最大轮次
     cwd: str = ""  # Agent 工作目录

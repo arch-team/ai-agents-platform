@@ -16,6 +16,7 @@ from sqlalchemy import (
 from sqlalchemy.dialects.mysql import JSON
 from sqlalchemy.orm import Mapped, mapped_column
 
+from src.shared.domain.constants import TEMPLATE_DEFAULT_MAX_TOKENS, TEMPLATE_DEFAULT_TEMPERATURE
 from src.shared.infrastructure.database import Base
 from src.shared.infrastructure.utils import utc_now
 
@@ -39,8 +40,8 @@ class TemplateModel(Base):
     # TemplateConfig 扁平化存储
     system_prompt: Mapped[str] = mapped_column(Text, nullable=False)
     model_id: Mapped[str] = mapped_column(String(200), nullable=False)
-    temperature: Mapped[float] = mapped_column(Float, nullable=False, default=0.7)
-    max_tokens: Mapped[int] = mapped_column(Integer, nullable=False, default=4096)
+    temperature: Mapped[float] = mapped_column(Float, nullable=False, default=TEMPLATE_DEFAULT_TEMPERATURE)
+    max_tokens: Mapped[int] = mapped_column(Integer, nullable=False, default=TEMPLATE_DEFAULT_MAX_TOKENS)
     tool_ids: Mapped[list[int]] = mapped_column(JSON, nullable=False, default=list)
     knowledge_base_ids: Mapped[list[int]] = mapped_column(JSON, nullable=False, default=list)
 

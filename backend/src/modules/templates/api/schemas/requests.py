@@ -2,6 +2,8 @@
 
 from pydantic import BaseModel, Field
 
+from src.shared.domain.constants import TEMPLATE_DEFAULT_MAX_TOKENS, TEMPLATE_DEFAULT_TEMPERATURE
+
 
 class CreateTemplateRequest(BaseModel):
     """创建模板请求。"""
@@ -11,8 +13,8 @@ class CreateTemplateRequest(BaseModel):
     category: str = "general"
     system_prompt: str = Field(min_length=1)
     model_id: str = Field(min_length=1)
-    temperature: float = Field(default=0.7, ge=0.0, le=1.0)
-    max_tokens: int = Field(default=4096, ge=1)
+    temperature: float = Field(default=TEMPLATE_DEFAULT_TEMPERATURE, ge=0.0, le=1.0)
+    max_tokens: int = Field(default=TEMPLATE_DEFAULT_MAX_TOKENS, ge=1)
     tool_ids: list[int] = Field(default_factory=list)
     knowledge_base_ids: list[int] = Field(default_factory=list)
     tags: list[str] = Field(default_factory=list)
