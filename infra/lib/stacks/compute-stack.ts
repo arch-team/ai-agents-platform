@@ -108,7 +108,7 @@ export class ComputeStack extends cdk.Stack {
     NagSuppressions.addResourceSuppressions(albConstruct.alb, [
       {
         id: 'AwsSolutions-ELB2',
-        reason: 'Dev 环境暂不启用 ALB 访问日志，后续 Prod 环境配置 S3 访问日志桶',
+        reason: 'ALB access logs not enabled in Dev; Prod will configure S3 access log bucket',
       },
     ]);
 
@@ -116,7 +116,7 @@ export class ComputeStack extends cdk.Stack {
     NagSuppressions.addResourceSuppressions(albConstruct.httpListener, [
       {
         id: 'AwsSolutions-ELB1',
-        reason: 'Dev 环境使用 HTTP (端口 80)，Prod 环境将配置 HTTPS + TLS 证书',
+        reason: 'Dev uses HTTP (port 80); Prod will configure HTTPS + TLS certificate',
       },
     ]);
 
@@ -127,12 +127,12 @@ export class ComputeStack extends cdk.Stack {
         {
           id: 'AwsSolutions-IAM4',
           reason:
-            'ECS Task Execution Role 需要 AmazonECSTaskExecutionRolePolicy 托管策略拉取镜像和写入日志',
+            'ECS Task Execution Role requires AmazonECSTaskExecutionRolePolicy managed policy to pull images and write logs',
         },
         {
           id: 'AwsSolutions-IAM5',
           reason:
-            'ECS Task Execution Role 的 ecr:GetAuthorizationToken 和 logs:CreateLogStream 需要通配符资源',
+            'ECS Task Execution Role ecr:GetAuthorizationToken and logs:CreateLogStream require wildcard resources',
         },
       ],
       true,
@@ -145,7 +145,7 @@ export class ComputeStack extends cdk.Stack {
         {
           id: 'AwsSolutions-IAM5',
           reason:
-            'Secrets Manager grantRead 和 KMS grantDecrypt 生成的策略包含必要的通配符 (secretsmanager:GetSecretValue)',
+            'Secrets Manager grantRead and KMS grantDecrypt generate policies with necessary wildcards (secretsmanager:GetSecretValue)',
         },
       ],
       true,
@@ -157,7 +157,7 @@ export class ComputeStack extends cdk.Stack {
       [
         {
           id: 'AwsSolutions-EC23',
-          reason: 'ALB 面向公网，需要允许 0.0.0.0/0 的 HTTP 入站流量',
+          reason: 'ALB is internet-facing and requires 0.0.0.0/0 HTTP inbound traffic',
         },
       ],
       true,
@@ -170,7 +170,7 @@ export class ComputeStack extends cdk.Stack {
         {
           id: 'AwsSolutions-ECS2',
           reason:
-            'ENV_NAME、DATABASE_HOST、DATABASE_PORT 为非敏感配置项，无需通过 Secrets Manager 注入',
+            'ENV_NAME, DATABASE_HOST, DATABASE_PORT are non-sensitive config; no need to inject via Secrets Manager',
         },
       ],
       true,

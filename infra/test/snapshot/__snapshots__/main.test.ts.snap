@@ -7,8 +7,7 @@ exports[`Snapshot Tests AgentCoreStack 快照匹配 1`] = `
       "rules_to_suppress": [
         {
           "id": "AwsSolutions-IAM4",
-          "is_reason_encoded": true,
-          "reason": "QWdlbnRDb3JlIEwyIENvbnN0cnVjdCDlhoXpg6jkvb/nlKggQVdTIOaJmOeuoeetlueVpeaYr+ivpeacjeWKoeeahOacgOS9s+Wunui3tQ==",
+          "reason": "AgentCore L2 Construct internally uses AWS managed policies as best practice for this service",
         },
       ],
     },
@@ -113,23 +112,19 @@ exports[`Snapshot Tests AgentCoreStack 快照匹配 1`] = `
           "rules_to_suppress": [
             {
               "id": "AwsSolutions-IAM5",
-              "is_reason_encoded": true,
-              "reason": "R2F0ZXdheSDmnI3liqHop5LoibLnlLEgTDIgQ29uc3RydWN0IOiHquWKqOWIm+W7uu+8jOmAmumFjeespuadg+mZkOaYryBBZ2VudENvcmUg5pyN5Yqh5omA6ZyA",
+              "reason": "Gateway service role is auto-created by L2 Construct; wildcard permissions are required by AgentCore service",
             },
             {
               "id": "AwsSolutions-COG1",
-              "is_reason_encoded": true,
-              "reason": "R2F0ZXdheSDpu5jorqQgQ29nbml0byBVc2VyIFBvb2wg5a+G56CB562W55Wl55SxIEwyIENvbnN0cnVjdCDnrqHnkIY=",
+              "reason": "Gateway default Cognito User Pool password policy is managed by L2 Construct",
             },
             {
               "id": "AwsSolutions-COG2",
-              "is_reason_encoded": true,
-              "reason": "R2F0ZXdheSDpu5jorqQgQ29nbml0byBVc2VyIFBvb2wg55So5LqOIE0yTSDorqTor4EgKENsaWVudCBDcmVkZW50aWFscynvvIzml6DpnIAgTUZB",
+              "reason": "Gateway default Cognito User Pool is for M2M auth (Client Credentials); MFA not required",
             },
             {
               "id": "AwsSolutions-COG3",
-              "is_reason_encoded": true,
-              "reason": "R2F0ZXdheSDpu5jorqQgQ29nbml0byBVc2VyIFBvb2wg55So5LqOIE0yTSDorqTor4HvvIzkuI3mtonlj4rnlKjmiLfkuqTkupI=",
+              "reason": "Gateway default Cognito User Pool is for M2M auth; no user interaction involved",
             },
           ],
         },
@@ -161,7 +156,7 @@ exports[`Snapshot Tests AgentCoreStack 快照匹配 1`] = `
         "Name": "ai-agents-platform-gateway-dev",
         "ProtocolConfiguration": {
           "Mcp": {
-            "Instructions": "AI Agents Platform MCP Gateway - 提供统一工具接入入口",
+            "Instructions": "AI Agents Platform MCP Gateway - Unified tool access entry point",
             "SearchType": "SEMANTIC",
             "SupportedVersions": [
               "2025-03-26",
@@ -184,23 +179,19 @@ exports[`Snapshot Tests AgentCoreStack 快照匹配 1`] = `
           "rules_to_suppress": [
             {
               "id": "AwsSolutions-IAM5",
-              "is_reason_encoded": true,
-              "reason": "R2F0ZXdheSDmnI3liqHop5LoibLnlLEgTDIgQ29uc3RydWN0IOiHquWKqOWIm+W7uu+8jOmAmumFjeespuadg+mZkOaYryBBZ2VudENvcmUg5pyN5Yqh5omA6ZyA",
+              "reason": "Gateway service role is auto-created by L2 Construct; wildcard permissions are required by AgentCore service",
             },
             {
               "id": "AwsSolutions-COG1",
-              "is_reason_encoded": true,
-              "reason": "R2F0ZXdheSDpu5jorqQgQ29nbml0byBVc2VyIFBvb2wg5a+G56CB562W55Wl55SxIEwyIENvbnN0cnVjdCDnrqHnkIY=",
+              "reason": "Gateway default Cognito User Pool password policy is managed by L2 Construct",
             },
             {
               "id": "AwsSolutions-COG2",
-              "is_reason_encoded": true,
-              "reason": "R2F0ZXdheSDpu5jorqQgQ29nbml0byBVc2VyIFBvb2wg55So5LqOIE0yTSDorqTor4EgKENsaWVudCBDcmVkZW50aWFscynvvIzml6DpnIAgTUZB",
+              "reason": "Gateway default Cognito User Pool is for M2M auth (Client Credentials); MFA not required",
             },
             {
               "id": "AwsSolutions-COG3",
-              "is_reason_encoded": true,
-              "reason": "R2F0ZXdheSDpu5jorqQgQ29nbml0byBVc2VyIFBvb2wg55So5LqOIE0yTSDorqTor4HvvIzkuI3mtonlj4rnlKjmiLfkuqTkupI=",
+              "reason": "Gateway default Cognito User Pool is for M2M auth; no user interaction involved",
             },
           ],
         },
@@ -255,23 +246,19 @@ exports[`Snapshot Tests AgentCoreStack 快照匹配 1`] = `
           "rules_to_suppress": [
             {
               "id": "AwsSolutions-IAM5",
-              "is_reason_encoded": true,
-              "reason": "R2F0ZXdheSDmnI3liqHop5LoibLnlLEgTDIgQ29uc3RydWN0IOiHquWKqOWIm+W7uu+8jOmAmumFjeespuadg+mZkOaYryBBZ2VudENvcmUg5pyN5Yqh5omA6ZyA",
+              "reason": "Gateway service role is auto-created by L2 Construct; wildcard permissions are required by AgentCore service",
             },
             {
               "id": "AwsSolutions-COG1",
-              "is_reason_encoded": true,
-              "reason": "R2F0ZXdheSDpu5jorqQgQ29nbml0byBVc2VyIFBvb2wg5a+G56CB562W55Wl55SxIEwyIENvbnN0cnVjdCDnrqHnkIY=",
+              "reason": "Gateway default Cognito User Pool password policy is managed by L2 Construct",
             },
             {
               "id": "AwsSolutions-COG2",
-              "is_reason_encoded": true,
-              "reason": "R2F0ZXdheSDpu5jorqQgQ29nbml0byBVc2VyIFBvb2wg55So5LqOIE0yTSDorqTor4EgKENsaWVudCBDcmVkZW50aWFscynvvIzml6DpnIAgTUZB",
+              "reason": "Gateway default Cognito User Pool is for M2M auth (Client Credentials); MFA not required",
             },
             {
               "id": "AwsSolutions-COG3",
-              "is_reason_encoded": true,
-              "reason": "R2F0ZXdheSDpu5jorqQgQ29nbml0byBVc2VyIFBvb2wg55So5LqOIE0yTSDorqTor4HvvIzkuI3mtonlj4rnlKjmiLfkuqTkupI=",
+              "reason": "Gateway default Cognito User Pool is for M2M auth; no user interaction involved",
             },
           ],
         },
@@ -314,23 +301,19 @@ exports[`Snapshot Tests AgentCoreStack 快照匹配 1`] = `
           "rules_to_suppress": [
             {
               "id": "AwsSolutions-IAM5",
-              "is_reason_encoded": true,
-              "reason": "R2F0ZXdheSDmnI3liqHop5LoibLnlLEgTDIgQ29uc3RydWN0IOiHquWKqOWIm+W7uu+8jOmAmumFjeespuadg+mZkOaYryBBZ2VudENvcmUg5pyN5Yqh5omA6ZyA",
+              "reason": "Gateway service role is auto-created by L2 Construct; wildcard permissions are required by AgentCore service",
             },
             {
               "id": "AwsSolutions-COG1",
-              "is_reason_encoded": true,
-              "reason": "R2F0ZXdheSDpu5jorqQgQ29nbml0byBVc2VyIFBvb2wg5a+G56CB562W55Wl55SxIEwyIENvbnN0cnVjdCDnrqHnkIY=",
+              "reason": "Gateway default Cognito User Pool password policy is managed by L2 Construct",
             },
             {
               "id": "AwsSolutions-COG2",
-              "is_reason_encoded": true,
-              "reason": "R2F0ZXdheSDpu5jorqQgQ29nbml0byBVc2VyIFBvb2wg55So5LqOIE0yTSDorqTor4EgKENsaWVudCBDcmVkZW50aWFscynvvIzml6DpnIAgTUZB",
+              "reason": "Gateway default Cognito User Pool is for M2M auth (Client Credentials); MFA not required",
             },
             {
               "id": "AwsSolutions-COG3",
-              "is_reason_encoded": true,
-              "reason": "R2F0ZXdheSDpu5jorqQgQ29nbml0byBVc2VyIFBvb2wg55So5LqOIE0yTSDorqTor4HvvIzkuI3mtonlj4rnlKjmiLfkuqTkupI=",
+              "reason": "Gateway default Cognito User Pool is for M2M auth; no user interaction involved",
             },
           ],
         },
@@ -380,23 +363,19 @@ exports[`Snapshot Tests AgentCoreStack 快照匹配 1`] = `
           "rules_to_suppress": [
             {
               "id": "AwsSolutions-IAM5",
-              "is_reason_encoded": true,
-              "reason": "R2F0ZXdheSDmnI3liqHop5LoibLnlLEgTDIgQ29uc3RydWN0IOiHquWKqOWIm+W7uu+8jOmAmumFjeespuadg+mZkOaYryBBZ2VudENvcmUg5pyN5Yqh5omA6ZyA",
+              "reason": "Gateway service role is auto-created by L2 Construct; wildcard permissions are required by AgentCore service",
             },
             {
               "id": "AwsSolutions-COG1",
-              "is_reason_encoded": true,
-              "reason": "R2F0ZXdheSDpu5jorqQgQ29nbml0byBVc2VyIFBvb2wg5a+G56CB562W55Wl55SxIEwyIENvbnN0cnVjdCDnrqHnkIY=",
+              "reason": "Gateway default Cognito User Pool password policy is managed by L2 Construct",
             },
             {
               "id": "AwsSolutions-COG2",
-              "is_reason_encoded": true,
-              "reason": "R2F0ZXdheSDpu5jorqQgQ29nbml0byBVc2VyIFBvb2wg55So5LqOIE0yTSDorqTor4EgKENsaWVudCBDcmVkZW50aWFscynvvIzml6DpnIAgTUZB",
+              "reason": "Gateway default Cognito User Pool is for M2M auth (Client Credentials); MFA not required",
             },
             {
               "id": "AwsSolutions-COG3",
-              "is_reason_encoded": true,
-              "reason": "R2F0ZXdheSDpu5jorqQgQ29nbml0byBVc2VyIFBvb2wg55So5LqOIE0yTSDorqTor4HvvIzkuI3mtonlj4rnlKjmiLfkuqTkupI=",
+              "reason": "Gateway default Cognito User Pool is for M2M auth; no user interaction involved",
             },
           ],
         },
@@ -415,23 +394,19 @@ exports[`Snapshot Tests AgentCoreStack 快照匹配 1`] = `
           "rules_to_suppress": [
             {
               "id": "AwsSolutions-IAM5",
-              "is_reason_encoded": true,
-              "reason": "R2F0ZXdheSDmnI3liqHop5LoibLnlLEgTDIgQ29uc3RydWN0IOiHquWKqOWIm+W7uu+8jOmAmumFjeespuadg+mZkOaYryBBZ2VudENvcmUg5pyN5Yqh5omA6ZyA",
+              "reason": "Gateway service role is auto-created by L2 Construct; wildcard permissions are required by AgentCore service",
             },
             {
               "id": "AwsSolutions-COG1",
-              "is_reason_encoded": true,
-              "reason": "R2F0ZXdheSDpu5jorqQgQ29nbml0byBVc2VyIFBvb2wg5a+G56CB562W55Wl55SxIEwyIENvbnN0cnVjdCDnrqHnkIY=",
+              "reason": "Gateway default Cognito User Pool password policy is managed by L2 Construct",
             },
             {
               "id": "AwsSolutions-COG2",
-              "is_reason_encoded": true,
-              "reason": "R2F0ZXdheSDpu5jorqQgQ29nbml0byBVc2VyIFBvb2wg55So5LqOIE0yTSDorqTor4EgKENsaWVudCBDcmVkZW50aWFscynvvIzml6DpnIAgTUZB",
+              "reason": "Gateway default Cognito User Pool is for M2M auth (Client Credentials); MFA not required",
             },
             {
               "id": "AwsSolutions-COG3",
-              "is_reason_encoded": true,
-              "reason": "R2F0ZXdheSDpu5jorqQgQ29nbml0byBVc2VyIFBvb2wg55So5LqOIE0yTSDorqTor4HvvIzkuI3mtonlj4rnlKjmiLfkuqTkupI=",
+              "reason": "Gateway default Cognito User Pool is for M2M auth; no user interaction involved",
             },
           ],
         },
@@ -465,8 +440,7 @@ exports[`Snapshot Tests AgentCoreStack 快照匹配 1`] = `
           "rules_to_suppress": [
             {
               "id": "AwsSolutions-IAM5",
-              "is_reason_encoded": true,
-              "reason": "QmVkcm9jayBJbnZva2VNb2RlbCDpnIDopoHpgJrphY3nrKbotYTmupDku6XmlK/mjIHlpJrmqKHlnovosIPnlKg7IFJ1bnRpbWUg5omn6KGM6KeS6Imy55SxIEwyIENvbnN0cnVjdCDoh6rliqjliJvlu7o=",
+              "reason": "Bedrock InvokeModel requires wildcard resources for multi-model invocation; Runtime execution role is auto-created by L2 Construct",
             },
           ],
         },
@@ -569,8 +543,7 @@ exports[`Snapshot Tests AgentCoreStack 快照匹配 1`] = `
           "rules_to_suppress": [
             {
               "id": "AwsSolutions-IAM5",
-              "is_reason_encoded": true,
-              "reason": "QmVkcm9jayBJbnZva2VNb2RlbCDpnIDopoHpgJrphY3nrKbotYTmupDku6XmlK/mjIHlpJrmqKHlnovosIPnlKg7IFJ1bnRpbWUg5omn6KGM6KeS6Imy55SxIEwyIENvbnN0cnVjdCDoh6rliqjliJvlu7o=",
+              "reason": "Bedrock InvokeModel requires wildcard resources for multi-model invocation; Runtime execution role is auto-created by L2 Construct",
             },
           ],
         },
@@ -599,8 +572,7 @@ exports[`Snapshot Tests AgentCoreStack 快照匹配 1`] = `
           "rules_to_suppress": [
             {
               "id": "AwsSolutions-IAM5",
-              "is_reason_encoded": true,
-              "reason": "QmVkcm9jayBJbnZva2VNb2RlbCDpnIDopoHpgJrphY3nrKbotYTmupDku6XmlK/mjIHlpJrmqKHlnovosIPnlKg7IFJ1bnRpbWUg5omn6KGM6KeS6Imy55SxIEwyIENvbnN0cnVjdCDoh6rliqjliJvlu7o=",
+              "reason": "Bedrock InvokeModel requires wildcard resources for multi-model invocation; Runtime execution role is auto-created by L2 Construct",
             },
           ],
         },
@@ -851,8 +823,7 @@ exports[`Snapshot Tests ComputeStack 快照匹配 1`] = `
           "rules_to_suppress": [
             {
               "id": "AwsSolutions-ELB2",
-              "is_reason_encoded": true,
-              "reason": "RGV2IOeOr+Wig+aaguS4jeWQr+eUqCBBTEIg6K6/6Zeu5pel5b+X77yM5ZCO57utIFByb2Qg546v5aKD6YWN572uIFMzIOiuv+mXruaXpeW/l+ahtg==",
+              "reason": "ALB access logs not enabled in Dev; Prod will configure S3 access log bucket",
             },
           ],
         },
@@ -895,8 +866,7 @@ exports[`Snapshot Tests ComputeStack 快照匹配 1`] = `
           "rules_to_suppress": [
             {
               "id": "AwsSolutions-EC23",
-              "is_reason_encoded": true,
-              "reason": "QUxCIOmdouWQkeWFrOe9ke+8jOmcgOimgeWFgeiuuCAwLjAuMC4wLzAg55qEIEhUVFAg5YWl56uZ5rWB6YeP",
+              "reason": "ALB is internet-facing and requires 0.0.0.0/0 HTTP inbound traffic",
             },
           ],
         },
@@ -913,7 +883,7 @@ exports[`Snapshot Tests ComputeStack 快照匹配 1`] = `
         "SecurityGroupIngress": [
           {
             "CidrIp": "0.0.0.0/0",
-            "Description": "允许公网 HTTP 入站",
+            "Description": "Allow public HTTP ingress",
             "FromPort": 80,
             "IpProtocol": "tcp",
             "ToPort": 80,
@@ -931,8 +901,7 @@ exports[`Snapshot Tests ComputeStack 快照匹配 1`] = `
           "rules_to_suppress": [
             {
               "id": "AwsSolutions-ELB1",
-              "is_reason_encoded": true,
-              "reason": "RGV2IOeOr+Wig+S9v+eUqCBIVFRQICjnq6/lj6MgODAp77yMUHJvZCDnjq/looPlsIbphY3nva4gSFRUUFMgKyBUTFMg6K+B5Lmm",
+              "reason": "Dev uses HTTP (port 80); Prod will configure HTTPS + TLS certificate",
             },
           ],
         },
@@ -1105,18 +1074,15 @@ exports[`Snapshot Tests ComputeStack 快照匹配 1`] = `
           "rules_to_suppress": [
             {
               "id": "AwsSolutions-IAM4",
-              "is_reason_encoded": true,
-              "reason": "RUNTIFRhc2sgRXhlY3V0aW9uIFJvbGUg6ZyA6KaBIEFtYXpvbkVDU1Rhc2tFeGVjdXRpb25Sb2xlUG9saWN5IOaJmOeuoeetlueVpeaLieWPlumVnOWDj+WSjOWGmeWFpeaXpeW/lw==",
+              "reason": "ECS Task Execution Role requires AmazonECSTaskExecutionRolePolicy managed policy to pull images and write logs",
             },
             {
               "id": "AwsSolutions-IAM5",
-              "is_reason_encoded": true,
-              "reason": "RUNTIFRhc2sgRXhlY3V0aW9uIFJvbGUg55qEIGVjcjpHZXRBdXRob3JpemF0aW9uVG9rZW4g5ZKMIGxvZ3M6Q3JlYXRlTG9nU3RyZWFtIOmcgOimgemAmumFjeespui1hOa6kA==",
+              "reason": "ECS Task Execution Role ecr:GetAuthorizationToken and logs:CreateLogStream require wildcard resources",
             },
             {
               "id": "AwsSolutions-ECS2",
-              "is_reason_encoded": true,
-              "reason": "RU5WX05BTUXjgIFEQVRBQkFTRV9IT1NU44CBREFUQUJBU0VfUE9SVCDkuLrpnZ7mlY/mhJ/phY3nva7pobnvvIzml6DpnIDpgJrov4cgU2VjcmV0cyBNYW5hZ2VyIOazqOWFpQ==",
+              "reason": "ENV_NAME, DATABASE_HOST, DATABASE_PORT are non-sensitive config; no need to inject via Secrets Manager",
             },
           ],
         },
@@ -1150,7 +1116,7 @@ exports[`Snapshot Tests ComputeStack 快照匹配 1`] = `
               "Timeout": 5,
             },
             "Image": {
-              "Fn::Sub": "000000000000.dkr.ecr.us-east-1.\${AWS::URLSuffix}/cdk-hnb659fds-container-assets-000000000000-us-east-1:42da0e9775dfff87a286f1a3ea3a9c6a88bc924928c0d8512fdee1acd7cb0491",
+              "Fn::Sub": "000000000000.dkr.ecr.us-east-1.\${AWS::URLSuffix}/cdk-hnb659fds-container-assets-000000000000-us-east-1:a883c7f968fa549543d75ef89c1e74c1459ee4d5378d4da87a56c71068a9d0d4",
             },
             "LogConfiguration": {
               "LogDriver": "awslogs",
@@ -1207,18 +1173,15 @@ exports[`Snapshot Tests ComputeStack 快照匹配 1`] = `
           "rules_to_suppress": [
             {
               "id": "AwsSolutions-IAM4",
-              "is_reason_encoded": true,
-              "reason": "RUNTIFRhc2sgRXhlY3V0aW9uIFJvbGUg6ZyA6KaBIEFtYXpvbkVDU1Rhc2tFeGVjdXRpb25Sb2xlUG9saWN5IOaJmOeuoeetlueVpeaLieWPlumVnOWDj+WSjOWGmeWFpeaXpeW/lw==",
+              "reason": "ECS Task Execution Role requires AmazonECSTaskExecutionRolePolicy managed policy to pull images and write logs",
             },
             {
               "id": "AwsSolutions-IAM5",
-              "is_reason_encoded": true,
-              "reason": "RUNTIFRhc2sgRXhlY3V0aW9uIFJvbGUg55qEIGVjcjpHZXRBdXRob3JpemF0aW9uVG9rZW4g5ZKMIGxvZ3M6Q3JlYXRlTG9nU3RyZWFtIOmcgOimgemAmumFjeespui1hOa6kA==",
+              "reason": "ECS Task Execution Role ecr:GetAuthorizationToken and logs:CreateLogStream require wildcard resources",
             },
             {
               "id": "AwsSolutions-ECS2",
-              "is_reason_encoded": true,
-              "reason": "RU5WX05BTUXjgIFEQVRBQkFTRV9IT1NU44CBREFUQUJBU0VfUE9SVCDkuLrpnZ7mlY/mhJ/phY3nva7pobnvvIzml6DpnIDpgJrov4cgU2VjcmV0cyBNYW5hZ2VyIOazqOWFpQ==",
+              "reason": "ENV_NAME, DATABASE_HOST, DATABASE_PORT are non-sensitive config; no need to inject via Secrets Manager",
             },
           ],
         },
@@ -1292,18 +1255,15 @@ exports[`Snapshot Tests ComputeStack 快照匹配 1`] = `
           "rules_to_suppress": [
             {
               "id": "AwsSolutions-IAM4",
-              "is_reason_encoded": true,
-              "reason": "RUNTIFRhc2sgRXhlY3V0aW9uIFJvbGUg6ZyA6KaBIEFtYXpvbkVDU1Rhc2tFeGVjdXRpb25Sb2xlUG9saWN5IOaJmOeuoeetlueVpeaLieWPlumVnOWDj+WSjOWGmeWFpeaXpeW/lw==",
+              "reason": "ECS Task Execution Role requires AmazonECSTaskExecutionRolePolicy managed policy to pull images and write logs",
             },
             {
               "id": "AwsSolutions-IAM5",
-              "is_reason_encoded": true,
-              "reason": "RUNTIFRhc2sgRXhlY3V0aW9uIFJvbGUg55qEIGVjcjpHZXRBdXRob3JpemF0aW9uVG9rZW4g5ZKMIGxvZ3M6Q3JlYXRlTG9nU3RyZWFtIOmcgOimgemAmumFjeespui1hOa6kA==",
+              "reason": "ECS Task Execution Role ecr:GetAuthorizationToken and logs:CreateLogStream require wildcard resources",
             },
             {
               "id": "AwsSolutions-ECS2",
-              "is_reason_encoded": true,
-              "reason": "RU5WX05BTUXjgIFEQVRBQkFTRV9IT1NU44CBREFUQUJBU0VfUE9SVCDkuLrpnZ7mlY/mhJ/phY3nva7pobnvvIzml6DpnIDpgJrov4cgU2VjcmV0cyBNYW5hZ2VyIOazqOWFpQ==",
+              "reason": "ENV_NAME, DATABASE_HOST, DATABASE_PORT are non-sensitive config; no need to inject via Secrets Manager",
             },
           ],
         },
@@ -1330,23 +1290,19 @@ exports[`Snapshot Tests ComputeStack 快照匹配 1`] = `
           "rules_to_suppress": [
             {
               "id": "AwsSolutions-IAM4",
-              "is_reason_encoded": true,
-              "reason": "RUNTIFRhc2sgRXhlY3V0aW9uIFJvbGUg6ZyA6KaBIEFtYXpvbkVDU1Rhc2tFeGVjdXRpb25Sb2xlUG9saWN5IOaJmOeuoeetlueVpeaLieWPlumVnOWDj+WSjOWGmeWFpeaXpeW/lw==",
+              "reason": "ECS Task Execution Role requires AmazonECSTaskExecutionRolePolicy managed policy to pull images and write logs",
             },
             {
               "id": "AwsSolutions-IAM5",
-              "is_reason_encoded": true,
-              "reason": "RUNTIFRhc2sgRXhlY3V0aW9uIFJvbGUg55qEIGVjcjpHZXRBdXRob3JpemF0aW9uVG9rZW4g5ZKMIGxvZ3M6Q3JlYXRlTG9nU3RyZWFtIOmcgOimgemAmumFjeespui1hOa6kA==",
+              "reason": "ECS Task Execution Role ecr:GetAuthorizationToken and logs:CreateLogStream require wildcard resources",
             },
             {
               "id": "AwsSolutions-IAM5",
-              "is_reason_encoded": true,
-              "reason": "U2VjcmV0cyBNYW5hZ2VyIGdyYW50UmVhZCDlkowgS01TIGdyYW50RGVjcnlwdCDnlJ/miJDnmoTnrZbnlaXljIXlkKvlv4XopoHnmoTpgJrphY3nrKYgKHNlY3JldHNtYW5hZ2VyOkdldFNlY3JldFZhbHVlKQ==",
+              "reason": "Secrets Manager grantRead and KMS grantDecrypt generate policies with necessary wildcards (secretsmanager:GetSecretValue)",
             },
             {
               "id": "AwsSolutions-ECS2",
-              "is_reason_encoded": true,
-              "reason": "RU5WX05BTUXjgIFEQVRBQkFTRV9IT1NU44CBREFUQUJBU0VfUE9SVCDkuLrpnZ7mlY/mhJ/phY3nva7pobnvvIzml6DpnIDpgJrov4cgU2VjcmV0cyBNYW5hZ2VyIOazqOWFpQ==",
+              "reason": "ENV_NAME, DATABASE_HOST, DATABASE_PORT are non-sensitive config; no need to inject via Secrets Manager",
             },
           ],
         },
@@ -1373,23 +1329,19 @@ exports[`Snapshot Tests ComputeStack 快照匹配 1`] = `
           "rules_to_suppress": [
             {
               "id": "AwsSolutions-IAM4",
-              "is_reason_encoded": true,
-              "reason": "RUNTIFRhc2sgRXhlY3V0aW9uIFJvbGUg6ZyA6KaBIEFtYXpvbkVDU1Rhc2tFeGVjdXRpb25Sb2xlUG9saWN5IOaJmOeuoeetlueVpeaLieWPlumVnOWDj+WSjOWGmeWFpeaXpeW/lw==",
+              "reason": "ECS Task Execution Role requires AmazonECSTaskExecutionRolePolicy managed policy to pull images and write logs",
             },
             {
               "id": "AwsSolutions-IAM5",
-              "is_reason_encoded": true,
-              "reason": "RUNTIFRhc2sgRXhlY3V0aW9uIFJvbGUg55qEIGVjcjpHZXRBdXRob3JpemF0aW9uVG9rZW4g5ZKMIGxvZ3M6Q3JlYXRlTG9nU3RyZWFtIOmcgOimgemAmumFjeespui1hOa6kA==",
+              "reason": "ECS Task Execution Role ecr:GetAuthorizationToken and logs:CreateLogStream require wildcard resources",
             },
             {
               "id": "AwsSolutions-IAM5",
-              "is_reason_encoded": true,
-              "reason": "U2VjcmV0cyBNYW5hZ2VyIGdyYW50UmVhZCDlkowgS01TIGdyYW50RGVjcnlwdCDnlJ/miJDnmoTnrZbnlaXljIXlkKvlv4XopoHnmoTpgJrphY3nrKYgKHNlY3JldHNtYW5hZ2VyOkdldFNlY3JldFZhbHVlKQ==",
+              "reason": "Secrets Manager grantRead and KMS grantDecrypt generate policies with necessary wildcards (secretsmanager:GetSecretValue)",
             },
             {
               "id": "AwsSolutions-ECS2",
-              "is_reason_encoded": true,
-              "reason": "RU5WX05BTUXjgIFEQVRBQkFTRV9IT1NU44CBREFUQUJBU0VfUE9SVCDkuLrpnZ7mlY/mhJ/phY3nva7pobnvvIzml6DpnIDpgJrov4cgU2VjcmV0cyBNYW5hZ2VyIOazqOWFpQ==",
+              "reason": "ENV_NAME, DATABASE_HOST, DATABASE_PORT are non-sensitive config; no need to inject via Secrets Manager",
             },
           ],
         },
@@ -1509,28 +1461,23 @@ exports[`Snapshot Tests DatabaseStack 快照匹配 1`] = `
           "rules_to_suppress": [
             {
               "id": "AwsSolutions-RDS10",
-              "is_reason_encoded": true,
-              "reason": "RGV2IOeOr+Wig+S4jeWQr+eUqOWIoOmZpOS/neaKpOS7peaWueS+v+W8gOWPkei/reS7ozsgUHJvZCDnjq/looPlt7LlkK/nlKg=",
+              "reason": "Deletion protection disabled in Dev for easy iteration; enabled in Prod",
             },
             {
               "id": "AwsSolutions-RDS11",
-              "is_reason_encoded": true,
-              "reason": "5L2/55So6buY6K6kIE15U1FMIOerr+WPoyAzMzA277yM5pWw5o2u5bqT5ZyoIFBSSVZBVEVfSVNPTEFURUQg5a2Q572R5Lit77yM56uv5Y+j5re35reG5pS255uK5pyJ6ZmQ",
+              "reason": "Using default MySQL port 3306; database is in PRIVATE_ISOLATED subnet, port obfuscation has limited benefit",
             },
             {
               "id": "AwsSolutions-RDS14",
-              "is_reason_encoded": true,
-              "reason": "QXVyb3JhIE15U1FMIEJhY2t0cmFjayDmmoLkuI3lkK/nlKjvvIzkvb/nlKjmoIflh4blpIfku73nrZbnlaUgKERldiA3IOWkqSAvIFByb2QgMzAg5aSpKQ==",
+              "reason": "Aurora MySQL Backtrack not enabled; using standard backup policy (Dev 7 days / Prod 30 days)",
             },
             {
               "id": "AwsSolutions-RDS16",
-              "is_reason_encoded": true,
-              "reason": "ZGIudDMuc21hbGwg5a6e5L6L57G75Z6L5LiN5pSv5oyBIFBlcmZvcm1hbmNlIEluc2lnaHRz77yM5ZCO57ut5Y2H57qn5a6e5L6L57G75Z6L5ZCO5ZCv55So",
+              "reason": "db.t3.small instance type does not support Performance Insights; will enable after instance upgrade",
             },
             {
               "id": "AwsSolutions-SMG4",
-              "is_reason_encoded": true,
-              "reason": "5pWw5o2u5bqT5Yet6K+BIFNlY3JldCDnmoToh6rliqjova7mjaLlsIblnKjlkI7nu63ov63ku6PkuK3phY3nva4gTGFtYmRhIOi9ruaNouWHveaVsA==",
+              "reason": "Database credentials Secret auto-rotation will be configured with Lambda rotation function in future iteration",
             },
           ],
         },
@@ -1583,28 +1530,23 @@ exports[`Snapshot Tests DatabaseStack 快照匹配 1`] = `
           "rules_to_suppress": [
             {
               "id": "AwsSolutions-RDS10",
-              "is_reason_encoded": true,
-              "reason": "RGV2IOeOr+Wig+S4jeWQr+eUqOWIoOmZpOS/neaKpOS7peaWueS+v+W8gOWPkei/reS7ozsgUHJvZCDnjq/looPlt7LlkK/nlKg=",
+              "reason": "Deletion protection disabled in Dev for easy iteration; enabled in Prod",
             },
             {
               "id": "AwsSolutions-RDS11",
-              "is_reason_encoded": true,
-              "reason": "5L2/55So6buY6K6kIE15U1FMIOerr+WPoyAzMzA277yM5pWw5o2u5bqT5ZyoIFBSSVZBVEVfSVNPTEFURUQg5a2Q572R5Lit77yM56uv5Y+j5re35reG5pS255uK5pyJ6ZmQ",
+              "reason": "Using default MySQL port 3306; database is in PRIVATE_ISOLATED subnet, port obfuscation has limited benefit",
             },
             {
               "id": "AwsSolutions-RDS14",
-              "is_reason_encoded": true,
-              "reason": "QXVyb3JhIE15U1FMIEJhY2t0cmFjayDmmoLkuI3lkK/nlKjvvIzkvb/nlKjmoIflh4blpIfku73nrZbnlaUgKERldiA3IOWkqSAvIFByb2QgMzAg5aSpKQ==",
+              "reason": "Aurora MySQL Backtrack not enabled; using standard backup policy (Dev 7 days / Prod 30 days)",
             },
             {
               "id": "AwsSolutions-RDS16",
-              "is_reason_encoded": true,
-              "reason": "ZGIudDMuc21hbGwg5a6e5L6L57G75Z6L5LiN5pSv5oyBIFBlcmZvcm1hbmNlIEluc2lnaHRz77yM5ZCO57ut5Y2H57qn5a6e5L6L57G75Z6L5ZCO5ZCv55So",
+              "reason": "db.t3.small instance type does not support Performance Insights; will enable after instance upgrade",
             },
             {
               "id": "AwsSolutions-SMG4",
-              "is_reason_encoded": true,
-              "reason": "5pWw5o2u5bqT5Yet6K+BIFNlY3JldCDnmoToh6rliqjova7mjaLlsIblnKjlkI7nu63ov63ku6PkuK3phY3nva4gTGFtYmRhIOi9ruaNouWHveaVsA==",
+              "reason": "Database credentials Secret auto-rotation will be configured with Lambda rotation function in future iteration",
             },
           ],
         },
@@ -1626,28 +1568,23 @@ exports[`Snapshot Tests DatabaseStack 快照匹配 1`] = `
           "rules_to_suppress": [
             {
               "id": "AwsSolutions-RDS10",
-              "is_reason_encoded": true,
-              "reason": "RGV2IOeOr+Wig+S4jeWQr+eUqOWIoOmZpOS/neaKpOS7peaWueS+v+W8gOWPkei/reS7ozsgUHJvZCDnjq/looPlt7LlkK/nlKg=",
+              "reason": "Deletion protection disabled in Dev for easy iteration; enabled in Prod",
             },
             {
               "id": "AwsSolutions-RDS11",
-              "is_reason_encoded": true,
-              "reason": "5L2/55So6buY6K6kIE15U1FMIOerr+WPoyAzMzA277yM5pWw5o2u5bqT5ZyoIFBSSVZBVEVfSVNPTEFURUQg5a2Q572R5Lit77yM56uv5Y+j5re35reG5pS255uK5pyJ6ZmQ",
+              "reason": "Using default MySQL port 3306; database is in PRIVATE_ISOLATED subnet, port obfuscation has limited benefit",
             },
             {
               "id": "AwsSolutions-RDS14",
-              "is_reason_encoded": true,
-              "reason": "QXVyb3JhIE15U1FMIEJhY2t0cmFjayDmmoLkuI3lkK/nlKjvvIzkvb/nlKjmoIflh4blpIfku73nrZbnlaUgKERldiA3IOWkqSAvIFByb2QgMzAg5aSpKQ==",
+              "reason": "Aurora MySQL Backtrack not enabled; using standard backup policy (Dev 7 days / Prod 30 days)",
             },
             {
               "id": "AwsSolutions-RDS16",
-              "is_reason_encoded": true,
-              "reason": "ZGIudDMuc21hbGwg5a6e5L6L57G75Z6L5LiN5pSv5oyBIFBlcmZvcm1hbmNlIEluc2lnaHRz77yM5ZCO57ut5Y2H57qn5a6e5L6L57G75Z6L5ZCO5ZCv55So",
+              "reason": "db.t3.small instance type does not support Performance Insights; will enable after instance upgrade",
             },
             {
               "id": "AwsSolutions-SMG4",
-              "is_reason_encoded": true,
-              "reason": "5pWw5o2u5bqT5Yet6K+BIFNlY3JldCDnmoToh6rliqjova7mjaLlsIblnKjlkI7nu63ov63ku6PkuK3phY3nva4gTGFtYmRhIOi9ruaNouWHveaVsA==",
+              "reason": "Database credentials Secret auto-rotation will be configured with Lambda rotation function in future iteration",
             },
           ],
         },
@@ -1675,28 +1612,23 @@ exports[`Snapshot Tests DatabaseStack 快照匹配 1`] = `
           "rules_to_suppress": [
             {
               "id": "AwsSolutions-RDS10",
-              "is_reason_encoded": true,
-              "reason": "RGV2IOeOr+Wig+S4jeWQr+eUqOWIoOmZpOS/neaKpOS7peaWueS+v+W8gOWPkei/reS7ozsgUHJvZCDnjq/looPlt7LlkK/nlKg=",
+              "reason": "Deletion protection disabled in Dev for easy iteration; enabled in Prod",
             },
             {
               "id": "AwsSolutions-RDS11",
-              "is_reason_encoded": true,
-              "reason": "5L2/55So6buY6K6kIE15U1FMIOerr+WPoyAzMzA277yM5pWw5o2u5bqT5ZyoIFBSSVZBVEVfSVNPTEFURUQg5a2Q572R5Lit77yM56uv5Y+j5re35reG5pS255uK5pyJ6ZmQ",
+              "reason": "Using default MySQL port 3306; database is in PRIVATE_ISOLATED subnet, port obfuscation has limited benefit",
             },
             {
               "id": "AwsSolutions-RDS14",
-              "is_reason_encoded": true,
-              "reason": "QXVyb3JhIE15U1FMIEJhY2t0cmFjayDmmoLkuI3lkK/nlKjvvIzkvb/nlKjmoIflh4blpIfku73nrZbnlaUgKERldiA3IOWkqSAvIFByb2QgMzAg5aSpKQ==",
+              "reason": "Aurora MySQL Backtrack not enabled; using standard backup policy (Dev 7 days / Prod 30 days)",
             },
             {
               "id": "AwsSolutions-RDS16",
-              "is_reason_encoded": true,
-              "reason": "ZGIudDMuc21hbGwg5a6e5L6L57G75Z6L5LiN5pSv5oyBIFBlcmZvcm1hbmNlIEluc2lnaHRz77yM5ZCO57ut5Y2H57qn5a6e5L6L57G75Z6L5ZCO5ZCv55So",
+              "reason": "db.t3.small instance type does not support Performance Insights; will enable after instance upgrade",
             },
             {
               "id": "AwsSolutions-SMG4",
-              "is_reason_encoded": true,
-              "reason": "5pWw5o2u5bqT5Yet6K+BIFNlY3JldCDnmoToh6rliqjova7mjaLlsIblnKjlkI7nu63ov63ku6PkuK3phY3nva4gTGFtYmRhIOi9ruaNouWHveaVsA==",
+              "reason": "Database credentials Secret auto-rotation will be configured with Lambda rotation function in future iteration",
             },
           ],
         },
@@ -1720,28 +1652,23 @@ exports[`Snapshot Tests DatabaseStack 快照匹配 1`] = `
           "rules_to_suppress": [
             {
               "id": "AwsSolutions-RDS10",
-              "is_reason_encoded": true,
-              "reason": "RGV2IOeOr+Wig+S4jeWQr+eUqOWIoOmZpOS/neaKpOS7peaWueS+v+W8gOWPkei/reS7ozsgUHJvZCDnjq/looPlt7LlkK/nlKg=",
+              "reason": "Deletion protection disabled in Dev for easy iteration; enabled in Prod",
             },
             {
               "id": "AwsSolutions-RDS11",
-              "is_reason_encoded": true,
-              "reason": "5L2/55So6buY6K6kIE15U1FMIOerr+WPoyAzMzA277yM5pWw5o2u5bqT5ZyoIFBSSVZBVEVfSVNPTEFURUQg5a2Q572R5Lit77yM56uv5Y+j5re35reG5pS255uK5pyJ6ZmQ",
+              "reason": "Using default MySQL port 3306; database is in PRIVATE_ISOLATED subnet, port obfuscation has limited benefit",
             },
             {
               "id": "AwsSolutions-RDS14",
-              "is_reason_encoded": true,
-              "reason": "QXVyb3JhIE15U1FMIEJhY2t0cmFjayDmmoLkuI3lkK/nlKjvvIzkvb/nlKjmoIflh4blpIfku73nrZbnlaUgKERldiA3IOWkqSAvIFByb2QgMzAg5aSpKQ==",
+              "reason": "Aurora MySQL Backtrack not enabled; using standard backup policy (Dev 7 days / Prod 30 days)",
             },
             {
               "id": "AwsSolutions-RDS16",
-              "is_reason_encoded": true,
-              "reason": "ZGIudDMuc21hbGwg5a6e5L6L57G75Z6L5LiN5pSv5oyBIFBlcmZvcm1hbmNlIEluc2lnaHRz77yM5ZCO57ut5Y2H57qn5a6e5L6L57G75Z6L5ZCO5ZCv55So",
+              "reason": "db.t3.small instance type does not support Performance Insights; will enable after instance upgrade",
             },
             {
               "id": "AwsSolutions-SMG4",
-              "is_reason_encoded": true,
-              "reason": "5pWw5o2u5bqT5Yet6K+BIFNlY3JldCDnmoToh6rliqjova7mjaLlsIblnKjlkI7nu63ov63ku6PkuK3phY3nva4gTGFtYmRhIOi9ruaNouWHveaVsA==",
+              "reason": "Database credentials Secret auto-rotation will be configured with Lambda rotation function in future iteration",
             },
           ],
         },

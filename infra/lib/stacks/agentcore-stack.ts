@@ -102,7 +102,7 @@ export class AgentCoreStack extends cdk.Stack {
       protocolConfiguration: GatewayProtocol.mcp({
         supportedVersions: [MCPProtocolVersion.MCP_2025_03_26],
         searchType: McpGatewaySearchType.SEMANTIC,
-        instructions: 'AI Agents Platform MCP Gateway - 提供统一工具接入入口',
+        instructions: 'AI Agents Platform MCP Gateway - Unified tool access entry point',
       }),
     });
 
@@ -134,7 +134,7 @@ export class AgentCoreStack extends cdk.Stack {
         {
           id: 'AwsSolutions-IAM5',
           reason:
-            'Bedrock InvokeModel 需要通配符资源以支持多模型调用; Runtime 执行角色由 L2 Construct 自动创建',
+            'Bedrock InvokeModel requires wildcard resources for multi-model invocation; Runtime execution role is auto-created by L2 Construct',
         },
       ],
       true,
@@ -145,19 +145,19 @@ export class AgentCoreStack extends cdk.Stack {
       [
         {
           id: 'AwsSolutions-IAM5',
-          reason: 'Gateway 服务角色由 L2 Construct 自动创建，通配符权限是 AgentCore 服务所需',
+          reason: 'Gateway service role is auto-created by L2 Construct; wildcard permissions are required by AgentCore service',
         },
         {
           id: 'AwsSolutions-COG1',
-          reason: 'Gateway 默认 Cognito User Pool 密码策略由 L2 Construct 管理',
+          reason: 'Gateway default Cognito User Pool password policy is managed by L2 Construct',
         },
         {
           id: 'AwsSolutions-COG2',
-          reason: 'Gateway 默认 Cognito User Pool 用于 M2M 认证 (Client Credentials)，无需 MFA',
+          reason: 'Gateway default Cognito User Pool is for M2M auth (Client Credentials); MFA not required',
         },
         {
           id: 'AwsSolutions-COG3',
-          reason: 'Gateway 默认 Cognito User Pool 用于 M2M 认证，不涉及用户交互',
+          reason: 'Gateway default Cognito User Pool is for M2M auth; no user interaction involved',
         },
       ],
       true,
@@ -166,7 +166,7 @@ export class AgentCoreStack extends cdk.Stack {
     NagSuppressions.addStackSuppressions(this, [
       {
         id: 'AwsSolutions-IAM4',
-        reason: 'AgentCore L2 Construct 内部使用 AWS 托管策略是该服务的最佳实践',
+        reason: 'AgentCore L2 Construct internally uses AWS managed policies as best practice for this service',
       },
     ]);
   }

@@ -59,19 +59,19 @@ export class DatabaseStack extends cdk.Stack {
       [
         {
           id: 'AwsSolutions-RDS10',
-          reason: 'Dev 环境不启用删除保护以方便开发迭代; Prod 环境已启用',
+          reason: 'Deletion protection disabled in Dev for easy iteration; enabled in Prod',
         },
         {
           id: 'AwsSolutions-RDS11',
-          reason: '使用默认 MySQL 端口 3306，数据库在 PRIVATE_ISOLATED 子网中，端口混淆收益有限',
+          reason: 'Using default MySQL port 3306; database is in PRIVATE_ISOLATED subnet, port obfuscation has limited benefit',
         },
         {
           id: 'AwsSolutions-RDS14',
-          reason: 'Aurora MySQL Backtrack 暂不启用，使用标准备份策略 (Dev 7 天 / Prod 30 天)',
+          reason: 'Aurora MySQL Backtrack not enabled; using standard backup policy (Dev 7 days / Prod 30 days)',
         },
         {
           id: 'AwsSolutions-RDS16',
-          reason: 'db.t3.small 实例类型不支持 Performance Insights，后续升级实例类型后启用',
+          reason: 'db.t3.small instance type does not support Performance Insights; will enable after instance upgrade',
         },
       ],
       true,
@@ -82,7 +82,7 @@ export class DatabaseStack extends cdk.Stack {
       [
         {
           id: 'AwsSolutions-SMG4',
-          reason: '数据库凭证 Secret 的自动轮换将在后续迭代中配置 Lambda 轮换函数',
+          reason: 'Database credentials Secret auto-rotation will be configured with Lambda rotation function in future iteration',
         },
       ],
       true,
