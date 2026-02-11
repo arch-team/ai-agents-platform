@@ -4,9 +4,11 @@ import {
   NetworkStack,
   SecurityStack,
   DatabaseStack,
+  ComputeStack,
   AgentCoreStack,
 } from '../../lib/stacks';
 import {
+  createCrossStackComputeDependencies,
   createCrossStackDbDependencies,
   createVpcDependency,
   TEST_ENV,
@@ -40,13 +42,30 @@ describe('Snapshot Tests', () => {
 
   it('DatabaseStack 快照匹配', () => {
     const app = new cdk.App();
-    const { vpc, dbSecurityGroup, encryptionKey } =
-      createCrossStackDbDependencies(app, TEST_ENV);
+    const { vpc, dbSecurityGroup, encryptionKey } = createCrossStackDbDependencies(app, TEST_ENV);
 
     const stack = new DatabaseStack(app, 'TestDatabaseStack', {
       env: TEST_ENV,
       vpc,
       dbSecurityGroup,
+      encryptionKey,
+      envName: 'dev',
+    });
+
+    expect(Template.fromStack(stack).toJSON()).toMatchSnapshot();
+  });
+
+  it('ComputeStack 快照匹配', () => {
+    const app = new cdk.App();
+    const { vpc, dbSecurityGroup, encryptionKey, databaseSecret, databaseEndpoint } =
+      createCrossStackComputeDependencies(app, TEST_ENV);
+
+    const stack = new ComputeStack(app, 'TestComputeStack', {
+      env: TEST_ENV,
+      vpc,
+      dbSecurityGroup,
+      databaseSecret,
+      databaseEndpoint,
       encryptionKey,
       envName: 'dev',
     });

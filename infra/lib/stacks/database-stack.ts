@@ -44,11 +44,11 @@ export class DatabaseStack extends cdk.Stack {
     // Outputs
     new cdk.CfnOutput(this, 'ClusterEndpoint', {
       value: auroraConstruct.clusterEndpoint.hostname,
-      description: 'Aurora 集群端点',
+      description: 'Aurora cluster endpoint',
     });
     new cdk.CfnOutput(this, 'SecretArn', {
       value: auroraConstruct.secret.secretArn,
-      description: '数据库凭证 Secret ARN',
+      description: 'Database credentials Secret ARN',
     });
   }
 

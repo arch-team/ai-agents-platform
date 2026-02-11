@@ -28,13 +28,13 @@ describe('DatabaseStack', () => {
 
   it('应输出 ClusterEndpoint', () => {
     template.hasOutput('ClusterEndpoint', {
-      Description: 'Aurora 集群端点',
+      Description: 'Aurora cluster endpoint',
     });
   });
 
   it('应输出 SecretArn', () => {
     template.hasOutput('SecretArn', {
-      Description: '数据库凭证 Secret ARN',
+      Description: 'Database credentials Secret ARN',
     });
   });
 

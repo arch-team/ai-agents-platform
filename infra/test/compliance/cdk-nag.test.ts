@@ -6,8 +6,10 @@ import {
   SecurityStack,
   DatabaseStack,
   AgentCoreStack,
+  ComputeStack,
 } from '../../lib/stacks';
 import {
+  createCrossStackComputeDependencies,
   createCrossStackDbDependencies,
   createVpcDependency,
   TEST_ENV,
@@ -60,8 +62,7 @@ describe('CDK Nag 合规测试', () => {
 
   it('DatabaseStack 应通过 AWS Solutions checks', () => {
     const app = new cdk.App();
-    const { vpc, dbSecurityGroup, encryptionKey } =
-      createCrossStackDbDependencies(app, TEST_ENV);
+    const { vpc, dbSecurityGroup, encryptionKey } = createCrossStackDbDependencies(app, TEST_ENV);
 
     const stack = new DatabaseStack(app, 'TestDatabaseStack', {
       env: TEST_ENV,
@@ -98,6 +99,27 @@ describe('CDK Nag 合规测试', () => {
     Aspects.of(stack).add(new AwsSolutionsChecks({ verbose: true }));
 
     // 注意: IAM4, IAM5, COG1, COG2, COG3 的抑制已在 AgentCoreStack 内定义
+    expectNoNagErrors(app, stack);
+  });
+
+  it('ComputeStack 应通过 AWS Solutions checks', () => {
+    const app = new cdk.App();
+    const { vpc, dbSecurityGroup, encryptionKey, databaseSecret, databaseEndpoint } =
+      createCrossStackComputeDependencies(app, TEST_ENV);
+
+    const stack = new ComputeStack(app, 'TestComputeStack', {
+      env: TEST_ENV,
+      vpc,
+      dbSecurityGroup,
+      databaseSecret,
+      databaseEndpoint,
+      encryptionKey,
+      envName: 'dev',
+    });
+
+    Aspects.of(stack).add(new AwsSolutionsChecks({ verbose: true }));
+
+    // 注意: ELB1, ELB2, EC23, IAM4, IAM5, ECS2 的抑制已在 ComputeStack 内定义
     expectNoNagErrors(app, stack);
   });
 });

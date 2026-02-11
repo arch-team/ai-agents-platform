@@ -17,13 +17,13 @@ describe('SecurityGroupsConstruct', () => {
 
   it('应创建 API 服务安全组', () => {
     template.hasResourceProperties('AWS::EC2::SecurityGroup', {
-      GroupDescription: 'API 服务安全组',
+      GroupDescription: 'API service security group',
     });
   });
 
   it('应创建数据库安全组', () => {
     template.hasResourceProperties('AWS::EC2::SecurityGroup', {
-      GroupDescription: '数据库安全组 - 仅允许 API 服务访问',
+      GroupDescription: 'Database security group - API service access only',
     });
   });
 
@@ -36,7 +36,7 @@ describe('SecurityGroupsConstruct', () => {
     // enablePublicIngress 默认为 false，不应有 0.0.0.0/0 入站规则
     const sgResources = template.findResources('AWS::EC2::SecurityGroup', {
       Properties: {
-        GroupDescription: 'API 服务安全组',
+        GroupDescription: 'API service security group',
       },
     });
     const apiSg = Object.values(sgResources)[0];
@@ -51,7 +51,7 @@ describe('SecurityGroupsConstruct', () => {
     const publicTemplate = Template.fromStack(stack);
 
     publicTemplate.hasResourceProperties('AWS::EC2::SecurityGroup', {
-      GroupDescription: 'API 服务安全组',
+      GroupDescription: 'API service security group',
       SecurityGroupIngress: Match.arrayWith([
         Match.objectLike({
           IpProtocol: 'tcp',
@@ -76,7 +76,7 @@ describe('SecurityGroupsConstruct', () => {
     // allowAllOutbound: false 意味着 CDK 不会添加默认的 0.0.0.0/0 出站规则
     // 验证 DB SG 的 SecurityGroupEgress 不包含 0.0.0.0/0 的全端口出站规则
     template.hasResourceProperties('AWS::EC2::SecurityGroup', {
-      GroupDescription: '数据库安全组 - 仅允许 API 服务访问',
+      GroupDescription: 'Database security group - API service access only',
       SecurityGroupEgress: Match.arrayWith([
         Match.objectLike({
           CidrIp: '255.255.255.255/32',

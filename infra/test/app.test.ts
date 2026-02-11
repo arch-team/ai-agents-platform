@@ -1,10 +1,5 @@
 import * as cdk from 'aws-cdk-lib';
-import {
-  NetworkStack,
-  SecurityStack,
-  DatabaseStack,
-  AgentCoreStack,
-} from '../lib/stacks';
+import { NetworkStack, SecurityStack, DatabaseStack, AgentCoreStack } from '../lib/stacks';
 import { TEST_ENV, TEST_VPC_CIDR } from './helpers/test-utils';
 
 /** 创建完整的四层 Stack 组合 (Network → Security → Database, Network → AgentCore) */
@@ -41,8 +36,7 @@ function createStackGroup(app: cdk.App) {
 describe('CDK App', () => {
   it('应能创建四个 Stack', () => {
     const app = new cdk.App();
-    const { networkStack, securityStack, databaseStack, agentCoreStack } =
-      createStackGroup(app);
+    const { networkStack, securityStack, databaseStack, agentCoreStack } = createStackGroup(app);
 
     expect(networkStack).toBeDefined();
     expect(securityStack).toBeDefined();
@@ -52,8 +46,7 @@ describe('CDK App', () => {
 
   it('Stack 依赖关系应正确', () => {
     const app = new cdk.App();
-    const { networkStack, securityStack, databaseStack, agentCoreStack } =
-      createStackGroup(app);
+    const { networkStack, securityStack, databaseStack, agentCoreStack } = createStackGroup(app);
 
     securityStack.addDependency(networkStack);
     databaseStack.addDependency(networkStack);

@@ -8,6 +8,7 @@ import {
   NetworkStack,
   SecurityStack,
   DatabaseStack,
+  ComputeStack,
   AgentCoreStack,
 } from '../lib/stacks';
 
@@ -50,15 +51,24 @@ const databaseStack = new DatabaseStack(app, `Database-${envConfig.envName}`, {
 databaseStack.addDependency(networkStack);
 databaseStack.addDependency(securityStack);
 
-const agentCoreStack = new AgentCoreStack(
-  app,
-  `AgentCore-${envConfig.envName}`,
-  {
-    env: cdkEnv,
-    vpc: networkStack.vpc,
-    envName: envConfig.envName,
-  },
-);
+const computeStack = new ComputeStack(app, `Compute-${envConfig.envName}`, {
+  env: cdkEnv,
+  vpc: networkStack.vpc,
+  dbSecurityGroup: securityStack.dbSecurityGroup,
+  databaseSecret: databaseStack.dbSecret,
+  databaseEndpoint: databaseStack.cluster.clusterEndpoint.hostname,
+  encryptionKey: securityStack.encryptionKey,
+  envName: envConfig.envName,
+});
+computeStack.addDependency(networkStack);
+computeStack.addDependency(securityStack);
+computeStack.addDependency(databaseStack);
+
+const agentCoreStack = new AgentCoreStack(app, `AgentCore-${envConfig.envName}`, {
+  env: cdkEnv,
+  vpc: networkStack.vpc,
+  envName: envConfig.envName,
+});
 agentCoreStack.addDependency(networkStack);
 
 app.synth();

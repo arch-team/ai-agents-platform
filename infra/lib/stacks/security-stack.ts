@@ -50,7 +50,7 @@ export class SecurityStack extends cdk.Stack {
     // Outputs
     new cdk.CfnOutput(this, 'EncryptionKeyArn', {
       value: this.encryptionKey.keyArn,
-      description: 'KMS 加密密钥 ARN',
+      description: 'KMS encryption key ARN',
     });
   }
 }

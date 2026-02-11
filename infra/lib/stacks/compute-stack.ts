@@ -1,0 +1,179 @@
+import * as path from 'path';
+import * as cdk from 'aws-cdk-lib';
+import * as ec2 from 'aws-cdk-lib/aws-ec2';
+import * as ecs from 'aws-cdk-lib/aws-ecs';
+import * as kms from 'aws-cdk-lib/aws-kms';
+import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
+import { NagSuppressions } from 'cdk-nag';
+import { Construct } from 'constructs';
+import type { BaseStackProps } from '../config';
+import { AlbConstruct } from '../constructs/alb';
+import { EcsServiceConstruct } from '../constructs/ecs';
+
+export interface ComputeStackProps extends BaseStackProps {
+  /** ECS 服务所在的 VPC */
+  readonly vpc: ec2.IVpc;
+  /** 数据库安全组 — 用于添加 ECS → DB 入站规则 */
+  readonly dbSecurityGroup: ec2.ISecurityGroup;
+  /** 数据库凭证 Secret */
+  readonly databaseSecret: secretsmanager.ISecret;
+  /** 数据库连接端点 */
+  readonly databaseEndpoint: string;
+  /** KMS 加密密钥 */
+  readonly encryptionKey: kms.IKey;
+}
+
+/**
+ * ComputeStack - 计算基础设施栈。
+ * @remarks 组合 ALB + ECS Fargate，部署后端 FastAPI 服务。通过 Props 接收 VPC、数据库和安全依赖。
+ */
+export class ComputeStack extends cdk.Stack {
+  /** ALB DNS 名称 */
+  public readonly albDnsName: string;
+  /** ECS Fargate 服务 */
+  public readonly service: ecs.FargateService;
+
+  constructor(scope: Construct, id: string, props: ComputeStackProps) {
+    super(scope, id, props);
+
+    const { vpc, dbSecurityGroup, databaseSecret, databaseEndpoint, encryptionKey, envName } =
+      props;
+
+    // ALB Construct
+    const albConstruct = new AlbConstruct(this, 'Alb', {
+      vpc,
+      envName,
+    });
+
+    // ECS Service Construct
+    const ecsConstruct = new EcsServiceConstruct(this, 'Ecs', {
+      vpc,
+      albSecurityGroup: albConstruct.albSecurityGroup,
+      envName,
+      containerImage: ecs.ContainerImage.fromAsset(path.join(__dirname, '../../..', 'backend')),
+      environment: {
+        ENV_NAME: envName,
+        DATABASE_HOST: databaseEndpoint,
+        DATABASE_PORT: '3306',
+      },
+      secrets: {
+        DATABASE_SECRET: ecs.Secret.fromSecretsManager(databaseSecret),
+      },
+    });
+
+    // 注册 ECS 服务到 ALB Target Group
+    albConstruct.targetGroup.addTarget(ecsConstruct.service);
+
+    // 允许 ECS 服务访问数据库 (3306)
+    // 使用 CfnSecurityGroupIngress 避免跨 Stack 循环依赖
+    new ec2.CfnSecurityGroupIngress(this, 'EcsToDbIngress', {
+      groupId: dbSecurityGroup.securityGroupId,
+      sourceSecurityGroupId: ecsConstruct.serviceSecurityGroup.securityGroupId,
+      ipProtocol: 'tcp',
+      fromPort: 3306,
+      toPort: 3306,
+      description: 'Allow ECS service to access Aurora MySQL',
+    });
+
+    // 授权 ECS Task 读取数据库 Secret
+    databaseSecret.grantRead(ecsConstruct.service.taskDefinition.taskRole);
+
+    // 授权 ECS Task 使用 KMS 解密
+    encryptionKey.grantDecrypt(ecsConstruct.service.taskDefinition.taskRole);
+
+    this.albDnsName = albConstruct.alb.loadBalancerDnsName;
+    this.service = ecsConstruct.service;
+
+    // CDK Nag 抑制
+    this.suppressNagRules(albConstruct, ecsConstruct);
+
+    // Outputs
+    new cdk.CfnOutput(this, 'AlbDnsName', {
+      value: albConstruct.alb.loadBalancerDnsName,
+      description: 'ALB DNS name',
+    });
+    new cdk.CfnOutput(this, 'EcsClusterName', {
+      value: ecsConstruct.cluster.clusterName,
+      description: 'ECS cluster name',
+    });
+    new cdk.CfnOutput(this, 'ServiceName', {
+      value: ecsConstruct.service.serviceName,
+      description: 'ECS service name',
+    });
+  }
+
+  /** CDK Nag 合规规则抑制 — ALB 和 ECS 相关安全规则的合理豁免 */
+  private suppressNagRules(albConstruct: AlbConstruct, ecsConstruct: EcsServiceConstruct): void {
+    // ALB: 未启用访问日志 (Dev 环境不需要)
+    NagSuppressions.addResourceSuppressions(albConstruct.alb, [
+      {
+        id: 'AwsSolutions-ELB2',
+        reason: 'Dev 环境暂不启用 ALB 访问日志，后续 Prod 环境配置 S3 访问日志桶',
+      },
+    ]);
+
+    // ALB: HTTP 而非 HTTPS (Dev 环境无域名/证书)
+    NagSuppressions.addResourceSuppressions(albConstruct.httpListener, [
+      {
+        id: 'AwsSolutions-ELB1',
+        reason: 'Dev 环境使用 HTTP (端口 80)，Prod 环境将配置 HTTPS + TLS 证书',
+      },
+    ]);
+
+    // ECS Task Execution Role 使用 AWS 托管策略
+    NagSuppressions.addResourceSuppressions(
+      ecsConstruct.service.taskDefinition,
+      [
+        {
+          id: 'AwsSolutions-IAM4',
+          reason:
+            'ECS Task Execution Role 需要 AmazonECSTaskExecutionRolePolicy 托管策略拉取镜像和写入日志',
+        },
+        {
+          id: 'AwsSolutions-IAM5',
+          reason:
+            'ECS Task Execution Role 的 ecr:GetAuthorizationToken 和 logs:CreateLogStream 需要通配符资源',
+        },
+      ],
+      true,
+    );
+
+    // ECS Task Role 的 Secrets Manager 和 KMS 权限
+    NagSuppressions.addResourceSuppressions(
+      ecsConstruct.service.taskDefinition.taskRole,
+      [
+        {
+          id: 'AwsSolutions-IAM5',
+          reason:
+            'Secrets Manager grantRead 和 KMS grantDecrypt 生成的策略包含必要的通配符 (secretsmanager:GetSecretValue)',
+        },
+      ],
+      true,
+    );
+
+    // ALB 安全组允许公网入站 (applyToChildren 确保覆盖底层 CfnResource)
+    NagSuppressions.addResourceSuppressions(
+      albConstruct.albSecurityGroup,
+      [
+        {
+          id: 'AwsSolutions-EC23',
+          reason: 'ALB 面向公网，需要允许 0.0.0.0/0 的 HTTP 入站流量',
+        },
+      ],
+      true,
+    );
+
+    // ECS Task Definition 使用明文环境变量 (非敏感配置)
+    NagSuppressions.addResourceSuppressions(
+      ecsConstruct.service.taskDefinition,
+      [
+        {
+          id: 'AwsSolutions-ECS2',
+          reason:
+            'ENV_NAME、DATABASE_HOST、DATABASE_PORT 为非敏感配置项，无需通过 Secrets Manager 注入',
+        },
+      ],
+      true,
+    );
+  }
+}

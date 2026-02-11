@@ -26,7 +26,7 @@ export class SecurityGroupsConstruct extends Construct {
     // TODO: 后续创建 ALB 后，收窄出站规则为仅允许访问必要的 AWS 服务端点
     this.apiSecurityGroup = new ec2.SecurityGroup(this, 'ApiSg', {
       vpc,
-      description: 'API 服务安全组',
+      description: 'API service security group',
       allowAllOutbound: true,
     });
 
@@ -36,20 +36,20 @@ export class SecurityGroupsConstruct extends Construct {
       this.apiSecurityGroup.addIngressRule(
         ec2.Peer.anyIpv4(),
         ec2.Port.tcp(443),
-        '允许 HTTPS 入站',
+        'Allow HTTPS ingress',
       );
     }
 
     // 数据库安全组 - 仅允许 API 服务访问
     this.dbSecurityGroup = new ec2.SecurityGroup(this, 'DbSg', {
       vpc,
-      description: '数据库安全组 - 仅允许 API 服务访问',
+      description: 'Database security group - API service access only',
       allowAllOutbound: false,
     });
     this.dbSecurityGroup.addIngressRule(
       this.apiSecurityGroup,
       ec2.Port.tcp(3306),
-      '允许 API 服务访问 MySQL',
+      'Allow API service to access MySQL',
     );
   }
 }

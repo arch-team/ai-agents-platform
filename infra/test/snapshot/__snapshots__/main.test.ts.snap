@@ -15,7 +15,7 @@ exports[`Snapshot Tests AgentCoreStack 快照匹配 1`] = `
   },
   "Outputs": {
     "EcrRepositoryUri": {
-      "Description": "Agent 容器镜像仓库 URI",
+      "Description": "Agent container image repository URI",
       "Value": {
         "Fn::Join": [
           "",
@@ -100,7 +100,7 @@ exports[`Snapshot Tests AgentCoreStack 快照匹配 1`] = `
           "ScanOnPush": true,
         },
         "LifecyclePolicy": {
-          "LifecyclePolicyText": "{"rules":[{"rulePriority":1,"description":"最多保留 10 个镜像","selection":{"tagStatus":"any","countType":"imageCountMoreThan","countNumber":10},"action":{"type":"expire"}}]}",
+          "LifecyclePolicyText": "{"rules":[{"rulePriority":1,"description":"Keep max 10 images","selection":{"tagStatus":"any","countType":"imageCountMoreThan","countNumber":10},"action":{"type":"expire"}}]}",
         },
         "RepositoryName": "ai-agents-platform-agent-dev",
       },
@@ -146,7 +146,7 @@ exports[`Snapshot Tests AgentCoreStack 快照匹配 1`] = `
               "Fn::Join": [
                 "",
                 [
-                  "https://cognito-idp.ap-northeast-1.amazonaws.com/",
+                  "https://cognito-idp.us-east-1.amazonaws.com/",
                   {
                     "Ref": "AgentGatewayUserPoolBFAAC7BD",
                   },
@@ -157,7 +157,7 @@ exports[`Snapshot Tests AgentCoreStack 快照匹配 1`] = `
           },
         },
         "AuthorizerType": "CUSTOM_JWT",
-        "Description": "AI Agents Platform - dev 环境 MCP Gateway",
+        "Description": "AI Agents Platform - dev MCP Gateway",
         "Name": "ai-agents-platform-gateway-dev",
         "ProtocolConfiguration": {
           "Mcp": {
@@ -227,7 +227,7 @@ exports[`Snapshot Tests AgentCoreStack 快照匹配 1`] = `
                         {
                           "Ref": "AWS::Partition",
                         },
-                        ":bedrock-agentcore:ap-northeast-1:000000000000:gateway/ai-agents-platform-gateway-dev*",
+                        ":bedrock-agentcore:us-east-1:000000000000:gateway/ai-agents-platform-gateway-dev*",
                       ],
                     ],
                   },
@@ -526,7 +526,7 @@ exports[`Snapshot Tests AgentCoreStack 快照匹配 1`] = `
           },
         },
         "AgentRuntimeName": "ai_agents_platform_dev",
-        "Description": "AI Agents Platform - dev 环境 Agent Runtime",
+        "Description": "AI Agents Platform - dev Agent Runtime",
         "EnvironmentVariables": {
           "ENV_NAME": "dev",
           "PROJECT_NAME": "ai-agents-platform",
@@ -625,7 +625,7 @@ exports[`Snapshot Tests AgentCoreStack 快照匹配 1`] = `
                     {
                       "Ref": "AWS::Partition",
                     },
-                    ":logs:ap-northeast-1:000000000000:log-group:/aws/bedrock-agentcore/runtimes/*",
+                    ":logs:us-east-1:000000000000:log-group:/aws/bedrock-agentcore/runtimes/*",
                   ],
                 ],
               },
@@ -642,7 +642,7 @@ exports[`Snapshot Tests AgentCoreStack 快照匹配 1`] = `
                     {
                       "Ref": "AWS::Partition",
                     },
-                    ":logs:ap-northeast-1:000000000000:log-group:*",
+                    ":logs:us-east-1:000000000000:log-group:*",
                   ],
                 ],
               },
@@ -662,7 +662,7 @@ exports[`Snapshot Tests AgentCoreStack 快照匹配 1`] = `
                     {
                       "Ref": "AWS::Partition",
                     },
-                    ":logs:ap-northeast-1:000000000000:log-group:/aws/bedrock-agentcore/runtimes/*:log-stream:*",
+                    ":logs:us-east-1:000000000000:log-group:/aws/bedrock-agentcore/runtimes/*:log-stream:*",
                   ],
                 ],
               },
@@ -706,7 +706,7 @@ exports[`Snapshot Tests AgentCoreStack 快照匹配 1`] = `
                       {
                         "Ref": "AWS::Partition",
                       },
-                      ":bedrock-agentcore:ap-northeast-1:000000000000:workload-identity-directory/default",
+                      ":bedrock-agentcore:us-east-1:000000000000:workload-identity-directory/default",
                     ],
                   ],
                 },
@@ -718,7 +718,7 @@ exports[`Snapshot Tests AgentCoreStack 快照匹配 1`] = `
                       {
                         "Ref": "AWS::Partition",
                       },
-                      ":bedrock-agentcore:ap-northeast-1:000000000000:workload-identity-directory/default/workload-identity/*",
+                      ":bedrock-agentcore:us-east-1:000000000000:workload-identity-directory/default/workload-identity/*",
                     ],
                   ],
                 },
@@ -812,11 +812,677 @@ exports[`Snapshot Tests AgentCoreStack 快照匹配 1`] = `
 }
 `;
 
+exports[`Snapshot Tests ComputeStack 快照匹配 1`] = `
+{
+  "Outputs": {
+    "AlbDnsName": {
+      "Description": "ALB DNS name",
+      "Value": {
+        "Fn::GetAtt": [
+          "Alb6F14D334",
+          "DNSName",
+        ],
+      },
+    },
+    "EcsClusterName": {
+      "Description": "ECS cluster name",
+      "Value": {
+        "Ref": "EcsClusterEAC0C105",
+      },
+    },
+    "ServiceName": {
+      "Description": "ECS service name",
+      "Value": {
+        "Fn::GetAtt": [
+          "EcsService5196398A",
+          "Name",
+        ],
+      },
+    },
+  },
+  "Parameters": {
+    "BootstrapVersion": {
+      "Default": "/cdk-bootstrap/hnb659fds/version",
+      "Description": "Version of the CDK Bootstrap resources in this environment, automatically retrieved from SSM Parameter Store. [cdk:skip]",
+      "Type": "AWS::SSM::Parameter::Value<String>",
+    },
+  },
+  "Resources": {
+    "Alb6F14D334": {
+      "Metadata": {
+        "cdk_nag": {
+          "rules_to_suppress": [
+            {
+              "id": "AwsSolutions-ELB2",
+              "is_reason_encoded": true,
+              "reason": "RGV2IOeOr+Wig+aaguS4jeWQr+eUqCBBTEIg6K6/6Zeu5pel5b+X77yM5ZCO57utIFByb2Qg546v5aKD6YWN572uIFMzIOiuv+mXruaXpeW/l+ahtg==",
+            },
+          ],
+        },
+      },
+      "Properties": {
+        "LoadBalancerAttributes": [
+          {
+            "Key": "deletion_protection.enabled",
+            "Value": "false",
+          },
+        ],
+        "Name": "ai-agents-dev",
+        "Scheme": "internet-facing",
+        "SecurityGroups": [
+          {
+            "Fn::GetAtt": [
+              "AlbAlbSg6E384B2D",
+              "GroupId",
+            ],
+          },
+        ],
+        "Subnets": [
+          {
+            "Fn::ImportValue": "DepsStack:ExportsOutputRefTestVpcPublicSubnet1SubnetA7DB1EDF095592DF",
+          },
+          {
+            "Fn::ImportValue": "DepsStack:ExportsOutputRefTestVpcPublicSubnet2Subnet80A14523FD2CDFFC",
+          },
+          {
+            "Fn::ImportValue": "DepsStack:ExportsOutputRefTestVpcPublicSubnet3SubnetACF816F1A74C3778",
+          },
+        ],
+        "Type": "application",
+      },
+      "Type": "AWS::ElasticLoadBalancingV2::LoadBalancer",
+    },
+    "AlbAlbSg6E384B2D": {
+      "Metadata": {
+        "cdk_nag": {
+          "rules_to_suppress": [
+            {
+              "id": "AwsSolutions-EC23",
+              "is_reason_encoded": true,
+              "reason": "QUxCIOmdouWQkeWFrOe9ke+8jOmcgOimgeWFgeiuuCAwLjAuMC4wLzAg55qEIEhUVFAg5YWl56uZ5rWB6YeP",
+            },
+          ],
+        },
+      },
+      "Properties": {
+        "GroupDescription": "ALB security group - public HTTP ingress",
+        "SecurityGroupEgress": [
+          {
+            "CidrIp": "0.0.0.0/0",
+            "Description": "Allow all outbound traffic by default",
+            "IpProtocol": "-1",
+          },
+        ],
+        "SecurityGroupIngress": [
+          {
+            "CidrIp": "0.0.0.0/0",
+            "Description": "允许公网 HTTP 入站",
+            "FromPort": 80,
+            "IpProtocol": "tcp",
+            "ToPort": 80,
+          },
+        ],
+        "VpcId": {
+          "Fn::ImportValue": "DepsStack:ExportsOutputRefTestVpcE77CE67811D13B85",
+        },
+      },
+      "Type": "AWS::EC2::SecurityGroup",
+    },
+    "AlbHttpListenerC9825CF4": {
+      "Metadata": {
+        "cdk_nag": {
+          "rules_to_suppress": [
+            {
+              "id": "AwsSolutions-ELB1",
+              "is_reason_encoded": true,
+              "reason": "RGV2IOeOr+Wig+S9v+eUqCBIVFRQICjnq6/lj6MgODAp77yMUHJvZCDnjq/looPlsIbphY3nva4gSFRUUFMgKyBUTFMg6K+B5Lmm",
+            },
+          ],
+        },
+      },
+      "Properties": {
+        "DefaultActions": [
+          {
+            "TargetGroupArn": {
+              "Ref": "AlbTargetGroup3E290A92",
+            },
+            "Type": "forward",
+          },
+        ],
+        "LoadBalancerArn": {
+          "Ref": "Alb6F14D334",
+        },
+        "Port": 80,
+        "Protocol": "HTTP",
+      },
+      "Type": "AWS::ElasticLoadBalancingV2::Listener",
+    },
+    "AlbTargetGroup3E290A92": {
+      "Properties": {
+        "HealthCheckIntervalSeconds": 30,
+        "HealthCheckPath": "/health",
+        "HealthCheckTimeoutSeconds": 5,
+        "HealthyThresholdCount": 2,
+        "Matcher": {
+          "HttpCode": "200",
+        },
+        "Port": 8000,
+        "Protocol": "HTTP",
+        "TargetGroupAttributes": [
+          {
+            "Key": "stickiness.enabled",
+            "Value": "false",
+          },
+        ],
+        "TargetType": "ip",
+        "UnhealthyThresholdCount": 3,
+        "VpcId": {
+          "Fn::ImportValue": "DepsStack:ExportsOutputRefTestVpcE77CE67811D13B85",
+        },
+      },
+      "Type": "AWS::ElasticLoadBalancingV2::TargetGroup",
+    },
+    "EcsClusterEAC0C105": {
+      "Properties": {
+        "ClusterName": "ai-agents-dev",
+        "ClusterSettings": [
+          {
+            "Name": "containerInsights",
+            "Value": "enabled",
+          },
+        ],
+      },
+      "Type": "AWS::ECS::Cluster",
+    },
+    "EcsLogGroupAD27A916": {
+      "DeletionPolicy": "Delete",
+      "Properties": {
+        "LogGroupName": "/ecs/ai-agents-platform/dev",
+        "RetentionInDays": 7,
+      },
+      "Type": "AWS::Logs::LogGroup",
+      "UpdateReplacePolicy": "Delete",
+    },
+    "EcsService5196398A": {
+      "DependsOn": [
+        "AlbHttpListenerC9825CF4",
+        "EcsTaskDefTaskRoleDefaultPolicy65386597",
+        "EcsTaskDefTaskRoleB35B9A53",
+      ],
+      "Properties": {
+        "Cluster": {
+          "Ref": "EcsClusterEAC0C105",
+        },
+        "DeploymentConfiguration": {
+          "Alarms": {
+            "AlarmNames": [],
+            "Enable": false,
+            "Rollback": false,
+          },
+          "MaximumPercent": 200,
+          "MinimumHealthyPercent": 50,
+        },
+        "DesiredCount": 1,
+        "EnableECSManagedTags": false,
+        "HealthCheckGracePeriodSeconds": 60,
+        "LaunchType": "FARGATE",
+        "LoadBalancers": [
+          {
+            "ContainerName": "api",
+            "ContainerPort": 8000,
+            "TargetGroupArn": {
+              "Ref": "AlbTargetGroup3E290A92",
+            },
+          },
+        ],
+        "NetworkConfiguration": {
+          "AwsvpcConfiguration": {
+            "AssignPublicIp": "DISABLED",
+            "SecurityGroups": [
+              {
+                "Fn::GetAtt": [
+                  "EcsServiceSg09379F9C",
+                  "GroupId",
+                ],
+              },
+            ],
+            "Subnets": [
+              {
+                "Fn::ImportValue": "DepsStack:ExportsOutputRefTestVpcPrivateSubnet1SubnetCC65D7717F2BDF55",
+              },
+              {
+                "Fn::ImportValue": "DepsStack:ExportsOutputRefTestVpcPrivateSubnet2SubnetDE0C64A2F7B9B6B1",
+              },
+              {
+                "Fn::ImportValue": "DepsStack:ExportsOutputRefTestVpcPrivateSubnet3Subnet2311D32FD57B696C",
+              },
+            ],
+          },
+        },
+        "TaskDefinition": {
+          "Ref": "EcsTaskDefDB85D591",
+        },
+      },
+      "Type": "AWS::ECS::Service",
+    },
+    "EcsServiceSg09379F9C": {
+      "Properties": {
+        "GroupDescription": "ECS Fargate service security group - ALB ingress only",
+        "SecurityGroupEgress": [
+          {
+            "CidrIp": "0.0.0.0/0",
+            "Description": "Allow all outbound traffic by default",
+            "IpProtocol": "-1",
+          },
+        ],
+        "VpcId": {
+          "Fn::ImportValue": "DepsStack:ExportsOutputRefTestVpcE77CE67811D13B85",
+        },
+      },
+      "Type": "AWS::EC2::SecurityGroup",
+    },
+    "EcsServiceSgfromTestComputeStackAlbAlbSgEC54E79F800056A11E9A": {
+      "Properties": {
+        "Description": "Allow ALB to access container port",
+        "FromPort": 8000,
+        "GroupId": {
+          "Fn::GetAtt": [
+            "EcsServiceSg09379F9C",
+            "GroupId",
+          ],
+        },
+        "IpProtocol": "tcp",
+        "SourceSecurityGroupId": {
+          "Fn::GetAtt": [
+            "AlbAlbSg6E384B2D",
+            "GroupId",
+          ],
+        },
+        "ToPort": 8000,
+      },
+      "Type": "AWS::EC2::SecurityGroupIngress",
+    },
+    "EcsTaskDefDB85D591": {
+      "Metadata": {
+        "cdk_nag": {
+          "rules_to_suppress": [
+            {
+              "id": "AwsSolutions-IAM4",
+              "is_reason_encoded": true,
+              "reason": "RUNTIFRhc2sgRXhlY3V0aW9uIFJvbGUg6ZyA6KaBIEFtYXpvbkVDU1Rhc2tFeGVjdXRpb25Sb2xlUG9saWN5IOaJmOeuoeetlueVpeaLieWPlumVnOWDj+WSjOWGmeWFpeaXpeW/lw==",
+            },
+            {
+              "id": "AwsSolutions-IAM5",
+              "is_reason_encoded": true,
+              "reason": "RUNTIFRhc2sgRXhlY3V0aW9uIFJvbGUg55qEIGVjcjpHZXRBdXRob3JpemF0aW9uVG9rZW4g5ZKMIGxvZ3M6Q3JlYXRlTG9nU3RyZWFtIOmcgOimgemAmumFjeespui1hOa6kA==",
+            },
+            {
+              "id": "AwsSolutions-ECS2",
+              "is_reason_encoded": true,
+              "reason": "RU5WX05BTUXjgIFEQVRBQkFTRV9IT1NU44CBREFUQUJBU0VfUE9SVCDkuLrpnZ7mlY/mhJ/phY3nva7pobnvvIzml6DpnIDpgJrov4cgU2VjcmV0cyBNYW5hZ2VyIOazqOWFpQ==",
+            },
+          ],
+        },
+      },
+      "Properties": {
+        "ContainerDefinitions": [
+          {
+            "Environment": [
+              {
+                "Name": "ENV_NAME",
+                "Value": "dev",
+              },
+              {
+                "Name": "DATABASE_HOST",
+                "Value": "test-cluster.cluster-xyz.us-east-1.rds.amazonaws.com",
+              },
+              {
+                "Name": "DATABASE_PORT",
+                "Value": "3306",
+              },
+            ],
+            "Essential": true,
+            "HealthCheck": {
+              "Command": [
+                "CMD-SHELL",
+                "curl -f http://localhost:8000/health || exit 1",
+              ],
+              "Interval": 30,
+              "Retries": 3,
+              "StartPeriod": 60,
+              "Timeout": 5,
+            },
+            "Image": {
+              "Fn::Sub": "000000000000.dkr.ecr.us-east-1.\${AWS::URLSuffix}/cdk-hnb659fds-container-assets-000000000000-us-east-1:42da0e9775dfff87a286f1a3ea3a9c6a88bc924928c0d8512fdee1acd7cb0491",
+            },
+            "LogConfiguration": {
+              "LogDriver": "awslogs",
+              "Options": {
+                "awslogs-group": {
+                  "Ref": "EcsLogGroupAD27A916",
+                },
+                "awslogs-region": "us-east-1",
+                "awslogs-stream-prefix": "api",
+              },
+            },
+            "Name": "api",
+            "PortMappings": [
+              {
+                "ContainerPort": 8000,
+                "Protocol": "tcp",
+              },
+            ],
+            "Secrets": [
+              {
+                "Name": "DATABASE_SECRET",
+                "ValueFrom": {
+                  "Fn::ImportValue": "DepsStack:ExportsOutputRefTestDbSecret7BB7706D3D9ABD74",
+                },
+              },
+            ],
+          },
+        ],
+        "Cpu": "256",
+        "ExecutionRoleArn": {
+          "Fn::GetAtt": [
+            "EcsTaskDefExecutionRoleEC72ADF6",
+            "Arn",
+          ],
+        },
+        "Family": "TestComputeStackEcsTaskDef1B224643",
+        "Memory": "512",
+        "NetworkMode": "awsvpc",
+        "RequiresCompatibilities": [
+          "FARGATE",
+        ],
+        "TaskRoleArn": {
+          "Fn::GetAtt": [
+            "EcsTaskDefTaskRoleB35B9A53",
+            "Arn",
+          ],
+        },
+      },
+      "Type": "AWS::ECS::TaskDefinition",
+    },
+    "EcsTaskDefExecutionRoleDefaultPolicy274D7F70": {
+      "Metadata": {
+        "cdk_nag": {
+          "rules_to_suppress": [
+            {
+              "id": "AwsSolutions-IAM4",
+              "is_reason_encoded": true,
+              "reason": "RUNTIFRhc2sgRXhlY3V0aW9uIFJvbGUg6ZyA6KaBIEFtYXpvbkVDU1Rhc2tFeGVjdXRpb25Sb2xlUG9saWN5IOaJmOeuoeetlueVpeaLieWPlumVnOWDj+WSjOWGmeWFpeaXpeW/lw==",
+            },
+            {
+              "id": "AwsSolutions-IAM5",
+              "is_reason_encoded": true,
+              "reason": "RUNTIFRhc2sgRXhlY3V0aW9uIFJvbGUg55qEIGVjcjpHZXRBdXRob3JpemF0aW9uVG9rZW4g5ZKMIGxvZ3M6Q3JlYXRlTG9nU3RyZWFtIOmcgOimgemAmumFjeespui1hOa6kA==",
+            },
+            {
+              "id": "AwsSolutions-ECS2",
+              "is_reason_encoded": true,
+              "reason": "RU5WX05BTUXjgIFEQVRBQkFTRV9IT1NU44CBREFUQUJBU0VfUE9SVCDkuLrpnZ7mlY/mhJ/phY3nva7pobnvvIzml6DpnIDpgJrov4cgU2VjcmV0cyBNYW5hZ2VyIOazqOWFpQ==",
+            },
+          ],
+        },
+      },
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": [
+                "ecr:BatchCheckLayerAvailability",
+                "ecr:GetDownloadUrlForLayer",
+                "ecr:BatchGetImage",
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::Join": [
+                  "",
+                  [
+                    "arn:",
+                    {
+                      "Ref": "AWS::Partition",
+                    },
+                    ":ecr:us-east-1:000000000000:repository/cdk-hnb659fds-container-assets-000000000000-us-east-1",
+                  ],
+                ],
+              },
+            },
+            {
+              "Action": "ecr:GetAuthorizationToken",
+              "Effect": "Allow",
+              "Resource": "*",
+            },
+            {
+              "Action": [
+                "logs:CreateLogStream",
+                "logs:PutLogEvents",
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::GetAtt": [
+                  "EcsLogGroupAD27A916",
+                  "Arn",
+                ],
+              },
+            },
+            {
+              "Action": [
+                "secretsmanager:GetSecretValue",
+                "secretsmanager:DescribeSecret",
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::ImportValue": "DepsStack:ExportsOutputRefTestDbSecret7BB7706D3D9ABD74",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "EcsTaskDefExecutionRoleDefaultPolicy274D7F70",
+        "Roles": [
+          {
+            "Ref": "EcsTaskDefExecutionRoleEC72ADF6",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
+    },
+    "EcsTaskDefExecutionRoleEC72ADF6": {
+      "Metadata": {
+        "cdk_nag": {
+          "rules_to_suppress": [
+            {
+              "id": "AwsSolutions-IAM4",
+              "is_reason_encoded": true,
+              "reason": "RUNTIFRhc2sgRXhlY3V0aW9uIFJvbGUg6ZyA6KaBIEFtYXpvbkVDU1Rhc2tFeGVjdXRpb25Sb2xlUG9saWN5IOaJmOeuoeetlueVpeaLieWPlumVnOWDj+WSjOWGmeWFpeaXpeW/lw==",
+            },
+            {
+              "id": "AwsSolutions-IAM5",
+              "is_reason_encoded": true,
+              "reason": "RUNTIFRhc2sgRXhlY3V0aW9uIFJvbGUg55qEIGVjcjpHZXRBdXRob3JpemF0aW9uVG9rZW4g5ZKMIGxvZ3M6Q3JlYXRlTG9nU3RyZWFtIOmcgOimgemAmumFjeespui1hOa6kA==",
+            },
+            {
+              "id": "AwsSolutions-ECS2",
+              "is_reason_encoded": true,
+              "reason": "RU5WX05BTUXjgIFEQVRBQkFTRV9IT1NU44CBREFUQUJBU0VfUE9SVCDkuLrpnZ7mlY/mhJ/phY3nva7pobnvvIzml6DpnIDpgJrov4cgU2VjcmV0cyBNYW5hZ2VyIOazqOWFpQ==",
+            },
+          ],
+        },
+      },
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "ecs-tasks.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+      },
+      "Type": "AWS::IAM::Role",
+    },
+    "EcsTaskDefTaskRoleB35B9A53": {
+      "Metadata": {
+        "cdk_nag": {
+          "rules_to_suppress": [
+            {
+              "id": "AwsSolutions-IAM4",
+              "is_reason_encoded": true,
+              "reason": "RUNTIFRhc2sgRXhlY3V0aW9uIFJvbGUg6ZyA6KaBIEFtYXpvbkVDU1Rhc2tFeGVjdXRpb25Sb2xlUG9saWN5IOaJmOeuoeetlueVpeaLieWPlumVnOWDj+WSjOWGmeWFpeaXpeW/lw==",
+            },
+            {
+              "id": "AwsSolutions-IAM5",
+              "is_reason_encoded": true,
+              "reason": "RUNTIFRhc2sgRXhlY3V0aW9uIFJvbGUg55qEIGVjcjpHZXRBdXRob3JpemF0aW9uVG9rZW4g5ZKMIGxvZ3M6Q3JlYXRlTG9nU3RyZWFtIOmcgOimgemAmumFjeespui1hOa6kA==",
+            },
+            {
+              "id": "AwsSolutions-IAM5",
+              "is_reason_encoded": true,
+              "reason": "U2VjcmV0cyBNYW5hZ2VyIGdyYW50UmVhZCDlkowgS01TIGdyYW50RGVjcnlwdCDnlJ/miJDnmoTnrZbnlaXljIXlkKvlv4XopoHnmoTpgJrphY3nrKYgKHNlY3JldHNtYW5hZ2VyOkdldFNlY3JldFZhbHVlKQ==",
+            },
+            {
+              "id": "AwsSolutions-ECS2",
+              "is_reason_encoded": true,
+              "reason": "RU5WX05BTUXjgIFEQVRBQkFTRV9IT1NU44CBREFUQUJBU0VfUE9SVCDkuLrpnZ7mlY/mhJ/phY3nva7pobnvvIzml6DpnIDpgJrov4cgU2VjcmV0cyBNYW5hZ2VyIOazqOWFpQ==",
+            },
+          ],
+        },
+      },
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "ecs-tasks.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+      },
+      "Type": "AWS::IAM::Role",
+    },
+    "EcsTaskDefTaskRoleDefaultPolicy65386597": {
+      "Metadata": {
+        "cdk_nag": {
+          "rules_to_suppress": [
+            {
+              "id": "AwsSolutions-IAM4",
+              "is_reason_encoded": true,
+              "reason": "RUNTIFRhc2sgRXhlY3V0aW9uIFJvbGUg6ZyA6KaBIEFtYXpvbkVDU1Rhc2tFeGVjdXRpb25Sb2xlUG9saWN5IOaJmOeuoeetlueVpeaLieWPlumVnOWDj+WSjOWGmeWFpeaXpeW/lw==",
+            },
+            {
+              "id": "AwsSolutions-IAM5",
+              "is_reason_encoded": true,
+              "reason": "RUNTIFRhc2sgRXhlY3V0aW9uIFJvbGUg55qEIGVjcjpHZXRBdXRob3JpemF0aW9uVG9rZW4g5ZKMIGxvZ3M6Q3JlYXRlTG9nU3RyZWFtIOmcgOimgemAmumFjeespui1hOa6kA==",
+            },
+            {
+              "id": "AwsSolutions-IAM5",
+              "is_reason_encoded": true,
+              "reason": "U2VjcmV0cyBNYW5hZ2VyIGdyYW50UmVhZCDlkowgS01TIGdyYW50RGVjcnlwdCDnlJ/miJDnmoTnrZbnlaXljIXlkKvlv4XopoHnmoTpgJrphY3nrKYgKHNlY3JldHNtYW5hZ2VyOkdldFNlY3JldFZhbHVlKQ==",
+            },
+            {
+              "id": "AwsSolutions-ECS2",
+              "is_reason_encoded": true,
+              "reason": "RU5WX05BTUXjgIFEQVRBQkFTRV9IT1NU44CBREFUQUJBU0VfUE9SVCDkuLrpnZ7mlY/mhJ/phY3nva7pobnvvIzml6DpnIDpgJrov4cgU2VjcmV0cyBNYW5hZ2VyIOazqOWFpQ==",
+            },
+          ],
+        },
+      },
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": [
+                "secretsmanager:GetSecretValue",
+                "secretsmanager:DescribeSecret",
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::ImportValue": "DepsStack:ExportsOutputRefTestDbSecret7BB7706D3D9ABD74",
+              },
+            },
+            {
+              "Action": "kms:Decrypt",
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::ImportValue": "DepsStack:ExportsOutputFnGetAttTestKey4CACAF33ArnC56F7F92",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "EcsTaskDefTaskRoleDefaultPolicy65386597",
+        "Roles": [
+          {
+            "Ref": "EcsTaskDefTaskRoleB35B9A53",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
+    },
+    "EcsToDbIngress": {
+      "Properties": {
+        "Description": "Allow ECS service to access Aurora MySQL",
+        "FromPort": 3306,
+        "GroupId": {
+          "Fn::ImportValue": "DepsStack:ExportsOutputFnGetAttTestDbSgB0618BB6GroupIdE332AF82",
+        },
+        "IpProtocol": "tcp",
+        "SourceSecurityGroupId": {
+          "Fn::GetAtt": [
+            "EcsServiceSg09379F9C",
+            "GroupId",
+          ],
+        },
+        "ToPort": 3306,
+      },
+      "Type": "AWS::EC2::SecurityGroupIngress",
+    },
+  },
+  "Rules": {
+    "CheckBootstrapVersion": {
+      "Assertions": [
+        {
+          "Assert": {
+            "Fn::Not": [
+              {
+                "Fn::Contains": [
+                  [
+                    "1",
+                    "2",
+                    "3",
+                    "4",
+                    "5",
+                  ],
+                  {
+                    "Ref": "BootstrapVersion",
+                  },
+                ],
+              },
+            ],
+          },
+          "AssertDescription": "CDK bootstrap stack version 6 required. Please run 'cdk bootstrap' with a recent version of the CDK CLI.",
+        },
+      ],
+    },
+  },
+}
+`;
+
 exports[`Snapshot Tests DatabaseStack 快照匹配 1`] = `
 {
   "Outputs": {
     "ClusterEndpoint": {
-      "Description": "Aurora 集群端点",
+      "Description": "Aurora cluster endpoint",
       "Value": {
         "Fn::GetAtt": [
           "AuroraClusterD4EFE71C",
@@ -825,7 +1491,7 @@ exports[`Snapshot Tests DatabaseStack 快照匹配 1`] = `
       },
     },
     "SecretArn": {
-      "Description": "数据库凭证 Secret ARN",
+      "Description": "Database credentials Secret ARN",
       "Value": {
         "Ref": "AuroraClusterSecretAttachmentA6390515",
       },
@@ -887,7 +1553,7 @@ exports[`Snapshot Tests DatabaseStack 快照匹配 1`] = `
         ],
         "EnableIAMDatabaseAuthentication": true,
         "Engine": "aurora-mysql",
-        "EngineVersion": "8.0.mysql_aurora.3.07.1",
+        "EngineVersion": "8.0.mysql_aurora.3.10.0",
         "KmsKeyId": {
           "Fn::ImportValue": "VpcStack:ExportsOutputFnGetAttTestKey4CACAF33ArnC56F7F92",
         },
@@ -1042,7 +1708,7 @@ exports[`Snapshot Tests DatabaseStack 快照匹配 1`] = `
         "DBClusterIdentifier": {
           "Ref": "AuroraClusterD4EFE71C",
         },
-        "DBInstanceClass": "db.t3.small",
+        "DBInstanceClass": "db.t3.medium",
         "Engine": "aurora-mysql",
         "PromotionTier": 0,
         "PubliclyAccessible": false,
@@ -1943,7 +2609,7 @@ exports[`Snapshot Tests SecurityStack 快照匹配 1`] = `
 {
   "Outputs": {
     "EncryptionKeyArn": {
-      "Description": "KMS 加密密钥 ARN",
+      "Description": "KMS encryption key ARN",
       "Value": {
         "Fn::GetAtt": [
           "KmsKeyF138A6A4",
@@ -1975,7 +2641,7 @@ exports[`Snapshot Tests SecurityStack 快照匹配 1`] = `
     "KmsKeyF138A6A4": {
       "DeletionPolicy": "Delete",
       "Properties": {
-        "Description": "AI Agents Platform 数据加密主密钥",
+        "Description": "AI Agents Platform data encryption master key",
         "EnableKeyRotation": true,
         "KeyPolicy": {
           "Statement": [
@@ -2007,7 +2673,7 @@ exports[`Snapshot Tests SecurityStack 快照匹配 1`] = `
     },
     "SecurityGroupsApiSg103453F9": {
       "Properties": {
-        "GroupDescription": "API 服务安全组",
+        "GroupDescription": "API service security group",
         "SecurityGroupEgress": [
           {
             "CidrIp": "0.0.0.0/0",
@@ -2023,7 +2689,7 @@ exports[`Snapshot Tests SecurityStack 快照匹配 1`] = `
     },
     "SecurityGroupsDbSg818C11CD": {
       "Properties": {
-        "GroupDescription": "数据库安全组 - 仅允许 API 服务访问",
+        "GroupDescription": "Database security group - API service access only",
         "SecurityGroupEgress": [
           {
             "CidrIp": "255.255.255.255/32",
@@ -2041,7 +2707,7 @@ exports[`Snapshot Tests SecurityStack 快照匹配 1`] = `
     },
     "SecurityGroupsDbSgfromTestSecurityStackSecurityGroupsApiSg5F03B9993306136947E2": {
       "Properties": {
-        "Description": "允许 API 服务访问 MySQL",
+        "Description": "Allow API service to access MySQL",
         "FromPort": 3306,
         "GroupId": {
           "Fn::GetAtt": [

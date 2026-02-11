@@ -123,7 +123,7 @@ describe('AgentCoreStack', () => {
 
     it('应输出 EcrRepositoryUri', () => {
       template.hasOutput('EcrRepositoryUri', {
-        Description: 'Agent 容器镜像仓库 URI',
+        Description: 'Agent container image repository URI',
       });
     });
   });

@@ -25,7 +25,7 @@ export class KmsConstruct extends Construct {
     this.key = new kms.Key(this, 'Key', {
       alias,
       enableKeyRotation,
-      description: 'AI Agents Platform 数据加密主密钥',
+      description: 'AI Agents Platform data encryption master key',
       removalPolicy: getRemovalPolicy(envName),
     });
   }

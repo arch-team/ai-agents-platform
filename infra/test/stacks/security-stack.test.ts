@@ -36,7 +36,7 @@ describe('SecurityStack', () => {
 
     it('应输出 EncryptionKeyArn', () => {
       template.hasOutput('EncryptionKeyArn', {
-        Description: 'KMS 加密密钥 ARN',
+        Description: 'KMS encryption key ARN',
       });
     });
 

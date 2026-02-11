@@ -43,7 +43,7 @@ export class AuroraConstruct extends Construct {
       encryptionKey,
       envName,
       databaseName = 'ai_agents_platform',
-      instanceType = ec2.InstanceType.of(ec2.InstanceClass.T3, ec2.InstanceSize.SMALL),
+      instanceType = ec2.InstanceType.of(ec2.InstanceClass.T3, ec2.InstanceSize.MEDIUM),
       instances = isProd(envName) ? 2 : 1,
       deletionProtection = !isDev(envName),
     } = props;
@@ -51,7 +51,7 @@ export class AuroraConstruct extends Construct {
     // Aurora MySQL 3.x 集群
     this.cluster = new rds.DatabaseCluster(this, 'Cluster', {
       engine: rds.DatabaseClusterEngine.auroraMysql({
-        version: rds.AuroraMysqlEngineVersion.VER_3_07_1,
+        version: rds.AuroraMysqlEngineVersion.VER_3_10_0,
       }),
       credentials: rds.Credentials.fromGeneratedSecret('admin', {
         secretName: `${envName}/ai-agents-platform/db-credentials`,

@@ -25,7 +25,7 @@ describe('KmsConstruct', () => {
 
     it('应设置描述信息', () => {
       template.hasResourceProperties('AWS::KMS::Key', {
-        Description: 'AI Agents Platform 数据加密主密钥',
+        Description: 'AI Agents Platform data encryption master key',
       });
     });
 

@@ -4,7 +4,6 @@ import { createTestDependencies } from '../../../test/helpers/test-utils';
 import { AuroraConstruct } from './aurora.construct';
 
 describe('AuroraConstruct', () => {
-
   describe('Dev 环境', () => {
     let template: Template;
 

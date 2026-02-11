@@ -9,7 +9,7 @@ describe('getEnvironmentConfig', () => {
         environments: {
           dev: {
             account: '111111111111',
-            region: 'ap-northeast-1',
+            region: 'us-east-1',
             vpcCidr: '10.0.0.0/16',
           },
         },
@@ -20,7 +20,7 @@ describe('getEnvironmentConfig', () => {
 
     expect(config).toEqual({
       account: '111111111111',
-      region: 'ap-northeast-1',
+      region: 'us-east-1',
       vpcCidr: '10.0.0.0/16',
       envName: 'dev',
     });
@@ -32,7 +32,7 @@ describe('getEnvironmentConfig', () => {
         environments: {
           dev: {
             account: '111111111111',
-            region: 'ap-northeast-1',
+            region: 'us-east-1',
             vpcCidr: '10.0.0.0/16',
           },
         },
@@ -56,7 +56,7 @@ describe('getEnvironmentConfig', () => {
         environments: {
           dev: {
             account: '111111111111',
-            region: 'ap-northeast-1',
+            region: 'us-east-1',
             vpcCidr: '10.0.0.0/16',
           },
         },

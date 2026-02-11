@@ -1,9 +1,10 @@
 import * as cdk from 'aws-cdk-lib';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as kms from 'aws-cdk-lib/aws-kms';
+import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
 
 /** 测试用占位符 AWS 环境 */
-export const TEST_ENV: cdk.Environment = { account: '000000000000', region: 'ap-northeast-1' };
+export const TEST_ENV: cdk.Environment = { account: '000000000000', region: 'us-east-1' };
 
 /** 测试用默认 VPC CIDR */
 export const TEST_VPC_CIDR = '10.0.0.0/16';
@@ -70,4 +71,33 @@ export function createCrossStackDbDependencies(
   const dbSecurityGroup = new ec2.SecurityGroup(vpcStack, 'TestDbSg', { vpc });
   const encryptionKey = new kms.Key(vpcStack, 'TestKey');
   return { vpc, dbSecurityGroup, encryptionKey };
+}
+
+/** 跨 Stack Compute 依赖集返回类型 */
+export interface CrossStackComputeDependencies {
+  readonly vpc: ec2.Vpc;
+  readonly dbSecurityGroup: ec2.SecurityGroup;
+  readonly encryptionKey: kms.Key;
+  readonly databaseSecret: secretsmanager.Secret;
+  readonly databaseEndpoint: string;
+}
+
+/**
+ * 创建跨 Stack 的 Compute 依赖集 (VPC + SecurityGroup + KMS Key + Secret + DB Endpoint)。
+ * @remarks 所有依赖创建在独立的 DepsStack 中，供 ComputeStack 测试复用
+ */
+export function createCrossStackComputeDependencies(
+  app: cdk.App,
+  env?: cdk.Environment,
+): CrossStackComputeDependencies {
+  const depsStack = new cdk.Stack(app, 'DepsStack', env ? { env } : undefined);
+  const vpc = createTestVpc(depsStack);
+  const dbSecurityGroup = new ec2.SecurityGroup(depsStack, 'TestDbSg', {
+    vpc,
+    allowAllOutbound: false,
+  });
+  const encryptionKey = new kms.Key(depsStack, 'TestKey');
+  const databaseSecret = new secretsmanager.Secret(depsStack, 'TestDbSecret');
+  const databaseEndpoint = 'test-cluster.cluster-xyz.us-east-1.rds.amazonaws.com';
+  return { vpc, dbSecurityGroup, encryptionKey, databaseSecret, databaseEndpoint };
 }
