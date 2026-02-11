@@ -22,10 +22,37 @@ _engine: AsyncEngine | None = None
 _session_factory: async_sessionmaker[AsyncSession] | None = None
 
 
-def init_db(database_url: str, *, echo: bool = False) -> None:
-    """初始化数据库引擎和会话工厂。"""
+def init_db(
+    database_url: str,
+    *,
+    echo: bool = False,
+    pool_size: int = 20,
+    max_overflow: int = 30,
+    pool_timeout: int = 30,
+    pool_recycle: int = 1800,
+) -> None:
+    """初始化数据库引擎和会话工厂。
+
+    连接池参数仅对支持连接池的数据库后端生效 (如 MySQL),
+    SQLite 内存数据库不支持连接池参数。
+    """
     global _engine, _session_factory  # noqa: PLW0603
-    _engine = create_async_engine(database_url, echo=echo, pool_pre_ping=True)
+
+    engine_kwargs: dict[str, object] = {
+        "echo": echo,
+        "pool_pre_ping": True,
+    }
+
+    # SQLite 不支持连接池参数
+    if not database_url.startswith("sqlite"):
+        engine_kwargs.update(
+            pool_size=pool_size,
+            max_overflow=max_overflow,
+            pool_timeout=pool_timeout,
+            pool_recycle=pool_recycle,
+        )
+
+    _engine = create_async_engine(database_url, **engine_kwargs)
     _session_factory = async_sessionmaker(_engine, expire_on_commit=False)
 
 

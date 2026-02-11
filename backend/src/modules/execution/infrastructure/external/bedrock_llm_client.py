@@ -6,6 +6,7 @@ SDK-First: < 100 行，暴露原生类型，
 
 import asyncio
 from collections.abc import AsyncIterator
+from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Protocol
 
 import structlog
@@ -32,9 +33,18 @@ class _BedrockRuntimeClient(Protocol):
 class BedrockLLMClient(ILLMClient):
     """基于 Amazon Bedrock Converse API 的 LLM 客户端。"""
 
-    def __init__(self, client: _BedrockRuntimeClient) -> None:
+    def __init__(
+        self,
+        client: _BedrockRuntimeClient,
+        *,
+        max_workers: int = 50,
+    ) -> None:
         """初始化。client 是 boto3 bedrock-runtime client。"""
         self._client = client
+        self._executor = ThreadPoolExecutor(
+            max_workers=max_workers,
+            thread_name_prefix="bedrock",
+        )
 
     async def invoke(
         self,
@@ -59,7 +69,10 @@ class BedrockLLMClient(ILLMClient):
             stop_sequences,
         )
         try:
-            response = await asyncio.to_thread(self._client.converse, **kwargs)
+            loop = asyncio.get_running_loop()
+            response = await loop.run_in_executor(
+                self._executor, lambda: self._client.converse(**kwargs),
+            )
         except Exception as e:
             # 日志记录完整异常, 但不向用户暴露内部错误信息
             logger.exception("Bedrock Converse API 调用失败")
@@ -104,7 +117,10 @@ class BedrockLLMClient(ILLMClient):
             stop_sequences,
         )
         try:
-            response = await asyncio.to_thread(self._client.converse_stream, **kwargs)
+            loop = asyncio.get_running_loop()
+            response = await loop.run_in_executor(
+                self._executor, lambda: self._client.converse_stream(**kwargs),
+            )
         except Exception as e:
             logger.exception("Bedrock ConverseStream API 调用失败")
             raise DomainError(

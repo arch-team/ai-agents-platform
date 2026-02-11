@@ -12,7 +12,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from src.modules.agents.api.endpoints import router as agents_router
 from src.modules.agents.domain.exceptions import AgentNameDuplicateError, AgentNotFoundError
 from src.modules.auth.api.endpoints import router as auth_router
-from src.modules.auth.domain.exceptions import AccountLockedError, AuthenticationError, AuthorizationError
+from src.modules.auth.domain.exceptions import (
+    AccountLockedError,
+    AuthenticationError,
+    AuthorizationError,
+    InvalidRefreshTokenError,
+)
 from src.modules.execution.api.endpoints import router as execution_router
 from src.modules.execution.domain.exceptions import (
     AgentNotAvailableError,
@@ -29,6 +34,12 @@ from src.modules.knowledge.domain.exceptions import (
     DocumentNotFoundError,
     KnowledgeBaseNameDuplicateError,
     KnowledgeBaseNotFoundError,
+)
+from src.modules.templates.api.endpoints import router as templates_router
+from src.modules.templates.domain.exceptions import (
+    DuplicateTemplateNameError,
+    InvalidTemplateConfigError,
+    TemplateNotFoundError,
 )
 from src.modules.tool_catalog.api.endpoints import router as tool_catalog_router
 from src.modules.tool_catalog.domain.exceptions import ToolNameDuplicateError, ToolNotFoundError
@@ -55,7 +66,14 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
         log_level=settings.LOG_LEVEL,
         is_dev=settings.APP_ENV in ("development", "test"),
     )
-    init_db(settings.database_url, echo=settings.APP_DEBUG)
+    init_db(
+        settings.database_url,
+        echo=settings.APP_DEBUG,
+        pool_size=settings.DB_POOL_SIZE,
+        max_overflow=settings.DB_MAX_OVERFLOW,
+        pool_timeout=settings.DB_POOL_TIMEOUT,
+        pool_recycle=settings.DB_POOL_RECYCLE,
+    )
     yield
 
 
@@ -88,6 +106,7 @@ def create_app() -> FastAPI:
     _module_exception_mappings: dict[type[DomainError], int] = {
         # auth
         AuthenticationError: 401,
+        InvalidRefreshTokenError: 401,
         AccountLockedError: 423,
         AuthorizationError: 403,
         # agents
@@ -107,6 +126,10 @@ def create_app() -> FastAPI:
         # insights
         UsageRecordNotFoundError: 404,
         InvalidDateRangeError: 422,
+        # templates
+        TemplateNotFoundError: 404,
+        DuplicateTemplateNameError: 409,
+        InvalidTemplateConfigError: 422,
     }
     for exc_type, status_code in _module_exception_mappings.items():
         register_status_mapping(exc_type, status_code)
@@ -122,6 +145,7 @@ def create_app() -> FastAPI:
     app.include_router(tool_catalog_router)
     app.include_router(knowledge_router)
     app.include_router(insights_router)
+    app.include_router(templates_router)
 
     # Rate Limiting
     setup_rate_limiting(app)

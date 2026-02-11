@@ -33,3 +33,15 @@ class LoginRequest(BaseModel):
 
     email: EmailStr
     password: str
+
+
+class RefreshTokenRequest(BaseModel):
+    """Refresh Token 请求。"""
+
+    refresh_token: str
+
+
+class LogoutRequest(BaseModel):
+    """登出请求。"""
+
+    refresh_token: str

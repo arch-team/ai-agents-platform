@@ -50,9 +50,24 @@ class Settings(BaseSettings):
     BEDROCK_KB_S3_BUCKET: str = ""
     BEDROCK_KB_COLLECTION_ARN: str = ""  # OpenSearch Serverless 集合 ARN
 
+    # Refresh Token
+    JWT_REFRESH_TOKEN_EXPIRE_DAYS: int = 7
+
+    # 注册开关 (REGISTRATION_ENABLED=False 时禁用公开注册)
+    REGISTRATION_ENABLED: bool = True
+
     # 登录安全
     MAX_LOGIN_ATTEMPTS: int = 5
     LOCKOUT_MINUTES: int = 30
+
+    # 数据库连接池
+    DB_POOL_SIZE: int = 20
+    DB_MAX_OVERFLOW: int = 30
+    DB_POOL_TIMEOUT: int = 30
+    DB_POOL_RECYCLE: int = 1800
+
+    # Bedrock 线程池
+    BEDROCK_THREAD_POOL_SIZE: int = 50
 
     # 对话上下文窗口
     MAX_CONTEXT_TOKENS: int = 30000

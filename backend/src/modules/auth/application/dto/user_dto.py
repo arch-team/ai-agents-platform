@@ -25,7 +25,15 @@ class TokenDTO:
     """JWT Token 响应数据。"""
 
     access_token: str
+    refresh_token: str = ""
     token_type: str = "bearer"  # noqa: S105
+
+
+@dataclass
+class RefreshTokenDTO:
+    """Refresh Token 请求数据。"""
+
+    refresh_token: str
 
 
 @dataclass

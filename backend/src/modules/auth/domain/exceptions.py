@@ -33,6 +33,13 @@ class AuthorizationError(DomainError):
         super().__init__(message=message, code="FORBIDDEN")
 
 
+class InvalidRefreshTokenError(DomainError):
+    """Refresh Token 无效或已过期。"""
+
+    def __init__(self, message: str = "Refresh Token 无效或已过期") -> None:
+        super().__init__(message=message, code="INVALID_REFRESH_TOKEN")
+
+
 class UserAlreadyExistsError(DuplicateEntityError):
     """用户已存在。"""
 

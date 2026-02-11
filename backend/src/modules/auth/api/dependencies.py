@@ -3,6 +3,7 @@
 from collections.abc import Awaitable, Callable
 from typing import Annotated
 
+import structlog
 from fastapi import Depends
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -12,6 +13,9 @@ from src.modules.auth.application.services.token_service import decode_access_to
 from src.modules.auth.application.services.user_service import UserService
 from src.modules.auth.domain.exceptions import AuthenticationError, AuthorizationError
 from src.modules.auth.domain.value_objects.role import Role
+from src.modules.auth.infrastructure.persistence.repositories.refresh_token_repository_impl import (
+    RefreshTokenRepositoryImpl,
+)
 from src.modules.auth.infrastructure.persistence.repositories.user_repository_impl import (
     UserRepositoryImpl,
 )
@@ -19,6 +23,7 @@ from src.shared.infrastructure.database import get_db
 from src.shared.infrastructure.settings import Settings, get_settings
 
 
+logger = structlog.get_logger(__name__)
 security = HTTPBearer()
 
 
@@ -34,6 +39,8 @@ def get_user_service(
         jwt_expire_minutes=settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES,
         max_login_attempts=settings.MAX_LOGIN_ATTEMPTS,
         lockout_minutes=settings.LOCKOUT_MINUTES,
+        refresh_token_repository=RefreshTokenRepositoryImpl(session=session),
+        refresh_token_expire_days=settings.JWT_REFRESH_TOKEN_EXPIRE_DAYS,
     )
 
 
@@ -78,6 +85,13 @@ def require_role(*roles: Role) -> Callable[..., Awaitable[UserDTO]]:
         current_user: Annotated[UserDTO, Depends(get_current_user)],
     ) -> UserDTO:
         if current_user.role not in {r.value for r in roles}:
+            logger.warning(
+                "security_event",
+                event_type="permission_denied",
+                user_id=current_user.id,
+                user_role=current_user.role,
+                required_roles=[r.value for r in roles],
+            )
             raise AuthorizationError
         return current_user
 

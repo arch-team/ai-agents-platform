@@ -17,4 +17,11 @@ class TokenResponse(BaseModel):
     """JWT Token 响应。"""
 
     access_token: str
+    refresh_token: str = ""
     token_type: str = "bearer"  # noqa: S105
+
+
+class MessageResponse(BaseModel):
+    """通用消息响应。"""
+
+    message: str

@@ -4,11 +4,11 @@
 
 ## 当前状态
 
-- **阶段**: Phase 2 核心功能 (3-6 月)
-- **里程碑**: M5 知识库+业务洞察 — ✅ 已完成 (knowledge + insights 模块)
-- **变更积压**: S0 ✅ + 3 S1 + 2 S2 + 2 S3 + 5 S4 = 12 项 | AgentCore 集成: P0 ✅ + P1 ✅ + P2 (0/3) + P3 (0/3) = 16 项
+- **阶段**: Phase 2 核心功能 (3-6 月) — ✅ 后端全部完成
+- **里程碑**: M6 模板生态 — ✅ 已完成 (templates 模块 + 10 预置模板)
+- **变更积压**: S0 ✅ + S1 ✅ + S2 ✅ + 2 S3 + 5 S4 = 7 项 | AgentCore 集成: P0 ✅ + P1 ✅ + P2 (0/3) + P3 (0/3) = 16 项
 - **关键决策**: ADR-006 已采纳 — Agent 框架选型: Claude Agent SDK + Claude Code CLI (单一框架)
-- **下一步**: M6 模板生态拆解 (templates 模块 + 10 预置模板)，穿插 S1/S2 剩余变更
+- **下一步**: Phase 2 收尾 (S3/S4 处理 + CDK 部署验证)，或启动 Phase 3 orchestration 模块
 
 ## 模块状态
 
@@ -17,7 +17,7 @@
 | 模块 | 状态 | 分支 | 备注 |
 |------|:----:|------|------|
 | `shared` | 已完成 | ai-agents-factory-v1 | PydanticEntity, IRepository, EventBus, DomainError, get_db, get_settings, PydanticRepository, exception_handlers, schemas |
-| `auth` | 已完成 | ai-agents-factory-v1 | User, Role, JWT, RBAC, get_current_user, 登录/注册/me 端点, **Rate Limiting + 账户锁定 (C-S1-1)** |
+| `auth` | 已完成 | ai-agents-factory-v1 | User, Role, JWT, RBAC, get_current_user, 登录/注册/me 端点, **Rate Limiting + 账户锁定 (C-S1-1)**, **Refresh Token (C-S1-2)**, **安全审计日志 (C-S1-3)**, **注册权限保护 (C-S1-4)** |
 | `agents` | 已完成 | ai-agents-factory-v1 | Agent CRUD (7 端点), 状态机 (draft → active → archived), AgentConfig, 领域事件 |
 | `execution` | 已完成 | ai-agents-factory-v1 | 单 Agent 对话 (6 端点), Bedrock ConverseStream, SSE 流式, IAgentQuerier 跨模块, **对话历史滑动窗口 (C-S2-2)**, **Agent 配置 TTL 缓存 (C-S2-4)**。**待升级**: ADR-006 → IAgentRuntime + StrandsAgentAdapter |
 
@@ -28,7 +28,7 @@
 | `tool-catalog` | 已完成 | ai-agents-factory-v1 | 工具注册/审批 (10 端点), 5 状态审批流程, MCP Server/API/Function 三类工具 |
 | `knowledge` | 已完成 | ai-agents-factory-v1 | 知识库管理, RAG 检索 (Bedrock Knowledge Bases, ADR-005), 10 端点 |
 | `insights` | 已完成 | ai-agents-factory-v1 | 成本归因, 使用趋势 (3 端点), UsageRecord 实体, CostBreakdown, BedrockCostCalculator, 74 测试 97.56% 覆盖率 |
-| `templates` | 待开始 | - | Agent 模板管理 (依赖 tool-catalog + knowledge) |
+| `templates` | 已完成 | ai-agents-factory-v1 | Agent 模板管理 (8 端点), 状态机 (DRAFT → PUBLISHED → ARCHIVED), 7 分类, 10 预置模板, 103 测试 |
 
 ### 后续阶段
 
@@ -401,16 +401,16 @@
 | 编号 | 变更描述 | 状态 | 依赖 | 来源 | 影响范围 | 参考规范 | 会话 |
 |------|---------|:----:|:----:|------|---------|---------|------|
 | C-S1-1 | 登录 Rate Limiting + 账户锁定 | 已完成 | - | 安全审查 SEC4+SEC5 (高危) | auth + 中间件 | `improvement-plan.md` §3 S1-1 | 2026-02-11 |
-| C-S1-2 | Refresh Token 机制 | 待开始 | - | 安全审查 SEC2+SEC3 (高危) | auth 模块 | `improvement-plan.md` §3 S1-2 | - |
-| C-S1-3 | 基础安全审计日志 | 待开始 | - | 安全审查 SEC7 (高危) | auth + shared | `improvement-plan.md` §3 S1-3 | - |
-| C-S1-4 | 注册端点权限保护 | 待开始 | - | 安全审查 SEC16 (中危) | auth API | `improvement-plan.md` §3 S1-4 | - |
+| C-S1-2 | Refresh Token 机制 | 已完成 | - | 安全审查 SEC2+SEC3 (高危) | auth 模块 | `improvement-plan.md` §3 S1-2 | 2026-02-11 |
+| C-S1-3 | 基础安全审计日志 | 已完成 | - | 安全审查 SEC7 (高危) | auth + shared | `improvement-plan.md` §3 S1-3 | 2026-02-11 |
+| C-S1-4 | 注册端点权限保护 | 已完成 | - | 安全审查 SEC16 (中危) | auth API | `improvement-plan.md` §3 S1-4 | 2026-02-11 |
 | C-S1-5 | CORS 运行时校验 | 已完成 | C-S0-6 | 安全审查 SEC17 (中危) | shared/settings | `improvement-plan.md` §3 S1-5 | 2026-02-10 |
 
 ### S2 — 性能解锁（M5 开发期间并行）
 
 | 编号 | 变更描述 | 状态 | 依赖 | 来源 | 影响范围 | 参考规范 | 会话 |
 |------|---------|:----:|:----:|------|---------|---------|------|
-| C-S2-1 | 自定义线程池 + 连接池调优 | 待开始 | C-S0-1 | 性能审查 PERF1+PERF3 (HIGH) | shared/database + execution | `improvement-plan.md` §4 S2-1 | - |
+| C-S2-1 | 自定义线程池 + 连接池调优 | 已完成 | C-S0-1 | 性能审查 PERF1+PERF3 (HIGH) | shared/database + execution | `improvement-plan.md` §4 S2-1 | 2026-02-11 |
 | C-S2-2 | 对话历史滑动窗口 | 已完成 | - | 性能审查 PERF4 (CRITICAL) | execution 模块 | `improvement-plan.md` §4 S2-2 | 2026-02-11 |
 | C-S2-3 | EventBus 内存泄漏修复 | 已完成 | - | 性能审查 PERF9 + 架构审查 A3 | shared/event_bus | `improvement-plan.md` §4 S2-3 | 2026-02-10 |
 | C-S2-4 | Agent 配置本地缓存 | 已完成 | - | 性能审查 PERF8 (HIGH) | agents 模块 | `improvement-plan.md` §4 S2-4 | 2026-02-11 |
@@ -438,11 +438,11 @@
 | 级别 | 数量 | 时间窗口 | 当前进度 |
 |------|:----:|---------|---------|
 | S0 阻断修复 | 6 | 进入 M5 之前 | **6/6 ✅** |
-| S1 安全加固 | 5 | M5 开发期间并行 | 2/5 |
-| S2 性能解锁 | 4 | M5 开发期间并行 | 3/4 |
+| S1 安全加固 | 5 | M5 开发期间并行 | **5/5 ✅** |
+| S2 性能解锁 | 4 | M5 开发期间并行 | **4/4 ✅** |
 | S3 战略决策 | 3 | M5 启动前决策 | 1/3 |
 | S4 中期改进 | 5 | Phase 2 完成前 | 0/5 |
-| **合计** | **23** | - | **12/23** |
+| **合计** | **23** | - | **16/23** |
 
 ### AgentCore 集成积压 (来源: ADR-006 + agentcore-integration-plan.md)
 
@@ -489,8 +489,8 @@
 
 | # | 日期 | 类型 | 完成项 | 关键决策 |
 |---|------|------|-------|---------|
+| 17 | 2026-02-11 | Milestone+变更 | M6 templates 模块 (107 测试) + 10 预置模板 + C-S1-2 Refresh Token + C-S1-3 审计日志 + C-S1-4 注册保护 + C-S2-1 连接池 + 3 子项目代码优化, **1427 测试** | S0/S1/S2 全部清零; Phase 2 后端完成 |
 | 16 | 2026-02-11 | Milestone+变更 | insights 模块完成 (74 测试, 97.56%) + C-S1-1 Rate Limiting + C-S2-2 滑动窗口 + C-S2-4 Agent 缓存, 1266 测试 | Agent Teams 并行开发; slowapi; TTLCache |
 | 15 | 2026-02-10 | 审查+修复 | P0 修复: gateway_url + permission_mode + SDK 消息解析统一, 1126 测试 | AGENTCORE_GATEWAY_URL; bypassPermissions; sdk_message_utils.py |
 | 14 | 2026-02-10 | AgentCore 集成 | P0 (6/6) + P1 (4/4) 完成, 965 测试, ClaudeAgentAdapter + CDK + 入口点 | Claude Agent SDK; Agent Teams |
 | 13 | 2026-02-10 | 架构决策 | ADR-006 Agent 框架选型 + 集成计划 (16 项) | Claude Agent SDK + CLI |
-| 12 | 2026-02-10 | Milestone | M5 知识库完成 14/14, 1023 测试, 95.10% | knowledge 模块交付 |
