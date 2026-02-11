@@ -1116,7 +1116,7 @@ exports[`Snapshot Tests ComputeStack 快照匹配 1`] = `
             "HealthCheck": {
               "Command": [
                 "CMD-SHELL",
-                "curl -f http://localhost:8000/health || exit 1",
+                "python -c "import httpx; httpx.get('http://localhost:8000/health').raise_for_status()" || exit 1",
               ],
               "Interval": 30,
               "Retries": 3,
@@ -1124,7 +1124,7 @@ exports[`Snapshot Tests ComputeStack 快照匹配 1`] = `
               "Timeout": 5,
             },
             "Image": {
-              "Fn::Sub": "000000000000.dkr.ecr.us-east-1.\${AWS::URLSuffix}/cdk-hnb659fds-container-assets-000000000000-us-east-1:9d55ef80c35d97b41f2a6eea4bbfcb150bd2f043022c3b4f67b3fa502c0dae74",
+              "Fn::Sub": "000000000000.dkr.ecr.us-east-1.\${AWS::URLSuffix}/cdk-hnb659fds-container-assets-000000000000-us-east-1:aa538d9be6031f1d543294ca50ac1e345a86ac4dcb63a9629d4c7cf9a0984c1c",
             },
             "LogConfiguration": {
               "LogDriver": "awslogs",

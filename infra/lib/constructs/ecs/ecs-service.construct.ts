@@ -103,7 +103,7 @@ export class EcsServiceConstruct extends Construct {
         streamPrefix: 'api',
       }),
       healthCheck: {
-        command: ['CMD-SHELL', `curl -f http://localhost:${containerPort}/health || exit 1`],
+        command: ['CMD-SHELL', `python -c "import httpx; httpx.get('http://localhost:${containerPort}/health').raise_for_status()" || exit 1`],
         interval: cdk.Duration.seconds(30),
         timeout: cdk.Duration.seconds(5),
         retries: 3,

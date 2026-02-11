@@ -75,7 +75,7 @@ describe('EcsServiceConstruct', () => {
             HealthCheck: Match.objectLike({
               Command: Match.arrayWith([
                 'CMD-SHELL',
-                'curl -f http://localhost:8000/health || exit 1',
+                Match.stringLikeRegexp('.*localhost:8000/health.*'),
               ]),
             }),
           }),
