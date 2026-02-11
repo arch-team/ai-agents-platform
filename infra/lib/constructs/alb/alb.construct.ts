@@ -38,7 +38,7 @@ export class AlbConstruct extends Construct {
     this.albSecurityGroup.addIngressRule(
       ec2.Peer.anyIpv4(),
       ec2.Port.tcp(80),
-      '允许公网 HTTP 入站',
+      'Allow public HTTP ingress',
     );
 
     // Application Load Balancer — 使用手动创建的安全组，避免 ALB 自动创建默认 SG

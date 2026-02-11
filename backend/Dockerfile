@@ -5,6 +5,9 @@
 # -- Stage 1: Builder --
 FROM python:3.12-slim AS builder
 
+# 安装构建依赖 (asyncmy 需要 gcc 编译 Cython 扩展)
+RUN apt-get update && apt-get install -y --no-install-recommends gcc libc6-dev && rm -rf /var/lib/apt/lists/*
+
 # 安装 uv
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
@@ -16,10 +19,11 @@ COPY pyproject.toml uv.lock* ./
 # 安装生产依赖 (不含 dev 依赖)
 RUN uv sync --no-dev --frozen --no-install-project
 
-# 复制源码
+# 复制源码和构建所需文件
 COPY src/ src/
 COPY migrations/ migrations/
 COPY alembic.ini .
+COPY README.md .
 
 # 安装项目本身
 RUN uv sync --no-dev --frozen
