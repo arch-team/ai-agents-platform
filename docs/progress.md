@@ -6,10 +6,10 @@
 
 - **阶段**: Phase 2 核心功能 (3-6 月) — ✅ 后端全部完成
 - **里程碑**: M6 模板生态 — ✅ 已完成 (templates 模块 + 10 预置模板)
-- **变更积压**: S0 ✅ + S1 ✅ + S2 ✅ + 2 S3 + 3 S4 = 5 项 | AgentCore 集成: P0 ✅ + P1 ✅ + P2 (0/3) + P3 (0/3) = 16 项
+- **变更积压**: S0 ✅ + S1 ✅ + S2 ✅ + 1 S3 + 3 S4 = 4 项 | AgentCore 集成: P0 ✅ + P1 ✅ + P2 (0/3) + P3 (0/3) = 16 项
 - **关键决策**: ADR-006 已采纳 — Agent 框架选型: Claude Agent SDK + Claude Code CLI (单一框架)
 - **CDK 部署**: 5/5 Stack 全部部署成功 ✅ | ALB: `http://ai-agents-dev-436462227.us-east-1.elb.amazonaws.com/health` → `{"status":"ok"}`
-- **下一步**: C-S4-1 (CI/CD) → C-S3-2 (端到端集成验证) → C-S4-5 (python-jose 迁移) → C-S3-3 (路线图评审)
+- **下一步**: C-S4-5 (python-jose 迁移) → C-S3-3 (路线图评审) → Phase 2 收尾完成
 
 ## 模块状态
 
@@ -422,7 +422,7 @@
 | 编号 | 变更描述 | 状态 | 依赖 | 来源 | 影响范围 | 参考规范 | 会话 |
 |------|---------|:----:|:----:|------|---------|---------|------|
 | C-S3-1 | MySQL vs PostgreSQL 技术选型 (ADR) | 已完成 | - | DevOps D4 + 性能 PERF10 | 全项目数据库 | `improvement-plan.md` §5 S3-1 | 2026-02-10 |
-| C-S3-2 | 端到端集成验证 (M4.5) | 待开始 | C-S0-3 | 产品审查 P2 | 前后端联调 | `improvement-plan.md` §5 S3-2 | - |
+| C-S3-2 | 端到端集成验证 (M4.5) | 已完成 | C-S0-3 | 产品审查 P2 | 前后端联调 | `improvement-plan.md` §5 S3-2 | 2026-02-11 |
 | C-S3-3 | 路线图调整评审 | 待开始 | C-S3-1 | 产品审查 P1+P3+P10 | roadmap.md | `improvement-plan.md` §5 S3-3 | - |
 
 ### S4 — 中期改进（Phase 2 完成前）
@@ -464,9 +464,9 @@
 | S0 阻断修复 | 6 | 进入 M5 之前 | **6/6 ✅** |
 | S1 安全加固 | 5 | M5 开发期间并行 | **5/5 ✅** |
 | S2 性能解锁 | 4 | M5 开发期间并行 | **4/4 ✅** |
-| S3 战略决策 | 3 | M5 启动前决策 | 1/3 |
+| S3 战略决策 | 3 | M5 启动前决策 | 2/3 |
 | S4 中期改进 | 6 | Phase 2 完成前 | 2/6 |
-| **合计** | **24** | - | **18/24** |
+| **合计** | **24** | - | **19/24** |
 
 ### AgentCore 集成积压 (来源: ADR-006 + agentcore-integration-plan.md)
 
@@ -517,6 +517,7 @@
 
 | # | 日期 | 类型 | 完成项 | 关键决策 |
 |---|------|------|-------|---------|
+| 20 | 2026-02-11 | 变更 (C-S3-2) | C-S3-2 端到端验证通过: 注册→登录→JWT→Agent CRUD→对话创建全流程 OK; 修复 MySQL session auto-commit + ECS 健康检查 curl→httpx | get_db auto-commit/rollback; python httpx 替代 curl |
 | 19 | 2026-02-11 | 变更 (C-S4-2+S4-6) | C-S4-2 完成: **5/5 Stack 全部部署成功**, ALB `/health` 可用; C-S4-6 DRY 常量提取; 代码优化 (backend+infra); Dockerfile 修复 (gcc/AMD64/ECR Public/MySQL TEXT); Alembic 迁移 MySQL 兼容 | LINUX_AMD64; ECR Public 镜像源; Aurora 3.10.0 db.t3.medium; TEXT 列无 server_default |
 | 18 | 2026-02-11 | 变更 (C-S4-2) | CDK 首次部署验证: ComputeStack 创建 + 4/5 Stack 部署成功 (Network/Security/Database/AgentCore), Alembic 迁移补充, infra 136 测试 | Agent Teams 并行开发; Aurora 3.10.0 + db.t3.medium; AgentCore AZ 限制 |
 | 17 | 2026-02-11 | Milestone+变更 | M6 templates 模块 (107 测试) + 10 预置模板 + C-S1-2 Refresh Token + C-S1-3 审计日志 + C-S1-4 注册保护 + C-S2-1 连接池 + 3 子项目代码优化, **1427 测试** | S0/S1/S2 全部清零; Phase 2 后端完成 |
