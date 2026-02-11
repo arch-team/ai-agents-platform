@@ -25,7 +25,7 @@ def upgrade() -> None:
         sa.Column("id", sa.Integer(), autoincrement=True, nullable=False),
         sa.Column("name", sa.String(length=100), nullable=False),
         sa.Column("description", sa.String(length=500), nullable=False, server_default=""),
-        sa.Column("system_prompt", sa.Text(), nullable=False, server_default=""),
+        sa.Column("system_prompt", sa.Text(), nullable=False),
         sa.Column("status", sa.String(length=20), nullable=False, server_default="draft"),
         sa.Column("owner_id", sa.Integer(), nullable=False),
         sa.Column(
@@ -37,7 +37,7 @@ def upgrade() -> None:
         sa.Column("temperature", sa.Float(), nullable=False, server_default="0.7"),
         sa.Column("max_tokens", sa.Integer(), nullable=False, server_default="2048"),
         sa.Column("top_p", sa.Float(), nullable=False, server_default="1.0"),
-        sa.Column("stop_sequences", sa.Text(), nullable=False, server_default=""),
+        sa.Column("stop_sequences", sa.Text(), nullable=False),
         sa.Column("created_at", sa.DateTime(), nullable=False),
         sa.Column("updated_at", sa.DateTime(), nullable=False),
         sa.ForeignKeyConstraint(["owner_id"], ["users.id"]),

@@ -43,7 +43,7 @@ def upgrade() -> None:
         sa.Column("id", sa.Integer(), autoincrement=True, nullable=False),
         sa.Column("conversation_id", sa.Integer(), nullable=False),
         sa.Column("role", sa.String(length=20), nullable=False),
-        sa.Column("content", sa.Text(), nullable=False, server_default=""),
+        sa.Column("content", sa.Text(), nullable=False),
         sa.Column("token_count", sa.Integer(), nullable=False, server_default="0"),
         sa.Column("created_at", sa.DateTime(), nullable=False),
         sa.Column("updated_at", sa.DateTime(), nullable=False),
