@@ -6,9 +6,10 @@
 
 - **阶段**: Phase 2 核心功能 (3-6 月) — ✅ 后端全部完成
 - **里程碑**: M6 模板生态 — ✅ 已完成 (templates 模块 + 10 预置模板)
-- **变更积压**: S0 ✅ + S1 ✅ + S2 ✅ + 2 S3 + 5 S4 = 7 项 | AgentCore 集成: P0 ✅ + P1 ✅ + P2 (0/3) + P3 (0/3) = 16 项
+- **变更积压**: S0 ✅ + S1 ✅ + S2 ✅ + 2 S3 + 4 S4 = 6 项 | AgentCore 集成: P0 ✅ + P1 ✅ + P2 (0/3) + P3 (0/3) = 16 项
 - **关键决策**: ADR-006 已采纳 — Agent 框架选型: Claude Agent SDK + Claude Code CLI (单一框架)
-- **下一步**: Phase 2 收尾 (S3/S4 处理 + CDK 部署验证)，或启动 Phase 3 orchestration 模块
+- **CDK 部署**: Network ✅ + Security ✅ + Database ✅ + AgentCore ✅ (4/5 Stack 部署成功，Compute 待 Docker)
+- **下一步**: C-S4-2 收尾 (启动 Docker → 部署 Compute-dev → alembic upgrade head)，然后继续 S3/S4
 
 ## 模块状态
 
@@ -428,10 +429,32 @@
 | 编号 | 变更描述 | 状态 | 依赖 | 来源 | 影响范围 | 参考规范 | 会话 |
 |------|---------|:----:|:----:|------|---------|---------|------|
 | C-S4-1 | CI/CD Pipeline 完善 | 待开始 | C-S0-3, C-S0-4 | DevOps 审查 D3 | .github/workflows/ | `improvement-plan.md` §6 S4-1 | - |
-| C-S4-2 | CDK 首次部署验证 | 待开始 | C-S0-3 | DevOps 审查 D1 (阻塞级) | infra/ | `improvement-plan.md` §6 S4-2 | - |
+| C-S4-2 | CDK 首次部署验证 | 进行中 | C-S0-3 | DevOps 审查 D1 (阻塞级) | infra/ | `improvement-plan.md` §6 S4-2 | 2026-02-11 |
 | C-S4-3 | Secrets 管理统一 | 待开始 | C-S0-6 | DevOps 审查 D6 | shared/settings + infra | `improvement-plan.md` §6 S4-3 | - |
 | C-S4-4 | 基础监控告警 | 待开始 | C-S4-2 | DevOps 审查 D8 | infra/ CDK | `improvement-plan.md` §6 S4-4 | - |
 | C-S4-5 | python-jose 迁移到 PyJWT | 待开始 | - | 安全审查 SEC19 | auth 模块 | `improvement-plan.md` §6 S4-5 | - |
+| C-S4-6 | 硬编码配置集中管理 (消除魔术数字 DRY 违规) | 待开始 | - | 代码审查 (2026-02-11) | agents + execution + templates + knowledge + shared | 见下方详细说明 | - |
+
+#### C-S4-6 详细说明
+
+**问题**: 多个配置默认值以魔术数字形式散落在代码各层，违反 DRY 原则，修改时需同步多处。
+
+**影响范围** (按严重程度排列):
+
+| 配置值 | 重复次数 | 散布位置 | 风险 |
+|--------|:--------:|---------|------|
+| `max_tokens = 2048` | 9 处 | agents (Domain/DTO/Schema/ORM) + execution (接口/适配器) | 改默认值需改 9 个文件 |
+| `max_tokens = 4096` | 4 处 | templates (Domain/DTO/Schema/ORM) | 与 agents 默认值不同，需确认是否有意为之 |
+| `30000` / `2000` | 各 2 处 | settings.py (已定义) + execution_service.py (未引用 Settings) | Settings 配置项形同虚设 |
+| `1800` | 2 处 | settings.py (DB_POOL_RECYCLE) + database.py (参数默认值) | 环境变量覆盖可能不生效 |
+| `3600` | 3 处 | event_bus.py + document_storage 接口/实现 | 不同业务含义用同一数字，无命名常量 |
+| `max_length=1000/2000/10000` | 10+ 处 | Domain 实体 Field + ORM String 列 | 两层各自硬编码，需人工保持一致 |
+
+**建议修复方案**:
+1. 在 `shared/domain/constants.py` 定义业务常量 (如 `DEFAULT_MAX_TOKENS`, `FIELD_LENGTH_*`)
+2. 让 Domain/DTO/Schema/ORM 统一引用常量，而非各写魔术数字
+3. `execution_service.py` 的构造函数应从 Settings 读取 `MAX_CONTEXT_TOKENS` / `SYSTEM_PROMPT_TOKEN_BUDGET`
+4. `database.py` 的 `pool_recycle` 应从 Settings 读取 `DB_POOL_RECYCLE`
 
 ### 变更统计
 
@@ -441,8 +464,8 @@
 | S1 安全加固 | 5 | M5 开发期间并行 | **5/5 ✅** |
 | S2 性能解锁 | 4 | M5 开发期间并行 | **4/4 ✅** |
 | S3 战略决策 | 3 | M5 启动前决策 | 1/3 |
-| S4 中期改进 | 5 | Phase 2 完成前 | 0/5 |
-| **合计** | **23** | - | **16/23** |
+| S4 中期改进 | 6 | Phase 2 完成前 | 0.5/6 |
+| **合计** | **24** | - | **16/24** |
 
 ### AgentCore 集成积压 (来源: ADR-006 + agentcore-integration-plan.md)
 
@@ -477,9 +500,11 @@
 
 (当前无代码缺陷遗留)
 
-### 部署注意事项
+### 部署待完成项
 
-- Alembic migration 已配置并通过 `alembic history` 验证，但未连接实际 MySQL 运行 `alembic upgrade head`，首次部署时需验证
+- Compute-dev Stack 需要 Docker Desktop 运行后部署 (`pnpm cdk deploy Compute-dev --context env=dev`)
+- Alembic `upgrade head` 需在 Aurora MySQL 上执行（通过 ECS exec 或跳板机连接 Database-dev 端点）
+- C-S3-2 端到端集成验证待 Compute-dev 部署后执行
 
 ---
 
@@ -489,8 +514,8 @@
 
 | # | 日期 | 类型 | 完成项 | 关键决策 |
 |---|------|------|-------|---------|
+| 18 | 2026-02-11 | 变更 (C-S4-2) | CDK 首次部署验证: ComputeStack 创建 + 4/5 Stack 部署成功 (Network/Security/Database/AgentCore), Alembic 迁移补充, infra 136 测试 | Agent Teams 并行开发; Aurora 3.10.0 + db.t3.medium; AgentCore AZ 限制 |
 | 17 | 2026-02-11 | Milestone+变更 | M6 templates 模块 (107 测试) + 10 预置模板 + C-S1-2 Refresh Token + C-S1-3 审计日志 + C-S1-4 注册保护 + C-S2-1 连接池 + 3 子项目代码优化, **1427 测试** | S0/S1/S2 全部清零; Phase 2 后端完成 |
 | 16 | 2026-02-11 | Milestone+变更 | insights 模块完成 (74 测试, 97.56%) + C-S1-1 Rate Limiting + C-S2-2 滑动窗口 + C-S2-4 Agent 缓存, 1266 测试 | Agent Teams 并行开发; slowapi; TTLCache |
 | 15 | 2026-02-10 | 审查+修复 | P0 修复: gateway_url + permission_mode + SDK 消息解析统一, 1126 测试 | AGENTCORE_GATEWAY_URL; bypassPermissions; sdk_message_utils.py |
 | 14 | 2026-02-10 | AgentCore 集成 | P0 (6/6) + P1 (4/4) 完成, 965 测试, ClaudeAgentAdapter + CDK + 入口点 | Claude Agent SDK; Agent Teams |
-| 13 | 2026-02-10 | 架构决策 | ADR-006 Agent 框架选型 + 集成计划 (16 项) | Claude Agent SDK + CLI |
