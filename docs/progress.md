@@ -6,10 +6,10 @@
 
 - **阶段**: Phase 2 核心功能 (3-6 月) — ✅ 后端全部完成
 - **里程碑**: M6 模板生态 — ✅ 已完成 (templates 模块 + 10 预置模板)
-- **变更积压**: S0 ✅ + S1 ✅ + S2 ✅ + 2 S3 + 4 S4 = 6 项 | AgentCore 集成: P0 ✅ + P1 ✅ + P2 (0/3) + P3 (0/3) = 16 项
+- **变更积压**: S0 ✅ + S1 ✅ + S2 ✅ + 2 S3 + 3 S4 = 5 项 | AgentCore 集成: P0 ✅ + P1 ✅ + P2 (0/3) + P3 (0/3) = 16 项
 - **关键决策**: ADR-006 已采纳 — Agent 框架选型: Claude Agent SDK + Claude Code CLI (单一框架)
-- **CDK 部署**: Network ✅ + Security ✅ + Database ✅ + AgentCore ✅ (4/5 Stack 部署成功，Compute 待 Docker)
-- **下一步**: C-S4-2 收尾 (启动 Docker → 部署 Compute-dev → alembic upgrade head)，然后继续 S3/S4
+- **CDK 部署**: 5/5 Stack 全部部署成功 ✅ | ALB: `http://ai-agents-dev-436462227.us-east-1.elb.amazonaws.com/health` → `{"status":"ok"}`
+- **下一步**: C-S4-1 (CI/CD) → C-S3-2 (端到端集成验证) → C-S4-5 (python-jose 迁移) → C-S3-3 (路线图评审)
 
 ## 模块状态
 
@@ -42,10 +42,11 @@
 
 | CDK Stack | 状态 | 备注 |
 |-----------|:----:|------|
-| NetworkStack | 已完成 | VPC (3 AZ), Public/Private/Isolated Subnets, NAT Gateway (Dev:1/Prod:3), Flow Log, S3 Endpoint |
-| SecurityStack | 已完成 | KMS 加密密钥 (轮换), API SG (443), DB SG (3306 仅 API), Prod Secrets Manager Endpoint |
-| DatabaseStack | 已完成 | Aurora MySQL 3.x (PRIVATE_ISOLATED), Secrets Manager 凭证, 存储加密, IAM 认证 |
-| AgentCoreStack | 待开始 | AgentCore Runtime + Gateway CDK 资源 (ADR-006, P1-3) |
+| NetworkStack | ✅ 已部署 | VPC `vpc-0684fb72335a9687b` (3 AZ), 9 Subnets, NAT Gateway, Flow Log, S3 Endpoint |
+| SecurityStack | ✅ 已部署 | KMS `5fef68f3-...`, API SG, DB SG `sg-000c251fe003123a6` |
+| DatabaseStack | ✅ 已部署 | Aurora MySQL 3.10.0 (db.t3.medium, PRIVATE_ISOLATED), Secrets Manager |
+| AgentCoreStack | ✅ 已部署 | ECR + Runtime (2 AZ) + Gateway (MCP), Cognito |
+| ComputeStack | ✅ 已部署 | ECS Fargate (256 CPU/512 MiB) + ALB (HTTP:80) + CloudWatch Logs |
 
 ---
 
@@ -429,11 +430,11 @@
 | 编号 | 变更描述 | 状态 | 依赖 | 来源 | 影响范围 | 参考规范 | 会话 |
 |------|---------|:----:|:----:|------|---------|---------|------|
 | C-S4-1 | CI/CD Pipeline 完善 | 待开始 | C-S0-3, C-S0-4 | DevOps 审查 D3 | .github/workflows/ | `improvement-plan.md` §6 S4-1 | - |
-| C-S4-2 | CDK 首次部署验证 | 进行中 | C-S0-3 | DevOps 审查 D1 (阻塞级) | infra/ | `improvement-plan.md` §6 S4-2 | 2026-02-11 |
+| C-S4-2 | CDK 首次部署验证 | 已完成 | C-S0-3 | DevOps 审查 D1 (阻塞级) | infra/ | `improvement-plan.md` §6 S4-2 | 2026-02-11 |
 | C-S4-3 | Secrets 管理统一 | 待开始 | C-S0-6 | DevOps 审查 D6 | shared/settings + infra | `improvement-plan.md` §6 S4-3 | - |
 | C-S4-4 | 基础监控告警 | 待开始 | C-S4-2 | DevOps 审查 D8 | infra/ CDK | `improvement-plan.md` §6 S4-4 | - |
 | C-S4-5 | python-jose 迁移到 PyJWT | 待开始 | - | 安全审查 SEC19 | auth 模块 | `improvement-plan.md` §6 S4-5 | - |
-| C-S4-6 | 硬编码配置集中管理 (消除魔术数字 DRY 违规) | 待开始 | - | 代码审查 (2026-02-11) | agents + execution + templates + knowledge + shared | 见下方详细说明 | - |
+| C-S4-6 | 硬编码配置集中管理 (消除魔术数字 DRY 违规) | 已完成 | - | 代码审查 (2026-02-11) | agents + execution + templates + knowledge + shared | 见下方详细说明 | 2026-02-11 |
 
 #### C-S4-6 详细说明
 
@@ -464,8 +465,8 @@
 | S1 安全加固 | 5 | M5 开发期间并行 | **5/5 ✅** |
 | S2 性能解锁 | 4 | M5 开发期间并行 | **4/4 ✅** |
 | S3 战略决策 | 3 | M5 启动前决策 | 1/3 |
-| S4 中期改进 | 6 | Phase 2 完成前 | 0.5/6 |
-| **合计** | **24** | - | **16/24** |
+| S4 中期改进 | 6 | Phase 2 完成前 | 2/6 |
+| **合计** | **24** | - | **18/24** |
 
 ### AgentCore 集成积压 (来源: ADR-006 + agentcore-integration-plan.md)
 
@@ -500,11 +501,13 @@
 
 (当前无代码缺陷遗留)
 
-### 部署待完成项
+### 部署信息
 
-- Compute-dev Stack 需要 Docker Desktop 运行后部署 (`pnpm cdk deploy Compute-dev --context env=dev`)
-- Alembic `upgrade head` 需在 Aurora MySQL 上执行（通过 ECS exec 或跳板机连接 Database-dev 端点）
-- C-S3-2 端到端集成验证待 Compute-dev 部署后执行
+- **ALB 端点**: `http://ai-agents-dev-436462227.us-east-1.elb.amazonaws.com`
+- **Aurora 端点**: `database-dev-auroraclusterd4efe71c-4vafhqgr3qe9.cluster-cqm7um8tgaji.us-east-1.rds.amazonaws.com`
+- **AgentCore Gateway**: `https://ai-agents-platform-gateway-dev-3vv1wfgdeg.gateway.bedrock-agentcore.us-east-1.amazonaws.com/mcp`
+- **DB 凭证**: `dev/ai-agents-platform/db-credentials` (Secrets Manager)
+- Alembic 迁移已通过容器启动 CMD 自动执行完成（10 个迁移文件全部成功）
 
 ---
 
@@ -514,8 +517,8 @@
 
 | # | 日期 | 类型 | 完成项 | 关键决策 |
 |---|------|------|-------|---------|
+| 19 | 2026-02-11 | 变更 (C-S4-2+S4-6) | C-S4-2 完成: **5/5 Stack 全部部署成功**, ALB `/health` 可用; C-S4-6 DRY 常量提取; 代码优化 (backend+infra); Dockerfile 修复 (gcc/AMD64/ECR Public/MySQL TEXT); Alembic 迁移 MySQL 兼容 | LINUX_AMD64; ECR Public 镜像源; Aurora 3.10.0 db.t3.medium; TEXT 列无 server_default |
 | 18 | 2026-02-11 | 变更 (C-S4-2) | CDK 首次部署验证: ComputeStack 创建 + 4/5 Stack 部署成功 (Network/Security/Database/AgentCore), Alembic 迁移补充, infra 136 测试 | Agent Teams 并行开发; Aurora 3.10.0 + db.t3.medium; AgentCore AZ 限制 |
 | 17 | 2026-02-11 | Milestone+变更 | M6 templates 模块 (107 测试) + 10 预置模板 + C-S1-2 Refresh Token + C-S1-3 审计日志 + C-S1-4 注册保护 + C-S2-1 连接池 + 3 子项目代码优化, **1427 测试** | S0/S1/S2 全部清零; Phase 2 后端完成 |
 | 16 | 2026-02-11 | Milestone+变更 | insights 模块完成 (74 测试, 97.56%) + C-S1-1 Rate Limiting + C-S2-2 滑动窗口 + C-S2-4 Agent 缓存, 1266 测试 | Agent Teams 并行开发; slowapi; TTLCache |
 | 15 | 2026-02-10 | 审查+修复 | P0 修复: gateway_url + permission_mode + SDK 消息解析统一, 1126 测试 | AGENTCORE_GATEWAY_URL; bypassPermissions; sdk_message_utils.py |
-| 14 | 2026-02-10 | AgentCore 集成 | P0 (6/6) + P1 (4/4) 完成, 965 测试, ClaudeAgentAdapter + CDK + 入口点 | Claude Agent SDK; Agent Teams |
