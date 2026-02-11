@@ -24,6 +24,7 @@ export class NetworkStack extends cdk.Stack {
 
     const vpcConstruct = new VpcConstruct(this, 'VpcConstruct', {
       vpcCidr,
+      envName,
       natGateways: isProd(envName) ? 3 : natGateways,
     });
 

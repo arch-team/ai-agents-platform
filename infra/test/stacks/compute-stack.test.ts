@@ -1,25 +1,7 @@
 import * as cdk from 'aws-cdk-lib';
 import { Template, Match } from 'aws-cdk-lib/assertions';
-import * as ec2 from 'aws-cdk-lib/aws-ec2';
-import * as kms from 'aws-cdk-lib/aws-kms';
-import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
 import { ComputeStack } from '../../lib/stacks/compute-stack';
-import { createTestVpc } from '../helpers/test-utils';
-
-/** 创建 ComputeStack 跨 Stack 测试依赖 */
-function createComputeDependencies(app: cdk.App) {
-  const depsStack = new cdk.Stack(app, 'DepsStack');
-  const vpc = createTestVpc(depsStack);
-  const dbSecurityGroup = new ec2.SecurityGroup(depsStack, 'DbSg', {
-    vpc,
-    allowAllOutbound: false,
-  });
-  const encryptionKey = new kms.Key(depsStack, 'Key');
-  const databaseSecret = new secretsmanager.Secret(depsStack, 'DbSecret');
-  const databaseEndpoint = 'test-cluster.cluster-xyz.us-east-1.rds.amazonaws.com';
-
-  return { vpc, dbSecurityGroup, databaseSecret, databaseEndpoint, encryptionKey };
-}
+import { createCrossStackComputeDependencies } from '../helpers/test-utils';
 
 describe('ComputeStack', () => {
   let template: Template;
@@ -27,8 +9,8 @@ describe('ComputeStack', () => {
 
   beforeEach(() => {
     const app = new cdk.App();
-    const { vpc, dbSecurityGroup, databaseSecret, databaseEndpoint, encryptionKey } =
-      createComputeDependencies(app);
+    const { vpc, dbSecurityGroup, databaseSecret, jwtSecret, databaseEndpoint, encryptionKey } =
+      createCrossStackComputeDependencies(app);
 
     stack = new ComputeStack(app, 'TestComputeStack', {
       vpc,
@@ -36,6 +18,7 @@ describe('ComputeStack', () => {
       databaseSecret,
       databaseEndpoint,
       encryptionKey,
+      jwtSecret,
       envName: 'dev',
     });
     template = Template.fromStack(stack);

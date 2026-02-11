@@ -6,7 +6,7 @@ import { ErrorMessage, Spinner } from '@/shared/ui';
 
 import { useConversation } from '../api/queries';
 import { useSendMessageStream } from '../api/stream';
-import { useIsStreaming, useStreamingContent, useChatActions } from '../model/store';
+import { useIsStreaming, useStreamingContent, useChatError, useChatActions } from '../model/store';
 
 import { MessageBubble, StreamingBubble } from './MessageBubble';
 import { MessageInput } from './MessageInput';
@@ -23,7 +23,8 @@ export function ChatInterface({ conversationId, token }: ChatInterfaceProps) {
   const { sendMessage } = useSendMessageStream(token);
   const streamingContent = useStreamingContent();
   const isStreaming = useIsStreaming();
-  const { clearStream } = useChatActions();
+  const chatError = useChatError();
+  const { clearStream, clearError } = useChatActions();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // 切换对话时清理流式状态
@@ -38,9 +39,10 @@ export function ChatInterface({ conversationId, token }: ChatInterfaceProps) {
 
   const handleSend = useCallback(
     (content: string) => {
+      clearError();
       sendMessage(conversationId, { content });
     },
-    [conversationId, sendMessage],
+    [conversationId, sendMessage, clearError],
   );
 
   if (isLoading) {
@@ -97,6 +99,13 @@ export function ChatInterface({ conversationId, token }: ChatInterfaceProps) {
 
         <div ref={messagesEndRef} />
       </div>
+
+      {/* 流式错误提示 */}
+      {chatError && (
+        <div className="border-t border-red-100 bg-red-50 px-4 py-2">
+          <ErrorMessage error={chatError} className="border-0 bg-transparent p-0" />
+        </div>
+      )}
 
       {/* 消息输入框 */}
       {!isCompleted && <MessageInput onSend={handleSend} disabled={isStreaming} />}

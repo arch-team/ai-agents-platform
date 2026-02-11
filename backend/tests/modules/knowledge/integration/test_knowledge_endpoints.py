@@ -12,10 +12,10 @@ from src.modules.knowledge.api.dependencies import get_knowledge_service
 from src.modules.knowledge.application.dto.knowledge_dto import (
     DocumentDTO,
     KnowledgeBaseDTO,
-    PagedKnowledgeBaseDTO,
     QueryResponseDTO,
     QueryResultDTO,
 )
+from src.shared.application.dtos import PagedResult
 from src.modules.knowledge.domain.exceptions import (
     KnowledgeBaseNameDuplicateError,
     KnowledgeBaseNotFoundError,
@@ -78,7 +78,7 @@ class TestKnowledgeBaseEndpoints:
         assert resp.status_code == 409
 
     def test_list(self, client: TestClient, mock_service: AsyncMock) -> None:
-        mock_service.list_knowledge_bases.return_value = PagedKnowledgeBaseDTO(
+        mock_service.list_knowledge_bases.return_value = PagedResult(
             items=[_make_kb_dto()], total=1, page=1, page_size=20,
         )
         resp = client.get("/api/v1/knowledge-bases")

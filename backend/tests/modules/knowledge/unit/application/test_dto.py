@@ -8,13 +8,13 @@ from src.modules.knowledge.application.dto.knowledge_dto import (
     CreateKnowledgeBaseDTO,
     DocumentDTO,
     KnowledgeBaseDTO,
-    PagedKnowledgeBaseDTO,
     QueryRequestDTO,
     QueryResponseDTO,
     QueryResultDTO,
     UpdateKnowledgeBaseDTO,
     UploadDocumentDTO,
 )
+from src.shared.application.dtos import PagedResult
 
 
 @pytest.mark.unit
@@ -52,9 +52,9 @@ class TestKnowledgeBaseDTO:
 
 
 @pytest.mark.unit
-class TestPagedKnowledgeBaseDTO:
+class TestPagedResult:
     def test_empty(self) -> None:
-        dto = PagedKnowledgeBaseDTO(items=[], total=0, page=1, page_size=20)
+        dto: PagedResult[KnowledgeBaseDTO] = PagedResult(items=[], total=0, page=1, page_size=20)
         assert dto.total == 0
 
 

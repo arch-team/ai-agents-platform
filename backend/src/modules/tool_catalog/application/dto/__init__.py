@@ -1,6 +1,5 @@
 from src.modules.tool_catalog.application.dto.tool_dto import (
     CreateToolDTO,
-    PagedToolDTO,
     ToolDTO,
     UpdateToolDTO,
 )
@@ -8,7 +7,6 @@ from src.modules.tool_catalog.application.dto.tool_dto import (
 
 __all__ = [
     "CreateToolDTO",
-    "PagedToolDTO",
     "ToolDTO",
     "UpdateToolDTO",
 ]

@@ -9,17 +9,21 @@ export const useChatStore = create<ChatState>()((set) => ({
   currentConversationId: null,
   streamingContent: '',
   isStreaming: false,
+  error: null,
   setCurrentConversation: (id) => set({ currentConversationId: id }),
   appendStreamContent: (content) =>
     set((state) => ({ streamingContent: state.streamingContent + content })),
   clearStream: () => set({ streamingContent: '', isStreaming: false }),
   setStreaming: (streaming) => set({ isStreaming: streaming }),
+  setError: (error) => set({ error }),
+  clearError: () => set({ error: null }),
 }));
 
 // 细粒度 selector hooks
 export const useStreamingContent = () => useChatStore((state) => state.streamingContent);
 export const useIsStreaming = () => useChatStore((state) => state.isStreaming);
 export const useCurrentConversationId = () => useChatStore((state) => state.currentConversationId);
+export const useChatError = () => useChatStore((state) => state.error);
 export const useChatActions = () =>
   useChatStore(
     useShallow((state) => ({
@@ -27,5 +31,7 @@ export const useChatActions = () =>
       appendStreamContent: state.appendStreamContent,
       clearStream: state.clearStream,
       setStreaming: state.setStreaming,
+      setError: state.setError,
+      clearError: state.clearError,
     })),
   );

@@ -5,7 +5,6 @@ from dataclasses import replace
 
 from src.modules.tool_catalog.application.dto.tool_dto import (
     CreateToolDTO,
-    PagedToolDTO,
     ToolDTO,
     UpdateToolDTO,
 )
@@ -29,8 +28,10 @@ from src.modules.tool_catalog.domain.repositories.tool_repository import (
 from src.modules.tool_catalog.domain.value_objects.tool_config import ToolConfig
 from src.modules.tool_catalog.domain.value_objects.tool_status import ToolStatus
 from src.modules.tool_catalog.domain.value_objects.tool_type import ToolType
+from src.shared.application.dtos import PagedResult
+from src.shared.application.ownership import check_ownership, get_or_raise
 from src.shared.domain.event_bus import event_bus
-from src.shared.domain.exceptions import DomainError, InvalidStateTransitionError
+from src.shared.domain.exceptions import InvalidStateTransitionError
 
 
 _EDITABLE_STATUSES: frozenset[ToolStatus] = frozenset({ToolStatus.DRAFT, ToolStatus.REJECTED})
@@ -73,7 +74,9 @@ class ToolCatalogService:
             allowed_roles=tuple(dto.allowed_roles) if dto.allowed_roles else ("admin", "developer"),
         )
         created = await self._repository.create(tool)
-        assert created.id is not None
+        if created.id is None:
+            msg = "Tool 创建后 ID 不能为空"
+            raise ValueError(msg)
         await event_bus.publish_async(
             ToolCreatedEvent(
                 tool_id=created.id,
@@ -211,7 +214,7 @@ class ToolCatalogService:
         keyword: str | None = None,
         page: int = 1,
         page_size: int = 20,
-    ) -> PagedToolDTO:
+    ) -> PagedResult[ToolDTO]:
         """获取 Tool 列表，支持多维筛选和分页。"""
         offset = (page - 1) * page_size
 
@@ -232,7 +235,7 @@ class ToolCatalogService:
             ),
         )
 
-        return PagedToolDTO(
+        return PagedResult(
             items=[self._to_dto(t) for t in tools],
             total=total,
             page=page,
@@ -244,7 +247,7 @@ class ToolCatalogService:
         *,
         page: int = 1,
         page_size: int = 20,
-    ) -> PagedToolDTO:
+    ) -> PagedResult[ToolDTO]:
         """获取已批准的 Tool 列表（任意认证用户可访问）。"""
         offset = (page - 1) * page_size
 
@@ -253,7 +256,7 @@ class ToolCatalogService:
             self._repository.count_approved(),
         )
 
-        return PagedToolDTO(
+        return PagedResult(
             items=[self._to_dto(t) for t in tools],
             total=total,
             page=page,
@@ -338,18 +341,11 @@ class ToolCatalogService:
     # ── 内部辅助方法 ──
 
     async def _get_tool_or_raise(self, tool_id: int) -> Tool:
-        tool = await self._repository.get_by_id(tool_id)
-        if tool is None:
-            raise ToolNotFoundError(tool_id)
-        return tool
+        return await get_or_raise(self._repository, tool_id, ToolNotFoundError, tool_id)
 
     async def _get_owned_tool(self, tool_id: int, operator_id: int) -> Tool:
         tool = await self._get_tool_or_raise(tool_id)
-        if tool.creator_id != operator_id:
-            raise DomainError(
-                message="无权操作此 Tool",
-                code="FORBIDDEN_TOOL",
-            )
+        check_ownership(tool, operator_id, owner_field="creator_id", error_code="FORBIDDEN_TOOL")
         return tool
 
     async def _check_name_unique(self, name: str, creator_id: int) -> None:
@@ -359,9 +355,9 @@ class ToolCatalogService:
 
     @staticmethod
     def _to_dto(tool: Tool) -> ToolDTO:
-        assert tool.id is not None
-        assert tool.created_at is not None
-        assert tool.updated_at is not None
+        if tool.id is None or tool.created_at is None or tool.updated_at is None:
+            msg = "Tool 缺少必要字段 (id/created_at/updated_at)"
+            raise ValueError(msg)
         return ToolDTO(
             id=tool.id,
             name=tool.name,

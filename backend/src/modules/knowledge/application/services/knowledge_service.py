@@ -6,7 +6,6 @@ from src.modules.knowledge.application.dto.knowledge_dto import (
     CreateKnowledgeBaseDTO,
     DocumentDTO,
     KnowledgeBaseDTO,
-    PagedKnowledgeBaseDTO,
     QueryRequestDTO,
     QueryResponseDTO,
     QueryResultDTO,
@@ -42,8 +41,10 @@ from src.modules.knowledge.domain.repositories.knowledge_base_repository import 
 from src.modules.knowledge.domain.value_objects.knowledge_base_status import (
     KnowledgeBaseStatus,
 )
+from src.shared.application.dtos import PagedResult
+from src.shared.application.ownership import check_ownership, get_or_raise
 from src.shared.domain.event_bus import event_bus
-from src.shared.domain.exceptions import DomainError, InvalidStateTransitionError
+from src.shared.domain.exceptions import InvalidStateTransitionError
 
 
 _QUERYABLE_STATUSES: frozenset[KnowledgeBaseStatus] = frozenset(
@@ -87,7 +88,9 @@ class KnowledgeService:
             agent_id=dto.agent_id,
         )
         created = await self._kb_repo.create(kb)
-        assert created.id is not None
+        if created.id is None:
+            msg = "KnowledgeBase 创建后 ID 不能为空"
+            raise ValueError(msg)
 
         # 调用 Bedrock 创建 Knowledge Base
         result = await self._knowledge_svc.create_knowledge_base(
@@ -128,14 +131,14 @@ class KnowledgeService:
         *,
         page: int = 1,
         page_size: int = 20,
-    ) -> PagedKnowledgeBaseDTO:
+    ) -> PagedResult[KnowledgeBaseDTO]:
         """获取知识库列表。"""
         offset = (page - 1) * page_size
         items, total = await asyncio.gather(
             self._kb_repo.list_by_owner(user_id, offset=offset, limit=page_size),
             self._kb_repo.count_by_owner(user_id),
         )
-        return PagedKnowledgeBaseDTO(
+        return PagedResult(
             items=[self._to_kb_dto(kb) for kb in items],
             total=total,
             page=page,
@@ -190,7 +193,9 @@ class KnowledgeService:
         await self._kb_repo.update(kb)
         await self._knowledge_svc.delete_knowledge_base(kb.bedrock_kb_id)
 
-        assert kb.id is not None
+        if kb.id is None:
+            msg = "KnowledgeBase ID 不能为空"
+            raise ValueError(msg)
         await event_bus.publish_async(
             KnowledgeBaseDeletedEvent(
                 knowledge_base_id=kb.id,
@@ -233,7 +238,9 @@ class KnowledgeService:
         )
         doc.start_processing()
         created = await self._doc_repo.create(doc)
-        assert created.id is not None
+        if created.id is None:
+            msg = "Document 创建后 ID 不能为空"
+            raise ValueError(msg)
 
         await event_bus.publish_async(
             DocumentUploadedEvent(
@@ -302,7 +309,9 @@ class KnowledgeService:
         updated = await self._kb_repo.update(kb)
         await self._knowledge_svc.start_sync(kb.bedrock_kb_id)
 
-        assert kb.id is not None
+        if kb.id is None:
+            msg = "KnowledgeBase ID 不能为空"
+            raise ValueError(msg)
         await event_bus.publish_async(
             KnowledgeBaseSyncStartedEvent(knowledge_base_id=kb.id),
         )
@@ -335,7 +344,9 @@ class KnowledgeService:
             top_k=dto.top_k,
         )
 
-        assert kb.id is not None
+        if kb.id is None:
+            msg = "KnowledgeBase ID 不能为空"
+            raise ValueError(msg)
         return QueryResponseDTO(
             results=[
                 QueryResultDTO(
@@ -353,23 +364,12 @@ class KnowledgeService:
     # -- 内部辅助 --
 
     async def _get_kb_or_raise(self, kb_id: int) -> KnowledgeBase:
-        kb = await self._kb_repo.get_by_id(kb_id)
-        if kb is None:
-            raise KnowledgeBaseNotFoundError(kb_id)
-        return kb
-
-    @staticmethod
-    def _check_ownership(kb: KnowledgeBase, user_id: int) -> None:
-        if kb.owner_id != user_id:
-            raise DomainError(
-                message="无权操作此知识库",
-                code="FORBIDDEN_KNOWLEDGE_BASE",
-            )
+        return await get_or_raise(self._kb_repo, kb_id, KnowledgeBaseNotFoundError, kb_id)
 
     async def _get_owned_kb(self, kb_id: int, user_id: int) -> KnowledgeBase:
         """获取知识库并校验所有权。"""
         kb = await self._get_kb_or_raise(kb_id)
-        self._check_ownership(kb, user_id)
+        check_ownership(kb, user_id, error_code="FORBIDDEN_KNOWLEDGE_BASE")
         return kb
 
     async def _check_name_unique(self, name: str, owner_id: int) -> None:
@@ -379,9 +379,9 @@ class KnowledgeService:
 
     @staticmethod
     def _to_kb_dto(kb: KnowledgeBase) -> KnowledgeBaseDTO:
-        assert kb.id is not None
-        assert kb.created_at is not None
-        assert kb.updated_at is not None
+        if kb.id is None or kb.created_at is None or kb.updated_at is None:
+            msg = "KnowledgeBase 缺少必要字段 (id/created_at/updated_at)"
+            raise ValueError(msg)
         return KnowledgeBaseDTO(
             id=kb.id,
             name=kb.name,
@@ -397,9 +397,9 @@ class KnowledgeService:
 
     @staticmethod
     def _to_doc_dto(doc: Document) -> DocumentDTO:
-        assert doc.id is not None
-        assert doc.created_at is not None
-        assert doc.updated_at is not None
+        if doc.id is None or doc.created_at is None or doc.updated_at is None:
+            msg = "Document 缺少必要字段 (id/created_at/updated_at)"
+            raise ValueError(msg)
         return DocumentDTO(
             id=doc.id,
             knowledge_base_id=doc.knowledge_base_id,

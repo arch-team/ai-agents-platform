@@ -1,6 +1,8 @@
 import * as cdk from 'aws-cdk-lib';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as kms from 'aws-cdk-lib/aws-kms';
+import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
+import { NagSuppressions } from 'cdk-nag';
 import { Construct } from 'constructs';
 import { isProd, type BaseStackProps } from '../config';
 import { KmsConstruct, SecurityGroupsConstruct } from '../constructs/security';
@@ -12,12 +14,14 @@ export interface SecurityStackProps extends BaseStackProps {
 
 /**
  * SecurityStack - 安全基础设施栈。
- * @remarks 包含 KMS 加密密钥和安全组。Prod 环境额外创建 Secrets Manager VPC Endpoint。
+ * @remarks 包含 KMS 加密密钥、安全组和 JWT Secret。Prod 环境额外创建 Secrets Manager VPC Endpoint。
  */
 export class SecurityStack extends cdk.Stack {
   public readonly encryptionKey: kms.Key;
   public readonly apiSecurityGroup: ec2.SecurityGroup;
   public readonly dbSecurityGroup: ec2.SecurityGroup;
+  /** JWT 签名密钥 (Secrets Manager) */
+  public readonly jwtSecret: secretsmanager.Secret;
 
   constructor(scope: Construct, id: string, props: SecurityStackProps) {
     super(scope, id, props);
@@ -30,14 +34,35 @@ export class SecurityStack extends cdk.Stack {
     });
     this.encryptionKey = kmsConstruct.key;
 
-    // 安全组
-    // TODO: 后续创建 ALB 后将 enablePublicIngress 设为 true
+    // 安全组（ALB 入站由 ComputeStack 中的 AlbConstruct 独立管理）
     const sgConstruct = new SecurityGroupsConstruct(this, 'SecurityGroups', {
       vpc,
       enablePublicIngress: false,
     });
     this.apiSecurityGroup = sgConstruct.apiSecurityGroup;
     this.dbSecurityGroup = sgConstruct.dbSecurityGroup;
+
+    // JWT 签名密钥 — 独立管理，不再复用数据库密码
+    this.jwtSecret = new secretsmanager.Secret(this, 'JwtSecret', {
+      secretName: `${envName}/ai-platform/jwt-secret`,
+      description: 'JWT 签名密钥 — 用于 API 认证 Token 签发和验证',
+      generateSecretString: {
+        secretStringTemplate: JSON.stringify({}),
+        generateStringKey: 'secret_key',
+        passwordLength: 64,
+        excludePunctuation: true,
+      },
+      encryptionKey: this.encryptionKey,
+    });
+
+    // CDK Nag 抑制: JWT Secret 不需要自动轮换 (应用重启即可使用新密钥)
+    NagSuppressions.addResourceSuppressions(this.jwtSecret, [
+      {
+        id: 'AwsSolutions-SMG4',
+        reason:
+          'JWT signing secret does not require automatic rotation; key rotation is handled at application deployment level',
+      },
+    ]);
 
     // VPC Endpoints (Secrets Manager - Prod 环境)
     if (isProd(envName)) {
@@ -51,6 +76,10 @@ export class SecurityStack extends cdk.Stack {
     new cdk.CfnOutput(this, 'EncryptionKeyArn', {
       value: this.encryptionKey.keyArn,
       description: 'KMS encryption key ARN',
+    });
+    new cdk.CfnOutput(this, 'JwtSecretArn', {
+      value: this.jwtSecret.secretArn,
+      description: 'JWT signing secret ARN',
     });
   }
 }

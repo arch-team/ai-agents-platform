@@ -74,13 +74,3 @@ class ToolDTO:
     reviewed_at: datetime | None
     created_at: datetime
     updated_at: datetime
-
-
-@dataclass
-class PagedToolDTO:
-    """Tool 分页响应数据。"""
-
-    items: list[ToolDTO]
-    total: int
-    page: int
-    page_size: int

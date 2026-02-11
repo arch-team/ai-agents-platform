@@ -1,6 +1,6 @@
 """Template 仓库实现。"""
 
-from sqlalchemy import or_, select, update
+from sqlalchemy import ColumnElement, or_, select, update
 
 from src.modules.templates.domain.entities.template import Template
 from src.modules.templates.domain.repositories.template_repository import (
@@ -204,6 +204,32 @@ class TemplateRepositoryImpl(
         stmt = stmt.offset(offset).limit(limit).order_by(TemplateModel.id.desc())
         result = await self._session.execute(stmt)
         return [self._to_entity(m) for m in result.scalars().all()]
+
+    async def count_by_search(
+        self,
+        keyword: str,
+        *,
+        category: TemplateCategory | None = None,
+        tags: list[str] | None = None,  # noqa: ARG002
+    ) -> int:
+        """按搜索条件统计模板数量。"""
+        conditions: list[ColumnElement[bool]] = []
+        if keyword:
+            like_pattern = f"%{keyword}%"
+            conditions.append(
+                or_(
+                    TemplateModel.name.like(like_pattern),
+                    TemplateModel.description.like(like_pattern),
+                ),
+            )
+        if category:
+            conditions.append(TemplateModel.category == category.value)
+
+        return await self._count_where(*conditions) if conditions else await self.count()
+
+    async def count_by_creator(self, creator_id: int) -> int:
+        """按创建者统计模板数量。"""
+        return await self._count_where(TemplateModel.creator_id == creator_id)
 
     async def increment_usage_count(self, template_id: int) -> None:
         """增加模板使用次数。"""

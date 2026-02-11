@@ -10,6 +10,13 @@ class DomainError(Exception):
         super().__init__(message)
 
 
+class ForbiddenError(DomainError):
+    """权限不足异常 (对应 HTTP 403)。"""
+
+    def __init__(self, message: str = "无权操作此资源", code: str = "FORBIDDEN") -> None:
+        super().__init__(message=message, code=code)
+
+
 class EntityNotFoundError(DomainError):
     """实体未找到异常 (对应 HTTP 404)。"""
 

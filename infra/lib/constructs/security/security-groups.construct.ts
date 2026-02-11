@@ -22,16 +22,14 @@ export class SecurityGroupsConstruct extends Construct {
     super(scope, id);
     const { vpc, enablePublicIngress = false } = props;
 
-    // API 服务安全组
-    // TODO: 后续创建 ALB 后，收窄出站规则为仅允许访问必要的 AWS 服务端点
+    // API 服务安全组 — 出站允许全部（需访问 AWS 服务端点、外部 API 等）
     this.apiSecurityGroup = new ec2.SecurityGroup(this, 'ApiSg', {
       vpc,
       description: 'API service security group',
       allowAllOutbound: true,
     });
 
-    // 仅在启用公网入站时添加 0.0.0.0/0 入站规则
-    // TODO: 后续创建 ALB 后，将入站来源改为 ALB 安全组而非 0.0.0.0/0
+    // 仅在启用公网入站时添加 0.0.0.0/0 入站规则（当前 ALB 已独立管理入站流量）
     if (enablePublicIngress) {
       this.apiSecurityGroup.addIngressRule(
         ec2.Peer.anyIpv4(),

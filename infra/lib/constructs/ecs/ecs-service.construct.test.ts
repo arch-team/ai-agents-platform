@@ -134,6 +134,31 @@ describe('EcsServiceConstruct', () => {
       });
     });
 
+    it('应支持自定义健康检查命令', () => {
+      const app = new cdk.App();
+      const stack = new cdk.Stack(app, 'TestStack');
+      const { vpc, albSecurityGroup, containerImage } = createEcsDependencies(stack);
+
+      new EcsServiceConstruct(stack, 'TestEcs', {
+        vpc,
+        albSecurityGroup,
+        envName: 'dev',
+        containerImage,
+        healthCheckCommand: ['CMD-SHELL', 'curl -f http://localhost:8000/health || exit 1'],
+      });
+      const template = Template.fromStack(stack);
+
+      template.hasResourceProperties('AWS::ECS::TaskDefinition', {
+        ContainerDefinitions: Match.arrayWith([
+          Match.objectLike({
+            HealthCheck: Match.objectLike({
+              Command: ['CMD-SHELL', 'curl -f http://localhost:8000/health || exit 1'],
+            }),
+          }),
+        ]),
+      });
+    });
+
     it('应支持自定义环境变量', () => {
       const app = new cdk.App();
       const stack = new cdk.Stack(app, 'TestStack');

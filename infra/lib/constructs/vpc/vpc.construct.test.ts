@@ -8,7 +8,7 @@ describe('VpcConstruct', () => {
   beforeEach(() => {
     const app = new cdk.App();
     const stack = new cdk.Stack(app, 'TestStack');
-    new VpcConstruct(stack, 'TestVpc', { vpcCidr: '10.0.0.0/16' });
+    new VpcConstruct(stack, 'TestVpc', { vpcCidr: '10.0.0.0/16', envName: 'dev' });
     template = Template.fromStack(stack);
   });
 
@@ -45,6 +45,7 @@ describe('VpcConstruct', () => {
     const stack = new cdk.Stack(app, 'CustomNatStack');
     new VpcConstruct(stack, 'TestVpc', {
       vpcCidr: '10.0.0.0/16',
+      envName: 'dev',
       natGateways: 2,
     });
     const customTemplate = Template.fromStack(stack);
@@ -64,11 +65,19 @@ describe('VpcConstruct', () => {
     });
   });
 
+  it('Flow Log 应有显式 LogGroup 且保留 1 周 (Dev)', () => {
+    template.hasResourceProperties('AWS::Logs::LogGroup', {
+      LogGroupName: '/vpc/ai-agents-platform/dev/flow-logs',
+      RetentionInDays: 7,
+    });
+  });
+
   it('应支持禁用 Flow Log', () => {
     const app = new cdk.App();
     const stack = new cdk.Stack(app, 'NoFlowLogStack');
     new VpcConstruct(stack, 'TestVpc', {
       vpcCidr: '10.0.0.0/16',
+      envName: 'dev',
       enableFlowLog: false,
     });
     const noFlowLogTemplate = Template.fromStack(stack);

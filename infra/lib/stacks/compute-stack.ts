@@ -21,6 +21,8 @@ export interface ComputeStackProps extends BaseStackProps {
   readonly databaseEndpoint: string;
   /** KMS 加密密钥 */
   readonly encryptionKey: kms.IKey;
+  /** JWT 签名密钥 (Secrets Manager) */
+  readonly jwtSecret: secretsmanager.ISecret;
 }
 
 /**
@@ -36,10 +38,18 @@ export class ComputeStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props: ComputeStackProps) {
     super(scope, id, props);
 
-    const { vpc, dbSecurityGroup, databaseSecret, databaseEndpoint, encryptionKey, envName } =
-      props;
+    const {
+      vpc,
+      dbSecurityGroup,
+      databaseSecret,
+      databaseEndpoint,
+      encryptionKey,
+      jwtSecret,
+      envName,
+    } = props;
 
-    // ALB Construct
+    // ALB Construct (先创建，ECS 需要引用其安全组配置入站规则)
+    // ecsSecurityGroup 在 ECS 创建后通过 Stack 层组装添加出站规则
     const albConstruct = new AlbConstruct(this, 'Alb', {
       vpc,
       envName,
@@ -65,10 +75,17 @@ export class ComputeStack extends cdk.Stack {
         DATABASE_USER: ecs.Secret.fromSecretsManager(databaseSecret, 'username'),
         DATABASE_PASSWORD: ecs.Secret.fromSecretsManager(databaseSecret, 'password'),
         DATABASE_NAME: ecs.Secret.fromSecretsManager(databaseSecret, 'dbname'),
-        // JWT Secret — Dev 环境使用数据库密码作为临时 JWT key (后续 C-S4-3 统一管理)
-        JWT_SECRET_KEY: ecs.Secret.fromSecretsManager(databaseSecret, 'password'),
+        // JWT Secret — 独立管理，从 SecurityStack 的 Secrets Manager 注入
+        JWT_SECRET_KEY: ecs.Secret.fromSecretsManager(jwtSecret, 'secret_key'),
       },
     });
+
+    // Stack 层组装: ALB → ECS 显式出站规则 (安全组出站收窄)
+    albConstruct.albSecurityGroup.addEgressRule(
+      ecsConstruct.serviceSecurityGroup,
+      ec2.Port.tcp(ecsConstruct.containerPort),
+      'Allow ALB to forward traffic to ECS containers',
+    );
 
     // 注册 ECS 服务到 ALB Target Group
     albConstruct.targetGroup.addTarget(ecsConstruct.service);
@@ -84,8 +101,9 @@ export class ComputeStack extends cdk.Stack {
       description: 'Allow ECS service to access Aurora MySQL',
     });
 
-    // 授权 ECS Task 读取数据库 Secret
+    // 授权 ECS Task 读取数据库 Secret 和 JWT Secret
     databaseSecret.grantRead(ecsConstruct.service.taskDefinition.taskRole);
+    jwtSecret.grantRead(ecsConstruct.service.taskDefinition.taskRole);
 
     // 授权 ECS Task 使用 KMS 解密
     encryptionKey.grantDecrypt(ecsConstruct.service.taskDefinition.taskRole);
@@ -154,7 +172,7 @@ export class ComputeStack extends cdk.Stack {
         {
           id: 'AwsSolutions-IAM5',
           reason:
-            'Secrets Manager grantRead and KMS grantDecrypt generate policies with necessary wildcards (secretsmanager:GetSecretValue)',
+            'Secrets Manager grantRead (database + JWT secrets) and KMS grantDecrypt generate policies with necessary wildcards',
         },
       ],
       true,

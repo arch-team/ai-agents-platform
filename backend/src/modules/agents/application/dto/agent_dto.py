@@ -54,13 +54,3 @@ class AgentDTO:
     runtime_type: str
     created_at: datetime
     updated_at: datetime
-
-
-@dataclass
-class PagedAgentDTO:
-    """Agent 分页响应数据。"""
-
-    items: list[AgentDTO]
-    total: int
-    page: int
-    page_size: int

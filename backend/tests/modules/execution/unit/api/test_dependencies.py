@@ -24,6 +24,7 @@ class TestGetExecutionService:
         mock_session = AsyncMock()
         mock_agent_querier = AsyncMock()
         mock_tool_querier = AsyncMock()
+        mock_knowledge_querier = AsyncMock()
         mock_session_factory = MagicMock(return_value=AsyncMock())
         with (
             patch(
@@ -43,6 +44,7 @@ class TestGetExecutionService:
                 session=mock_session,
                 agent_querier=mock_agent_querier,
                 tool_querier=mock_tool_querier,
+                knowledge_querier=mock_knowledge_querier,
             )
             assert service is not None
             assert hasattr(service, "create_conversation")

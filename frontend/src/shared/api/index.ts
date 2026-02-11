@@ -1,1 +1,1 @@
-export { apiClient, setTokenGetter } from './client';
+export { apiClient, setTokenGetter, UNAUTHORIZED_EVENT } from './client';

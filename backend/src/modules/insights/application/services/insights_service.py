@@ -53,7 +53,9 @@ class InsightsService:
         )
 
         created = await self._usage_repo.create(record)
-        assert created.id is not None
+        if created.id is None:
+            msg = "UsageRecord 创建后 ID 不能为空"
+            raise ValueError(msg)
 
         await event_bus.publish_async(
             UsageRecordCreatedEvent(
@@ -94,16 +96,17 @@ class InsightsService:
                 offset=offset,
                 limit=page_size,
             )
+            total = await self._usage_repo.count_by_user(user_id)
         elif agent_id is not None:
             items = await self._usage_repo.list_by_agent(
                 agent_id,
                 offset=offset,
                 limit=page_size,
             )
+            total = await self._usage_repo.count_by_agent(agent_id)
         else:
             items = await self._usage_repo.list(offset=offset, limit=page_size)
-
-        total = await self._usage_repo.count()
+            total = await self._usage_repo.count()
 
         return PagedUsageRecordDTO(
             items=[self._to_dto(r) for r in items],
@@ -146,9 +149,9 @@ class InsightsService:
 
     @staticmethod
     def _to_dto(record: UsageRecord) -> UsageRecordDTO:
-        assert record.id is not None
-        assert record.created_at is not None
-        assert record.recorded_at is not None
+        if record.id is None or record.created_at is None or record.recorded_at is None:
+            msg = "UsageRecord 缺少必要字段 (id/created_at/recorded_at)"
+            raise ValueError(msg)
         return UsageRecordDTO(
             id=record.id,
             user_id=record.user_id,

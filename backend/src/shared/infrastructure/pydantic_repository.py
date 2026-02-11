@@ -1,5 +1,6 @@
 """PydanticRepository - IRepository 的通用 SQLAlchemy 实现。"""
 
+import asyncio
 from typing import Generic, TypeVar
 
 from sqlalchemy import ColumnElement, func, select
@@ -76,6 +77,19 @@ class PydanticRepository(IRepository[EntityT, IDT], Generic[EntityT, ModelT, IDT
         )
         result = await self._session.execute(stmt)
         return [self._to_entity(m) for m in result.scalars().all()]
+
+    async def _list_and_count(
+        self,
+        *conditions: ColumnElement[bool],
+        offset: int = 0,
+        limit: int = 20,
+    ) -> tuple[list[EntityT], int]:
+        """按条件分页查询实体列表并统计总数（并发执行）。"""
+        items, total = await asyncio.gather(
+            self._list_where(*conditions, offset=offset, limit=limit),
+            self._count_where(*conditions),
+        )
+        return items, total
 
     async def get_by_id(self, entity_id: IDT) -> EntityT | None:
         """根据 ID 获取实体。"""

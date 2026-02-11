@@ -1,8 +1,10 @@
 """Template 应用服务。"""
 
+from dataclasses import replace
+from typing import Any
+
 from src.modules.templates.application.dto.template_dto import (
     CreateTemplateDTO,
-    PagedTemplateDTO,
     TemplateDTO,
     UpdateTemplateDTO,
 )
@@ -24,6 +26,8 @@ from src.modules.templates.domain.value_objects.template_category import (
 )
 from src.modules.templates.domain.value_objects.template_config import TemplateConfig
 from src.modules.templates.domain.value_objects.template_status import TemplateStatus
+from src.shared.application.dtos import PagedResult
+from src.shared.application.ownership import check_ownership, get_or_raise
 from src.shared.domain.event_bus import event_bus
 from src.shared.domain.exceptions import DomainError, InvalidStateTransitionError
 
@@ -68,7 +72,9 @@ class TemplateService:
             tags=dto.tags,
         )
         created = await self._repo.create(template)
-        assert created.id is not None
+        if created.id is None:
+            msg = "Template 创建后 ID 不能为空"
+            raise ValueError(msg)
 
         await event_bus.publish_async(
             TemplateCreatedEvent(
@@ -121,23 +127,15 @@ class TemplateService:
         if dto.tags is not None:
             template.tags = dto.tags
 
-        # 更新 config (需要重新构建 frozen dataclass)
-        config_changed = any(
-            getattr(dto, f) is not None
-            for f in ("system_prompt", "model_id", "temperature", "max_tokens", "tool_ids", "knowledge_base_ids")
-        )
-        if config_changed:
-            old = template.config
-            template.config = TemplateConfig(
-                system_prompt=dto.system_prompt if dto.system_prompt is not None else old.system_prompt,
-                model_id=dto.model_id if dto.model_id is not None else old.model_id,
-                temperature=dto.temperature if dto.temperature is not None else old.temperature,
-                max_tokens=dto.max_tokens if dto.max_tokens is not None else old.max_tokens,
-                tool_ids=dto.tool_ids if dto.tool_ids is not None else old.tool_ids,
-                knowledge_base_ids=(
-                    dto.knowledge_base_ids if dto.knowledge_base_ids is not None else old.knowledge_base_ids
-                ),
-            )
+        # 重建 TemplateConfig (frozen 值对象, 任一字段变化需整体替换)
+        config_overrides: dict[str, Any] = {}
+        for field in ("system_prompt", "model_id", "temperature", "max_tokens", "tool_ids", "knowledge_base_ids"):
+            value = getattr(dto, field)
+            if value is not None:
+                config_overrides[field] = value
+
+        if config_overrides:
+            template.config = replace(template.config, **config_overrides)
 
         template.touch()
         updated = await self._repo.update(template)
@@ -161,7 +159,9 @@ class TemplateService:
                 code="TEMPLATE_NOT_DELETABLE",
             )
 
-        assert template.id is not None
+        if template.id is None:
+            msg = "Template ID 不能为空"
+            raise ValueError(msg)
         await self._repo.delete(template.id)
 
     # -- 状态转换 --
@@ -180,7 +180,9 @@ class TemplateService:
         template.publish()
         updated = await self._repo.update(template)
 
-        assert updated.id is not None
+        if updated.id is None:
+            msg = "Template 发布后 ID 不能为空"
+            raise ValueError(msg)
         await event_bus.publish_async(
             TemplatePublishedEvent(template_id=updated.id),
         )
@@ -200,7 +202,9 @@ class TemplateService:
         template.archive()
         updated = await self._repo.update(template)
 
-        assert updated.id is not None
+        if updated.id is None:
+            msg = "Template 归档后 ID 不能为空"
+            raise ValueError(msg)
         await event_bus.publish_async(
             TemplateArchivedEvent(template_id=updated.id),
         )
@@ -216,7 +220,7 @@ class TemplateService:
         category: str | None = None,
         keyword: str | None = None,
         tags: list[str] | None = None,
-    ) -> PagedTemplateDTO:
+    ) -> PagedResult[TemplateDTO]:
         """查询模板列表。"""
         offset = (page - 1) * page_size
         cat = TemplateCategory(category) if category else None
@@ -228,9 +232,13 @@ class TemplateService:
             offset=offset,
             limit=page_size,
         )
-        total = await self._repo.count()
+        total = await self._repo.count_by_search(
+            keyword or "",
+            category=cat,
+            tags=tags,
+        )
 
-        return PagedTemplateDTO(
+        return PagedResult(
             items=[self._to_dto(t) for t in items],
             total=total,
             page=page,
@@ -243,7 +251,7 @@ class TemplateService:
         *,
         page: int = 1,
         page_size: int = 20,
-    ) -> PagedTemplateDTO:
+    ) -> PagedResult[TemplateDTO]:
         """查询当前用户的模板列表。"""
         offset = (page - 1) * page_size
         items = await self._repo.list_by_creator(
@@ -251,9 +259,9 @@ class TemplateService:
             offset=offset,
             limit=page_size,
         )
-        total = await self._repo.count()
+        total = await self._repo.count_by_creator(current_user_id)
 
-        return PagedTemplateDTO(
+        return PagedResult(
             items=[self._to_dto(t) for t in items],
             total=total,
             page=page,
@@ -263,19 +271,12 @@ class TemplateService:
     # -- 内部辅助 --
 
     async def _get_or_raise(self, template_id: int) -> Template:
-        template = await self._repo.get_by_id(template_id)
-        if template is None:
-            raise TemplateNotFoundError(template_id)
-        return template
+        return await get_or_raise(self._repo, template_id, TemplateNotFoundError, template_id)
 
     async def _get_owned_template(self, template_id: int, user_id: int) -> Template:
         """获取模板并校验所有权。"""
         template = await self._get_or_raise(template_id)
-        if template.creator_id != user_id:
-            raise DomainError(
-                message="无权操作此模板",
-                code="FORBIDDEN_TEMPLATE",
-            )
+        check_ownership(template, user_id, owner_field="creator_id", error_code="FORBIDDEN_TEMPLATE")
         return template
 
     async def _check_name_unique(self, name: str) -> None:
@@ -285,9 +286,9 @@ class TemplateService:
 
     @staticmethod
     def _to_dto(template: Template) -> TemplateDTO:
-        assert template.id is not None
-        assert template.created_at is not None
-        assert template.updated_at is not None
+        if template.id is None or template.created_at is None or template.updated_at is None:
+            msg = "Template 缺少必要字段 (id/created_at/updated_at)"
+            raise ValueError(msg)
         return TemplateDTO(
             id=template.id,
             name=template.name,

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from src.shared.domain.exceptions import DomainError, DuplicateEntityError
+from src.shared.domain.exceptions import DomainError, DuplicateEntityError, ForbiddenError
 
 
 if TYPE_CHECKING:
@@ -38,6 +38,13 @@ class InvalidRefreshTokenError(DomainError):
 
     def __init__(self, message: str = "Refresh Token 无效或已过期") -> None:
         super().__init__(message=message, code="INVALID_REFRESH_TOKEN")
+
+
+class RegistrationDisabledError(ForbiddenError):
+    """注册功能已禁用。"""
+
+    def __init__(self) -> None:
+        super().__init__(message="Public registration is disabled", code="REGISTRATION_DISABLED")
 
 
 class UserAlreadyExistsError(DuplicateEntityError):

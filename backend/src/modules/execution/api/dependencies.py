@@ -7,6 +7,7 @@ import boto3
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.modules.execution.application.dto.execution_dto import ContextWindowConfig
 from src.modules.execution.application.interfaces.agent_runtime import IAgentRuntime
 from src.modules.execution.application.services.execution_service import ExecutionService
 from src.modules.execution.infrastructure.external.bedrock_llm_client import BedrockLLMClient
@@ -17,8 +18,9 @@ from src.modules.execution.infrastructure.persistence.repositories.conversation_
 from src.modules.execution.infrastructure.persistence.repositories.message_repository_impl import (
     MessageRepositoryImpl,
 )
-from src.presentation.api.providers import get_agent_querier, get_tool_querier
+from src.presentation.api.providers import get_agent_querier, get_knowledge_querier, get_tool_querier
 from src.shared.domain.interfaces.agent_querier import IAgentQuerier
+from src.shared.domain.interfaces.knowledge_querier import IKnowledgeQuerier
 from src.shared.domain.interfaces.tool_querier import IToolQuerier
 from src.shared.infrastructure.database import get_db, get_session_factory
 from src.shared.infrastructure.settings import get_settings
@@ -42,6 +44,7 @@ async def get_execution_service(
     session: Annotated[AsyncSession, Depends(get_db)],
     agent_querier: Annotated[IAgentQuerier, Depends(get_agent_querier)],
     tool_querier: Annotated[IToolQuerier, Depends(get_tool_querier)],
+    knowledge_querier: Annotated[IKnowledgeQuerier, Depends(get_knowledge_querier)],
 ) -> ExecutionService:
     """创建 ExecutionService 实例。
 
@@ -61,15 +64,21 @@ async def get_execution_service(
     )
 
     settings = get_settings()
+    context_window = ContextWindowConfig(
+        max_context_tokens=settings.MAX_CONTEXT_TOKENS,
+        system_prompt_token_budget=settings.SYSTEM_PROMPT_TOKEN_BUDGET,
+    )
     return ExecutionService(
         conversation_repo=conversation_repo,
         message_repo=message_repo,
         llm_client=llm_client,
         agent_querier=agent_querier,
         stream_finalize_repos=stream_finalize_repos,
+        knowledge_querier=knowledge_querier,
         agent_runtime=agent_runtime,
         tool_querier=tool_querier,
         gateway_url=settings.AGENTCORE_GATEWAY_URL,
-        max_context_tokens=settings.MAX_CONTEXT_TOKENS,
-        system_prompt_token_budget=settings.SYSTEM_PROMPT_TOKEN_BUDGET,
+        context_window=context_window,
+        stream_session_commit=stream_session.commit,
+        stream_session_close=stream_session.close,
     )

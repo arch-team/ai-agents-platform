@@ -14,11 +14,17 @@ from src.modules.agents.infrastructure.persistence.repositories.agent_repository
     AgentRepositoryImpl,
 )
 from src.modules.agents.infrastructure.services.agent_querier_impl import AgentQuerierImpl
+from src.modules.knowledge.api.dependencies import get_bedrock_knowledge_client
+from src.modules.knowledge.infrastructure.persistence.repositories.knowledge_base_repository_impl import (
+    KnowledgeBaseRepositoryImpl,
+)
+from src.modules.knowledge.infrastructure.services.knowledge_querier_impl import KnowledgeQuerierImpl
 from src.modules.tool_catalog.infrastructure.persistence.repositories.tool_repository_impl import (
     ToolRepositoryImpl,
 )
 from src.modules.tool_catalog.infrastructure.services.tool_querier_impl import ToolQuerierImpl
 from src.shared.domain.interfaces.agent_querier import IAgentQuerier
+from src.shared.domain.interfaces.knowledge_querier import IKnowledgeQuerier
 from src.shared.domain.interfaces.tool_querier import IToolQuerier
 from src.shared.infrastructure.database import get_db
 
@@ -37,3 +43,12 @@ async def get_tool_querier(
     """创建 IToolQuerier 实例。"""
     tool_repo = ToolRepositoryImpl(session=session)
     return ToolQuerierImpl(tool_repository=tool_repo)
+
+
+async def get_knowledge_querier(
+    session: Annotated[AsyncSession, Depends(get_db)],
+) -> IKnowledgeQuerier:
+    """创建 IKnowledgeQuerier 实例。"""
+    kb_repo = KnowledgeBaseRepositoryImpl(session=session)
+    knowledge_svc = get_bedrock_knowledge_client()
+    return KnowledgeQuerierImpl(kb_repository=kb_repo, knowledge_service=knowledge_svc)

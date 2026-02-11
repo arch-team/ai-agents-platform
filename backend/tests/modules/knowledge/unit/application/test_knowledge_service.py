@@ -114,7 +114,7 @@ class TestGetKnowledgeBase:
     ) -> None:
         mock_kb_repo.get_by_id.return_value = make_kb(owner_id=100)
 
-        with pytest.raises(DomainError, match="无权操作此知识库"):
+        with pytest.raises(DomainError, match="无权操作此资源"):
             await knowledge_service.get_knowledge_base(kb_id=1, user_id=999)
 
 
@@ -183,7 +183,7 @@ class TestUpdateKnowledgeBase:
 
         dto = UpdateKnowledgeBaseDTO(name="新名称")
 
-        with pytest.raises(DomainError, match="无权操作此知识库"):
+        with pytest.raises(DomainError, match="无权操作此资源"):
             await knowledge_service.update_knowledge_base(kb_id=1, dto=dto, user_id=999)
 
     @pytest.mark.asyncio
@@ -229,7 +229,7 @@ class TestDeleteKnowledgeBase:
     ) -> None:
         mock_kb_repo.get_by_id.return_value = make_kb(owner_id=100)
 
-        with pytest.raises(DomainError, match="无权操作此知识库"):
+        with pytest.raises(DomainError, match="无权操作此资源"):
             await knowledge_service.delete_knowledge_base(kb_id=1, user_id=999)
 
 
@@ -294,7 +294,7 @@ class TestUploadDocument:
 
         dto = UploadDocumentDTO(filename="test.pdf", content=b"data")
 
-        with pytest.raises(DomainError, match="无权操作此知识库"):
+        with pytest.raises(DomainError, match="无权操作此资源"):
             await knowledge_service.upload_document(kb_id=1, dto=dto, user_id=999)
 
 
@@ -325,7 +325,7 @@ class TestListDocuments:
     ) -> None:
         mock_kb_repo.get_by_id.return_value = make_kb(owner_id=100)
 
-        with pytest.raises(DomainError, match="无权操作此知识库"):
+        with pytest.raises(DomainError, match="无权操作此资源"):
             await knowledge_service.list_documents(kb_id=1, user_id=999)
 
 
@@ -366,7 +366,7 @@ class TestDeleteDocument:
     ) -> None:
         mock_kb_repo.get_by_id.return_value = make_kb(owner_id=100)
 
-        with pytest.raises(DomainError, match="无权操作此知识库"):
+        with pytest.raises(DomainError, match="无权操作此资源"):
             await knowledge_service.delete_document(kb_id=1, doc_id=10, user_id=999)
 
 
@@ -414,7 +414,7 @@ class TestSyncKnowledgeBase:
     ) -> None:
         mock_kb_repo.get_by_id.return_value = make_kb(owner_id=100)
 
-        with pytest.raises(DomainError, match="无权操作此知识库"):
+        with pytest.raises(DomainError, match="无权操作此资源"):
             await knowledge_service.sync_knowledge_base(kb_id=1, user_id=999)
 
 
@@ -489,5 +489,5 @@ class TestQuery:
 
         dto = QueryRequestDTO(query="查询")
 
-        with pytest.raises(DomainError, match="无权操作此知识库"):
+        with pytest.raises(DomainError, match="无权操作此资源"):
             await knowledge_service.query(kb_id=1, dto=dto, user_id=999)

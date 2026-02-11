@@ -11,8 +11,8 @@ from src.modules.execution.application.dto.execution_dto import (
     ConversationDTO,
     ConversationDetailDTO,
     MessageDTO,
-    PagedConversationDTO,
 )
+from src.shared.application.dtos import PagedResult
 from src.modules.execution.domain.exceptions import (
     AgentNotAvailableError,
     ConversationNotActiveError,
@@ -162,7 +162,7 @@ class TestListConversationsEndpoint:
 
     def test_list_success(self, client: TestClient, mock_service: AsyncMock) -> None:
         """200 + 返回 ConversationListResponse。"""
-        mock_service.list_conversations.return_value = PagedConversationDTO(
+        mock_service.list_conversations.return_value = PagedResult(
             items=[_make_conversation_dto()],
             total=1,
             page=1,
@@ -180,7 +180,7 @@ class TestListConversationsEndpoint:
 
     def test_list_empty(self, client: TestClient, mock_service: AsyncMock) -> None:
         """200 + 空列表。"""
-        mock_service.list_conversations.return_value = PagedConversationDTO(
+        mock_service.list_conversations.return_value = PagedResult(
             items=[], total=0, page=1, page_size=20,
         )
 
@@ -194,7 +194,7 @@ class TestListConversationsEndpoint:
 
     def test_list_with_agent_id_filter(self, client: TestClient, mock_service: AsyncMock) -> None:
         """200 + 按 agent_id 筛选。"""
-        mock_service.list_conversations.return_value = PagedConversationDTO(
+        mock_service.list_conversations.return_value = PagedResult(
             items=[_make_conversation_dto()],
             total=1,
             page=1,

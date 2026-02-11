@@ -1,6 +1,5 @@
 // 注册表单 — React Hook Form + Zod + 完整无障碍
 
-import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useNavigate } from 'react-router-dom';
@@ -16,7 +15,6 @@ import type { RegisterFormData } from '../lib/validation';
 export function RegisterForm() {
   const navigate = useNavigate();
   const registerMutation = useRegister();
-  const [apiError, setApiError] = useState<string | null>(null);
 
   const {
     register,
@@ -26,24 +24,24 @@ export function RegisterForm() {
     resolver: zodResolver(registerSchema),
   });
 
-  const handleFormSubmit = (data: RegisterFormData) => {
-    setApiError(null);
-    registerMutation.mutate(
-      { name: data.name, email: data.email, password: data.password },
-      {
-        onSuccess: () => {
-          navigate('/login');
-        },
-        onError: (error) => {
-          setApiError(extractApiError(error, '注册失败，请重试'));
-        },
-      },
-    );
+  const handleFormSubmit = async (data: RegisterFormData) => {
+    try {
+      await registerMutation.mutateAsync({
+        name: data.name,
+        email: data.email,
+        password: data.password,
+      });
+      navigate('/login');
+    } catch {
+      // 错误由 registerMutation.isError 处理，UI 中展示
+    }
   };
 
   return (
     <form onSubmit={handleSubmit(handleFormSubmit)} noValidate className="space-y-4">
-      {apiError && <ErrorMessage error={apiError} />}
+      {registerMutation.isError && (
+        <ErrorMessage error={extractApiError(registerMutation.error, '注册失败，请重试')} />
+      )}
 
       <Input
         label="姓名"

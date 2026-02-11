@@ -1,10 +1,11 @@
 import * as kms from 'aws-cdk-lib/aws-kms';
 import { Construct } from 'constructs';
 import { getRemovalPolicy } from '../../config/constants';
+import type { EnvironmentName } from '../../config/types';
 
 export interface KmsConstructProps {
   /** 环境名称 (dev, staging, prod) */
-  readonly envName: string;
+  readonly envName: EnvironmentName;
   /** KMS 密钥别名 @default 'ai-agents-platform' */
   readonly alias?: string;
   /** 是否启用自动密钥轮换 @default true */

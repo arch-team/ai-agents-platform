@@ -8,12 +8,12 @@ import { apiClient } from '@/shared/api';
 
 import { useAuthActions, useAuthToken } from '../model/store';
 
-import type { User } from '@/entities/user';
+import type { User, UserSummary } from '@/entities/user';
 
 import type { LoginRequest, LoginResponse, RegisterRequest } from './types';
 
-// 将 API 返回的用户信息转为完整 User 对象
-function toUser(apiUser: LoginResponse['user']): User {
+// 将 API 返回的用户摘要转为完整 User 对象
+function toUser(apiUser: UserSummary): User {
   return { ...apiUser, created_at: '', updated_at: '' };
 }
 
@@ -56,7 +56,7 @@ export function useCurrentUser() {
   const query = useQuery({
     queryKey: authKeys.me(),
     queryFn: async () => {
-      const { data } = await apiClient.get<LoginResponse['user']>('/api/v1/auth/me');
+      const { data } = await apiClient.get<UserSummary>('/api/v1/auth/me');
       return data;
     },
     enabled: !!token,

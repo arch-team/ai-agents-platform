@@ -79,11 +79,12 @@ export interface CrossStackComputeDependencies {
   readonly dbSecurityGroup: ec2.SecurityGroup;
   readonly encryptionKey: kms.Key;
   readonly databaseSecret: secretsmanager.Secret;
+  readonly jwtSecret: secretsmanager.Secret;
   readonly databaseEndpoint: string;
 }
 
 /**
- * 创建跨 Stack 的 Compute 依赖集 (VPC + SecurityGroup + KMS Key + Secret + DB Endpoint)。
+ * 创建跨 Stack 的 Compute 依赖集 (VPC + SecurityGroup + KMS Key + Secrets + DB Endpoint)。
  * @remarks 所有依赖创建在独立的 DepsStack 中，供 ComputeStack 测试复用
  */
 export function createCrossStackComputeDependencies(
@@ -98,6 +99,13 @@ export function createCrossStackComputeDependencies(
   });
   const encryptionKey = new kms.Key(depsStack, 'TestKey');
   const databaseSecret = new secretsmanager.Secret(depsStack, 'TestDbSecret');
+  const jwtSecret = new secretsmanager.Secret(depsStack, 'TestJwtSecret', {
+    generateSecretString: {
+      secretStringTemplate: JSON.stringify({}),
+      generateStringKey: 'secret_key',
+      passwordLength: 64,
+    },
+  });
   const databaseEndpoint = 'test-cluster.cluster-xyz.us-east-1.rds.amazonaws.com';
-  return { vpc, dbSecurityGroup, encryptionKey, databaseSecret, databaseEndpoint };
+  return { vpc, dbSecurityGroup, encryptionKey, databaseSecret, jwtSecret, databaseEndpoint };
 }

@@ -20,7 +20,6 @@ from src.modules.tool_catalog.api.schemas.responses import (
 )
 from src.modules.tool_catalog.application.dto.tool_dto import (
     CreateToolDTO,
-    PagedToolDTO,
     ToolDTO,
     UpdateToolDTO,
 )
@@ -28,6 +27,7 @@ from src.modules.tool_catalog.application.services.tool_service import ToolCatal
 from src.modules.tool_catalog.domain.value_objects.tool_status import ToolStatus
 from src.modules.tool_catalog.domain.value_objects.tool_type import ToolType
 from src.shared.api.schemas import calc_total_pages
+from src.shared.application.dtos import PagedResult
 
 
 router = APIRouter(prefix="/api/v1/tools", tags=["tools"])
@@ -66,7 +66,7 @@ def _to_response(dto: ToolDTO) -> ToolResponse:
     )
 
 
-def _to_list_response(paged: PagedToolDTO, page_size: int) -> ToolListResponse:
+def _to_list_response(paged: PagedResult[ToolDTO], page_size: int) -> ToolListResponse:
     return ToolListResponse(
         items=[_to_response(t) for t in paged.items],
         total=paged.total,

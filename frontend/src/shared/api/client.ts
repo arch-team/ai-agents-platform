@@ -23,12 +23,14 @@ apiClient.interceptors.request.use((config) => {
   return config;
 });
 
-// 错误拦截器 — 401 自动跳转登录
+// 401 未认证事件 — 通过自定义事件通知应用层，避免硬跳转破坏 SPA 导航
+export const UNAUTHORIZED_EVENT = 'auth:unauthorized';
+
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
     if (axios.isAxiosError(error) && error.response?.status === 401) {
-      window.location.href = '/login';
+      window.dispatchEvent(new CustomEvent(UNAUTHORIZED_EVENT));
     }
     return Promise.reject(error);
   },

@@ -63,15 +63,18 @@ export class DatabaseStack extends cdk.Stack {
         },
         {
           id: 'AwsSolutions-RDS11',
-          reason: 'Using default MySQL port 3306; database is in PRIVATE_ISOLATED subnet, port obfuscation has limited benefit',
+          reason:
+            'Using default MySQL port 3306; database is in PRIVATE_ISOLATED subnet, port obfuscation has limited benefit',
         },
         {
           id: 'AwsSolutions-RDS14',
-          reason: 'Aurora MySQL Backtrack not enabled; using standard backup policy (Dev 7 days / Prod 30 days)',
+          reason:
+            'Aurora MySQL Backtrack not enabled; using standard backup policy (Dev 7 days / Prod 30 days)',
         },
         {
           id: 'AwsSolutions-RDS16',
-          reason: 'db.t3.small instance type does not support Performance Insights; will enable after instance upgrade',
+          reason:
+            'db.t3.small instance type does not support Performance Insights; will enable after instance upgrade',
         },
       ],
       true,
@@ -82,7 +85,8 @@ export class DatabaseStack extends cdk.Stack {
       [
         {
           id: 'AwsSolutions-SMG4',
-          reason: 'Database credentials Secret auto-rotation will be configured with Lambda rotation function in future iteration',
+          reason:
+            'Database credentials Secret auto-rotation will be configured with Lambda rotation function in future iteration',
         },
       ],
       true,

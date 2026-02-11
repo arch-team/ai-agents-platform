@@ -1,31 +1,50 @@
 import * as cdk from 'aws-cdk-lib';
-import type { EnvironmentConfig } from './types';
+import type { EnvironmentConfig, EnvironmentName } from './types';
+
+/** 有效的环境名称集合 */
+const VALID_ENV_NAMES: ReadonlySet<string> = new Set<EnvironmentName>(['dev', 'staging', 'prod']);
 
 /**
  * 从 CDK Context 读取环境配置。
- * @remarks 环境名称通过 `-c env=dev` 传入，默认为 dev
+ * @remarks
+ * - 环境名称通过 `-c env=dev` 传入，默认为 dev
+ * - account 优先使用 CDK_DEFAULT_ACCOUNT 环境变量，fallback 到 cdk.json 配置
+ * - region 优先使用 CDK_DEFAULT_REGION 环境变量，fallback 到 cdk.json 配置
  */
 export function getEnvironmentConfig(app: cdk.App): EnvironmentConfig {
-  const envName = app.node.tryGetContext('env') || 'dev';
+  const envName = (app.node.tryGetContext('env') || 'dev') as string;
   const environments = app.node.tryGetContext('environments');
 
   if (!environments || !environments[envName]) {
     throw new Error(`未找到环境配置: ${envName}`);
   }
 
+  if (!VALID_ENV_NAMES.has(envName)) {
+    throw new Error(`无效的环境名称: ${envName}，支持的值: ${[...VALID_ENV_NAMES].join(', ')}`);
+  }
+
   const config = environments[envName];
 
+  // 环境变量覆盖: CDK_DEFAULT_ACCOUNT / CDK_DEFAULT_REGION 优先于 cdk.json
+  const account = process.env.CDK_DEFAULT_ACCOUNT || config.account;
+  const region = process.env.CDK_DEFAULT_REGION || config.region;
+
+  // 验证配置字段完整性
+  if (!account || !region || !config.vpcCidr) {
+    throw new Error(`环境 "${envName}" 配置不完整，需要 account, region, vpcCidr`);
+  }
+
   // 检测占位符账户 ID，提醒用户配置真实值
-  if (config.account === '000000000000') {
+  if (account === '000000000000') {
     console.warn(
-      `[警告] 环境 "${envName}" 使用了占位符账户 ID (000000000000)，请在 cdk.json 中配置真实的 AWS 账户 ID`,
+      `[警告] 环境 "${envName}" 使用了占位符账户 ID (000000000000)，请在 cdk.json 中配置真实的 AWS 账户 ID 或设置 CDK_DEFAULT_ACCOUNT 环境变量`,
     );
   }
 
   return {
-    account: config.account,
-    region: config.region,
+    account,
+    region,
     vpcCidr: config.vpcCidr,
-    envName,
+    envName: envName as EnvironmentName,
   };
 }

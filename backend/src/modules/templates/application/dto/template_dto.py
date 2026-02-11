@@ -62,16 +62,6 @@ class TemplateDTO:
 
 
 @dataclass
-class PagedTemplateDTO:
-    """模板分页响应数据。"""
-
-    items: list[TemplateDTO]
-    total: int
-    page: int
-    page_size: int
-
-
-@dataclass
 class InstantiateTemplateDTO:
     """模板实例化请求数据 — 根据模板创建 Agent。"""
 

@@ -54,11 +54,14 @@ class ConversationDetailDTO:
     messages: list[MessageDTO]
 
 
-@dataclass
-class PagedConversationDTO:
-    """对话分页响应数据。"""
+@dataclass(frozen=True)
+class ContextWindowConfig:
+    """上下文窗口配置，控制 LLM 调用的 token 预算分配。"""
 
-    items: list[ConversationDTO]
-    total: int
-    page: int
-    page_size: int
+    max_context_tokens: int = 30000
+    system_prompt_token_budget: int = 2000
+
+    @property
+    def max_message_tokens(self) -> int:
+        """可用于消息历史的最大 token 数。"""
+        return self.max_context_tokens - self.system_prompt_token_budget

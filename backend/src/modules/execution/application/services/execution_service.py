@@ -2,25 +2,30 @@
 
 import asyncio
 import json
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Callable, Coroutine
 from dataclasses import dataclass
+from typing import Any
+
+import structlog
 
 from src.modules.execution.application.dto.execution_dto import (
+    ContextWindowConfig,
     ConversationDetailDTO,
     ConversationDTO,
     CreateConversationDTO,
     MessageDTO,
-    PagedConversationDTO,
     SendMessageDTO,
 )
 from src.modules.execution.application.interfaces.agent_runtime import (
     AgentRequest,
+    AgentResponseChunk,
     AgentTool,
     IAgentRuntime,
 )
 from src.modules.execution.application.interfaces.llm_client import (
     ILLMClient,
     LLMMessage,
+    LLMStreamChunk,
 )
 from src.modules.execution.domain.entities.conversation import Conversation
 from src.modules.execution.domain.entities.message import Message
@@ -45,8 +50,9 @@ from src.modules.execution.domain.value_objects.conversation_status import (
     ConversationStatus,
 )
 from src.modules.execution.domain.value_objects.message_role import MessageRole
+from src.shared.application.dtos import PagedResult
+from src.shared.application.ownership import check_ownership, get_or_raise
 from src.shared.domain.event_bus import event_bus
-from src.shared.domain.exceptions import DomainError
 from src.shared.domain.interfaces.agent_querier import ActiveAgentInfo, IAgentQuerier
 from src.shared.domain.interfaces.knowledge_querier import IKnowledgeQuerier
 from src.shared.domain.interfaces.tool_querier import ApprovedToolInfo, IToolQuerier
@@ -62,6 +68,11 @@ class _SendContext:
     llm_messages: list[LLMMessage]
     system_prompt: str = ""
 
+
+# 异步无参回调类型 (用于 stream session 生命周期管理)
+AsyncCallback = Callable[[], Coroutine[Any, Any, None]]
+
+logger = structlog.get_logger(__name__)
 
 # token 估算: 约 4 字符/token (中英混合文本的经验值)
 _CHARS_PER_TOKEN = 4
@@ -81,8 +92,9 @@ class ExecutionService:
         agent_runtime: IAgentRuntime | None = None,
         tool_querier: IToolQuerier | None = None,
         gateway_url: str = "",
-        max_context_tokens: int = 30000,
-        system_prompt_token_budget: int = 2000,
+        context_window: ContextWindowConfig | None = None,
+        stream_session_commit: AsyncCallback | None = None,
+        stream_session_close: AsyncCallback | None = None,
     ) -> None:
         self._conversation_repo = conversation_repo
         self._message_repo = message_repo
@@ -92,12 +104,11 @@ class ExecutionService:
         self._agent_runtime = agent_runtime
         self._tool_querier = tool_querier
         self._gateway_url = gateway_url
-        self._max_context_tokens = max_context_tokens
-        self._system_prompt_token_budget = system_prompt_token_budget
+        self._context_window = context_window or ContextWindowConfig()
+        self._stream_session_commit = stream_session_commit
+        self._stream_session_close = stream_session_close
         # 流后 DB 写使用独立 repos (由 API 层通过独立 session 创建)
-        self._stream_msg_repo, self._stream_conv_repo = (
-            stream_finalize_repos or (message_repo, conversation_repo)
-        )
+        self._stream_msg_repo, self._stream_conv_repo = stream_finalize_repos or (message_repo, conversation_repo)
 
     async def create_conversation(
         self,
@@ -121,7 +132,9 @@ class ExecutionService:
             user_id=user_id,
         )
         created = await self._conversation_repo.create(conversation)
-        assert created.id is not None
+        if created.id is None:
+            msg = "Conversation 创建后 ID 不能为空"
+            raise ValueError(msg)
 
         await event_bus.publish_async(
             ConversationCreatedEvent(
@@ -170,8 +183,9 @@ class ExecutionService:
         ctx.conversation.add_message_count(token_count=total_tokens)
         await self._conversation_repo.update(ctx.conversation)
 
-        assert ctx.created_user_msg.id is not None
-        assert created_assistant_msg.id is not None
+        if ctx.created_user_msg.id is None or created_assistant_msg.id is None:
+            msg = "消息 ID 不能为空"
+            raise ValueError(msg)
         # 并行发布独立事件
         await asyncio.gather(
             event_bus.publish_async(
@@ -226,41 +240,19 @@ class ExecutionService:
             total_input_tokens = 0
             total_output_tokens = 0
 
-            if use_agent:
-                # Agent 模式: 通过 IAgentRuntime 流式执行
-                assert self._agent_runtime is not None
-                tools = await self._get_agent_tools()
-                request = self._build_agent_request(ctx, tools)
-                agent_stream = self._agent_runtime.execute_stream(request)
-
-                async for chunk in agent_stream:
-                    if chunk.content:
-                        collected_content += chunk.content
-                        yield f"data: {json.dumps({'content': chunk.content, 'done': False})}\n\n"
-
-                    if chunk.done:
-                        total_input_tokens = chunk.input_tokens
-                        total_output_tokens = chunk.output_tokens
-            else:
-                # 降级路径: 通过 ILLMClient 流式调用
-                stream = await self._llm_client.invoke_stream(
-                    model_id=ctx.agent_info.model_id,
-                    messages=ctx.llm_messages,
-                    system_prompt=ctx.system_prompt,
-                    temperature=ctx.agent_info.temperature,
-                    max_tokens=ctx.agent_info.max_tokens,
-                    top_p=ctx.agent_info.top_p,
-                    stop_sequences=ctx.agent_info.stop_sequences,
-                )
-
-                async for llm_chunk in stream:
-                    if llm_chunk.content:
-                        collected_content += llm_chunk.content
-                        yield f"data: {json.dumps({'content': llm_chunk.content, 'done': False})}\n\n"
-
-                    if llm_chunk.done:
-                        total_input_tokens = llm_chunk.input_tokens
-                        total_output_tokens = llm_chunk.output_tokens
+            # 根据 runtime_type 路由到对应的流式生成器
+            source = (
+                self._generate_agent_stream(ctx)
+                if use_agent
+                else self._generate_llm_stream(ctx)
+            )
+            async for chunk in source:
+                if chunk.content:
+                    collected_content += chunk.content
+                    yield f"data: {json.dumps({'content': chunk.content, 'done': False})}\n\n"
+                if chunk.done:
+                    total_input_tokens = chunk.input_tokens
+                    total_output_tokens = chunk.output_tokens
 
             # 流后 DB 写操作: 使用独立 session, 避免 DI session 已关闭的问题
             total_tokens = total_input_tokens + total_output_tokens
@@ -299,36 +291,53 @@ class ExecutionService:
         model_id: str,
         user_id: int,
     ) -> None:
-        """流式传输完成后，使用独立 session 执行 DB 写操作和事件发布。"""
-        assistant_msg.content = collected_content
-        assistant_msg.token_count = total_tokens
-        conversation.add_message_count(token_count=0)  # 用户消息
-        conversation.add_message_count(token_count=total_tokens)
+        """流式传输完成后，使用独立 session 执行 DB 写操作和事件发布。
 
-        # 使用流专用 repos 写入 (由 API 层通过独立 session 创建, 避免 DI session 已关闭)
-        await self._stream_msg_repo.update(assistant_msg)
-        await self._stream_conv_repo.update(conversation)
+        确保 stream_session 在操作完成后被提交并关闭（包括异常情况）。
+        """
+        if user_msg.id is None or assistant_msg.id is None:
+            msg = "消息 ID 不能为空"
+            raise ValueError(msg)
 
-        # 发布事件 (不依赖 DB session, 独立事件并行发布)
-        assert user_msg.id is not None
-        assert assistant_msg.id is not None
-        await asyncio.gather(
-            event_bus.publish_async(
-                MessageSentEvent(
-                    conversation_id=conversation_id,
-                    message_id=user_msg.id,
-                    user_id=user_id,
+        try:
+            assistant_msg.content = collected_content
+            assistant_msg.token_count = total_tokens
+            conversation.add_message_count(token_count=0)  # 用户消息
+            conversation.add_message_count(token_count=total_tokens)
+
+            # 使用流专用 repos 写入 (由 API 层通过独立 session 创建, 避免 DI session 已关闭)
+            await self._stream_msg_repo.update(assistant_msg)
+            await self._stream_conv_repo.update(conversation)
+
+            # 提交 stream session 事务
+            if self._stream_session_commit:
+                await self._stream_session_commit()
+
+            # 发布事件 (不依赖 DB session, 独立事件并行发布)
+            await asyncio.gather(
+                event_bus.publish_async(
+                    MessageSentEvent(
+                        conversation_id=conversation_id,
+                        message_id=user_msg.id,
+                        user_id=user_id,
+                    ),
                 ),
-            ),
-            event_bus.publish_async(
-                MessageReceivedEvent(
-                    conversation_id=conversation_id,
-                    message_id=assistant_msg.id,
-                    token_count=total_tokens,
-                    model_id=model_id,
+                event_bus.publish_async(
+                    MessageReceivedEvent(
+                        conversation_id=conversation_id,
+                        message_id=assistant_msg.id,
+                        token_count=total_tokens,
+                        model_id=model_id,
+                    ),
                 ),
-            ),
-        )
+            )
+        except Exception:
+            logger.exception("stream_finalize_failed", conversation_id=conversation_id)
+            raise
+        finally:
+            # 确保 stream session 关闭, 避免连接泄漏
+            if self._stream_session_close:
+                await self._stream_session_close()
 
     async def get_conversation(
         self,
@@ -356,7 +365,7 @@ class ExecutionService:
         agent_id: int | None = None,
         page: int = 1,
         page_size: int = 20,
-    ) -> PagedConversationDTO:
+    ) -> PagedResult[ConversationDTO]:
         """获取对话列表。"""
         offset = (page - 1) * page_size
 
@@ -373,7 +382,7 @@ class ExecutionService:
             ),
         )
 
-        return PagedConversationDTO(
+        return PagedResult(
             items=[self._to_conversation_dto(c) for c in conversations],
             total=total,
             page=page,
@@ -413,7 +422,9 @@ class ExecutionService:
 
     async def _execute_agent(self, ctx: _SendContext) -> tuple[str, int]:
         """通过 IAgentRuntime 执行（Agent 模式）。返回 (content, total_tokens)。"""
-        assert self._agent_runtime is not None
+        if self._agent_runtime is None:
+            msg = "Agent runtime 未配置"
+            raise ValueError(msg)
         tools = await self._get_agent_tools()
         request = self._build_agent_request(ctx, tools)
         response = await self._agent_runtime.execute(request)
@@ -433,6 +444,30 @@ class ExecutionService:
         )
         total_tokens = response.input_tokens + response.output_tokens
         return response.content, total_tokens
+
+    async def _generate_agent_stream(self, ctx: _SendContext) -> AsyncIterator[AgentResponseChunk]:
+        """Agent 路径的流式生成器。"""
+        if self._agent_runtime is None:
+            msg = "Agent runtime 未配置"
+            raise ValueError(msg)
+        tools = await self._get_agent_tools()
+        request = self._build_agent_request(ctx, tools)
+        async for chunk in self._agent_runtime.execute_stream(request):
+            yield chunk
+
+    async def _generate_llm_stream(self, ctx: _SendContext) -> AsyncIterator[LLMStreamChunk]:
+        """LLM 降级路径的流式生成器。"""
+        stream = await self._llm_client.invoke_stream(
+            model_id=ctx.agent_info.model_id,
+            messages=ctx.llm_messages,
+            system_prompt=ctx.system_prompt,
+            temperature=ctx.agent_info.temperature,
+            max_tokens=ctx.agent_info.max_tokens,
+            top_p=ctx.agent_info.top_p,
+            stop_sequences=ctx.agent_info.stop_sequences,
+        )
+        async for chunk in stream:
+            yield chunk
 
     async def _get_agent_tools(self) -> list[AgentTool]:
         """通过 IToolQuerier 获取已审批工具并转换为 AgentTool。"""
@@ -507,8 +542,7 @@ class ExecutionService:
 
         # 加载消息历史 → 滑动窗口截取 → 构建 LLM 上下文
         history = await self._message_repo.list_by_conversation(conversation_id)
-        max_msg_tokens = self._max_context_tokens - self._system_prompt_token_budget
-        truncated = self._truncate_messages(history, max_tokens=max_msg_tokens)
+        truncated = self._truncate_messages(history, max_tokens=self._context_window.max_message_tokens)
         llm_messages = [LLMMessage(role=m.role.value, content=m.content) for m in truncated]
 
         # RAG 上下文注入: 将检索结果附加到 system prompt
@@ -535,32 +569,32 @@ class ExecutionService:
         self,
         conversation_id: int,
     ) -> Conversation:
-        conversation = await self._conversation_repo.get_by_id(conversation_id)
-        if conversation is None:
-            raise ConversationNotFoundError(conversation_id)
-        return conversation
+        return await get_or_raise(
+            self._conversation_repo,
+            conversation_id,
+            ConversationNotFoundError,
+            conversation_id,
+        )
 
     @staticmethod
     def _check_ownership(conversation: Conversation, user_id: int) -> None:
         """校验对话所有权。"""
-        if conversation.user_id != user_id:
-            raise DomainError(
-                message="无权操作此对话",
-                code="FORBIDDEN_CONVERSATION",
-            )
+        check_ownership(conversation, user_id, owner_field="user_id", error_code="FORBIDDEN_CONVERSATION")
 
     @staticmethod
     def _check_active(conversation: Conversation) -> None:
         """校验对话处于活跃状态。"""
         if conversation.status != ConversationStatus.ACTIVE:
-            assert conversation.id is not None
+            if conversation.id is None:
+                msg = "Conversation ID 不能为空"
+                raise ValueError(msg)
             raise ConversationNotActiveError(conversation.id)
 
     @staticmethod
     def _to_conversation_dto(conv: Conversation) -> ConversationDTO:
-        assert conv.id is not None
-        assert conv.created_at is not None
-        assert conv.updated_at is not None
+        if conv.id is None or conv.created_at is None or conv.updated_at is None:
+            msg = "Conversation 缺少必要字段 (id/created_at/updated_at)"
+            raise ValueError(msg)
         return ConversationDTO(
             id=conv.id,
             title=conv.title,
@@ -598,8 +632,9 @@ class ExecutionService:
 
     @staticmethod
     def _to_message_dto(msg: Message) -> MessageDTO:
-        assert msg.id is not None
-        assert msg.created_at is not None
+        if msg.id is None or msg.created_at is None:
+            err = "Message 缺少必要字段 (id/created_at)"
+            raise ValueError(err)
         return MessageDTO(
             id=msg.id,
             conversation_id=msg.conversation_id,

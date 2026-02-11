@@ -40,6 +40,24 @@ describe('SecurityStack', () => {
       });
     });
 
+    it('应创建 JWT Secret (Secrets Manager)', () => {
+      template.hasResourceProperties('AWS::SecretsManager::Secret', {
+        Name: 'dev/ai-platform/jwt-secret',
+        Description: 'JWT 签名密钥 — 用于 API 认证 Token 签发和验证',
+        GenerateSecretString: {
+          GenerateStringKey: 'secret_key',
+          PasswordLength: 64,
+          ExcludePunctuation: true,
+        },
+      });
+    });
+
+    it('应输出 JwtSecretArn', () => {
+      template.hasOutput('JwtSecretArn', {
+        Description: 'JWT signing secret ARN',
+      });
+    });
+
     it('dev 环境不应创建 VPC Endpoint', () => {
       template.resourceCountIs('AWS::EC2::VPCEndpoint', 0);
     });
@@ -62,7 +80,7 @@ describe('SecurityStack', () => {
   });
 
   describe('公开属性', () => {
-    it('应暴露 encryptionKey, apiSecurityGroup, dbSecurityGroup', () => {
+    it('应暴露 encryptionKey, apiSecurityGroup, dbSecurityGroup, jwtSecret', () => {
       const app = new cdk.App();
       const vpc = createVpcDependency(app);
 
@@ -74,6 +92,7 @@ describe('SecurityStack', () => {
       expect(stack.encryptionKey).toBeDefined();
       expect(stack.apiSecurityGroup).toBeDefined();
       expect(stack.dbSecurityGroup).toBeDefined();
+      expect(stack.jwtSecret).toBeDefined();
     });
   });
 });

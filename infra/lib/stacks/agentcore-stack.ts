@@ -145,7 +145,8 @@ export class AgentCoreStack extends cdk.Stack {
       [
         {
           id: 'AwsSolutions-IAM5',
-          reason: 'Gateway service role is auto-created by L2 Construct; wildcard permissions are required by AgentCore service',
+          reason:
+            'Gateway service role is auto-created by L2 Construct; wildcard permissions are required by AgentCore service',
         },
         {
           id: 'AwsSolutions-COG1',
@@ -153,7 +154,8 @@ export class AgentCoreStack extends cdk.Stack {
         },
         {
           id: 'AwsSolutions-COG2',
-          reason: 'Gateway default Cognito User Pool is for M2M auth (Client Credentials); MFA not required',
+          reason:
+            'Gateway default Cognito User Pool is for M2M auth (Client Credentials); MFA not required',
         },
         {
           id: 'AwsSolutions-COG3',
@@ -166,7 +168,8 @@ export class AgentCoreStack extends cdk.Stack {
     NagSuppressions.addStackSuppressions(this, [
       {
         id: 'AwsSolutions-IAM4',
-        reason: 'AgentCore L2 Construct internally uses AWS managed policies as best practice for this service',
+        reason:
+          'AgentCore L2 Construct internally uses AWS managed policies as best practice for this service',
       },
     ]);
   }

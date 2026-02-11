@@ -58,6 +58,7 @@ const computeStack = new ComputeStack(app, `Compute-${envConfig.envName}`, {
   databaseSecret: databaseStack.dbSecret,
   databaseEndpoint: databaseStack.cluster.clusterEndpoint.hostname,
   encryptionKey: securityStack.encryptionKey,
+  jwtSecret: securityStack.jwtSecret,
   envName: envConfig.envName,
 });
 computeStack.addDependency(networkStack);

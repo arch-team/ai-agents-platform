@@ -4,13 +4,13 @@ from typing import Annotated
 
 import structlog
 from fastapi import APIRouter, Depends, Request, status
-from fastapi.responses import JSONResponse
 
 from src.modules.auth.api.dependencies import get_current_user, get_user_service
 from src.modules.auth.api.schemas.requests import LoginRequest, LogoutRequest, RefreshTokenRequest, RegisterRequest
 from src.modules.auth.api.schemas.responses import MessageResponse, TokenResponse, UserResponse
 from src.modules.auth.application.dto.user_dto import CreateUserDTO, LoginDTO, RefreshTokenDTO, UserDTO
 from src.modules.auth.application.services.user_service import UserService
+from src.modules.auth.domain.exceptions import RegistrationDisabledError
 from src.shared.api.middleware.rate_limit import limiter
 from src.shared.infrastructure.settings import Settings, get_settings
 
@@ -50,14 +50,11 @@ async def register(
     body: RegisterRequest,
     service: Annotated[UserService, Depends(get_user_service)],
     settings: Annotated[Settings, Depends(get_settings)],
-) -> UserResponse | JSONResponse:
-    """注册新用户。REGISTRATION_ENABLED=False 时返回 403。"""
+) -> UserResponse:
+    """注册新用户。REGISTRATION_ENABLED=False 时抛出 RegistrationDisabledError (403)。"""
     _bind_client_context(request)
     if not settings.REGISTRATION_ENABLED:
-        return JSONResponse(
-            status_code=status.HTTP_403_FORBIDDEN,
-            content={"code": "REGISTRATION_DISABLED", "message": "Public registration is disabled", "details": None},
-        )
+        raise RegistrationDisabledError
     dto = CreateUserDTO(email=body.email, password=body.password, name=body.name)
     user = await service.register(dto)
     return _user_response(user)

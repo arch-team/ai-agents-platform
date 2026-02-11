@@ -24,7 +24,9 @@ class ToolQuerierImpl(IToolQuerier):
     @staticmethod
     def _to_approved_tool_info(tool: Tool) -> ApprovedToolInfo:
         """Tool 实体 → ApprovedToolInfo 跨模块 DTO。"""
-        assert tool.id is not None
+        if tool.id is None:
+            msg = "Tool ID 不能为空"
+            raise ValueError(msg)
         return ApprovedToolInfo(
             id=tool.id,
             name=tool.name,

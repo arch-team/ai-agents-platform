@@ -76,7 +76,8 @@ class BedrockLLMClient(ILLMClient):
         try:
             loop = asyncio.get_running_loop()
             response = await loop.run_in_executor(
-                self._executor, lambda: self._client.converse(**kwargs),
+                self._executor,
+                lambda: self._client.converse(**kwargs),
             )
         except Exception as e:
             # 日志记录完整异常, 但不向用户暴露内部错误信息
@@ -124,7 +125,8 @@ class BedrockLLMClient(ILLMClient):
         try:
             loop = asyncio.get_running_loop()
             response = await loop.run_in_executor(
-                self._executor, lambda: self._client.converse_stream(**kwargs),
+                self._executor,
+                lambda: self._client.converse_stream(**kwargs),
             )
         except Exception as e:
             logger.exception("Bedrock ConverseStream API 调用失败")

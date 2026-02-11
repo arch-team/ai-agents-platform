@@ -7,7 +7,8 @@ import pytest
 from fastapi.testclient import TestClient
 
 from src.modules.agents.api.dependencies import get_agent_service
-from src.modules.agents.application.dto.agent_dto import AgentDTO, PagedAgentDTO
+from src.modules.agents.application.dto.agent_dto import AgentDTO
+from src.shared.application.dtos import PagedResult
 from src.modules.agents.domain.exceptions import AgentNameDuplicateError, AgentNotFoundError
 from src.modules.auth.api.dependencies import get_current_user
 from src.modules.auth.application.dto.user_dto import UserDTO
@@ -145,7 +146,7 @@ class TestListAgentsEndpoint:
 
     def test_list_success(self, client: TestClient, mock_service: AsyncMock) -> None:
         """200 + 返回 AgentListResponse。"""
-        mock_service.list_agents.return_value = PagedAgentDTO(
+        mock_service.list_agents.return_value = PagedResult(
             items=[_make_agent_dto()],
             total=1,
             page=1,
@@ -163,7 +164,7 @@ class TestListAgentsEndpoint:
 
     def test_list_empty(self, client: TestClient, mock_service: AsyncMock) -> None:
         """200 + 空列表。"""
-        mock_service.list_agents.return_value = PagedAgentDTO(
+        mock_service.list_agents.return_value = PagedResult(
             items=[], total=0, page=1, page_size=20,
         )
 
@@ -177,7 +178,7 @@ class TestListAgentsEndpoint:
 
     def test_list_with_status_filter(self, client: TestClient, mock_service: AsyncMock) -> None:
         """200 + 按状态筛选。"""
-        mock_service.list_agents.return_value = PagedAgentDTO(
+        mock_service.list_agents.return_value = PagedResult(
             items=[_make_agent_dto(status="active")],
             total=1,
             page=1,

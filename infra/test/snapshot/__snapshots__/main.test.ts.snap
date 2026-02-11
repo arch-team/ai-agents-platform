@@ -873,13 +873,6 @@ exports[`Snapshot Tests ComputeStack 快照匹配 1`] = `
       },
       "Properties": {
         "GroupDescription": "ALB security group - public HTTP ingress",
-        "SecurityGroupEgress": [
-          {
-            "CidrIp": "0.0.0.0/0",
-            "Description": "Allow all outbound traffic by default",
-            "IpProtocol": "-1",
-          },
-        ],
         "SecurityGroupIngress": [
           {
             "CidrIp": "0.0.0.0/0",
@@ -894,6 +887,37 @@ exports[`Snapshot Tests ComputeStack 快照匹配 1`] = `
         },
       },
       "Type": "AWS::EC2::SecurityGroup",
+    },
+    "AlbAlbSgtoTestComputeStackEcsServiceSg348721848000575893C1": {
+      "Metadata": {
+        "cdk_nag": {
+          "rules_to_suppress": [
+            {
+              "id": "AwsSolutions-EC23",
+              "reason": "ALB is internet-facing and requires 0.0.0.0/0 HTTP inbound traffic",
+            },
+          ],
+        },
+      },
+      "Properties": {
+        "Description": "Allow ALB to forward traffic to ECS containers",
+        "DestinationSecurityGroupId": {
+          "Fn::GetAtt": [
+            "EcsServiceSg09379F9C",
+            "GroupId",
+          ],
+        },
+        "FromPort": 8000,
+        "GroupId": {
+          "Fn::GetAtt": [
+            "AlbAlbSg6E384B2D",
+            "GroupId",
+          ],
+        },
+        "IpProtocol": "tcp",
+        "ToPort": 8000,
+      },
+      "Type": "AWS::EC2::SecurityGroupEgress",
     },
     "AlbHttpListenerC9825CF4": {
       "Metadata": {
@@ -1124,7 +1148,7 @@ exports[`Snapshot Tests ComputeStack 快照匹配 1`] = `
               "Timeout": 5,
             },
             "Image": {
-              "Fn::Sub": "000000000000.dkr.ecr.us-east-1.\${AWS::URLSuffix}/cdk-hnb659fds-container-assets-000000000000-us-east-1:aa538d9be6031f1d543294ca50ac1e345a86ac4dcb63a9629d4c7cf9a0984c1c",
+              "Fn::Sub": "000000000000.dkr.ecr.us-east-1.\${AWS::URLSuffix}/cdk-hnb659fds-container-assets-000000000000-us-east-1:52257fd426ac2a722c73c4ffe135a3857a351cc2232524d8a15c1c787e3459ad",
             },
             "LogConfiguration": {
               "LogDriver": "awslogs",
@@ -1193,9 +1217,9 @@ exports[`Snapshot Tests ComputeStack 快照匹配 1`] = `
                     "",
                     [
                       {
-                        "Fn::ImportValue": "DepsStack:ExportsOutputRefTestDbSecret7BB7706D3D9ABD74",
+                        "Fn::ImportValue": "DepsStack:ExportsOutputRefTestJwtSecretEA58522FC30156D5",
                       },
-                      ":password::",
+                      ":secret_key::",
                     ],
                   ],
                 },
@@ -1295,6 +1319,16 @@ exports[`Snapshot Tests ComputeStack 快照匹配 1`] = `
                 "Fn::ImportValue": "DepsStack:ExportsOutputRefTestDbSecret7BB7706D3D9ABD74",
               },
             },
+            {
+              "Action": [
+                "secretsmanager:GetSecretValue",
+                "secretsmanager:DescribeSecret",
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::ImportValue": "DepsStack:ExportsOutputRefTestJwtSecretEA58522FC30156D5",
+              },
+            },
           ],
           "Version": "2012-10-17",
         },
@@ -1356,7 +1390,7 @@ exports[`Snapshot Tests ComputeStack 快照匹配 1`] = `
             },
             {
               "id": "AwsSolutions-IAM5",
-              "reason": "Secrets Manager grantRead and KMS grantDecrypt generate policies with necessary wildcards (secretsmanager:GetSecretValue)",
+              "reason": "Secrets Manager grantRead (database + JWT secrets) and KMS grantDecrypt generate policies with necessary wildcards",
             },
             {
               "id": "AwsSolutions-ECS2",
@@ -1395,7 +1429,7 @@ exports[`Snapshot Tests ComputeStack 快照匹配 1`] = `
             },
             {
               "id": "AwsSolutions-IAM5",
-              "reason": "Secrets Manager grantRead and KMS grantDecrypt generate policies with necessary wildcards (secretsmanager:GetSecretValue)",
+              "reason": "Secrets Manager grantRead (database + JWT secrets) and KMS grantDecrypt generate policies with necessary wildcards",
             },
             {
               "id": "AwsSolutions-ECS2",
@@ -1415,6 +1449,16 @@ exports[`Snapshot Tests ComputeStack 快照匹配 1`] = `
               "Effect": "Allow",
               "Resource": {
                 "Fn::ImportValue": "DepsStack:ExportsOutputRefTestDbSecret7BB7706D3D9ABD74",
+              },
+            },
+            {
+              "Action": [
+                "secretsmanager:GetSecretValue",
+                "secretsmanager:DescribeSecret",
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::ImportValue": "DepsStack:ExportsOutputRefTestJwtSecretEA58522FC30156D5",
               },
             },
             {
@@ -1803,6 +1847,15 @@ exports[`Snapshot Tests NetworkStack 快照匹配 1`] = `
     },
   },
   "Resources": {
+    "VpcConstructFlowLogGroup9B1721BD": {
+      "DeletionPolicy": "Delete",
+      "Properties": {
+        "LogGroupName": "/vpc/ai-agents-platform/dev/flow-logs",
+        "RetentionInDays": 7,
+      },
+      "Type": "AWS::Logs::LogGroup",
+      "UpdateReplacePolicy": "Delete",
+    },
     "VpcConstructVpc3805DAA4": {
       "Properties": {
         "CidrBlock": "10.0.0.0/16",
@@ -1828,7 +1881,7 @@ exports[`Snapshot Tests NetworkStack 快照匹配 1`] = `
         },
         "LogDestinationType": "cloud-watch-logs",
         "LogGroupName": {
-          "Ref": "VpcConstructVpcFlowLogLogGroupD7969A48",
+          "Ref": "VpcConstructFlowLogGroup9B1721BD",
         },
         "ResourceId": {
           "Ref": "VpcConstructVpc3805DAA4",
@@ -1880,7 +1933,7 @@ exports[`Snapshot Tests NetworkStack 快照匹配 1`] = `
               "Effect": "Allow",
               "Resource": {
                 "Fn::GetAtt": [
-                  "VpcConstructVpcFlowLogLogGroupD7969A48",
+                  "VpcConstructFlowLogGroup9B1721BD",
                   "Arn",
                 ],
               },
@@ -1896,20 +1949,6 @@ exports[`Snapshot Tests NetworkStack 快照匹配 1`] = `
         ],
       },
       "Type": "AWS::IAM::Policy",
-    },
-    "VpcConstructVpcFlowLogLogGroupD7969A48": {
-      "DeletionPolicy": "Retain",
-      "Properties": {
-        "RetentionInDays": 731,
-        "Tags": [
-          {
-            "Key": "Name",
-            "Value": "TestNetworkStack/VpcConstruct/Vpc/FlowLog",
-          },
-        ],
-      },
-      "Type": "AWS::Logs::LogGroup",
-      "UpdateReplacePolicy": "Retain",
     },
     "VpcConstructVpcIGWEF0A1417": {
       "Properties": {
@@ -2599,6 +2638,12 @@ exports[`Snapshot Tests SecurityStack 快照匹配 1`] = `
         ],
       },
     },
+    "JwtSecretArn": {
+      "Description": "JWT signing secret ARN",
+      "Value": {
+        "Ref": "JwtSecretB8834B39",
+      },
+    },
   },
   "Parameters": {
     "BootstrapVersion": {
@@ -2608,6 +2653,37 @@ exports[`Snapshot Tests SecurityStack 快照匹配 1`] = `
     },
   },
   "Resources": {
+    "JwtSecretB8834B39": {
+      "DeletionPolicy": "Delete",
+      "Metadata": {
+        "cdk_nag": {
+          "rules_to_suppress": [
+            {
+              "id": "AwsSolutions-SMG4",
+              "reason": "JWT signing secret does not require automatic rotation; key rotation is handled at application deployment level",
+            },
+          ],
+        },
+      },
+      "Properties": {
+        "Description": "JWT 签名密钥 — 用于 API 认证 Token 签发和验证",
+        "GenerateSecretString": {
+          "ExcludePunctuation": true,
+          "GenerateStringKey": "secret_key",
+          "PasswordLength": 64,
+          "SecretStringTemplate": "{}",
+        },
+        "KmsKeyId": {
+          "Fn::GetAtt": [
+            "KmsKeyF138A6A4",
+            "Arn",
+          ],
+        },
+        "Name": "dev/ai-platform/jwt-secret",
+      },
+      "Type": "AWS::SecretsManager::Secret",
+      "UpdateReplacePolicy": "Delete",
+    },
     "KmsKeyAliasDA8E25D8": {
       "Properties": {
         "AliasName": "alias/ai-agents-platform-dev",
@@ -2629,6 +2705,62 @@ exports[`Snapshot Tests SecurityStack 快照匹配 1`] = `
           "Statement": [
             {
               "Action": "kms:*",
+              "Effect": "Allow",
+              "Principal": {
+                "AWS": {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "arn:",
+                      {
+                        "Ref": "AWS::Partition",
+                      },
+                      ":iam::000000000000:root",
+                    ],
+                  ],
+                },
+              },
+              "Resource": "*",
+            },
+            {
+              "Action": [
+                "kms:Decrypt",
+                "kms:Encrypt",
+                "kms:ReEncrypt*",
+                "kms:GenerateDataKey*",
+              ],
+              "Condition": {
+                "StringEquals": {
+                  "kms:ViaService": "secretsmanager.us-east-1.amazonaws.com",
+                },
+              },
+              "Effect": "Allow",
+              "Principal": {
+                "AWS": {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "arn:",
+                      {
+                        "Ref": "AWS::Partition",
+                      },
+                      ":iam::000000000000:root",
+                    ],
+                  ],
+                },
+              },
+              "Resource": "*",
+            },
+            {
+              "Action": [
+                "kms:CreateGrant",
+                "kms:DescribeKey",
+              ],
+              "Condition": {
+                "StringEquals": {
+                  "kms:ViaService": "secretsmanager.us-east-1.amazonaws.com",
+                },
+              },
               "Effect": "Allow",
               "Principal": {
                 "AWS": {

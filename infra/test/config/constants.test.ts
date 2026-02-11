@@ -6,6 +6,7 @@ import {
   isDev,
   isProd,
 } from '../../lib/config/constants';
+import type { EnvironmentName } from '../../lib/config/types';
 
 describe('constants', () => {
   describe('PROJECT_NAME', () => {
@@ -50,7 +51,7 @@ describe('constants', () => {
   });
 
   describe('isDev', () => {
-    it.each([
+    it.each<[EnvironmentName, boolean]>([
       ['dev', true],
       ['prod', false],
       ['staging', false],
@@ -60,7 +61,7 @@ describe('constants', () => {
   });
 
   describe('isProd', () => {
-    it.each([
+    it.each<[EnvironmentName, boolean]>([
       ['prod', true],
       ['dev', false],
       ['staging', false],

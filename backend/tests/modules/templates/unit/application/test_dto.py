@@ -5,9 +5,9 @@ import pytest
 from src.modules.templates.application.dto.template_dto import (
     CreateTemplateDTO,
     InstantiateTemplateDTO,
-    PagedTemplateDTO,
     UpdateTemplateDTO,
 )
+from src.shared.application.dtos import PagedResult
 
 
 @pytest.mark.unit
@@ -71,11 +71,11 @@ class TestUpdateTemplateDTO:
 
 
 @pytest.mark.unit
-class TestPagedTemplateDTO:
-    """PagedTemplateDTO 测试。"""
+class TestPagedResult:
+    """PagedResult 测试。"""
 
     def test_empty_page(self) -> None:
-        dto = PagedTemplateDTO(items=[], total=0, page=1, page_size=20)
+        dto: PagedResult[object] = PagedResult(items=[], total=0, page=1, page_size=20)
         assert dto.items == []
         assert dto.total == 0
 

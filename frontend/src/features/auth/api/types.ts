@@ -1,5 +1,7 @@
 // 认证 API 请求/响应类型
 
+import type { UserSummary } from '@/entities/user';
+
 export interface LoginRequest {
   email: string;
   password: string;
@@ -14,10 +16,5 @@ export interface RegisterRequest {
 export interface LoginResponse {
   access_token: string;
   token_type: string;
-  user: {
-    id: number;
-    email: string;
-    name: string;
-    role: 'admin' | 'developer' | 'viewer';
-  };
+  user: UserSummary;
 }

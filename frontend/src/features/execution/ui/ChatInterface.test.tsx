@@ -27,11 +27,14 @@ vi.mock('../api/stream', () => ({
 vi.mock('../model/store', () => ({
   useStreamingContent: () => '',
   useIsStreaming: () => false,
+  useChatError: () => null,
   useChatActions: () => ({
     setCurrentConversation: vi.fn(),
     appendStreamContent: vi.fn(),
     clearStream: vi.fn(),
     setStreaming: vi.fn(),
+    setError: vi.fn(),
+    clearError: vi.fn(),
   }),
 }));
 

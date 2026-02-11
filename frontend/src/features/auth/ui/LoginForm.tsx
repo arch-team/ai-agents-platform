@@ -1,6 +1,5 @@
 // 登录表单 — React Hook Form + Zod + 完整无障碍
 
-import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useNavigate } from 'react-router-dom';
@@ -16,7 +15,6 @@ import type { LoginFormData } from '../lib/validation';
 export function LoginForm() {
   const navigate = useNavigate();
   const loginMutation = useLogin();
-  const [apiError, setApiError] = useState<string | null>(null);
 
   const {
     register,
@@ -26,21 +24,20 @@ export function LoginForm() {
     resolver: zodResolver(loginSchema),
   });
 
-  const handleFormSubmit = (data: LoginFormData) => {
-    setApiError(null);
-    loginMutation.mutate(data, {
-      onSuccess: () => {
-        navigate('/');
-      },
-      onError: (error) => {
-        setApiError(extractApiError(error, '登录失败，请重试'));
-      },
-    });
+  const handleFormSubmit = async (data: LoginFormData) => {
+    try {
+      await loginMutation.mutateAsync(data);
+      navigate('/');
+    } catch {
+      // 错误由 loginMutation.isError 处理，UI 中展示
+    }
   };
 
   return (
     <form onSubmit={handleSubmit(handleFormSubmit)} noValidate className="space-y-4">
-      {apiError && <ErrorMessage error={apiError} />}
+      {loginMutation.isError && (
+        <ErrorMessage error={extractApiError(loginMutation.error, '登录失败，请重试')} />
+      )}
 
       <Input
         label="邮箱"

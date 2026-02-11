@@ -8,6 +8,7 @@ from src.shared.domain.exceptions import (
     DomainError,
     DuplicateEntityError,
     EntityNotFoundError,
+    ForbiddenError,
     InvalidStateTransitionError,
     ResourceQuotaExceededError,
     ValidationError,
@@ -18,6 +19,7 @@ logger = structlog.get_logger(__name__)
 
 # DomainError 子类 -> HTTP 状态码映射
 _EXCEPTION_STATUS_MAP: dict[type[DomainError], int] = {
+    ForbiddenError: 403,
     EntityNotFoundError: 404,
     DuplicateEntityError: 409,
     InvalidStateTransitionError: 409,

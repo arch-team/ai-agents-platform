@@ -9,7 +9,8 @@ from fastapi.testclient import TestClient
 from src.modules.auth.api.dependencies import get_current_user
 from src.modules.auth.application.dto.user_dto import UserDTO
 from src.modules.tool_catalog.api.dependencies import get_tool_service
-from src.modules.tool_catalog.application.dto.tool_dto import PagedToolDTO, ToolDTO
+from src.modules.tool_catalog.application.dto.tool_dto import ToolDTO
+from src.shared.application.dtos import PagedResult
 from src.modules.tool_catalog.domain.exceptions import (
     ToolNameDuplicateError,
     ToolNotFoundError,
@@ -203,7 +204,7 @@ class TestListToolsEndpoint:
 
     def test_list_success(self, client: TestClient, mock_service: AsyncMock) -> None:
         """200 + 返回 ToolListResponse。"""
-        mock_service.list_tools.return_value = PagedToolDTO(
+        mock_service.list_tools.return_value = PagedResult(
             items=[_make_tool_dto()],
             total=1,
             page=1,
@@ -221,7 +222,7 @@ class TestListToolsEndpoint:
 
     def test_list_with_status_filter(self, client: TestClient, mock_service: AsyncMock) -> None:
         """200 + 按 status 筛选。"""
-        mock_service.list_tools.return_value = PagedToolDTO(
+        mock_service.list_tools.return_value = PagedResult(
             items=[_make_tool_dto(status="approved")],
             total=1,
             page=1,
@@ -235,7 +236,7 @@ class TestListToolsEndpoint:
 
     def test_list_with_type_filter(self, client: TestClient, mock_service: AsyncMock) -> None:
         """200 + 按 type 筛选。"""
-        mock_service.list_tools.return_value = PagedToolDTO(
+        mock_service.list_tools.return_value = PagedResult(
             items=[], total=0, page=1, page_size=20,
         )
 
@@ -246,7 +247,7 @@ class TestListToolsEndpoint:
 
     def test_list_with_keyword_filter(self, client: TestClient, mock_service: AsyncMock) -> None:
         """200 + 按关键词筛选。"""
-        mock_service.list_tools.return_value = PagedToolDTO(
+        mock_service.list_tools.return_value = PagedResult(
             items=[], total=0, page=1, page_size=20,
         )
 
@@ -265,7 +266,7 @@ class TestListApprovedToolsEndpoint:
 
     def test_list_approved_success(self, client: TestClient, mock_service: AsyncMock) -> None:
         """200 + 返回已批准的 Tool 列表。"""
-        mock_service.list_approved_tools.return_value = PagedToolDTO(
+        mock_service.list_approved_tools.return_value = PagedResult(
             items=[_make_tool_dto(status="approved")],
             total=1,
             page=1,

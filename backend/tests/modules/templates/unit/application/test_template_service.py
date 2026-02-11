@@ -199,18 +199,20 @@ class TestListTemplates:
         service, mock_repo = _make_service()
         templates = [make_template(template_id=i) for i in range(3)]
         mock_repo.search.return_value = templates
-        mock_repo.count.return_value = 3
+        mock_repo.count_by_search.return_value = 3
 
         result = await service.list_templates(page=1, page_size=20)
         assert result.total == 3
         assert len(result.items) == 3
+        mock_repo.count_by_search.assert_called_once_with("", category=None, tags=None)
 
     @pytest.mark.asyncio
     async def test_list_my_templates_succeeds(self) -> None:
         service, mock_repo = _make_service()
         templates = [make_template(template_id=1, creator_id=10)]
         mock_repo.list_by_creator.return_value = templates
-        mock_repo.count.return_value = 1
+        mock_repo.count_by_creator.return_value = 1
 
         result = await service.list_my_templates(current_user_id=10, page=1, page_size=20)
         assert result.total == 1
+        mock_repo.count_by_creator.assert_called_once_with(10)

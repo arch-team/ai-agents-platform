@@ -3,7 +3,8 @@ import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as ecs from 'aws-cdk-lib/aws-ecs';
 import * as logs from 'aws-cdk-lib/aws-logs';
 import { Construct } from 'constructs';
-import { getRemovalPolicy } from '../../config/constants';
+import { getRemovalPolicy, isProd } from '../../config/constants';
+import type { EnvironmentName } from '../../config/types';
 
 export interface EcsServiceConstructProps {
   /** ECS 服务所在的 VPC */
@@ -11,7 +12,7 @@ export interface EcsServiceConstructProps {
   /** ALB 安全组，用于配置 ECS 安全组的入站规则 */
   readonly albSecurityGroup: ec2.ISecurityGroup;
   /** 环境名称 (dev, staging, prod) */
-  readonly envName: string;
+  readonly envName: EnvironmentName;
   /** 容器镜像 */
   readonly containerImage: ecs.ContainerImage;
   /** 容器端口 @default 8000 */
@@ -26,6 +27,8 @@ export interface EcsServiceConstructProps {
   readonly environment?: Record<string, string>;
   /** 容器 Secrets (从 Secrets Manager 注入) */
   readonly secrets?: Record<string, ecs.Secret>;
+  /** 自定义容器健康检查命令 @default ['CMD-SHELL', 'python -c "import httpx; httpx.get(\'http://localhost:{port}/health\').raise_for_status()" || exit 1'] */
+  readonly healthCheckCommand?: string[];
 }
 
 /**
@@ -56,6 +59,7 @@ export class EcsServiceConstruct extends Construct {
       desiredCount = 1,
       environment = {},
       secrets = {},
+      healthCheckCommand,
     } = props;
 
     this.containerPort = containerPort;
@@ -79,10 +83,10 @@ export class EcsServiceConstruct extends Construct {
       'Allow ALB to access container port',
     );
 
-    // CloudWatch 日志组
+    // CloudWatch 日志组 — Prod 保留 3 个月，其他保留 1 周
     const logGroup = new logs.LogGroup(this, 'LogGroup', {
       logGroupName: `/ecs/ai-agents-platform/${envName}`,
-      retention: logs.RetentionDays.ONE_WEEK,
+      retention: isProd(envName) ? logs.RetentionDays.THREE_MONTHS : logs.RetentionDays.ONE_WEEK,
       removalPolicy: getRemovalPolicy(envName),
     });
 
@@ -103,7 +107,10 @@ export class EcsServiceConstruct extends Construct {
         streamPrefix: 'api',
       }),
       healthCheck: {
-        command: ['CMD-SHELL', `python -c "import httpx; httpx.get('http://localhost:${containerPort}/health').raise_for_status()" || exit 1`],
+        command: healthCheckCommand ?? [
+          'CMD-SHELL',
+          `python -c "import httpx; httpx.get('http://localhost:${containerPort}/health').raise_for_status()" || exit 1`,
+        ],
         interval: cdk.Duration.seconds(30),
         timeout: cdk.Duration.seconds(5),
         retries: 3,

@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { Routes, Route } from 'react-router-dom';
 
 import { Spinner } from '@/shared/ui';
 
@@ -20,28 +20,26 @@ const AppLayout = lazy(() => import('@/widgets/layout').then((m) => ({ default: 
 
 export function AppRoutes() {
   return (
-    <BrowserRouter>
-      <Suspense fallback={<Spinner fullScreen />}>
-        <Routes>
-          {/* 公开路由 */}
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/register" element={<RegisterPage />} />
+    <Suspense fallback={<Spinner fullScreen />}>
+      <Routes>
+        {/* 公开路由 */}
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
 
-          {/* 需认证的路由 */}
-          <Route element={<ProtectedRoute />}>
-            <Route element={<AppLayout />}>
-              <Route path="/" element={<DashboardPage />} />
-              <Route path="/agents" element={<AgentListPage />} />
-              <Route path="/agents/create" element={<AgentCreatePage />} />
-              <Route path="/agents/:agentId" element={<AgentDetailPage />} />
-              <Route path="/chat/:conversationId" element={<ChatPage />} />
-            </Route>
+        {/* 需认证的路由 */}
+        <Route element={<ProtectedRoute />}>
+          <Route element={<AppLayout />}>
+            <Route path="/" element={<DashboardPage />} />
+            <Route path="/agents" element={<AgentListPage />} />
+            <Route path="/agents/create" element={<AgentCreatePage />} />
+            <Route path="/agents/:agentId" element={<AgentDetailPage />} />
+            <Route path="/chat/:conversationId" element={<ChatPage />} />
           </Route>
+        </Route>
 
-          {/* 404 */}
-          <Route path="*" element={<NotFoundPage />} />
-        </Routes>
-      </Suspense>
-    </BrowserRouter>
+        {/* 404 */}
+        <Route path="*" element={<NotFoundPage />} />
+      </Routes>
+    </Suspense>
   );
 }

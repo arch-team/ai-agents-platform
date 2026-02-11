@@ -3,7 +3,6 @@ from src.modules.execution.application.dto.execution_dto import (
     ConversationDTO,
     CreateConversationDTO,
     MessageDTO,
-    PagedConversationDTO,
     SendMessageDTO,
 )
 from src.modules.execution.application.interfaces.llm_client import (
@@ -27,6 +26,5 @@ __all__ = [
     "LLMResponse",
     "LLMStreamChunk",
     "MessageDTO",
-    "PagedConversationDTO",
     "SendMessageDTO",
 ]

@@ -1,10 +1,11 @@
 import * as cdk from 'aws-cdk-lib';
 import { Template } from 'aws-cdk-lib/assertions';
+import type { NetworkStackProps } from '../../lib/stacks/network-stack';
 import { NetworkStack } from '../../lib/stacks/network-stack';
 import { TEST_ENV, TEST_VPC_CIDR } from '../helpers/test-utils';
 
 describe('NetworkStack', () => {
-  const defaultProps = {
+  const defaultProps: NetworkStackProps = {
     env: TEST_ENV,
     vpcCidr: TEST_VPC_CIDR,
     envName: 'dev',

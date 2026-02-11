@@ -42,6 +42,14 @@ class IUsageRecordRepository(IRepository[UsageRecord, int]):
         """按日期范围查询使用记录。"""
 
     @abstractmethod
+    async def count_by_user(self, user_id: int) -> int:
+        """按用户统计使用记录数量。"""
+
+    @abstractmethod
+    async def count_by_agent(self, agent_id: int) -> int:
+        """按 Agent 统计使用记录数量。"""
+
+    @abstractmethod
     async def get_aggregated_stats(
         self,
         *,

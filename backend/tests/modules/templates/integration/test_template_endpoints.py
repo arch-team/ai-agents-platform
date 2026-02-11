@@ -9,10 +9,8 @@ from fastapi.testclient import TestClient
 from src.modules.auth.api.dependencies import get_current_user
 from src.modules.auth.application.dto.user_dto import UserDTO
 from src.modules.templates.api.dependencies import get_template_service
-from src.modules.templates.application.dto.template_dto import (
-    PagedTemplateDTO,
-    TemplateDTO,
-)
+from src.modules.templates.application.dto.template_dto import TemplateDTO
+from src.shared.application.dtos import PagedResult
 from src.modules.templates.domain.exceptions import (
     DuplicateTemplateNameError,
     TemplateNotFoundError,
@@ -112,7 +110,7 @@ class TestListTemplatesEndpoint:
     """GET /api/v1/templates 测试。"""
 
     def test_list_returns_200(self, client: TestClient, mock_service: AsyncMock) -> None:
-        mock_service.list_templates.return_value = PagedTemplateDTO(
+        mock_service.list_templates.return_value = PagedResult(
             items=[_make_template_dto()],
             total=1,
             page=1,
@@ -126,7 +124,7 @@ class TestListTemplatesEndpoint:
         assert "total_pages" in data
 
     def test_list_with_category_filter(self, client: TestClient, mock_service: AsyncMock) -> None:
-        mock_service.list_templates.return_value = PagedTemplateDTO(
+        mock_service.list_templates.return_value = PagedResult(
             items=[], total=0, page=1, page_size=20,
         )
         resp = client.get("/api/v1/templates?category=code_assistant")
@@ -134,7 +132,7 @@ class TestListTemplatesEndpoint:
         mock_service.list_templates.assert_called_once()
 
     def test_list_with_keyword(self, client: TestClient, mock_service: AsyncMock) -> None:
-        mock_service.list_templates.return_value = PagedTemplateDTO(
+        mock_service.list_templates.return_value = PagedResult(
             items=[], total=0, page=1, page_size=20,
         )
         resp = client.get("/api/v1/templates?keyword=Python")
@@ -146,7 +144,7 @@ class TestListMyTemplatesEndpoint:
     """GET /api/v1/templates/mine 测试。"""
 
     def test_mine_returns_200(self, client: TestClient, mock_service: AsyncMock) -> None:
-        mock_service.list_my_templates.return_value = PagedTemplateDTO(
+        mock_service.list_my_templates.return_value = PagedResult(
             items=[_make_template_dto()],
             total=1,
             page=1,

@@ -58,5 +58,19 @@ class ITemplateRepository(IRepository[Template, int]):
         """搜索模板。"""
 
     @abstractmethod
+    async def count_by_search(
+        self,
+        keyword: str,
+        *,
+        category: TemplateCategory | None = None,
+        tags: list[str] | None = None,
+    ) -> int:
+        """按搜索条件统计模板数量。"""
+
+    @abstractmethod
+    async def count_by_creator(self, creator_id: int) -> int:
+        """按创建者统计模板数量。"""
+
+    @abstractmethod
     async def increment_usage_count(self, template_id: int) -> None:
         """增加模板使用次数。"""

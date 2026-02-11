@@ -57,7 +57,9 @@ class UsageRecordRepositoryImpl(
     ) -> list[UsageRecord]:
         """按用户查询使用记录（按 recorded_at 降序）。"""
         return await self._list_by_field(
-            UsageRecordModel.user_id == user_id, offset=offset, limit=limit,
+            UsageRecordModel.user_id == user_id,
+            offset=offset,
+            limit=limit,
         )
 
     async def list_by_agent(
@@ -69,8 +71,18 @@ class UsageRecordRepositoryImpl(
     ) -> list[UsageRecord]:
         """按 Agent 查询使用记录（按 recorded_at 降序）。"""
         return await self._list_by_field(
-            UsageRecordModel.agent_id == agent_id, offset=offset, limit=limit,
+            UsageRecordModel.agent_id == agent_id,
+            offset=offset,
+            limit=limit,
         )
+
+    async def count_by_user(self, user_id: int) -> int:
+        """按用户统计使用记录数量。"""
+        return await self._count_where(UsageRecordModel.user_id == user_id)
+
+    async def count_by_agent(self, agent_id: int) -> int:
+        """按 Agent 统计使用记录数量。"""
+        return await self._count_where(UsageRecordModel.agent_id == agent_id)
 
     async def list_by_date_range(
         self,

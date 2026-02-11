@@ -50,7 +50,9 @@ class AgentQuerierImpl(IAgentQuerier):
 
     @staticmethod
     def _to_active_agent_info(agent: Agent) -> ActiveAgentInfo:
-        assert agent.id is not None
+        if agent.id is None:
+            msg = "Agent ID 不能为空"
+            raise ValueError(msg)
         return ActiveAgentInfo(
             id=agent.id,
             name=agent.name,

@@ -39,16 +39,6 @@ class KnowledgeBaseDTO:
 
 
 @dataclass
-class PagedKnowledgeBaseDTO:
-    """知识库分页响应数据。"""
-
-    items: list[KnowledgeBaseDTO]
-    total: int
-    page: int
-    page_size: int
-
-
-@dataclass
 class DocumentDTO:
     """文档响应数据。"""
 

@@ -7,7 +7,6 @@ from dataclasses import replace
 from src.modules.agents.application.dto.agent_dto import (
     AgentDTO,
     CreateAgentDTO,
-    PagedAgentDTO,
     UpdateAgentDTO,
 )
 from src.modules.agents.domain.entities.agent import Agent
@@ -26,8 +25,10 @@ from src.modules.agents.domain.exceptions import (
 from src.modules.agents.domain.repositories.agent_repository import IAgentRepository
 from src.modules.agents.domain.value_objects.agent_config import AgentConfig
 from src.modules.agents.domain.value_objects.agent_status import AgentStatus
+from src.shared.application.dtos import PagedResult
+from src.shared.application.ownership import check_ownership, get_or_raise
 from src.shared.domain.event_bus import event_bus
-from src.shared.domain.exceptions import DomainError, InvalidStateTransitionError
+from src.shared.domain.exceptions import InvalidStateTransitionError
 
 
 class AgentService:
@@ -57,7 +58,9 @@ class AgentService:
             ),
         )
         created = await self._repository.create(agent)
-        assert created.id is not None
+        if created.id is None:
+            msg = "Agent 创建后 ID 不能为空"
+            raise ValueError(msg)
         await event_bus.publish_async(
             AgentCreatedEvent(
                 agent_id=created.id,
@@ -88,7 +91,7 @@ class AgentService:
         status: AgentStatus | None = None,
         page: int = 1,
         page_size: int = 20,
-    ) -> PagedAgentDTO:
+    ) -> PagedResult[AgentDTO]:
         """获取用户的 Agent 列表，支持按状态筛选和分页。"""
         offset = (page - 1) * page_size
 
@@ -112,7 +115,7 @@ class AgentService:
                 self._repository.count_by_owner(owner_id),
             )
 
-        return PagedAgentDTO(
+        return PagedResult(
             items=[self._to_dto(a) for a in agents],
             total=total,
             page=page,
@@ -170,7 +173,9 @@ class AgentService:
         updated = await self._repository.update(agent)
 
         if changed_fields:
-            assert updated.id is not None
+            if updated.id is None:
+                msg = "Agent 更新后 ID 不能为空"
+                raise ValueError(msg)
             await event_bus.publish_async(
                 AgentUpdatedEvent(
                     agent_id=updated.id,
@@ -241,25 +246,20 @@ class AgentService:
         agent = await self._get_owned_agent(agent_id, operator_id)
         action(agent)
         updated = await self._repository.update(agent)
-        assert updated.id is not None
+        if updated.id is None:
+            msg = "Agent 状态变更后 ID 不能为空"
+            raise ValueError(msg)
         await event_bus.publish_async(
             event_cls(agent_id=updated.id, owner_id=updated.owner_id),
         )
         return self._to_dto(updated)
 
     async def _get_agent_or_raise(self, agent_id: int) -> Agent:
-        agent = await self._repository.get_by_id(agent_id)
-        if agent is None:
-            raise AgentNotFoundError(agent_id)
-        return agent
+        return await get_or_raise(self._repository, agent_id, AgentNotFoundError, agent_id)
 
     async def _get_owned_agent(self, agent_id: int, operator_id: int) -> Agent:
         agent = await self._get_agent_or_raise(agent_id)
-        if agent.owner_id != operator_id:
-            raise DomainError(
-                message="无权操作此 Agent",
-                code="FORBIDDEN_AGENT",
-            )
+        check_ownership(agent, operator_id, error_code="FORBIDDEN_AGENT")
         return agent
 
     async def _check_name_unique(self, name: str, owner_id: int) -> None:
@@ -269,9 +269,9 @@ class AgentService:
 
     @staticmethod
     def _to_dto(agent: Agent) -> AgentDTO:
-        assert agent.id is not None
-        assert agent.created_at is not None
-        assert agent.updated_at is not None
+        if agent.id is None or agent.created_at is None or agent.updated_at is None:
+            msg = "Agent 缺少必要字段 (id/created_at/updated_at)"
+            raise ValueError(msg)
         return AgentDTO(
             id=agent.id,
             name=agent.name,

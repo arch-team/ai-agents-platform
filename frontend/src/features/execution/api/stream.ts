@@ -5,6 +5,7 @@ import { useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 
 import { env } from '@/shared/config/env';
+import { extractApiError } from '@/shared/lib/extractApiError';
 
 import { streamSSE } from '../lib/sse';
 import { useChatActions } from '../model/store';
@@ -20,12 +21,13 @@ import type { SendMessageDTO } from './types';
  * @param token - 认证 token，由调用方从 auth store 获取后传入（避免跨 feature 依赖）
  */
 export function useSendMessageStream(token: string | null) {
-  const { appendStreamContent, clearStream, setStreaming } = useChatActions();
+  const { appendStreamContent, clearStream, setStreaming, setError, clearError } = useChatActions();
   const queryClient = useQueryClient();
 
   const sendMessage = useCallback(
     async (conversationId: number, dto: SendMessageDTO) => {
       clearStream();
+      clearError();
       setStreaming(true);
 
       try {
@@ -44,13 +46,15 @@ export function useSendMessageStream(token: string | null) {
             break;
           }
         }
+      } catch (err) {
+        setError(extractApiError(err, '发送消息失败，请重试'));
       } finally {
         setStreaming(false);
         // 流结束后刷新对话详情缓存
         queryClient.invalidateQueries({ queryKey: conversationKeys.detail(conversationId) });
       }
     },
-    [appendStreamContent, clearStream, setStreaming, queryClient, token],
+    [appendStreamContent, clearStream, setStreaming, setError, clearError, queryClient, token],
   );
 
   return { sendMessage };

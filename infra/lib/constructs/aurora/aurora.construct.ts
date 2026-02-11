@@ -5,6 +5,7 @@ import * as rds from 'aws-cdk-lib/aws-rds';
 import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
 import { Construct } from 'constructs';
 import { getRemovalPolicy, isDev, isProd } from '../../config/constants';
+import type { EnvironmentName } from '../../config/types';
 
 export interface AuroraConstructProps {
   /** Aurora 集群所在的 VPC */
@@ -14,10 +15,10 @@ export interface AuroraConstructProps {
   /** KMS 加密密钥 */
   readonly encryptionKey?: kms.IKey;
   /** 环境名称 (dev, staging, prod) */
-  readonly envName: string;
+  readonly envName: EnvironmentName;
   /** 数据库名称 @default 'ai_agents_platform' */
   readonly databaseName?: string;
-  /** 实例类型 @default db.t3.small */
+  /** 实例类型 @default db.t3.medium */
   readonly instanceType?: ec2.InstanceType;
   /** 实例数量 @default 1 (Dev), 2 (Prod) */
   readonly instances?: number;
@@ -27,7 +28,7 @@ export interface AuroraConstructProps {
 
 /**
  * Aurora MySQL Construct - 创建 Aurora MySQL 3.x 集群。
- * @remarks Dev: db.t3.small 单 AZ; Prod: 多 AZ + 删除保护。
+ * @remarks Dev: db.t3.medium 单 AZ; Prod: 多 AZ + 删除保护。
  */
 export class AuroraConstruct extends Construct {
   public readonly cluster: rds.DatabaseCluster;

@@ -130,11 +130,13 @@ class TestListUsageRecords:
         mock_usage_repo: AsyncMock,
     ) -> None:
         mock_usage_repo.list_by_user.return_value = [make_usage_record()]
-        mock_usage_repo.count.return_value = 1
+        mock_usage_repo.count_by_user.return_value = 1
 
         result = await insights_service.list_usage_records(user_id=10, page=1, page_size=20)
         assert len(result.items) == 1
+        assert result.total == 1
         mock_usage_repo.list_by_user.assert_called_once_with(10, offset=0, limit=20)
+        mock_usage_repo.count_by_user.assert_called_once_with(10)
 
     @pytest.mark.asyncio
     async def test_list_by_agent(
@@ -143,11 +145,13 @@ class TestListUsageRecords:
         mock_usage_repo: AsyncMock,
     ) -> None:
         mock_usage_repo.list_by_agent.return_value = [make_usage_record()]
-        mock_usage_repo.count.return_value = 1
+        mock_usage_repo.count_by_agent.return_value = 1
 
         result = await insights_service.list_usage_records(agent_id=5, page=1, page_size=20)
         assert len(result.items) == 1
+        assert result.total == 1
         mock_usage_repo.list_by_agent.assert_called_once_with(5, offset=0, limit=20)
+        mock_usage_repo.count_by_agent.assert_called_once_with(5)
 
     @pytest.mark.asyncio
     async def test_pagination_offset(

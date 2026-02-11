@@ -1,4 +1,5 @@
 import * as cdk from 'aws-cdk-lib';
+import type { EnvironmentName } from './types';
 
 /** 项目名称 */
 export const PROJECT_NAME = 'ai-agents-platform';
@@ -7,7 +8,7 @@ export const PROJECT_NAME = 'ai-agents-platform';
  * 获取必须标签。
  * @remarks 所有资源必须包含这些标签，用于成本追踪和资源管理
  */
-export function getRequiredTags(envName: string): Record<string, string> {
+export function getRequiredTags(envName: EnvironmentName): Record<string, string> {
   return {
     Project: PROJECT_NAME,
     Environment: envName,
@@ -20,7 +21,7 @@ export function getRequiredTags(envName: string): Record<string, string> {
  * 根据环境名称获取 RemovalPolicy。
  * @remarks Dev 环境使用 DESTROY (便于迭代), Prod 使用 RETAIN, 其他使用 SNAPSHOT
  */
-export function getRemovalPolicy(envName: string): cdk.RemovalPolicy {
+export function getRemovalPolicy(envName: EnvironmentName): cdk.RemovalPolicy {
   switch (envName) {
     case 'dev':
       return cdk.RemovalPolicy.DESTROY;
@@ -35,7 +36,7 @@ export function getRemovalPolicy(envName: string): cdk.RemovalPolicy {
  * 判断是否为 Dev 环境。
  * @remarks 用于条件配置，如删除保护、实例数量等
  */
-export function isDev(envName: string): boolean {
+export function isDev(envName: EnvironmentName): boolean {
   return envName === 'dev';
 }
 
@@ -43,6 +44,6 @@ export function isDev(envName: string): boolean {
  * 判断是否为 Prod 环境。
  * @remarks 用于条件配置，如多 AZ、高规格实例等
  */
-export function isProd(envName: string): boolean {
+export function isProd(envName: EnvironmentName): boolean {
   return envName === 'prod';
 }

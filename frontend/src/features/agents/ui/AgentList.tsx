@@ -2,7 +2,7 @@ import { useState } from 'react';
 
 import { AgentCard } from '@/entities/agent';
 import type { AgentStatus } from '@/entities/agent';
-import { Button, Spinner, ErrorMessage } from '@/shared/ui';
+import { Button, Spinner, ErrorMessage, Pagination } from '@/shared/ui';
 import { extractApiError } from '@/shared/lib/extractApiError';
 
 import { useAgents, useActivateAgent, useArchiveAgent, useDeleteAgent } from '../api/queries';
@@ -23,10 +23,30 @@ interface AgentListProps {
 
 export function AgentList({ onSelect, onEdit, onCreate }: AgentListProps) {
   const [filters, setFilters] = useState<AgentFilters>({ page: 1, page_size: 10 });
+  const [operatingAgentId, setOperatingAgentId] = useState<number | null>(null);
   const { data, isLoading, error } = useAgents(filters);
+
+  const mutationCallbacks = {
+    onSettled: () => setOperatingAgentId(null),
+  };
   const activateMutation = useActivateAgent();
   const archiveMutation = useArchiveAgent();
   const deleteMutation = useDeleteAgent();
+
+  const handleActivate = (agentId: number) => {
+    setOperatingAgentId(agentId);
+    activateMutation.mutate(agentId, mutationCallbacks);
+  };
+
+  const handleArchive = (agentId: number) => {
+    setOperatingAgentId(agentId);
+    archiveMutation.mutate(agentId, mutationCallbacks);
+  };
+
+  const handleDelete = (agentId: number) => {
+    setOperatingAgentId(agentId);
+    deleteMutation.mutate(agentId, mutationCallbacks);
+  };
 
   const handleStatusFilter = (status: AgentStatus | '') => {
     setFilters((prev) => ({
@@ -106,8 +126,8 @@ export function AgentList({ onSelect, onEdit, onCreate }: AgentListProps) {
                     <Button
                       variant="primary"
                       size="sm"
-                      loading={activateMutation.isPending}
-                      onClick={() => activateMutation.mutate(agent.id)}
+                      loading={activateMutation.isPending && operatingAgentId === agent.id}
+                      onClick={() => handleActivate(agent.id)}
                       aria-label={`激活 ${agent.name}`}
                     >
                       激活
@@ -118,8 +138,8 @@ export function AgentList({ onSelect, onEdit, onCreate }: AgentListProps) {
                   <Button
                     variant="outline"
                     size="sm"
-                    loading={archiveMutation.isPending}
-                    onClick={() => archiveMutation.mutate(agent.id)}
+                    loading={archiveMutation.isPending && operatingAgentId === agent.id}
+                    onClick={() => handleArchive(agent.id)}
                     aria-label={`归档 ${agent.name}`}
                   >
                     归档
@@ -128,8 +148,8 @@ export function AgentList({ onSelect, onEdit, onCreate }: AgentListProps) {
                 <Button
                   variant="outline"
                   size="sm"
-                  loading={deleteMutation.isPending}
-                  onClick={() => deleteMutation.mutate(agent.id)}
+                  loading={deleteMutation.isPending && operatingAgentId === agent.id}
+                  onClick={() => handleDelete(agent.id)}
                   aria-label={`删除 ${agent.name}`}
                 >
                   删除
@@ -141,28 +161,12 @@ export function AgentList({ onSelect, onEdit, onCreate }: AgentListProps) {
       )}
 
       {/* 分页 */}
-      {data && data.total_pages > 1 && (
-        <nav aria-label="分页导航" className="flex items-center justify-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={data.page <= 1}
-            onClick={() => handlePageChange(data.page - 1)}
-          >
-            上一页
-          </Button>
-          <span className="text-sm text-gray-600">
-            第 {data.page} / {data.total_pages} 页
-          </span>
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={data.page >= data.total_pages}
-            onClick={() => handlePageChange(data.page + 1)}
-          >
-            下一页
-          </Button>
-        </nav>
+      {data && (
+        <Pagination
+          page={data.page}
+          totalPages={data.total_pages}
+          onPageChange={handlePageChange}
+        />
       )}
     </div>
   );
