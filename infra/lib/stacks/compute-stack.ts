@@ -52,12 +52,19 @@ export class ComputeStack extends cdk.Stack {
       envName,
       containerImage: ecs.ContainerImage.fromAsset(path.join(__dirname, '../../..', 'backend')),
       environment: {
-        ENV_NAME: envName,
+        APP_ENV: envName === 'prod' ? 'production' : 'development',
         DATABASE_HOST: databaseEndpoint,
         DATABASE_PORT: '3306',
+        AWS_REGION: cdk.Stack.of(this).region,
+        LOG_LEVEL: envName === 'prod' ? 'INFO' : 'DEBUG',
       },
       secrets: {
-        DATABASE_SECRET: ecs.Secret.fromSecretsManager(databaseSecret),
+        // Aurora Secret JSON fields: host, port, username, password, dbname, engine
+        DATABASE_USER: ecs.Secret.fromSecretsManager(databaseSecret, 'username'),
+        DATABASE_PASSWORD: ecs.Secret.fromSecretsManager(databaseSecret, 'password'),
+        DATABASE_NAME: ecs.Secret.fromSecretsManager(databaseSecret, 'dbname'),
+        // JWT Secret — Dev 环境使用数据库密码作为临时 JWT key (后续 C-S4-3 统一管理)
+        JWT_SECRET_KEY: ecs.Secret.fromSecretsManager(databaseSecret, 'password'),
       },
     });
 

@@ -100,7 +100,7 @@ describe('ComputeStack', () => {
         ContainerDefinitions: Match.arrayWith([
           Match.objectLike({
             Environment: Match.arrayWith([
-              Match.objectLike({ Name: 'ENV_NAME', Value: 'dev' }),
+              Match.objectLike({ Name: 'APP_ENV', Value: 'development' }),
               Match.objectLike({ Name: 'DATABASE_HOST' }),
               Match.objectLike({ Name: 'DATABASE_PORT', Value: '3306' }),
             ]),
@@ -109,11 +109,16 @@ describe('ComputeStack', () => {
       });
     });
 
-    it('容器应注入数据库 Secret', () => {
+    it('容器应注入数据库 Secrets (独立字段)', () => {
       template.hasResourceProperties('AWS::ECS::TaskDefinition', {
         ContainerDefinitions: Match.arrayWith([
           Match.objectLike({
-            Secrets: Match.arrayWith([Match.objectLike({ Name: 'DATABASE_SECRET' })]),
+            Secrets: Match.arrayWith([
+              Match.objectLike({ Name: 'DATABASE_USER' }),
+              Match.objectLike({ Name: 'DATABASE_PASSWORD' }),
+              Match.objectLike({ Name: 'DATABASE_NAME' }),
+              Match.objectLike({ Name: 'JWT_SECRET_KEY' }),
+            ]),
           }),
         ]),
       });

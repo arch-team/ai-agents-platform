@@ -1092,8 +1092,8 @@ exports[`Snapshot Tests ComputeStack 快照匹配 1`] = `
           {
             "Environment": [
               {
-                "Name": "ENV_NAME",
-                "Value": "dev",
+                "Name": "APP_ENV",
+                "Value": "development",
               },
               {
                 "Name": "DATABASE_HOST",
@@ -1102,6 +1102,14 @@ exports[`Snapshot Tests ComputeStack 快照匹配 1`] = `
               {
                 "Name": "DATABASE_PORT",
                 "Value": "3306",
+              },
+              {
+                "Name": "AWS_REGION",
+                "Value": "us-east-1",
+              },
+              {
+                "Name": "LOG_LEVEL",
+                "Value": "DEBUG",
               },
             ],
             "Essential": true,
@@ -1137,9 +1145,59 @@ exports[`Snapshot Tests ComputeStack 快照匹配 1`] = `
             ],
             "Secrets": [
               {
-                "Name": "DATABASE_SECRET",
+                "Name": "DATABASE_USER",
                 "ValueFrom": {
-                  "Fn::ImportValue": "DepsStack:ExportsOutputRefTestDbSecret7BB7706D3D9ABD74",
+                  "Fn::Join": [
+                    "",
+                    [
+                      {
+                        "Fn::ImportValue": "DepsStack:ExportsOutputRefTestDbSecret7BB7706D3D9ABD74",
+                      },
+                      ":username::",
+                    ],
+                  ],
+                },
+              },
+              {
+                "Name": "DATABASE_PASSWORD",
+                "ValueFrom": {
+                  "Fn::Join": [
+                    "",
+                    [
+                      {
+                        "Fn::ImportValue": "DepsStack:ExportsOutputRefTestDbSecret7BB7706D3D9ABD74",
+                      },
+                      ":password::",
+                    ],
+                  ],
+                },
+              },
+              {
+                "Name": "DATABASE_NAME",
+                "ValueFrom": {
+                  "Fn::Join": [
+                    "",
+                    [
+                      {
+                        "Fn::ImportValue": "DepsStack:ExportsOutputRefTestDbSecret7BB7706D3D9ABD74",
+                      },
+                      ":dbname::",
+                    ],
+                  ],
+                },
+              },
+              {
+                "Name": "JWT_SECRET_KEY",
+                "ValueFrom": {
+                  "Fn::Join": [
+                    "",
+                    [
+                      {
+                        "Fn::ImportValue": "DepsStack:ExportsOutputRefTestDbSecret7BB7706D3D9ABD74",
+                      },
+                      ":password::",
+                    ],
+                  ],
                 },
               },
             ],
