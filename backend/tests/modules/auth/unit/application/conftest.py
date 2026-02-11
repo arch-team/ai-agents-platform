@@ -9,7 +9,7 @@ from src.modules.auth.domain.entities.user import User
 from src.modules.auth.domain.value_objects.role import Role
 
 # 测试用 JWT 配置
-JWT_SECRET = "test-secret-key"  # noqa: S105
+JWT_SECRET = "test-secret-key-minimum-32bytes-long!"  # noqa: S105
 JWT_ALGORITHM = "HS256"
 JWT_EXPIRE = 30
 MAX_LOGIN_ATTEMPTS = 5

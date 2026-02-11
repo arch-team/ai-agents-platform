@@ -15,7 +15,7 @@ from src.shared.infrastructure.settings import Settings
 
 
 # 测试用配置
-_JWT_SECRET = "test-secret-key-for-deps"
+_JWT_SECRET = "test-secret-key-for-deps-minimum-32bytes!"
 _JWT_ALGORITHM = "HS256"
 _JWT_EXPIRE = 30
 
@@ -84,9 +84,9 @@ class TestGetCurrentUser:
     @pytest.mark.asyncio
     async def test_token_without_sub_raises(self) -> None:
         # 创建一个没有 sub 的 token
-        from jose import jwt as jose_jwt
+        import jwt as pyjwt
 
-        token = jose_jwt.encode({"role": "admin"}, _JWT_SECRET, algorithm=_JWT_ALGORITHM)
+        token = pyjwt.encode({"role": "admin"}, _JWT_SECRET, algorithm=_JWT_ALGORITHM)
         credentials = HTTPAuthorizationCredentials(scheme="Bearer", credentials=token)
         settings = _test_settings()
         mock_service = AsyncMock()

@@ -2,7 +2,8 @@
 
 from datetime import UTC, datetime, timedelta
 
-from jose import JWTError, jwt  # type: ignore[import-untyped]
+import jwt
+from jwt import InvalidTokenError
 
 from src.modules.auth.domain.exceptions import AuthenticationError
 
@@ -41,7 +42,7 @@ def decode_access_token(
             secret_key,
             algorithms=[algorithm],
         )
-    except JWTError as e:
+    except InvalidTokenError as e:
         msg = "无效的认证令牌"
         raise AuthenticationError(msg) from e
     return payload

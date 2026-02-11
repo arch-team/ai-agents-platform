@@ -9,7 +9,7 @@ from src.modules.auth.application.services.token_service import (
 from src.modules.auth.domain.exceptions import AuthenticationError
 
 # 测试用 JWT 配置
-_SECRET_KEY = "test-secret-key-for-jwt"
+_SECRET_KEY = "test-secret-key-for-jwt-minimum-32bytes!"
 _ALGORITHM = "HS256"
 _EXPIRE_MINUTES = 30
 
@@ -73,4 +73,4 @@ class TestDecodeAccessToken:
             "42", secret_key=_SECRET_KEY, algorithm=_ALGORITHM, expire_minutes=_EXPIRE_MINUTES,
         )
         with pytest.raises(AuthenticationError):
-            decode_access_token(token, secret_key="wrong-secret", algorithm=_ALGORITHM)
+            decode_access_token(token, secret_key="wrong-secret-key-minimum-32bytes-long!", algorithm=_ALGORITHM)

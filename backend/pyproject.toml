@@ -38,7 +38,7 @@ dependencies = [
     # Agent 框架 (Agent 执行路径: SDK → Claude Code CLI → Bedrock Invoke API, ADR-006)
     "claude-agent-sdk>=0.1.0",
     # 安全
-    "python-jose[cryptography]>=3.3.0",
+    "PyJWT>=2.8.0",
     "bcrypt>=4.0.0",
     # 日志
     "structlog>=24.1.0",
