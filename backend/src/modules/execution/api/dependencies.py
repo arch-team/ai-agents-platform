@@ -70,4 +70,6 @@ async def get_execution_service(
         agent_runtime=agent_runtime,
         tool_querier=tool_querier,
         gateway_url=settings.AGENTCORE_GATEWAY_URL,
+        max_context_tokens=settings.MAX_CONTEXT_TOKENS,
+        system_prompt_token_budget=settings.SYSTEM_PROMPT_TOKEN_BUDGET,
     )

@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 
 import { useAgent, useActivateAgent, useArchiveAgent, AgentStatusBadge } from '@/features/agents';
 import { useConversations, useCreateConversation } from '@/features/execution';
+import { extractApiError } from '@/shared/lib/extractApiError';
 import { formatDate, formatDateTime } from '@/shared/lib/formatDate';
 import { Button, Card, Spinner, ErrorMessage } from '@/shared/ui';
 
@@ -41,7 +42,7 @@ export default function AgentDetailPage() {
   if (error || !agent) {
     return (
       <div className="p-6">
-        <ErrorMessage error={error instanceof Error ? error.message : '加载 Agent 详情失败'} />
+        <ErrorMessage error={extractApiError(error, '加载 Agent 详情失败')} />
       </div>
     );
   }

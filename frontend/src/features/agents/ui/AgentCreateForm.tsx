@@ -2,6 +2,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 
 import { Button, ErrorMessage } from '@/shared/ui';
+import { extractApiError } from '@/shared/lib/extractApiError';
 
 import { useCreateAgent } from '../api/queries';
 import { createAgentSchema } from '../lib/validation';
@@ -49,13 +50,7 @@ export function AgentCreateForm({ onSuccess, onCancel }: AgentCreateFormProps) {
 
       {/* 提交错误提示 */}
       {createMutation.isError && (
-        <ErrorMessage
-          error={
-            createMutation.error instanceof Error
-              ? createMutation.error.message
-              : '创建失败，请重试'
-          }
-        />
+        <ErrorMessage error={extractApiError(createMutation.error, '创建失败，请重试')} />
       )}
 
       {/* 操作按钮 */}

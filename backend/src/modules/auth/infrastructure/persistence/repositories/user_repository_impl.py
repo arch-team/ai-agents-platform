@@ -14,7 +14,7 @@ class UserRepositoryImpl(PydanticRepository[User, UserModel, int], IUserReposito
     entity_class = User
     model_class = UserModel
     _updatable_fields: frozenset[str] = frozenset(
-        {"name", "role", "is_active", "hashed_password", "updated_at"},
+        {"name", "role", "is_active", "hashed_password", "failed_login_count", "locked_until", "updated_at"},
     )
 
     async def get_by_email(self, email: str) -> User | None:  # noqa: D102

@@ -5,9 +5,3 @@ export interface PageResponse<T> {
   page_size: number;
   total_pages: number;
 }
-
-export interface ErrorResponse {
-  code: string;
-  message: string;
-  details?: Record<string, unknown>;
-}

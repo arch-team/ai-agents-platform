@@ -1,8 +1,6 @@
-interface AgentIconProps {
-  className?: string;
-}
+import type { IconProps } from './types';
 
-export function AgentIcon({ className = 'h-5 w-5' }: AgentIconProps) {
+export function AgentIcon({ className = 'h-5 w-5' }: IconProps) {
   return (
     <svg
       className={className}

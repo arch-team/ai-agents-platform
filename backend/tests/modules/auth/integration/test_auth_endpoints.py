@@ -14,6 +14,7 @@ from src.modules.auth.domain.exceptions import (
 )
 from src.modules.auth.domain.value_objects.role import Role
 from src.presentation.api.main import create_app
+from src.shared.api.middleware.rate_limit import limiter
 
 
 def _make_user_dto(
@@ -36,6 +37,8 @@ def mock_service():
 def app(mock_service):
     test_app = create_app()
     test_app.dependency_overrides[get_user_service] = lambda: mock_service
+    # 重置 Rate Limiter 状态，避免测试间干扰
+    limiter.reset()
     return test_app
 
 

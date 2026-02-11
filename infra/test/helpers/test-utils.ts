@@ -49,3 +49,25 @@ export function createVpcDependency(app: cdk.App, env?: cdk.Environment): ec2.Vp
   const vpcStack = new cdk.Stack(app, 'VpcStack', env ? { env } : undefined);
   return createTestVpc(vpcStack);
 }
+
+/** 跨 Stack 数据库依赖集返回类型 */
+export interface CrossStackDbDependencies {
+  readonly vpc: ec2.Vpc;
+  readonly dbSecurityGroup: ec2.SecurityGroup;
+  readonly encryptionKey: kms.Key;
+}
+
+/**
+ * 创建跨 Stack 的数据库依赖集 (VPC + SecurityGroup + KMS Key)。
+ * @remarks 所有依赖创建在独立的 VpcStack 中，供 DatabaseStack 等跨 Stack 测试复用
+ */
+export function createCrossStackDbDependencies(
+  app: cdk.App,
+  env?: cdk.Environment,
+): CrossStackDbDependencies {
+  const vpcStack = new cdk.Stack(app, 'VpcStack', env ? { env } : undefined);
+  const vpc = createTestVpc(vpcStack);
+  const dbSecurityGroup = new ec2.SecurityGroup(vpcStack, 'TestDbSg', { vpc });
+  const encryptionKey = new kms.Key(vpcStack, 'TestKey');
+  return { vpc, dbSecurityGroup, encryptionKey };
+}

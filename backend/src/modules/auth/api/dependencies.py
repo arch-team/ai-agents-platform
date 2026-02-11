@@ -32,6 +32,8 @@ def get_user_service(
         jwt_secret_key=settings.JWT_SECRET_KEY.get_secret_value(),
         jwt_algorithm=settings.JWT_ALGORITHM,
         jwt_expire_minutes=settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES,
+        max_login_attempts=settings.MAX_LOGIN_ATTEMPTS,
+        lockout_minutes=settings.LOCKOUT_MINUTES,
     )
 
 

@@ -24,37 +24,30 @@ dependencies = [
     # Web 框架
     "fastapi>=0.110.0",
     "uvicorn[standard]>=0.27.0",
-
     # 数据验证
     "pydantic>=2.6.0",
     "pydantic-settings>=2.2.0",
     "email-validator>=2.1.0",
-
     # 数据库
     "sqlalchemy>=2.0.25",
     "alembic>=1.13.0",
     "asyncmy>=0.2.9",
-
     # AWS SDK (Platform API 路径: AgentCore 资源管理 + Bedrock KB + 降级 Converse API)
     "boto3>=1.36.0",
-    "bedrock-agentcore>=0.1.0",  # AgentCore SDK (Runtime 部署封装)
-
+    "bedrock-agentcore>=0.1.0", # AgentCore SDK (Runtime 部署封装)
     # Agent 框架 (Agent 执行路径: SDK → Claude Code CLI → Bedrock Invoke API, ADR-006)
     "claude-agent-sdk>=0.1.0",
-
     # 安全
     "python-jose[cryptography]>=3.3.0",
     "bcrypt>=4.0.0",
-
     # 日志
     "structlog>=24.1.0",
-
     # 工具
     "httpx>=0.26.0",
     "python-multipart>=0.0.9",
-
     # 缓存
     "cachetools>=5.3.0",
+    "slowapi>=0.1.9",
 ]
 
 [project.optional-dependencies]
@@ -342,6 +335,9 @@ module = [
     "botocore.*",
     "claude_agent_sdk.*",
     "bedrock_agentcore.*",
+    "cachetools.*",
+    "slowapi.*",
+    "limits.*",
 ]
 ignore_missing_imports = true
 

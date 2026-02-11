@@ -13,6 +13,7 @@ from src.modules.auth.application.services.password_service import (
 from src.modules.auth.application.services.token_service import create_access_token
 from src.modules.auth.domain.entities.user import User
 from src.modules.auth.domain.exceptions import (
+    AccountLockedError,
     AuthenticationError,
     UserAlreadyExistsError,
 )
@@ -29,11 +30,15 @@ class UserService:
         jwt_secret_key: str,
         jwt_algorithm: str = "HS256",
         jwt_expire_minutes: int = 30,
+        max_login_attempts: int = 5,
+        lockout_minutes: int = 30,
     ) -> None:
         self._repository = repository
         self._jwt_secret_key = jwt_secret_key
         self._jwt_algorithm = jwt_algorithm
         self._jwt_expire_minutes = jwt_expire_minutes
+        self._max_login_attempts = max_login_attempts
+        self._lockout_minutes = lockout_minutes
 
     async def register(self, dto: CreateUserDTO) -> UserDTO:
         """注册新用户。
@@ -58,6 +63,7 @@ class UserService:
 
         Raises:
             AuthenticationError: 邮箱或密码错误
+            AccountLockedError: 账户已锁定
         """
         user = await self._repository.get_by_email(dto.email)
         if user is None:
@@ -68,9 +74,24 @@ class UserService:
             msg = "账户已停用"
             raise AuthenticationError(msg)
 
+        # 检查账户锁定状态
+        if user.is_locked:
+            raise AccountLockedError(locked_until=user.locked_until)  # type: ignore[arg-type]
+
         if not verify_password(dto.password, user.hashed_password):
+            # 记录登录失败并持久化
+            user.record_failed_login(
+                max_attempts=self._max_login_attempts,
+                lockout_minutes=self._lockout_minutes,
+            )
+            await self._repository.update(user)
             msg = "邮箱或密码错误"
             raise AuthenticationError(msg)
+
+        # 登录成功, 重置失败计数
+        if user.failed_login_count > 0:
+            user.reset_failed_logins()
+            await self._repository.update(user)
 
         token = create_access_token(
             subject=str(user.id),

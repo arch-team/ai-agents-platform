@@ -1,8 +1,6 @@
-interface HomeIconProps {
-  className?: string;
-}
+import type { IconProps } from './types';
 
-export function HomeIcon({ className = 'h-5 w-5' }: HomeIconProps) {
+export function HomeIcon({ className = 'h-5 w-5' }: IconProps) {
   return (
     <svg
       className={className}

@@ -50,6 +50,14 @@ class Settings(BaseSettings):
     BEDROCK_KB_S3_BUCKET: str = ""
     BEDROCK_KB_COLLECTION_ARN: str = ""  # OpenSearch Serverless 集合 ARN
 
+    # 登录安全
+    MAX_LOGIN_ATTEMPTS: int = 5
+    LOCKOUT_MINUTES: int = 30
+
+    # 对话上下文窗口
+    MAX_CONTEXT_TOKENS: int = 30000
+    SYSTEM_PROMPT_TOKEN_BUDGET: int = 2000
+
     # 日志
     LOG_LEVEL: str = "INFO"
 

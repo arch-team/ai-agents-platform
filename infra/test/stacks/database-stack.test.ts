@@ -1,9 +1,7 @@
 import * as cdk from 'aws-cdk-lib';
-import * as ec2 from 'aws-cdk-lib/aws-ec2';
-import * as kms from 'aws-cdk-lib/aws-kms';
 import { Template } from 'aws-cdk-lib/assertions';
 import { DatabaseStack } from '../../lib/stacks/database-stack';
-import { createTestVpc } from '../helpers/test-utils';
+import { createCrossStackDbDependencies } from '../helpers/test-utils';
 
 describe('DatabaseStack', () => {
   let template: Template;
@@ -11,10 +9,7 @@ describe('DatabaseStack', () => {
 
   beforeEach(() => {
     const app = new cdk.App();
-    const vpcStack = new cdk.Stack(app, 'VpcStack');
-    const vpc = createTestVpc(vpcStack);
-    const dbSecurityGroup = new ec2.SecurityGroup(vpcStack, 'TestDbSg', { vpc });
-    const encryptionKey = new kms.Key(vpcStack, 'TestKey');
+    const { vpc, dbSecurityGroup, encryptionKey } = createCrossStackDbDependencies(app);
 
     stack = new DatabaseStack(app, 'TestDatabaseStack', {
       vpc,

@@ -1,6 +1,4 @@
 import * as cdk from 'aws-cdk-lib';
-import * as ec2 from 'aws-cdk-lib/aws-ec2';
-import * as kms from 'aws-cdk-lib/aws-kms';
 import { Aspects } from 'aws-cdk-lib';
 import { AwsSolutionsChecks, NagSuppressions } from 'cdk-nag';
 import {
@@ -9,7 +7,12 @@ import {
   DatabaseStack,
   AgentCoreStack,
 } from '../../lib/stacks';
-import { createTestVpc, createVpcDependency, TEST_ENV, TEST_VPC_CIDR } from '../helpers/test-utils';
+import {
+  createCrossStackDbDependencies,
+  createVpcDependency,
+  TEST_ENV,
+  TEST_VPC_CIDR,
+} from '../helpers/test-utils';
 
 /** 提取 CDK Nag 错误断言通用逻辑 */
 function expectNoNagErrors(app: cdk.App, stack: cdk.Stack): void {
@@ -57,10 +60,8 @@ describe('CDK Nag 合规测试', () => {
 
   it('DatabaseStack 应通过 AWS Solutions checks', () => {
     const app = new cdk.App();
-    const vpcStack = new cdk.Stack(app, 'VpcStack', { env: TEST_ENV });
-    const vpc = createTestVpc(vpcStack);
-    const dbSecurityGroup = new ec2.SecurityGroup(vpcStack, 'TestDbSg', { vpc });
-    const encryptionKey = new kms.Key(vpcStack, 'TestKey');
+    const { vpc, dbSecurityGroup, encryptionKey } =
+      createCrossStackDbDependencies(app, TEST_ENV);
 
     const stack = new DatabaseStack(app, 'TestDatabaseStack', {
       env: TEST_ENV,

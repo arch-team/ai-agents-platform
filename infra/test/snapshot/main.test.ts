@@ -1,6 +1,4 @@
 import * as cdk from 'aws-cdk-lib';
-import * as ec2 from 'aws-cdk-lib/aws-ec2';
-import * as kms from 'aws-cdk-lib/aws-kms';
 import { Template } from 'aws-cdk-lib/assertions';
 import {
   NetworkStack,
@@ -8,7 +6,12 @@ import {
   DatabaseStack,
   AgentCoreStack,
 } from '../../lib/stacks';
-import { createTestVpc, createVpcDependency, TEST_ENV, TEST_VPC_CIDR } from '../helpers/test-utils';
+import {
+  createCrossStackDbDependencies,
+  createVpcDependency,
+  TEST_ENV,
+  TEST_VPC_CIDR,
+} from '../helpers/test-utils';
 
 describe('Snapshot Tests', () => {
   it('NetworkStack 快照匹配', () => {
@@ -37,12 +40,8 @@ describe('Snapshot Tests', () => {
 
   it('DatabaseStack 快照匹配', () => {
     const app = new cdk.App();
-    const vpcStack = new cdk.Stack(app, 'VpcStack', { env: TEST_ENV });
-    const vpc = createTestVpc(vpcStack);
-    const dbSecurityGroup = new ec2.SecurityGroup(vpcStack, 'TestDbSg', {
-      vpc,
-    });
-    const encryptionKey = new kms.Key(vpcStack, 'TestKey');
+    const { vpc, dbSecurityGroup, encryptionKey } =
+      createCrossStackDbDependencies(app, TEST_ENV);
 
     const stack = new DatabaseStack(app, 'TestDatabaseStack', {
       env: TEST_ENV,

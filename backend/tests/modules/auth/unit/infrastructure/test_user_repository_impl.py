@@ -30,7 +30,7 @@ class TestUserRepositoryImplStructure:
         assert UserRepositoryImpl.model_class is UserModel
 
     def test_updatable_fields_defined(self) -> None:
-        expected = frozenset({"name", "role", "is_active", "hashed_password", "updated_at"})
+        expected = frozenset({"name", "role", "is_active", "hashed_password", "failed_login_count", "locked_until", "updated_at"})
         assert UserRepositoryImpl._updatable_fields == expected
 
 
@@ -60,6 +60,8 @@ class TestUserRepositoryImplEntityModelConversion:
             name="Test User",
             role="viewer",
             is_active=True,
+            failed_login_count=0,
+            locked_until=None,
             created_at=now,
             updated_at=now,
         )
@@ -103,6 +105,8 @@ class TestUserRepositoryImplGetByEmail:
             name="Found User",
             role="developer",
             is_active=True,
+            failed_login_count=0,
+            locked_until=None,
             created_at=now,
             updated_at=now,
         )

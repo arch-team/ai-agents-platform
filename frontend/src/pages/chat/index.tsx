@@ -15,7 +15,6 @@ export default function ChatPage() {
     navigate(`/chat/${id}`);
   };
 
-  // Fix [REACT-2]: 移除多余的 async
   const handleNewConversation = () => {
     // 新对话需要从 Agent 详情页发起（需 agent_id），此处仅支持导航到 agents 页面
     navigate('/agents');

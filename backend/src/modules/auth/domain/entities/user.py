@@ -1,5 +1,7 @@
 """用户领域实体。"""
 
+from datetime import UTC, datetime, timedelta
+
 from pydantic import EmailStr, Field
 
 from src.modules.auth.domain.value_objects.role import Role
@@ -14,6 +16,28 @@ class User(PydanticEntity):
     name: str = Field(min_length=1, max_length=100)
     role: Role = Role.VIEWER
     is_active: bool = True
+    failed_login_count: int = 0
+    locked_until: datetime | None = None
+
+    @property
+    def is_locked(self) -> bool:
+        """检查账户是否处于锁定状态。"""
+        if self.locked_until is None:
+            return False
+        return datetime.now(UTC) < self.locked_until
+
+    def record_failed_login(self, *, max_attempts: int, lockout_minutes: int) -> None:
+        """记录一次登录失败，达到上限时锁定账户。"""
+        self.failed_login_count += 1
+        if self.failed_login_count >= max_attempts:
+            self.locked_until = datetime.now(UTC) + timedelta(minutes=lockout_minutes)
+        self.touch()
+
+    def reset_failed_logins(self) -> None:
+        """登录成功后重置失败计数和锁定时间。"""
+        self.failed_login_count = 0
+        self.locked_until = None
+        self.touch()
 
     def activate(self) -> None:
         """激活用户。"""

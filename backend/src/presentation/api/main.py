@@ -12,12 +12,17 @@ from fastapi.middleware.cors import CORSMiddleware
 from src.modules.agents.api.endpoints import router as agents_router
 from src.modules.agents.domain.exceptions import AgentNameDuplicateError, AgentNotFoundError
 from src.modules.auth.api.endpoints import router as auth_router
-from src.modules.auth.domain.exceptions import AuthenticationError, AuthorizationError
+from src.modules.auth.domain.exceptions import AccountLockedError, AuthenticationError, AuthorizationError
 from src.modules.execution.api.endpoints import router as execution_router
 from src.modules.execution.domain.exceptions import (
     AgentNotAvailableError,
     ConversationNotActiveError,
     ConversationNotFoundError,
+)
+from src.modules.insights.api.endpoints import router as insights_router
+from src.modules.insights.domain.exceptions import (
+    InvalidDateRangeError,
+    UsageRecordNotFoundError,
 )
 from src.modules.knowledge.api.endpoints import router as knowledge_router
 from src.modules.knowledge.domain.exceptions import (
@@ -30,6 +35,7 @@ from src.modules.tool_catalog.domain.exceptions import ToolNameDuplicateError, T
 from src.presentation.api.middleware.correlation import CorrelationIdMiddleware
 from src.presentation.api.routes.health import router as health_router
 from src.shared.api.exception_handlers import register_exception_handlers, register_status_mapping
+from src.shared.api.middleware.rate_limit import setup_rate_limiting
 from src.shared.infrastructure.database import init_db
 from src.shared.infrastructure.logging import setup_logging
 from src.shared.infrastructure.settings import get_settings
@@ -82,6 +88,7 @@ def create_app() -> FastAPI:
     _module_exception_mappings: dict[type[DomainError], int] = {
         # auth
         AuthenticationError: 401,
+        AccountLockedError: 423,
         AuthorizationError: 403,
         # agents
         AgentNotFoundError: 404,
@@ -97,6 +104,9 @@ def create_app() -> FastAPI:
         KnowledgeBaseNotFoundError: 404,
         KnowledgeBaseNameDuplicateError: 409,
         DocumentNotFoundError: 404,
+        # insights
+        UsageRecordNotFoundError: 404,
+        InvalidDateRangeError: 422,
     }
     for exc_type, status_code in _module_exception_mappings.items():
         register_status_mapping(exc_type, status_code)
@@ -111,6 +121,10 @@ def create_app() -> FastAPI:
     app.include_router(execution_router)
     app.include_router(tool_catalog_router)
     app.include_router(knowledge_router)
+    app.include_router(insights_router)
+
+    # Rate Limiting
+    setup_rate_limiting(app)
 
     return app
 

@@ -1,21 +1,52 @@
 """IAgentQuerier 的 agents 模块实现。"""
 
+from typing import Final
+
+from cachetools import TTLCache
+
 from src.modules.agents.domain import Agent, AgentStatus, IAgentRepository
 from src.shared.domain import ActiveAgentInfo, IAgentQuerier
 
 
-class AgentQuerierImpl(IAgentQuerier):
-    """基于 agents 模块 Repository 的 IAgentQuerier 实现。"""
+# 哨兵值: 区分 "未缓存" 和 "缓存了 None (Agent 不存在/非 ACTIVE)"
+_MISS: Final = object()
 
-    def __init__(self, agent_repository: IAgentRepository) -> None:
+
+class AgentQuerierImpl(IAgentQuerier):
+    """基于 agents 模块 Repository 的 IAgentQuerier 实现, 内置 TTL 缓存。"""
+
+    def __init__(
+        self,
+        agent_repository: IAgentRepository,
+        *,
+        cache_maxsize: int = 500,
+        cache_ttl: int = 300,
+    ) -> None:
         self._agent_repository = agent_repository
+        self._cache: TTLCache[int, ActiveAgentInfo | None] = TTLCache(
+            maxsize=cache_maxsize,
+            ttl=cache_ttl,
+        )
 
     async def get_active_agent(self, agent_id: int) -> ActiveAgentInfo | None:
-        """Agent 不存在或非 ACTIVE 状态时返回 None。"""
+        """Agent 不存在或非 ACTIVE 状态时返回 None, 结果缓存 5 分钟。"""
+        cached = self._cache.get(agent_id, _MISS)
+        if cached is not _MISS:
+            result: ActiveAgentInfo | None = cached if isinstance(cached, ActiveAgentInfo) else None
+            return result
+
         agent = await self._agent_repository.get_by_id(agent_id)
         if agent is None or agent.status != AgentStatus.ACTIVE:
+            self._cache[agent_id] = None
             return None
-        return self._to_active_agent_info(agent)
+
+        info = self._to_active_agent_info(agent)
+        self._cache[agent_id] = info
+        return info
+
+    def clear_cache(self) -> None:
+        """清除缓存 (用于 Agent 配置更新后主动失效)。"""
+        self._cache.clear()
 
     @staticmethod
     def _to_active_agent_info(agent: Agent) -> ActiveAgentInfo:

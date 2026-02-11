@@ -63,6 +63,10 @@ class _SendContext:
     system_prompt: str = ""
 
 
+# token 估算: 约 4 字符/token (中英混合文本的经验值)
+_CHARS_PER_TOKEN = 4
+
+
 class ExecutionService:
     """Execution 业务服务，编排对话和消息的用例。"""
 
@@ -77,6 +81,8 @@ class ExecutionService:
         agent_runtime: IAgentRuntime | None = None,
         tool_querier: IToolQuerier | None = None,
         gateway_url: str = "",
+        max_context_tokens: int = 30000,
+        system_prompt_token_budget: int = 2000,
     ) -> None:
         self._conversation_repo = conversation_repo
         self._message_repo = message_repo
@@ -86,6 +92,8 @@ class ExecutionService:
         self._agent_runtime = agent_runtime
         self._tool_querier = tool_querier
         self._gateway_url = gateway_url
+        self._max_context_tokens = max_context_tokens
+        self._system_prompt_token_budget = system_prompt_token_budget
         # 流后 DB 写使用独立 repos (由 API 层通过独立 session 创建)
         self._stream_msg_repo, self._stream_conv_repo = (
             stream_finalize_repos if stream_finalize_repos else (message_repo, conversation_repo)
@@ -497,9 +505,11 @@ class ExecutionService:
         )
         created_user_msg = await self._message_repo.create(user_message)
 
-        # 加载消息历史 → 构建 LLM 上下文
+        # 加载消息历史 → 滑动窗口截取 → 构建 LLM 上下文
         history = await self._message_repo.list_by_conversation(conversation_id)
-        llm_messages = [LLMMessage(role=m.role.value, content=m.content) for m in history]
+        max_msg_tokens = self._max_context_tokens - self._system_prompt_token_budget
+        truncated = self._truncate_messages(history, max_tokens=max_msg_tokens)
+        llm_messages = [LLMMessage(role=m.role.value, content=m.content) for m in truncated]
 
         # RAG 上下文注入: 将检索结果附加到 system prompt
         system_prompt = agent_info.system_prompt
@@ -562,6 +572,29 @@ class ExecutionService:
             created_at=conv.created_at,
             updated_at=conv.updated_at,
         )
+
+    @staticmethod
+    def _truncate_messages(messages: list[Message], *, max_tokens: int) -> list[Message]:
+        """从最新消息向前截取, 保持总 token 数在预算内。
+
+        token_count > 0 时使用实际值, 否则按 ~4 字符/token 估算。
+        返回截取后的消息列表 (保持时间正序)。
+        """
+        if not messages:
+            return []
+
+        selected: list[Message] = []
+        accumulated = 0
+
+        for msg in reversed(messages):
+            est = msg.token_count if msg.token_count > 0 else max(len(msg.content) // _CHARS_PER_TOKEN, 1)
+            if accumulated + est > max_tokens:
+                break
+            accumulated += est
+            selected.append(msg)
+
+        selected.reverse()
+        return selected
 
     @staticmethod
     def _to_message_dto(msg: Message) -> MessageDTO:

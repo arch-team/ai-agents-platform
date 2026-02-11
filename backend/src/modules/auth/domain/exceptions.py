@@ -1,6 +1,14 @@
 """认证模块领域异常。"""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from src.shared.domain.exceptions import DomainError, DuplicateEntityError
+
+
+if TYPE_CHECKING:
+    from datetime import datetime
 
 
 class AuthenticationError(DomainError):
@@ -8,6 +16,14 @@ class AuthenticationError(DomainError):
 
     def __init__(self, message: str = "认证失败") -> None:
         super().__init__(message=message, code="AUTH_FAILED")
+
+
+class AccountLockedError(DomainError):
+    """账户已锁定。"""
+
+    def __init__(self, *, locked_until: datetime) -> None:
+        self.locked_until = locked_until
+        super().__init__(message="账户已锁定, 请稍后再试", code="ACCOUNT_LOCKED")
 
 
 class AuthorizationError(DomainError):

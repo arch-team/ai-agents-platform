@@ -241,5 +241,5 @@ docs/strategy/improvement-plan.md 相当于对/Users/jinhuasu/Project_Workspace/
 
 
 审查一下目前这个项目的实现或者技术选型与方向是否符合 使用 Claude Agent SDK （https://platform.claude.com/docs/en/agent-sdk/overview）+ Claude Code Cli 来构建Agent应用，通过
-AWS AgentCore Runtime解决该Agent应用的运行时，使用AWS AgentCore Gateway来对接外部MCP的统一入口，使用Amazon Bedrock Knowledge Base 作为Agent应用外接知识库，使用 AgentCore Observability Agent应用的观测性方案，使用使用 AgentCore Memory 管理Agent应用的Memory管理，并且当前的项目需要基于AWS AgentCore和Amazon Bedrock Knowledge Base提供的Python SDK来封装，请审查当前的技术方案是否符合这一要求。全面审查一下技术选型
+AWS AgentCore Runtime解决该Agent应用的运行时，使用AWS AgentCore Gateway来对接外部MCP的统一入口，使用Amazon Bedrock Knowledge Base 作为Agent应用外接知识库，使用 AgentCore Observability Agent应用的观测性方案，使用使用 AgentCore Memory 管理Agent应用的Memory管理，并且当前的项目需要基于AWS AgentCore和Amazon Bedrock Knowledge Base提供的Python SDK来封装，请审查当前的技术方案是否符合这一要求。全面审查一下技术选型，启用Claude code agent teams 分配多个不同的agent进行全面分析
 

@@ -1,6 +1,6 @@
 """Conversation 仓库实现。"""
 
-from sqlalchemy import ColumnElement, func, select
+from sqlalchemy import ColumnElement, select
 
 from src.modules.execution.domain.entities.conversation import Conversation
 from src.modules.execution.domain.repositories.conversation_repository import IConversationRepository
@@ -51,7 +51,4 @@ class ConversationRepositoryImpl(
         *,
         agent_id: int | None = None,
     ) -> int:
-        filters = self._user_filters(user_id, agent_id)
-        stmt = select(func.count()).select_from(ConversationModel).where(*filters)
-        result = await self._session.execute(stmt)
-        return result.scalar_one()
+        return await self._count_where(*self._user_filters(user_id, agent_id))

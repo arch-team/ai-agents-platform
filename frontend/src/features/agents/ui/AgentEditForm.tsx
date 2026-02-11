@@ -3,6 +3,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 
 import type { Agent } from '@/entities/agent';
 import { Button, Spinner, ErrorMessage } from '@/shared/ui';
+import { extractApiError } from '@/shared/lib/extractApiError';
 
 import { useAgent, useUpdateAgent } from '../api/queries';
 import { updateAgentSchema } from '../lib/validation';
@@ -29,7 +30,7 @@ export function AgentEditForm({ agentId, onSuccess, onCancel }: AgentEditFormPro
   }
 
   if (error || !agent) {
-    return <ErrorMessage error={error instanceof Error ? error.message : '加载 Agent 失败'} />;
+    return <ErrorMessage error={extractApiError(error, '加载 Agent 失败')} />;
   }
 
   return <AgentEditFormInner agent={agent} onSuccess={onSuccess} onCancel={onCancel} />;
@@ -76,13 +77,7 @@ function AgentEditFormInner({ agent, onSuccess, onCancel }: AgentEditFormInnerPr
 
       {/* 提交错误提示 */}
       {updateMutation.isError && (
-        <ErrorMessage
-          error={
-            updateMutation.error instanceof Error
-              ? updateMutation.error.message
-              : '更新失败，请重试'
-          }
-        />
+        <ErrorMessage error={extractApiError(updateMutation.error, '更新失败，请重试')} />
       )}
 
       {/* 操作按钮 */}

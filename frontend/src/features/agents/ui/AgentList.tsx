@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { AgentCard } from '@/entities/agent';
 import type { AgentStatus } from '@/entities/agent';
 import { Button, Spinner, ErrorMessage } from '@/shared/ui';
+import { extractApiError } from '@/shared/lib/extractApiError';
 
 import { useAgents, useActivateAgent, useArchiveAgent, useDeleteAgent } from '../api/queries';
 import type { AgentFilters } from '../model/types';
@@ -48,7 +49,7 @@ export function AgentList({ onSelect, onEdit, onCreate }: AgentListProps) {
   }
 
   if (error) {
-    return <ErrorMessage error={error instanceof Error ? error.message : '加载失败'} />;
+    return <ErrorMessage error={extractApiError(error, '加载失败')} />;
   }
 
   return (
