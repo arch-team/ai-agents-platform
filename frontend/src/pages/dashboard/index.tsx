@@ -7,6 +7,37 @@ import { useConversations } from '@/features/execution';
 import { useTeamExecutions } from '@/features/team-executions';
 import { Card, Spinner, AgentIcon, ChatIcon, TeamIcon } from '@/shared/ui';
 
+// 统计卡片 — 提取重复的图标+数字结构
+function StatCard({
+  icon,
+  iconBgClass,
+  label,
+  value,
+  isLoading,
+}: {
+  icon: React.ReactNode;
+  iconBgClass: string;
+  label: string;
+  value: number;
+  isLoading: boolean;
+}) {
+  return (
+    <Card className="flex items-center gap-4">
+      <div className={`flex h-12 w-12 items-center justify-center rounded-lg ${iconBgClass}`}>
+        {icon}
+      </div>
+      <div>
+        <p className="text-sm text-gray-500">{label}</p>
+        {isLoading ? (
+          <Spinner size="sm" />
+        ) : (
+          <p className="text-2xl font-bold text-gray-900">{value}</p>
+        )}
+      </div>
+    </Card>
+  );
+}
+
 export default function DashboardPage() {
   const { user } = useAuth();
   const { data: agentsData, isLoading: agentsLoading } = useAgents();
@@ -29,47 +60,27 @@ export default function DashboardPage() {
 
       {/* 统计概览 */}
       <div className="mb-8 grid gap-4 sm:grid-cols-3">
-        <Card className="flex items-center gap-4">
-          <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-blue-100">
-            <AgentIcon className="h-6 w-6 text-blue-600" />
-          </div>
-          <div>
-            <p className="text-sm text-gray-500">Agent 总数</p>
-            {agentsLoading ? (
-              <Spinner size="sm" />
-            ) : (
-              <p className="text-2xl font-bold text-gray-900">{agentCount}</p>
-            )}
-          </div>
-        </Card>
-
-        <Card className="flex items-center gap-4">
-          <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-green-100">
-            <ChatIcon className="h-6 w-6 text-green-600" />
-          </div>
-          <div>
-            <p className="text-sm text-gray-500">对话总数</p>
-            {conversationsLoading ? (
-              <Spinner size="sm" />
-            ) : (
-              <p className="text-2xl font-bold text-gray-900">{conversationCount}</p>
-            )}
-          </div>
-        </Card>
-
-        <Card className="flex items-center gap-4">
-          <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-purple-100">
-            <TeamIcon className="h-6 w-6 text-purple-600" />
-          </div>
-          <div>
-            <p className="text-sm text-gray-500">Team 执行</p>
-            {executionsLoading ? (
-              <Spinner size="sm" />
-            ) : (
-              <p className="text-2xl font-bold text-gray-900">{executionCount}</p>
-            )}
-          </div>
-        </Card>
+        <StatCard
+          icon={<AgentIcon className="h-6 w-6 text-blue-600" />}
+          iconBgClass="bg-blue-100"
+          label="Agent 总数"
+          value={agentCount}
+          isLoading={agentsLoading}
+        />
+        <StatCard
+          icon={<ChatIcon className="h-6 w-6 text-green-600" />}
+          iconBgClass="bg-green-100"
+          label="对话总数"
+          value={conversationCount}
+          isLoading={conversationsLoading}
+        />
+        <StatCard
+          icon={<TeamIcon className="h-6 w-6 text-purple-600" />}
+          iconBgClass="bg-purple-100"
+          label="Team 执行"
+          value={executionCount}
+          isLoading={executionsLoading}
+        />
       </div>
 
       {/* 快速操作 */}

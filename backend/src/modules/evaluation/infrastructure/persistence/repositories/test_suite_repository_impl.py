@@ -64,3 +64,21 @@ class TestSuiteRepositoryImpl(
     async def count_by_agent(self, agent_id: int) -> int:
         """按 Agent ID 统计测试集数量。"""
         return await self._count_where(TestSuiteModel.agent_id == agent_id)
+
+    async def list_by_owner(
+        self,
+        owner_id: int,
+        *,
+        offset: int = 0,
+        limit: int = 20,
+    ) -> list[TestSuite]:
+        """按 owner_id 查询测试集列表。"""
+        return await self._list_where(
+            TestSuiteModel.owner_id == owner_id,
+            offset=offset,
+            limit=limit,
+        )
+
+    async def count_by_owner(self, owner_id: int) -> int:
+        """按 owner_id 统计测试集数量。"""
+        return await self._count_where(TestSuiteModel.owner_id == owner_id)

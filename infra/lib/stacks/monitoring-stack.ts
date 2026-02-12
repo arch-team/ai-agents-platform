@@ -10,6 +10,16 @@ import { NagSuppressions } from 'cdk-nag';
 import { Construct } from 'constructs';
 import { PROJECT_NAME, type BaseStackProps } from '../config';
 
+/** 监控指标统一采样周期 (5 分钟) */
+const METRIC_PERIOD = cdk.Duration.minutes(5);
+
+/** 告警默认配置 — 避免各 Alarm 重复声明相同的 evaluationPeriods、treatMissingData 等 */
+const ALARM_DEFAULTS = {
+  /** 标准评估窗口: 连续 3 个数据点 */
+  evaluationPeriods: 3,
+  treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
+} as const;
+
 export interface MonitoringStackProps extends BaseStackProps {
   /** Aurora 数据库集群 */
   readonly cluster: rds.IDatabaseCluster;
@@ -81,42 +91,30 @@ export class MonitoringStack extends cdk.Stack {
     this.createAlarm('AuroraCpuAlarm', {
       alarmName: `${PROJECT_NAME}-${envName}-aurora-cpu-high`,
       alarmDescription: 'Aurora CPU utilization exceeds 80%',
-      metric: cluster.metricCPUUtilization({
-        period: cdk.Duration.minutes(5),
-        statistic: 'Average',
-      }),
+      metric: cluster.metricCPUUtilization({ period: METRIC_PERIOD, statistic: 'Average' }),
       threshold: 80,
-      evaluationPeriods: 3,
+      ...ALARM_DEFAULTS,
       comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
-      treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
     });
 
     // Aurora 可用内存告警 — 低于 500MB
     this.createAlarm('AuroraMemoryAlarm', {
       alarmName: `${PROJECT_NAME}-${envName}-aurora-memory-low`,
       alarmDescription: 'Aurora freeable memory below 500MB',
-      metric: cluster.metric('FreeableMemory', {
-        period: cdk.Duration.minutes(5),
-        statistic: 'Average',
-      }),
+      metric: cluster.metric('FreeableMemory', { period: METRIC_PERIOD, statistic: 'Average' }),
       threshold: 524288000, // 500MB in bytes
-      evaluationPeriods: 3,
+      ...ALARM_DEFAULTS,
       comparisonOperator: cloudwatch.ComparisonOperator.LESS_THAN_THRESHOLD,
-      treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
     });
 
     // Aurora 数据库连接数告警 — 超过最大连接数 80% (db.t3.medium 默认约 90)
     this.createAlarm('AuroraConnectionsAlarm', {
       alarmName: `${PROJECT_NAME}-${envName}-aurora-connections-high`,
       alarmDescription: 'Aurora database connections exceed 80% of max',
-      metric: cluster.metric('DatabaseConnections', {
-        period: cdk.Duration.minutes(5),
-        statistic: 'Average',
-      }),
+      metric: cluster.metric('DatabaseConnections', { period: METRIC_PERIOD, statistic: 'Average' }),
       threshold: 72, // 90 * 0.8 = 72
-      evaluationPeriods: 3,
+      ...ALARM_DEFAULTS,
       comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
-      treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
     });
   }
 
@@ -126,28 +124,20 @@ export class MonitoringStack extends cdk.Stack {
     this.createAlarm('EcsCpuAlarm', {
       alarmName: `${PROJECT_NAME}-${envName}-ecs-cpu-high`,
       alarmDescription: 'ECS service CPU utilization exceeds 80%',
-      metric: service.metricCpuUtilization({
-        period: cdk.Duration.minutes(5),
-        statistic: 'Average',
-      }),
+      metric: service.metricCpuUtilization({ period: METRIC_PERIOD, statistic: 'Average' }),
       threshold: 80,
-      evaluationPeriods: 3,
+      ...ALARM_DEFAULTS,
       comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
-      treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
     });
 
     // ECS 内存利用率告警 — 连续 3 个 5 分钟数据点超过 80%
     this.createAlarm('EcsMemoryAlarm', {
       alarmName: `${PROJECT_NAME}-${envName}-ecs-memory-high`,
       alarmDescription: 'ECS service memory utilization exceeds 80%',
-      metric: service.metricMemoryUtilization({
-        period: cdk.Duration.minutes(5),
-        statistic: 'Average',
-      }),
+      metric: service.metricMemoryUtilization({ period: METRIC_PERIOD, statistic: 'Average' }),
       threshold: 80,
-      evaluationPeriods: 3,
+      ...ALARM_DEFAULTS,
       comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
-      treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
     });
   }
 
@@ -161,10 +151,7 @@ export class MonitoringStack extends cdk.Stack {
     this.createAlarm('UnhealthyHostAlarm', {
       alarmName: `${PROJECT_NAME}-${envName}-alb-unhealthy-hosts`,
       alarmDescription: 'ALB target group has unhealthy hosts',
-      metric: targetGroup.metrics.unhealthyHostCount({
-        period: cdk.Duration.minutes(5),
-        statistic: 'Maximum',
-      }),
+      metric: targetGroup.metrics.unhealthyHostCount({ period: METRIC_PERIOD, statistic: 'Maximum' }),
       threshold: 1,
       evaluationPeriods: 1,
       comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
@@ -176,7 +163,7 @@ export class MonitoringStack extends cdk.Stack {
       alarmName: `${PROJECT_NAME}-${envName}-alb-5xx-high`,
       alarmDescription: 'ALB 5XX error count exceeds 10 per 5 minutes',
       metric: loadBalancer.metrics.httpCodeElb(elbv2.HttpCodeElb.ELB_5XX_COUNT, {
-        period: cdk.Duration.minutes(5),
+        period: METRIC_PERIOD,
         statistic: 'Sum',
       }),
       threshold: 10,
@@ -202,17 +189,17 @@ export class MonitoringStack extends cdk.Stack {
     dashboard.addWidgets(
       new cloudwatch.GraphWidget({
         title: 'Aurora CPU Utilization',
-        left: [cluster.metricCPUUtilization({ period: cdk.Duration.minutes(5) })],
+        left: [cluster.metricCPUUtilization({ period: METRIC_PERIOD })],
         width: 8,
       }),
       new cloudwatch.GraphWidget({
         title: 'Aurora Freeable Memory',
-        left: [cluster.metric('FreeableMemory', { period: cdk.Duration.minutes(5) })],
+        left: [cluster.metric('FreeableMemory', { period: METRIC_PERIOD })],
         width: 8,
       }),
       new cloudwatch.GraphWidget({
         title: 'Aurora Database Connections',
-        left: [cluster.metric('DatabaseConnections', { period: cdk.Duration.minutes(5) })],
+        left: [cluster.metric('DatabaseConnections', { period: METRIC_PERIOD })],
         width: 8,
       }),
     );
@@ -221,12 +208,12 @@ export class MonitoringStack extends cdk.Stack {
     dashboard.addWidgets(
       new cloudwatch.GraphWidget({
         title: 'ECS CPU Utilization',
-        left: [service.metricCpuUtilization({ period: cdk.Duration.minutes(5) })],
+        left: [service.metricCpuUtilization({ period: METRIC_PERIOD })],
         width: 12,
       }),
       new cloudwatch.GraphWidget({
         title: 'ECS Memory Utilization',
-        left: [service.metricMemoryUtilization({ period: cdk.Duration.minutes(5) })],
+        left: [service.metricMemoryUtilization({ period: METRIC_PERIOD })],
         width: 12,
       }),
     );
@@ -235,21 +222,21 @@ export class MonitoringStack extends cdk.Stack {
     dashboard.addWidgets(
       new cloudwatch.GraphWidget({
         title: 'ALB Request Count',
-        left: [loadBalancer.metrics.requestCount({ period: cdk.Duration.minutes(5) })],
+        left: [loadBalancer.metrics.requestCount({ period: METRIC_PERIOD })],
         width: 8,
       }),
       new cloudwatch.GraphWidget({
         title: 'ALB 5XX Errors',
         left: [
           loadBalancer.metrics.httpCodeElb(elbv2.HttpCodeElb.ELB_5XX_COUNT, {
-            period: cdk.Duration.minutes(5),
+            period: METRIC_PERIOD,
           }),
         ],
         width: 8,
       }),
       new cloudwatch.GraphWidget({
         title: 'ALB Unhealthy Hosts',
-        left: [targetGroup.metrics.unhealthyHostCount({ period: cdk.Duration.minutes(5) })],
+        left: [targetGroup.metrics.unhealthyHostCount({ period: METRIC_PERIOD })],
         width: 8,
       }),
     );

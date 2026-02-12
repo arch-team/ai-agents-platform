@@ -41,32 +41,3 @@ class UsageSummaryDTO:
     conversation_count: int
     record_count: int
     period: str
-
-
-@dataclass
-class UsageTrendDTO:
-    """使用趋势数据 (时间序列)。"""
-
-    date: str
-    metric_name: str
-    metric_value: float
-
-
-@dataclass
-class AgentStatsDTO:
-    """Agent 维度统计数据。"""
-
-    agent_id: int
-    total_conversations: int
-    total_tokens: int
-    total_cost: float
-
-
-@dataclass
-class UserStatsDTO:
-    """用户维度统计数据。"""
-
-    user_id: int
-    total_conversations: int
-    total_tokens: int
-    total_cost: float

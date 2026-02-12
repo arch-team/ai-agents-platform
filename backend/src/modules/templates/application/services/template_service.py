@@ -2,7 +2,6 @@
 
 import asyncio
 from dataclasses import replace
-from typing import Any
 
 from src.modules.templates.application.dto.template_dto import (
     CreateTemplateDTO,
@@ -129,7 +128,7 @@ class TemplateService:
             template.tags = dto.tags
 
         # 重建 TemplateConfig (frozen 值对象, 任一字段变化需整体替换)
-        config_overrides: dict[str, Any] = {}
+        config_overrides: dict[str, str | float | int | list[int]] = {}
         for field in ("system_prompt", "model_id", "temperature", "max_tokens", "tool_ids", "knowledge_base_ids"):
             value = getattr(dto, field)
             if value is not None:

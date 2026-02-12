@@ -1,5 +1,7 @@
 """Evaluation 应用服务。"""
 
+import asyncio
+
 from src.modules.evaluation.application.dto.evaluation_dto import (
     CreateEvaluationRunDTO,
     EvaluationResultDTO,
@@ -46,8 +48,11 @@ class EvaluationService:
 
     @staticmethod
     def _to_run_dto(run: EvaluationRun) -> EvaluationRunDTO:
+        if run.id is None or run.created_at is None or run.updated_at is None:
+            msg = "EvaluationRun 缺少必要字段 (id/created_at/updated_at)"
+            raise ValueError(msg)
         return EvaluationRunDTO(
-            id=run.id,  # type: ignore[arg-type]
+            id=run.id,
             suite_id=run.suite_id,
             agent_id=run.agent_id,
             user_id=run.user_id,
@@ -58,22 +63,25 @@ class EvaluationService:
             score=run.score,
             started_at=run.started_at,
             completed_at=run.completed_at,
-            created_at=run.created_at,  # type: ignore[arg-type]
-            updated_at=run.updated_at,  # type: ignore[arg-type]
+            created_at=run.created_at,
+            updated_at=run.updated_at,
         )
 
     @staticmethod
     def _to_result_dto(result: EvaluationResult) -> EvaluationResultDTO:
+        if result.id is None or result.created_at is None or result.updated_at is None:
+            msg = "EvaluationResult 缺少必要字段 (id/created_at/updated_at)"
+            raise ValueError(msg)
         return EvaluationResultDTO(
-            id=result.id,  # type: ignore[arg-type]
+            id=result.id,
             run_id=result.run_id,
             case_id=result.case_id,
             actual_output=result.actual_output,
             score=result.score,
             passed=result.passed,
             error_message=result.error_message,
-            created_at=result.created_at,  # type: ignore[arg-type]
-            updated_at=result.updated_at,  # type: ignore[arg-type]
+            created_at=result.created_at,
+            updated_at=result.updated_at,
         )
 
     # -- 评估运行 --
@@ -104,6 +112,9 @@ class EvaluationService:
             total_cases=len(cases),
         )
         created_run = await self._run_repo.create(run)
+        if created_run.id is None:
+            msg = "EvaluationRun 创建后 ID 不能为空"
+            raise ValueError(msg)
 
         # 开始执行
         created_run.start()
@@ -113,9 +124,12 @@ class EvaluationService:
         passed = 0
         failed = 0
         for case in cases:
+            if case.id is None:
+                msg = "TestCase ID 不能为空"
+                raise ValueError(msg)
             result = EvaluationResult(
-                run_id=created_run.id,  # type: ignore[arg-type]
-                case_id=case.id,  # type: ignore[arg-type]
+                run_id=created_run.id,
+                case_id=case.id,
                 actual_output="[MVP] 评估结果占位",
                 score=1.0,
                 passed=True,
@@ -128,9 +142,12 @@ class EvaluationService:
         created_run.complete(passed=passed, failed=failed, score=score)
         updated_run = await self._run_repo.update(created_run)
 
+        if updated_run.id is None:
+            msg = "EvaluationRun 更新后 ID 不能为空"
+            raise ValueError(msg)
         await event_bus.publish_async(
             EvaluationRunCompletedEvent(
-                run_id=updated_run.id,  # type: ignore[arg-type]
+                run_id=updated_run.id,
                 suite_id=dto.suite_id,
                 user_id=current_user_id,
                 score=score,
@@ -154,11 +171,15 @@ class EvaluationService:
         """列出评估运行。"""
         offset = (page - 1) * page_size
         if suite_id is not None:
-            runs = await self._run_repo.list_by_suite(suite_id, offset=offset, limit=page_size)
-            total = await self._run_repo.count_by_suite(suite_id)
+            runs, total = await asyncio.gather(
+                self._run_repo.list_by_suite(suite_id, offset=offset, limit=page_size),
+                self._run_repo.count_by_suite(suite_id),
+            )
         else:
-            runs = await self._run_repo.list_by_user(current_user_id, offset=offset, limit=page_size)
-            total = await self._run_repo.count_by_user(current_user_id)
+            runs, total = await asyncio.gather(
+                self._run_repo.list_by_user(current_user_id, offset=offset, limit=page_size),
+                self._run_repo.count_by_user(current_user_id),
+            )
         return PagedResult(
             items=[self._to_run_dto(r) for r in runs],
             total=total,
@@ -176,8 +197,10 @@ class EvaluationService:
         """获取评估运行的结果列表。"""
         await get_or_raise(self._run_repo, run_id, EvaluationRunNotFoundError, run_id)
         offset = (page - 1) * page_size
-        results = await self._result_repo.list_by_run(run_id, offset=offset, limit=page_size)
-        total = await self._result_repo.count_by_run(run_id)
+        results, total = await asyncio.gather(
+            self._result_repo.list_by_run(run_id, offset=offset, limit=page_size),
+            self._result_repo.count_by_run(run_id),
+        )
         return PagedResult(
             items=[self._to_result_dto(r) for r in results],
             total=total,

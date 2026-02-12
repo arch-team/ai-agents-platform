@@ -1,5 +1,7 @@
 """TestSuite 应用服务。"""
 
+import asyncio
+
 from src.modules.evaluation.application.dto.evaluation_dto import (
     CreateTestCaseDTO,
     CreateTestSuiteDTO,
@@ -42,28 +44,34 @@ class TestSuiteService:
 
     @staticmethod
     def _to_suite_dto(suite: TestSuite) -> TestSuiteDTO:
+        if suite.id is None or suite.created_at is None or suite.updated_at is None:
+            msg = "TestSuite 缺少必要字段 (id/created_at/updated_at)"
+            raise ValueError(msg)
         return TestSuiteDTO(
-            id=suite.id,  # type: ignore[arg-type]
+            id=suite.id,
             name=suite.name,
             description=suite.description,
             agent_id=suite.agent_id,
             status=suite.status.value,
             owner_id=suite.owner_id,
-            created_at=suite.created_at,  # type: ignore[arg-type]
-            updated_at=suite.updated_at,  # type: ignore[arg-type]
+            created_at=suite.created_at,
+            updated_at=suite.updated_at,
         )
 
     @staticmethod
     def _to_case_dto(case: TestCase) -> TestCaseDTO:
+        if case.id is None or case.created_at is None or case.updated_at is None:
+            msg = "TestCase 缺少必要字段 (id/created_at/updated_at)"
+            raise ValueError(msg)
         return TestCaseDTO(
-            id=case.id,  # type: ignore[arg-type]
+            id=case.id,
             suite_id=case.suite_id,
             input_prompt=case.input_prompt,
             expected_output=case.expected_output,
             evaluation_criteria=case.evaluation_criteria,
             order_index=case.order_index,
-            created_at=case.created_at,  # type: ignore[arg-type]
-            updated_at=case.updated_at,  # type: ignore[arg-type]
+            created_at=case.created_at,
+            updated_at=case.updated_at,
         )
 
     # -- 测试集 CRUD --
@@ -81,8 +89,11 @@ class TestSuiteService:
             owner_id=current_user_id,
         )
         created = await self._suite_repo.create(suite)
+        if created.id is None:
+            msg = "TestSuite 创建后 ID 不能为空"
+            raise ValueError(msg)
         await event_bus.publish_async(
-            TestSuiteCreatedEvent(suite_id=created.id, owner_id=current_user_id),  # type: ignore[arg-type]
+            TestSuiteCreatedEvent(suite_id=created.id, owner_id=current_user_id),
         )
         return self._to_suite_dto(created)
 
@@ -101,12 +112,12 @@ class TestSuiteService:
     ) -> PagedResult[TestSuiteDTO]:
         """获取当前用户的测试集列表（分页）。"""
         offset = (page - 1) * page_size
-        suites = await self._suite_repo.list(offset=offset, limit=page_size)
-        # 过滤当前用户拥有的测试集
-        user_suites = [s for s in suites if s.owner_id == current_user_id]
-        total = await self._suite_repo.count()
+        suites, total = await asyncio.gather(
+            self._suite_repo.list_by_owner(current_user_id, offset=offset, limit=page_size),
+            self._suite_repo.count_by_owner(current_user_id),
+        )
         return PagedResult(
-            items=[self._to_suite_dto(s) for s in user_suites],
+            items=[self._to_suite_dto(s) for s in suites],
             total=total,
             page=page,
             page_size=page_size,
@@ -193,8 +204,10 @@ class TestSuiteService:
         suite = await get_or_raise(self._suite_repo, suite_id, TestSuiteNotFoundError, suite_id)
         check_ownership(suite, current_user_id)
         offset = (page - 1) * page_size
-        cases = await self._case_repo.list_by_suite(suite_id, offset=offset, limit=page_size)
-        total = await self._case_repo.count_by_suite(suite_id)
+        cases, total = await asyncio.gather(
+            self._case_repo.list_by_suite(suite_id, offset=offset, limit=page_size),
+            self._case_repo.count_by_suite(suite_id),
+        )
         return PagedResult(
             items=[self._to_case_dto(c) for c in cases],
             total=total,

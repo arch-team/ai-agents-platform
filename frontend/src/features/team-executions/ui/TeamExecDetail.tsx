@@ -5,7 +5,6 @@ import { useEffect, useRef } from 'react';
 import { formatDateTime } from '@/shared/lib/formatDate';
 import { Button, Card, Spinner, ErrorMessage } from '@/shared/ui';
 
-import type { TeamExecution } from '../api/types';
 import { useTeamExecution, useTeamExecutionLogs, useCancelTeamExecution } from '../api/queries';
 import { useStreamLogs, useIsTeamStreaming, useTeamExecError } from '../model/store';
 
@@ -73,6 +72,7 @@ export function TeamExecDetail({ executionId, onStartStream }: TeamExecDetailPro
                 size="sm"
                 loading={cancelMutation.isPending}
                 onClick={() => cancelMutation.mutate(execution.id)}
+                aria-label={`取消执行 #${execution.id}`}
               >
                 取消执行
               </Button>
@@ -107,7 +107,7 @@ export function TeamExecDetail({ executionId, onStartStream }: TeamExecDetailPro
       </div>
 
       {/* 日志区域 */}
-      <div className="flex-1 overflow-y-auto p-4">
+      <div className="flex-1 overflow-y-auto p-4" role="log" aria-label="执行日志" aria-live="polite">
         <h3 className="mb-3 text-sm font-semibold text-gray-700">执行日志</h3>
 
         {streamError && <ErrorMessage error={streamError} className="mb-3" />}

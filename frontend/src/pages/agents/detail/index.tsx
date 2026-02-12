@@ -65,6 +65,7 @@ export default function AgentDetailPage() {
               size="sm"
               loading={activateMutation.isPending}
               onClick={() => activateMutation.mutate(agent.id)}
+              aria-label={`激活 ${agent.name}`}
             >
               激活
             </Button>
@@ -76,6 +77,7 @@ export default function AgentDetailPage() {
                 size="sm"
                 loading={createConversation.isPending}
                 onClick={handleStartChat}
+                aria-label={`与 ${agent.name} 开始对话`}
               >
                 开始对话
               </Button>
@@ -84,6 +86,7 @@ export default function AgentDetailPage() {
                 size="sm"
                 loading={archiveMutation.isPending}
                 onClick={() => archiveMutation.mutate(agent.id)}
+                aria-label={`归档 ${agent.name}`}
               >
                 归档
               </Button>
@@ -133,12 +136,13 @@ export default function AgentDetailPage() {
         {!conversationsData?.items.length ? (
           <p className="text-sm text-gray-500">暂无对话记录</p>
         ) : (
-          <ul className="divide-y divide-gray-100">
+          <ul className="divide-y divide-gray-100" role="list" aria-label="对话历史">
             {conversationsData.items.map((conv) => (
               <li key={conv.id}>
                 <button
                   type="button"
                   onClick={() => navigate(`/chat/${conv.id}`)}
+                  aria-label={`查看对话: ${conv.title || `对话 #${conv.id}`}`}
                   className="flex w-full items-center justify-between px-2 py-3 text-left hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
                 >
                   <div>
