@@ -17,9 +17,10 @@ describe('MonitoringStack', () => {
       vpc,
       dbSecurityGroup,
       databaseSecret,
-      jwtSecret,
+      jwtSecretArn,
       databaseEndpoint,
       encryptionKey,
+      encryptionKeyArn,
     } = createCrossStackComputeDependencies(app);
 
     const databaseStack = new DatabaseStack(app, 'TestDatabaseStack', {
@@ -34,8 +35,8 @@ describe('MonitoringStack', () => {
       dbSecurityGroup,
       databaseSecret,
       databaseEndpoint,
-      encryptionKey,
-      jwtSecret,
+      encryptionKeyArn,
+      jwtSecretArn,
       envName: 'dev',
     });
 
@@ -179,9 +180,10 @@ describe('MonitoringStack', () => {
         vpc,
         dbSecurityGroup,
         databaseSecret,
-        jwtSecret,
+        jwtSecretArn,
         databaseEndpoint,
         encryptionKey,
+        encryptionKeyArn,
       } = createCrossStackComputeDependencies(app);
 
       const databaseStack = new DatabaseStack(app, 'TestDatabaseStack2', {
@@ -196,8 +198,8 @@ describe('MonitoringStack', () => {
         dbSecurityGroup,
         databaseSecret,
         databaseEndpoint,
-        encryptionKey,
-        jwtSecret,
+        encryptionKeyArn,
+        jwtSecretArn,
         envName: 'dev',
       });
 

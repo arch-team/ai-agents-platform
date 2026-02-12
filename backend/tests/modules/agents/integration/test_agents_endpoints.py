@@ -35,7 +35,7 @@ def _make_agent_dto(
     system_prompt: str = "You are helpful.",
     status: str = "draft",
     owner_id: int = 1,
-    model_id: str = "anthropic.claude-3-5-sonnet-20241022-v2:0",
+    model_id: str = "us.anthropic.claude-3-5-sonnet-20241022-v2:0",
     temperature: float = 0.7,
     max_tokens: int = 2048,
     top_p: float = 1.0,
@@ -102,7 +102,7 @@ class TestCreateAgentEndpoint:
         assert data["name"] == "test-agent"
         assert data["status"] == "draft"
         assert "config" in data
-        assert data["config"]["model_id"] == "anthropic.claude-3-5-sonnet-20241022-v2:0"
+        assert data["config"]["model_id"] == "us.anthropic.claude-3-5-sonnet-20241022-v2:0"
         mock_service.create_agent.assert_called_once()
 
     def test_create_duplicate_name(self, client: TestClient, mock_service: AsyncMock) -> None:

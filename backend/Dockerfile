@@ -31,6 +31,17 @@ RUN uv sync --no-dev --frozen
 # -- Stage 2: Runtime --
 FROM public.ecr.aws/docker/library/python:3.12-slim AS runtime
 
+# Node.js 22 LTS + Claude Code CLI
+# 依赖链: Python → claude-agent-sdk → Claude Code CLI (Node.js) → Bedrock Invoke API
+# 注意: SDK bundled CLI 是 macOS arm64 二进制，Linux amd64 需要通过 npm 安装
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends ca-certificates curl gnupg && \
+    curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && \
+    apt-get install -y --no-install-recommends nodejs && \
+    npm install -g @anthropic-ai/claude-code && \
+    apt-get purge -y gnupg && apt-get autoremove -y && \
+    rm -rf /var/lib/apt/lists/* /root/.npm
+
 # 安全: 非 root 用户运行
 RUN groupadd --gid 1000 appuser && \
     useradd --uid 1000 --gid 1000 --create-home appuser
@@ -46,7 +57,8 @@ COPY --from=builder /app/alembic.ini /app/alembic.ini
 # 设置 PATH 使用虚拟环境
 ENV PATH="/app/.venv/bin:$PATH" \
     PYTHONUNBUFFERED=1 \
-    PYTHONDONTWRITEBYTECODE=1
+    PYTHONDONTWRITEBYTECODE=1 \
+    CLAUDE_CODE_USE_BEDROCK=1
 
 # 切换到非 root 用户
 USER appuser

@@ -15,6 +15,11 @@ interface MessageBubbleProps {
 export const MessageBubble = memo(function MessageBubble({ message }: MessageBubbleProps) {
   const isUser = message.role === 'user';
 
+  // 隐藏空内容的助手消息（SDK 调用失败时后端可能创建空 assistant 消息）
+  if (!isUser && !message.content.trim()) {
+    return null;
+  }
+
   return (
     <div className={cn('flex w-full', isUser ? 'justify-end' : 'justify-start')}>
       <div

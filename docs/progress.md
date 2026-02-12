@@ -574,7 +574,8 @@
 
 ### 部署信息
 
-- **ALB 端点**: `http://ai-agents-dev-436462227.us-east-1.elb.amazonaws.com`
+- **前端**: `http://ai-agents-platform-frontend-dev-897473.s3-website-us-east-1.amazonaws.com`
+- **ALB 端点**: `http://ai-agents-dev-289071019.us-east-1.elb.amazonaws.com`
 - **Aurora 端点**: `database-dev-auroraclusterd4efe71c-4vafhqgr3qe9.cluster-cqm7um8tgaji.us-east-1.rds.amazonaws.com`
 - **AgentCore Gateway**: `https://ai-agents-platform-gateway-dev-3vv1wfgdeg.gateway.bedrock-agentcore.us-east-1.amazonaws.com/mcp`
 - **DB 凭证**: `dev/ai-agents-platform/db-credentials` (Secrets Manager)

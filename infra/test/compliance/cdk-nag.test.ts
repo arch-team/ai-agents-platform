@@ -104,7 +104,7 @@ describe('CDK Nag 合规测试', () => {
 
   it('ComputeStack 应通过 AWS Solutions checks', () => {
     const app = new cdk.App();
-    const { vpc, dbSecurityGroup, encryptionKey, databaseSecret, jwtSecret, databaseEndpoint } =
+    const { vpc, dbSecurityGroup, encryptionKeyArn, databaseSecret, jwtSecretArn, databaseEndpoint } =
       createCrossStackComputeDependencies(app, TEST_ENV);
 
     const stack = new ComputeStack(app, 'TestComputeStack', {
@@ -113,8 +113,8 @@ describe('CDK Nag 合规测试', () => {
       dbSecurityGroup,
       databaseSecret,
       databaseEndpoint,
-      encryptionKey,
-      jwtSecret,
+      encryptionKeyArn,
+      jwtSecretArn,
       envName: 'dev',
     });
 

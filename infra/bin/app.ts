@@ -58,8 +58,9 @@ const computeStack = new ComputeStack(app, `Compute-${envConfig.envName}`, {
   dbSecurityGroup: securityStack.dbSecurityGroup,
   databaseSecret: databaseStack.dbSecret,
   databaseEndpoint: databaseStack.cluster.clusterEndpoint.hostname,
-  encryptionKey: securityStack.encryptionKey,
-  jwtSecret: securityStack.jwtSecret,
+  // 使用 ARN 字符串避免跨 Stack 循环依赖 (CDK 2.1100+ 行为变化)
+  encryptionKeyArn: securityStack.encryptionKey.keyArn,
+  jwtSecretArn: securityStack.jwtSecret.secretArn,
   envName: envConfig.envName,
 });
 computeStack.addDependency(networkStack);

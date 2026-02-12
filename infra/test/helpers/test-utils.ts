@@ -77,9 +77,12 @@ export function createCrossStackDbDependencies(
 export interface CrossStackComputeDependencies {
   readonly vpc: ec2.Vpc;
   readonly dbSecurityGroup: ec2.SecurityGroup;
+  /** KMS Key 对象 — 供 DatabaseStack 等需要 IKey 的场景使用 */
   readonly encryptionKey: kms.Key;
+  /** KMS Key ARN — 供 ComputeStack 等使用 ARN 避免跨 Stack 循环依赖的场景 */
+  readonly encryptionKeyArn: string;
   readonly databaseSecret: secretsmanager.Secret;
-  readonly jwtSecret: secretsmanager.Secret;
+  readonly jwtSecretArn: string;
   readonly databaseEndpoint: string;
 }
 
@@ -107,5 +110,13 @@ export function createCrossStackComputeDependencies(
     },
   });
   const databaseEndpoint = 'test-cluster.cluster-xyz.us-east-1.rds.amazonaws.com';
-  return { vpc, dbSecurityGroup, encryptionKey, databaseSecret, jwtSecret, databaseEndpoint };
+  return {
+    vpc,
+    dbSecurityGroup,
+    encryptionKey,
+    encryptionKeyArn: encryptionKey.keyArn,
+    databaseSecret,
+    jwtSecretArn: jwtSecret.secretArn,
+    databaseEndpoint,
+  };
 }

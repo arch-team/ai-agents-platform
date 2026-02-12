@@ -20,10 +20,10 @@ export interface ComputeStackProps extends BaseStackProps {
   readonly databaseSecret: secretsmanager.ISecret;
   /** 数据库连接端点 */
   readonly databaseEndpoint: string;
-  /** KMS 加密密钥 */
-  readonly encryptionKey: kms.IKey;
-  /** JWT 签名密钥 (Secrets Manager) */
-  readonly jwtSecret: secretsmanager.ISecret;
+  /** KMS 加密密钥 ARN — 使用 ARN 避免跨 Stack 循环依赖 */
+  readonly encryptionKeyArn: string;
+  /** JWT 签名密钥 ARN — 使用 ARN 避免跨 Stack 循环依赖 */
+  readonly jwtSecretArn: string;
 }
 
 /**
@@ -48,10 +48,14 @@ export class ComputeStack extends cdk.Stack {
       dbSecurityGroup,
       databaseSecret,
       databaseEndpoint,
-      encryptionKey,
-      jwtSecret,
+      encryptionKeyArn,
+      jwtSecretArn,
       envName,
     } = props;
+
+    // 在本 Stack 内重新导入 Security 资源，避免跨 Stack grant* 循环依赖
+    const jwtSecret = secretsmanager.Secret.fromSecretCompleteArn(this, 'JwtSecretRef', jwtSecretArn);
+    const encryptionKey = kms.Key.fromKeyArn(this, 'EncryptionKeyRef', encryptionKeyArn);
 
     // ALB Construct (先创建，ECS 需要引用其安全组配置入站规则)
     // ecsSecurityGroup 在 ECS 创建后通过 Stack 层组装添加出站规则
@@ -110,10 +114,9 @@ export class ComputeStack extends cdk.Stack {
     });
 
     // 授权 ECS Task 读取数据库 Secret 和 JWT Secret
+    // jwtSecret/encryptionKey 已在本 Stack 内通过 ARN 重新导入，grant 不会跨 Stack
     databaseSecret.grantRead(ecsConstruct.service.taskDefinition.taskRole);
     jwtSecret.grantRead(ecsConstruct.service.taskDefinition.taskRole);
-
-    // 授权 ECS Task 使用 KMS 解密
     encryptionKey.grantDecrypt(ecsConstruct.service.taskDefinition.taskRole);
 
     this.albDnsName = albConstruct.alb.loadBalancerDnsName;

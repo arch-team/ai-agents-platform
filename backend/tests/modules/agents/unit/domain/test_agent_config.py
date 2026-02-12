@@ -9,7 +9,7 @@ from src.modules.agents.domain.value_objects.agent_config import AgentConfig
 class TestAgentConfigDefaults:
     def test_default_model_id(self) -> None:
         config = AgentConfig()
-        assert config.model_id == "anthropic.claude-3-5-sonnet-20241022-v2:0"
+        assert config.model_id == "us.anthropic.claude-3-5-sonnet-20241022-v2:0"
 
     def test_default_temperature(self) -> None:
         config = AgentConfig()

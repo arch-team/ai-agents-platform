@@ -5,7 +5,7 @@ Agent 和 Template 的 LLM 配置默认值集中定义在此，
 """
 
 # --- Agent 默认配置 ---
-AGENT_DEFAULT_MODEL_ID: str = "anthropic.claude-3-5-sonnet-20241022-v2:0"
+AGENT_DEFAULT_MODEL_ID: str = "us.anthropic.claude-3-5-sonnet-20241022-v2:0"
 AGENT_DEFAULT_TEMPERATURE: float = 0.7
 AGENT_DEFAULT_MAX_TOKENS: int = 2048
 AGENT_DEFAULT_TOP_P: float = 1.0

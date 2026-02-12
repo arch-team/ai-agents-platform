@@ -9,7 +9,7 @@ describe('ComputeStack', () => {
 
   beforeEach(() => {
     const app = new cdk.App();
-    const { vpc, dbSecurityGroup, databaseSecret, jwtSecret, databaseEndpoint, encryptionKey } =
+    const { vpc, dbSecurityGroup, databaseSecret, jwtSecretArn, databaseEndpoint, encryptionKeyArn } =
       createCrossStackComputeDependencies(app);
 
     stack = new ComputeStack(app, 'TestComputeStack', {
@@ -17,8 +17,8 @@ describe('ComputeStack', () => {
       dbSecurityGroup,
       databaseSecret,
       databaseEndpoint,
-      encryptionKey,
-      jwtSecret,
+      encryptionKeyArn,
+      jwtSecretArn,
       envName: 'dev',
     });
     template = Template.fromStack(stack);
