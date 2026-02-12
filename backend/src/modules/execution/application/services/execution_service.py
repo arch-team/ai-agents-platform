@@ -463,13 +463,24 @@ class ExecutionService:
             return response.content, total_tokens
 
     async def _generate_agent_stream(self, ctx: _SendContext) -> AsyncIterator[AgentResponseChunk]:
-        """Agent 路径的流式生成器。"""
+        """Agent 路径的流式生成器。
+
+        ClaudeAgentAdapter.execute_stream 是 async def 返回 AsyncIterator (coroutine)，
+        需先 await 获取迭代器。但 IAgentRuntime 接口允许直接返回 AsyncIterator，
+        因此兼容两种情况。
+        """
         if self._agent_runtime is None:
             msg = "Agent runtime 未配置"
             raise ValueError(msg)
         tools = await self._get_agent_tools()
         request = self._build_agent_request(ctx, tools)
-        async for chunk in self._agent_runtime.execute_stream(request):
+        result = self._agent_runtime.execute_stream(request)
+        # 兼容 coroutine (async def) 和 async generator 两种返回类型
+        if hasattr(result, "__anext__"):
+            stream = result  # 已经是 AsyncIterator
+        else:
+            stream = await result  # coroutine，需要 await
+        async for chunk in stream:
             yield chunk
 
     async def _generate_llm_stream(self, ctx: _SendContext) -> AsyncIterator[LLMStreamChunk]:

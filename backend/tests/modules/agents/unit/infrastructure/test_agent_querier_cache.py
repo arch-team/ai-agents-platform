@@ -19,7 +19,7 @@ def _make_agent(
         status=status,
         owner_id=1,
         config=AgentConfig(
-            model_id="us.anthropic.claude-3-5-sonnet-20241022-v2:0",
+            model_id="us.anthropic.claude-3-5-haiku-20241022-v1:0",
             temperature=0.7,
             max_tokens=2048,
             top_p=1.0,

@@ -458,10 +458,13 @@ class TeamExecutionService:
     ) -> AsyncIterator[AgentResponseChunk]:
         """消费 agent_runtime 流式响应。
 
-        execute_stream 是 async def 返回 AsyncIterator，
-        需先 await 获取迭代器再 async for 消费。
+        兼容 coroutine (async def) 和 async generator 两种返回类型。
         """
-        stream = await self._agent_runtime.execute_stream(request)
+        result = self._agent_runtime.execute_stream(request)
+        if hasattr(result, "__anext__"):
+            stream = result
+        else:
+            stream = await result
         async for chunk in stream:
             yield chunk
 

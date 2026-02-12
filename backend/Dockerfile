@@ -17,6 +17,8 @@ WORKDIR /app
 COPY pyproject.toml uv.lock* ./
 
 # 安装生产依赖 (不含 dev 依赖)
+# claude-agent-sdk 的 Linux x86_64 wheel 自带 bundled CLI (Node.js SEA 编译的 ELF 二进制)
+# 不需要在容器中安装 Node.js 或 npm
 RUN uv sync --no-dev --frozen --no-install-project
 
 # 复制源码和构建所需文件
@@ -31,17 +33,6 @@ RUN uv sync --no-dev --frozen
 # -- Stage 2: Runtime --
 FROM public.ecr.aws/docker/library/python:3.12-slim AS runtime
 
-# Node.js 22 LTS + Claude Code CLI
-# 依赖链: Python → claude-agent-sdk → Claude Code CLI (Node.js) → Bedrock Invoke API
-# 注意: SDK bundled CLI 是 macOS arm64 二进制，Linux amd64 需要通过 npm 安装
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends ca-certificates curl gnupg && \
-    curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && \
-    apt-get install -y --no-install-recommends nodejs && \
-    npm install -g @anthropic-ai/claude-code && \
-    apt-get purge -y gnupg && apt-get autoremove -y && \
-    rm -rf /var/lib/apt/lists/* /root/.npm
-
 # 安全: 非 root 用户运行
 RUN groupadd --gid 1000 appuser && \
     useradd --uid 1000 --gid 1000 --create-home appuser
@@ -55,6 +46,7 @@ COPY --from=builder /app/migrations /app/migrations
 COPY --from=builder /app/alembic.ini /app/alembic.ini
 
 # 设置 PATH 使用虚拟环境
+# CLAUDE_CODE_USE_BEDROCK: 启用 Bedrock 认证路径 (IAM Role → Bedrock Invoke API)
 ENV PATH="/app/.venv/bin:$PATH" \
     PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \

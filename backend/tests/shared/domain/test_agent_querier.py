@@ -14,7 +14,7 @@ class TestActiveAgentInfo:
             id=1,
             name="Test Agent",
             system_prompt="You are helpful.",
-            model_id="us.anthropic.claude-3-5-sonnet-20241022-v2:0",
+            model_id="us.anthropic.claude-3-5-haiku-20241022-v1:0",
             temperature=0.7,
             max_tokens=2048,
             top_p=1.0,
@@ -22,7 +22,7 @@ class TestActiveAgentInfo:
         assert info.id == 1
         assert info.name == "Test Agent"
         assert info.system_prompt == "You are helpful."
-        assert info.model_id == "us.anthropic.claude-3-5-sonnet-20241022-v2:0"
+        assert info.model_id == "us.anthropic.claude-3-5-haiku-20241022-v1:0"
         assert info.temperature == 0.7
         assert info.max_tokens == 2048
         assert info.top_p == 1.0

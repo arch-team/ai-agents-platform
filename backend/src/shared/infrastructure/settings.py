@@ -59,7 +59,7 @@ class Settings(BaseSettings):
     AWS_REGION: str = "us-east-1"
 
     # Bedrock 配置
-    BEDROCK_DEFAULT_MODEL_ID: str = "us.anthropic.claude-3-5-sonnet-20241022-v2:0"
+    BEDROCK_DEFAULT_MODEL_ID: str = "us.anthropic.claude-3-5-haiku-20241022-v1:0"
 
     # AgentCore 配置
     AGENTCORE_GATEWAY_ID: str = ""  # AgentCore Gateway 资源 ID (用于 Tool 注册/注销)
