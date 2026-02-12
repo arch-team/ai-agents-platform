@@ -42,3 +42,40 @@ class ConversationCompletedEvent(_ExecutionEvent):
     """对话完成事件。"""
 
     user_id: int = 0
+
+
+# ────────────────────────────────────────────
+# 团队执行相关事件
+# ────────────────────────────────────────────
+
+
+@dataclass
+class _TeamExecutionEvent(DomainEvent):
+    """团队执行事件基类。"""
+
+    execution_id: int = 0
+
+
+@dataclass
+class TeamExecutionStartedEvent(_TeamExecutionEvent):
+    """团队执行启动事件。"""
+
+    agent_id: int = 0
+    user_id: int = 0
+
+
+@dataclass
+class TeamExecutionCompletedEvent(_TeamExecutionEvent):
+    """团队执行完成事件。"""
+
+    user_id: int = 0
+    input_tokens: int = 0
+    output_tokens: int = 0
+
+
+@dataclass
+class TeamExecutionFailedEvent(_TeamExecutionEvent):
+    """团队执行失败事件。"""
+
+    user_id: int = 0
+    error_message: str = ""

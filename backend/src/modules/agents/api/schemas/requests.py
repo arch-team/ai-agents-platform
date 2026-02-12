@@ -3,6 +3,7 @@
 from pydantic import BaseModel, Field
 
 from src.shared.domain.constants import (
+    AGENT_DEFAULT_ENABLE_TEAMS,
     AGENT_DEFAULT_MAX_TOKENS,
     AGENT_DEFAULT_MODEL_ID,
     AGENT_DEFAULT_RUNTIME_TYPE,
@@ -20,6 +21,7 @@ class CreateAgentRequest(BaseModel):
     temperature: float = Field(default=AGENT_DEFAULT_TEMPERATURE, ge=0.0, le=1.0)
     max_tokens: int = Field(default=AGENT_DEFAULT_MAX_TOKENS, ge=1, le=4096)
     runtime_type: str = Field(default=AGENT_DEFAULT_RUNTIME_TYPE, pattern=r"^(agent|basic)$")
+    enable_teams: bool = Field(default=AGENT_DEFAULT_ENABLE_TEAMS)
 
 
 class UpdateAgentRequest(BaseModel):
@@ -32,3 +34,4 @@ class UpdateAgentRequest(BaseModel):
     temperature: float | None = Field(default=None, ge=0.0, le=1.0)
     max_tokens: int | None = Field(default=None, ge=1, le=4096)
     runtime_type: str | None = Field(default=None, pattern=r"^(agent|basic)$")
+    enable_teams: bool | None = Field(default=None)

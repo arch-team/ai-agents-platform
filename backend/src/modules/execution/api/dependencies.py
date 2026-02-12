@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.modules.execution.application.dto.execution_dto import ContextWindowConfig
 from src.modules.execution.application.interfaces.agent_runtime import IAgentRuntime
 from src.modules.execution.application.services.execution_service import ExecutionService
+from src.modules.execution.application.services.team_execution_service import TeamExecutionService
 from src.modules.execution.infrastructure.external.bedrock_llm_client import BedrockLLMClient
 from src.modules.execution.infrastructure.external.claude_agent_adapter import ClaudeAgentAdapter
 from src.modules.execution.infrastructure.persistence.repositories.conversation_repository_impl import (
@@ -17,6 +18,10 @@ from src.modules.execution.infrastructure.persistence.repositories.conversation_
 )
 from src.modules.execution.infrastructure.persistence.repositories.message_repository_impl import (
     MessageRepositoryImpl,
+)
+from src.modules.execution.infrastructure.persistence.repositories.team_execution_repository_impl import (
+    TeamExecutionLogRepositoryImpl,
+    TeamExecutionRepositoryImpl,
 )
 from src.presentation.api.providers import get_agent_querier, get_knowledge_querier, get_tool_querier
 from src.shared.domain.interfaces.agent_querier import IAgentQuerier
@@ -81,4 +86,24 @@ async def get_execution_service(
         context_window=context_window,
         stream_session_commit=stream_session.commit,
         stream_session_close=stream_session.close,
+    )
+
+
+async def get_team_execution_service(
+    session: Annotated[AsyncSession, Depends(get_db)],
+    agent_querier: Annotated[IAgentQuerier, Depends(get_agent_querier)],
+) -> TeamExecutionService:
+    """创建 TeamExecutionService 实例。"""
+    execution_repo = TeamExecutionRepositoryImpl(session=session)
+    log_repo = TeamExecutionLogRepositoryImpl(session=session)
+    agent_runtime = get_agent_runtime()
+    settings = get_settings()
+    return TeamExecutionService(
+        execution_repo=execution_repo,
+        log_repo=log_repo,
+        agent_runtime=agent_runtime,
+        agent_querier=agent_querier,
+        gateway_url=settings.AGENTCORE_GATEWAY_URL,
+        max_turns=settings.TEAM_EXECUTION_MAX_TURNS,
+        timeout_seconds=settings.TEAM_EXECUTION_TIMEOUT_SECONDS,
     )

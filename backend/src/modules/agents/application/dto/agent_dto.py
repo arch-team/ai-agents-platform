@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from datetime import datetime
 
 from src.shared.domain.constants import (
+    AGENT_DEFAULT_ENABLE_TEAMS,
     AGENT_DEFAULT_MAX_TOKENS,
     AGENT_DEFAULT_MODEL_ID,
     AGENT_DEFAULT_RUNTIME_TYPE,
@@ -22,6 +23,7 @@ class CreateAgentDTO:
     temperature: float = AGENT_DEFAULT_TEMPERATURE
     max_tokens: int = AGENT_DEFAULT_MAX_TOKENS
     runtime_type: str = AGENT_DEFAULT_RUNTIME_TYPE
+    enable_teams: bool = AGENT_DEFAULT_ENABLE_TEAMS
 
 
 @dataclass
@@ -35,6 +37,7 @@ class UpdateAgentDTO:
     temperature: float | None = None
     max_tokens: int | None = None
     runtime_type: str | None = None
+    enable_teams: bool | None = None
 
 
 @dataclass
@@ -52,5 +55,6 @@ class AgentDTO:
     max_tokens: int
     top_p: float
     runtime_type: str
+    enable_teams: bool
     created_at: datetime
     updated_at: datetime

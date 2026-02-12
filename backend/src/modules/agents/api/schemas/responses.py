@@ -13,6 +13,7 @@ class AgentConfigResponse(BaseModel):
     max_tokens: int
     top_p: float
     runtime_type: str
+    enable_teams: bool
 
 
 class AgentResponse(BaseModel):

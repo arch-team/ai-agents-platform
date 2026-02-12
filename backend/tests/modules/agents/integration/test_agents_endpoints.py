@@ -40,6 +40,7 @@ def _make_agent_dto(
     max_tokens: int = 2048,
     top_p: float = 1.0,
     runtime_type: str = "agent",
+    enable_teams: bool = False,
 ) -> AgentDTO:
     now = datetime.now()
     return AgentDTO(
@@ -54,6 +55,7 @@ def _make_agent_dto(
         max_tokens=max_tokens,
         top_p=top_p,
         runtime_type=runtime_type,
+        enable_teams=enable_teams,
         created_at=now,
         updated_at=now,
     )

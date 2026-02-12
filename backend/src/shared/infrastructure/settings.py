@@ -98,6 +98,11 @@ class Settings(BaseSettings):
     # 日志
     LOG_LEVEL: str = "INFO"
 
+    # 团队执行配置
+    TEAM_EXECUTION_MAX_TURNS: int = 200
+    TEAM_EXECUTION_TIMEOUT_SECONDS: int = 1800
+    TEAM_EXECUTION_MAX_CONCURRENT: int = 3
+
     # OpenTelemetry 可观测性
     OTEL_EXPORTER_OTLP_ENDPOINT: str = ""  # OTLP 导出端点 (如 http://localhost:4317)
 

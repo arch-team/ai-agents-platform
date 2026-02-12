@@ -2,10 +2,11 @@
 
 from datetime import datetime
 
-from sqlalchemy import DateTime, Float, ForeignKey, Integer, String, Text, UniqueConstraint
+from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from src.shared.domain.constants import (
+    AGENT_DEFAULT_ENABLE_TEAMS,
     AGENT_DEFAULT_MAX_TOKENS,
     AGENT_DEFAULT_MODEL_ID,
     AGENT_DEFAULT_RUNTIME_TYPE,
@@ -47,6 +48,11 @@ class AgentModel(Base):
         String(20),
         nullable=False,
         default=AGENT_DEFAULT_RUNTIME_TYPE,
+    )
+    enable_teams: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=AGENT_DEFAULT_ENABLE_TEAMS,
     )
 
     created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=utc_now)

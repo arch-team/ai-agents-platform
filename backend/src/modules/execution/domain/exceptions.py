@@ -35,3 +35,25 @@ class AgentNotAvailableError(DomainError):
             message=f"Agent(id={agent_id}) 不可用",
             code="AGENT_NOT_AVAILABLE",
         )
+
+
+# ────────────────────────────────────────────
+# 团队执行相关异常
+# ────────────────────────────────────────────
+
+
+class TeamExecutionNotFoundError(EntityNotFoundError):
+    """团队执行未找到。"""
+
+    def __init__(self, execution_id: int) -> None:
+        super().__init__(entity_type="TeamExecution", entity_id=execution_id)
+
+
+class TeamExecutionNotCancellableError(DomainError):
+    """团队执行不可取消。"""
+
+    def __init__(self, execution_id: int) -> None:
+        super().__init__(
+            message=f"团队执行(id={execution_id}) 不在可取消状态",
+            code="TEAM_EXECUTION_NOT_CANCELLABLE",
+        )

@@ -19,10 +19,13 @@ from src.modules.auth.domain.exceptions import (
     InvalidRefreshTokenError,
 )
 from src.modules.execution.api.endpoints import router as execution_router
+from src.modules.execution.api.team_endpoints import router as team_execution_router
 from src.modules.execution.domain.exceptions import (
     AgentNotAvailableError,
     ConversationNotActiveError,
     ConversationNotFoundError,
+    TeamExecutionNotCancellableError,
+    TeamExecutionNotFoundError,
 )
 from src.modules.insights.api.endpoints import router as insights_router
 from src.modules.insights.domain.exceptions import (
@@ -170,6 +173,8 @@ def create_app() -> FastAPI:
         ConversationNotFoundError: 404,
         ConversationNotActiveError: 409,
         AgentNotAvailableError: 409,
+        TeamExecutionNotFoundError: 404,
+        TeamExecutionNotCancellableError: 409,
         # tool_catalog
         ToolNotFoundError: 404,
         ToolNameDuplicateError: 409,
@@ -196,6 +201,7 @@ def create_app() -> FastAPI:
     app.include_router(auth_router)
     app.include_router(agents_router)
     app.include_router(execution_router)
+    app.include_router(team_execution_router)
     app.include_router(tool_catalog_router)
     app.include_router(knowledge_router)
     app.include_router(insights_router)

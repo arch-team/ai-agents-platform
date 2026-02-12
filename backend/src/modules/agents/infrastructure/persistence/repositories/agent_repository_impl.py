@@ -38,6 +38,7 @@ class AgentRepositoryImpl(PydanticRepository[Agent, AgentModel, int], IAgentRepo
             "top_p",
             "stop_sequences",
             "runtime_type",
+            "enable_teams",
         },
     )
 
@@ -56,6 +57,7 @@ class AgentRepositoryImpl(PydanticRepository[Agent, AgentModel, int], IAgentRepo
                 top_p=model.top_p,
                 stop_sequences=_deserialize_stop_sequences(model.stop_sequences),
                 runtime_type=model.runtime_type,
+                enable_teams=model.enable_teams,
             ),
             created_at=model.created_at,
             updated_at=model.updated_at,
@@ -73,6 +75,7 @@ class AgentRepositoryImpl(PydanticRepository[Agent, AgentModel, int], IAgentRepo
             "top_p": entity.config.top_p,
             "stop_sequences": _serialize_stop_sequences(entity.config.stop_sequences),
             "runtime_type": entity.config.runtime_type,
+            "enable_teams": entity.config.enable_teams,
         }
 
     def _to_model(self, entity: Agent) -> AgentModel:

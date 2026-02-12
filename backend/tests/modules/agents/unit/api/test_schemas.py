@@ -126,6 +126,7 @@ class TestAgentConfigResponse:
         resp = AgentConfigResponse(
             model_id="test-model", temperature=0.7, max_tokens=2048, top_p=1.0,
             runtime_type="agent",
+            enable_teams=False,
         )
         assert resp.model_id == "test-model"
         assert resp.top_p == 1.0
@@ -147,7 +148,7 @@ class TestAgentResponse:
             owner_id=10,
             config=AgentConfigResponse(
                 model_id="model", temperature=0.7, max_tokens=2048, top_p=1.0,
-                runtime_type="agent",
+                runtime_type="agent", enable_teams=False,
             ),
             created_at=now,
             updated_at=now,
@@ -179,7 +180,7 @@ class TestAgentListResponse:
             owner_id=1,
             config=AgentConfigResponse(
                 model_id="m", temperature=0.7, max_tokens=2048, top_p=1.0,
-                runtime_type="agent",
+                runtime_type="agent", enable_teams=False,
             ),
             created_at=now,
             updated_at=now,

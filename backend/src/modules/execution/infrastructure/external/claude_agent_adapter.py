@@ -145,6 +145,15 @@ class ClaudeAgentAdapter(IAgentRuntime):
         # 权限模式: Agent 自动化场景统一 bypassPermissions (与 agent_entrypoint 一致)
         kwargs["permission_mode"] = "bypassPermissions"
 
+        # Agent Teams: 注入环境变量启用团队协作能力
+        if request.enable_teams:
+            env = kwargs.get("env", {})
+            env["CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS"] = "1"
+            kwargs["env"] = env
+            # 团队模式默认提升 max_turns
+            if not request.max_turns or request.max_turns <= 20:
+                kwargs["max_turns"] = 200
+
         return ClaudeAgentOptions(**kwargs)
 
     def _build_mcp_config(self, request: AgentRequest) -> dict[str, Any]:

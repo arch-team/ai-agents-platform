@@ -44,6 +44,7 @@ class TestAgentRepositoryImplStructure:
                 "top_p",
                 "stop_sequences",
                 "runtime_type",
+                "enable_teams",
             }
         )
         assert AgentRepositoryImpl._updatable_fields == expected

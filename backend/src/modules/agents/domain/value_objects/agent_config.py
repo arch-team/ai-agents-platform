@@ -3,6 +3,7 @@
 from dataclasses import dataclass
 
 from src.shared.domain.constants import (
+    AGENT_DEFAULT_ENABLE_TEAMS,
     AGENT_DEFAULT_MAX_TOKENS,
     AGENT_DEFAULT_MODEL_ID,
     AGENT_DEFAULT_RUNTIME_TYPE,
@@ -21,3 +22,4 @@ class AgentConfig:
     top_p: float = AGENT_DEFAULT_TOP_P
     stop_sequences: tuple[str, ...] = ()
     runtime_type: str = AGENT_DEFAULT_RUNTIME_TYPE
+    enable_teams: bool = AGENT_DEFAULT_ENABLE_TEAMS

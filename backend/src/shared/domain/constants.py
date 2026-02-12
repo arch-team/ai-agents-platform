@@ -11,6 +11,11 @@ AGENT_DEFAULT_MAX_TOKENS: int = 2048
 AGENT_DEFAULT_TOP_P: float = 1.0
 AGENT_DEFAULT_RUNTIME_TYPE: str = "agent"
 
+# --- Agent Teams 配置 ---
+AGENT_DEFAULT_ENABLE_TEAMS: bool = False
+AGENT_TEAMS_DEFAULT_MAX_TURNS: int = 200
+AGENT_TEAMS_DEFAULT_TIMEOUT: int = 1800  # 30 分钟
+
 # --- Template 默认配置 (temperature 与 Agent 相同, max_tokens 不同) ---
 TEMPLATE_DEFAULT_TEMPERATURE: float = 0.7
 TEMPLATE_DEFAULT_MAX_TOKENS: int = 4096

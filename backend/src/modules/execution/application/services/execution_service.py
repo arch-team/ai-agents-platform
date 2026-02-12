@@ -532,6 +532,7 @@ class ExecutionService:
             temperature=ctx.agent_info.temperature,
             max_tokens=ctx.agent_info.max_tokens,
             gateway_url=self._gateway_url,
+            enable_teams=ctx.agent_info.enable_teams,
         )
 
     async def _prepare_for_send(
