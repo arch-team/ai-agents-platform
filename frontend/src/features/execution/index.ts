@@ -11,8 +11,4 @@ export {
 } from './api/queries';
 
 // 类型
-export type {
-  Conversation,
-  ConversationDetail,
-  CreateConversationDTO,
-} from './api/types';
+export type { Conversation, ConversationDetail, CreateConversationDTO } from './api/types';

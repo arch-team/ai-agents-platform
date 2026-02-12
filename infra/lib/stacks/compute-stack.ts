@@ -2,6 +2,7 @@ import * as path from 'path';
 import * as cdk from 'aws-cdk-lib';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as ecs from 'aws-cdk-lib/aws-ecs';
+import * as elbv2 from 'aws-cdk-lib/aws-elasticloadbalancingv2';
 import * as kms from 'aws-cdk-lib/aws-kms';
 import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
 import { NagSuppressions } from 'cdk-nag';
@@ -34,6 +35,10 @@ export class ComputeStack extends cdk.Stack {
   public readonly albDnsName: string;
   /** ECS Fargate 服务 */
   public readonly service: ecs.FargateService;
+  /** Application Load Balancer */
+  public readonly loadBalancer: elbv2.ApplicationLoadBalancer;
+  /** ALB Target Group */
+  public readonly targetGroup: elbv2.ApplicationTargetGroup;
 
   constructor(scope: Construct, id: string, props: ComputeStackProps) {
     super(scope, id, props);
@@ -69,6 +74,9 @@ export class ComputeStack extends cdk.Stack {
         DATABASE_PORT: '3306',
         AWS_REGION: cdk.Stack.of(this).region,
         LOG_LEVEL: envName === 'prod' ? 'INFO' : 'DEBUG',
+        // Secrets Manager ARN — 应用可选择直接读取 (备用路径, ECS Secrets 为主路径)
+        DB_SECRET_ARN: databaseSecret.secretArn,
+        JWT_SECRET_ARN: jwtSecret.secretArn,
       },
       secrets: {
         // Aurora Secret JSON fields: host, port, username, password, dbname, engine
@@ -110,6 +118,8 @@ export class ComputeStack extends cdk.Stack {
 
     this.albDnsName = albConstruct.alb.loadBalancerDnsName;
     this.service = ecsConstruct.service;
+    this.loadBalancer = albConstruct.alb;
+    this.targetGroup = albConstruct.targetGroup;
 
     // CDK Nag 抑制
     this.suppressNagRules(albConstruct, ecsConstruct);

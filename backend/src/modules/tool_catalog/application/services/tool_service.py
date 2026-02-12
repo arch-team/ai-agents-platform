@@ -3,11 +3,14 @@
 import asyncio
 from dataclasses import replace
 
+import structlog
+
 from src.modules.tool_catalog.application.dto.tool_dto import (
     CreateToolDTO,
     ToolDTO,
     UpdateToolDTO,
 )
+from src.modules.tool_catalog.application.interfaces.gateway_sync import IGatewaySyncService
 from src.modules.tool_catalog.domain.entities.tool import Tool
 from src.modules.tool_catalog.domain.events import (
     ToolApprovedEvent,
@@ -34,14 +37,21 @@ from src.shared.domain.event_bus import event_bus
 from src.shared.domain.exceptions import InvalidStateTransitionError
 
 
+logger = structlog.get_logger(__name__)
+
 _EDITABLE_STATUSES: frozenset[ToolStatus] = frozenset({ToolStatus.DRAFT, ToolStatus.REJECTED})
 
 
 class ToolCatalogService:
     """Tool Catalog 业务服务，编排 Tool 的 CRUD、审批和状态变更用例。"""
 
-    def __init__(self, repository: IToolRepository) -> None:
+    def __init__(
+        self,
+        repository: IToolRepository,
+        gateway_sync: IGatewaySyncService | None = None,
+    ) -> None:
         self._repository = repository
+        self._gateway_sync = gateway_sync
 
     # ── CRUD ──
 
@@ -283,7 +293,7 @@ class ToolCatalogService:
         return self._to_dto(updated)
 
     async def approve_tool(self, tool_id: int, reviewer_id: int) -> ToolDTO:
-        """审批通过 Tool。仅 PENDING_REVIEW 可审批。
+        """审批通过 Tool。仅 PENDING_REVIEW 可审批。审批成功后同步到 Gateway (失败不阻断)。
 
         Raises:
             ToolNotFoundError, InvalidStateTransitionError
@@ -291,6 +301,10 @@ class ToolCatalogService:
         tool = await self._get_tool_or_raise(tool_id)
         tool.approve(reviewer_id)
         updated = await self._repository.update(tool)
+
+        # Gateway 同步: MCP_SERVER 类型注册到 Gateway (失败仅记录日志, 不阻断审批)
+        await self._sync_tool_to_gateway(updated)
+
         await event_bus.publish_async(
             ToolApprovedEvent(
                 tool_id=tool_id,
@@ -322,7 +336,7 @@ class ToolCatalogService:
     # ── 状态变更 ──
 
     async def deprecate_tool(self, tool_id: int, operator_id: int) -> ToolDTO:
-        """废弃 Tool。creator 或 ADMIN 可操作（ADMIN 权限在 API 层校验）。
+        """废弃 Tool。creator 或 ADMIN 可操作。废弃后从 Gateway 移除 (失败不阻断)。
 
         Raises:
             ToolNotFoundError, DomainError, InvalidStateTransitionError
@@ -330,6 +344,10 @@ class ToolCatalogService:
         tool = await self._get_owned_tool(tool_id, operator_id)
         tool.deprecate()
         updated = await self._repository.update(tool)
+
+        # Gateway 同步: 从 Gateway 移除工具 (失败仅记录日志, 不阻断废弃)
+        await self._unsync_tool_from_gateway(updated)
+
         await event_bus.publish_async(
             ToolDeprecatedEvent(
                 tool_id=tool_id,
@@ -337,6 +355,40 @@ class ToolCatalogService:
             ),
         )
         return self._to_dto(updated)
+
+    # ── Gateway 同步辅助方法 ──
+
+    async def _sync_tool_to_gateway(self, tool: Tool) -> None:
+        """MCP_SERVER 类型工具审批后注册到 Gateway。同步失败仅记录日志，不阻断审批。"""
+        if self._gateway_sync is None or tool.tool_type != ToolType.MCP_SERVER:
+            return
+        try:
+            target_id = await self._gateway_sync.register_tool(
+                tool_id=tool.id or 0,
+                tool_name=tool.name,
+                description=tool.description,
+                server_url=tool.config.server_url,
+                transport=tool.config.transport,
+            )
+            if target_id:
+                tool.gateway_target_id = target_id
+                await self._repository.update(tool)
+        except Exception:
+            logger.exception("gateway_sync_register_failed", tool_id=tool.id)
+
+    async def _unsync_tool_from_gateway(self, tool: Tool) -> None:
+        """工具废弃后从 Gateway 移除。同步失败仅记录日志，不阻断废弃。"""
+        if self._gateway_sync is None or not tool.gateway_target_id:
+            return
+        try:
+            await self._gateway_sync.unregister_tool(
+                tool_id=tool.id or 0,
+                target_id=tool.gateway_target_id,
+            )
+            tool.gateway_target_id = ""
+            await self._repository.update(tool)
+        except Exception:
+            logger.exception("gateway_sync_unregister_failed", tool_id=tool.id)
 
     # ── 内部辅助方法 ──
 
@@ -377,6 +429,7 @@ class ToolCatalogService:
             auth_type=tool.config.auth_type,
             auth_config=list(tool.config.auth_config),
             allowed_roles=list(tool.allowed_roles),
+            gateway_target_id=tool.gateway_target_id,
             reviewer_id=tool.reviewer_id,
             review_comment=tool.review_comment,
             reviewed_at=tool.reviewed_at,

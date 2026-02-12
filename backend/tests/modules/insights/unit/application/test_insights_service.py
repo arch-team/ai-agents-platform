@@ -7,10 +7,10 @@ import pytest
 
 from src.modules.insights.application.dto.insights_dto import (
     CreateUsageRecordDTO,
-    PagedUsageRecordDTO,
     UsageRecordDTO,
     UsageSummaryDTO,
 )
+from src.shared.application.dtos import PagedResult
 from src.modules.insights.application.services.insights_service import InsightsService
 from src.modules.insights.domain.exceptions import (
     InvalidDateRangeError,
@@ -118,7 +118,7 @@ class TestListUsageRecords:
         mock_usage_repo.count.return_value = 2
 
         result = await insights_service.list_usage_records(page=1, page_size=20)
-        assert isinstance(result, PagedUsageRecordDTO)
+        assert isinstance(result, PagedResult)
         assert len(result.items) == 2
         assert result.total == 2
         mock_usage_repo.list.assert_called_once_with(offset=0, limit=20)

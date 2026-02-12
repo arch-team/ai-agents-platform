@@ -6,18 +6,157 @@ on:
   pull_request:
     paths: ['backend/**']
 
+# 同一分支/PR 上的新推送取消旧的运行
+concurrency:
+  group: backend-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  UV_VERSION: "0.7.12"
+  PYTHON_VERSION: "3.11"
+
 jobs:
-  test:
+  # ============================================================
+  # 代码质量检查 + 单元测试
+  # ============================================================
+  lint-and-unit-test:
+    name: 代码检查 + 单元测试
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: backend
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
-      - run: pip install uv && uv sync
-      - run: uv run ruff check src/
-      - run: uv run mypy src/
-      - run: uv run pytest --cov=src --cov-fail-under=85
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      # uv 安装 + 依赖缓存
+      - name: 安装 uv
+        run: pip install uv==${{ env.UV_VERSION }}
+
+      - name: 缓存 uv 依赖
+        uses: actions/cache@v4
+        with:
+          path: |
+            backend/.venv
+            ~/.cache/uv
+          key: uv-${{ runner.os }}-py${{ env.PYTHON_VERSION }}-${{ hashFiles('backend/uv.lock') }}
+          restore-keys: |
+            uv-${{ runner.os }}-py${{ env.PYTHON_VERSION }}-
+
+      - name: 安装依赖
+        run: uv sync
+
+      # 代码质量
+      - name: Ruff 代码检查
+        run: uv run ruff check src/
+
+      - name: MyPy 类型检查
+        run: uv run mypy src/
+
+      # 单元测试 (排除集成测试)
+      - name: 运行单元测试
+        run: uv run pytest -m "not integration" --cov=src --cov-fail-under=85
+
+  # ============================================================
+  # MySQL 集成测试
+  # ============================================================
+  integration-test:
+    name: 集成测试 (MySQL)
+    runs-on: ubuntu-latest
+    needs: lint-and-unit-test
+    defaults:
+      run:
+        working-directory: backend
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: test_root_password
+          MYSQL_DATABASE: ai_agents_test
+          MYSQL_USER: test_user
+          MYSQL_PASSWORD: test_password
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    env:
+      # 集成测试数据库连接配置
+      DATABASE_URL: "mysql+asyncmy://test_user:test_password@localhost:3306/ai_agents_test"
+      APP_ENV: "test"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: 安装 uv
+        run: pip install uv==${{ env.UV_VERSION }}
+
+      - name: 缓存 uv 依赖
+        uses: actions/cache@v4
+        with:
+          path: |
+            backend/.venv
+            ~/.cache/uv
+          key: uv-${{ runner.os }}-py${{ env.PYTHON_VERSION }}-${{ hashFiles('backend/uv.lock') }}
+          restore-keys: |
+            uv-${{ runner.os }}-py${{ env.PYTHON_VERSION }}-
+
+      - name: 安装依赖
+        run: uv sync
+
+      - name: 运行集成测试
+        run: uv run pytest -m "integration" -v
+
+  # ============================================================
+  # 安全扫描 (不阻断 CI)
+  # ============================================================
+  security-scan:
+    name: 安全扫描
+    runs-on: ubuntu-latest
+    needs: lint-and-unit-test
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: 安装 uv
+        run: pip install uv==${{ env.UV_VERSION }}
+
+      - name: 缓存 uv 依赖
+        uses: actions/cache@v4
+        with:
+          path: |
+            backend/.venv
+            ~/.cache/uv
+          key: uv-${{ runner.os }}-py${{ env.PYTHON_VERSION }}-${{ hashFiles('backend/uv.lock') }}
+          restore-keys: |
+            uv-${{ runner.os }}-py${{ env.PYTHON_VERSION }}-
+
+      - name: 安装依赖
+        run: uv sync
+
+      # Bandit — Python 安全静态分析
+      - name: Bandit 安全静态分析
+        run: uv run bandit -r src/ -c pyproject.toml
+        continue-on-error: true
+
+      # pip-audit — 依赖漏洞扫描
+      - name: pip-audit 依赖漏洞扫描
+        run: uv run pip-audit
+        continue-on-error: true

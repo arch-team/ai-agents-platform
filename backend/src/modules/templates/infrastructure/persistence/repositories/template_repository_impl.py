@@ -174,19 +174,13 @@ class TemplateRepositoryImpl(
         result = await self._session.execute(stmt)
         return [self._to_entity(m) for m in result.scalars().all()]
 
-    async def search(
-        self,
+    @staticmethod
+    def _build_search_conditions(
         keyword: str,
-        *,
-        category: TemplateCategory | None = None,
-        tags: list[str] | None = None,  # noqa: ARG002
-        offset: int = 0,
-        limit: int = 20,
-    ) -> list[Template]:
-        """搜索模板。"""
-        stmt = select(TemplateModel)
-
-        conditions = []
+        category: TemplateCategory | None,
+    ) -> list[ColumnElement[bool]]:
+        """构建搜索查询条件。"""
+        conditions: list[ColumnElement[bool]] = []
         if keyword:
             like_pattern = f"%{keyword}%"
             conditions.append(
@@ -197,10 +191,22 @@ class TemplateRepositoryImpl(
             )
         if category:
             conditions.append(TemplateModel.category == category.value)
+        return conditions
 
+    async def search(
+        self,
+        keyword: str,
+        *,
+        category: TemplateCategory | None = None,
+        tags: list[str] | None = None,  # noqa: ARG002
+        offset: int = 0,
+        limit: int = 20,
+    ) -> list[Template]:
+        """搜索模板。"""
+        conditions = self._build_search_conditions(keyword, category)
+        stmt = select(TemplateModel)
         if conditions:
             stmt = stmt.where(*conditions)
-
         stmt = stmt.offset(offset).limit(limit).order_by(TemplateModel.id.desc())
         result = await self._session.execute(stmt)
         return [self._to_entity(m) for m in result.scalars().all()]
@@ -213,18 +219,7 @@ class TemplateRepositoryImpl(
         tags: list[str] | None = None,  # noqa: ARG002
     ) -> int:
         """按搜索条件统计模板数量。"""
-        conditions: list[ColumnElement[bool]] = []
-        if keyword:
-            like_pattern = f"%{keyword}%"
-            conditions.append(
-                or_(
-                    TemplateModel.name.like(like_pattern),
-                    TemplateModel.description.like(like_pattern),
-                ),
-            )
-        if category:
-            conditions.append(TemplateModel.category == category.value)
-
+        conditions = self._build_search_conditions(keyword, category)
         return await self._count_where(*conditions) if conditions else await self.count()
 
     async def count_by_creator(self, creator_id: int) -> int:

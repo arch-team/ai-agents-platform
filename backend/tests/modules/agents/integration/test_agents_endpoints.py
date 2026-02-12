@@ -13,7 +13,7 @@ from src.modules.agents.domain.exceptions import AgentNameDuplicateError, AgentN
 from src.modules.auth.api.dependencies import get_current_user
 from src.modules.auth.application.dto.user_dto import UserDTO
 from src.presentation.api.main import create_app
-from src.shared.domain.exceptions import DomainError, InvalidStateTransitionError, ValidationError
+from src.shared.domain.exceptions import InvalidStateTransitionError, ValidationError
 
 
 def _make_user_dto(

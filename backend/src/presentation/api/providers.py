@@ -5,6 +5,7 @@ composition root 层的工厂函数，负责跨模块对象的组装。
 避免模块间直接依赖，遵循架构隔离规则。
 """
 
+from functools import lru_cache
 from typing import Annotated
 
 from fastapi import Depends
@@ -27,6 +28,23 @@ from src.shared.domain.interfaces.agent_querier import IAgentQuerier
 from src.shared.domain.interfaces.knowledge_querier import IKnowledgeQuerier
 from src.shared.domain.interfaces.tool_querier import IToolQuerier
 from src.shared.infrastructure.database import get_db
+from src.shared.infrastructure.settings import get_settings
+
+
+@lru_cache(maxsize=1)
+def get_gateway_sync() -> object:
+    """创建 GatewaySyncAdapter 单例。延迟导入避免循环依赖。
+
+    返回类型为 GatewaySyncAdapter (实现 IGatewaySyncService Protocol)，
+    声明为 object 以避免循环导入。
+    """
+    from src.modules.tool_catalog.infrastructure.external.gateway_sync_adapter import GatewaySyncAdapter
+
+    settings = get_settings()
+    return GatewaySyncAdapter(
+        gateway_id=settings.AGENTCORE_GATEWAY_ID,
+        region=settings.AWS_REGION,
+    )
 
 
 async def get_agent_querier(

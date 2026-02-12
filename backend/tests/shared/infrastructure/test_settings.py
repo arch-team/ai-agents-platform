@@ -1,8 +1,11 @@
 """Settings 配置管理测试。"""
 
+from unittest.mock import patch
+
 import pytest
 from pydantic import SecretStr
 
+from src.shared.infrastructure.secrets_client import DatabaseCredentials, JwtCredentials
 from src.shared.infrastructure.settings import Settings, get_settings
 
 
@@ -143,6 +146,106 @@ class TestBedrockKBSettings:
         assert settings.BEDROCK_KB_EMBEDDING_MODEL_ARN.endswith("titan")
         assert settings.BEDROCK_KB_S3_BUCKET == "my-kb-bucket"
         assert settings.BEDROCK_KB_COLLECTION_ARN.endswith("col1")
+
+
+@pytest.mark.unit
+class TestSecretsManagerIntegration:
+    """Settings + Secrets Manager 集成测试。"""
+
+    def test_development_env_skips_secrets_manager(self) -> None:
+        """开发环境不调用 Secrets Manager, 即使配置了 ARN。"""
+        settings = Settings(
+            APP_ENV="development",
+            DB_SECRET_ARN="arn:aws:secretsmanager:us-east-1:123:secret:test",
+        )
+        # 开发环境保持默认值
+        assert settings.DATABASE_USER == "root"
+        assert settings.DATABASE_PASSWORD.get_secret_value() == "changeme"
+
+    def test_test_env_skips_secrets_manager(self) -> None:
+        """测试环境不调用 Secrets Manager。"""
+        settings = Settings(
+            APP_ENV="test",
+            DB_SECRET_ARN="arn:test",
+            JWT_SECRET_ARN="arn:jwt",
+        )
+        assert settings.DATABASE_USER == "root"
+
+    @patch("src.shared.infrastructure.secrets_client.fetch_database_credentials")
+    def test_deployed_env_resolves_db_secret(self, mock_fetch_db) -> None:
+        """部署环境下配置 DB_SECRET_ARN 时从 Secrets Manager 获取凭证。"""
+        mock_fetch_db.return_value = DatabaseCredentials(
+            username="sm_user",
+            password="sm_password_long_enough_for_test",
+            dbname="sm_db",
+            host="sm-host.cluster.amazonaws.com",
+            port=3306,
+        )
+        settings = Settings(
+            APP_ENV="staging",
+            AWS_REGION="ap-northeast-1",
+            DB_SECRET_ARN="arn:aws:secretsmanager:ap-northeast-1:123:secret:db",
+            JWT_SECRET_KEY=SecretStr("a-very-strong-secret-key-that-is-at-least-32-chars-long"),
+        )
+        assert settings.DATABASE_USER == "sm_user"
+        assert settings.DATABASE_PASSWORD.get_secret_value() == "sm_password_long_enough_for_test"
+        assert settings.DATABASE_NAME == "sm_db"
+        assert settings.DATABASE_HOST == "sm-host.cluster.amazonaws.com"
+        mock_fetch_db.assert_called_once_with(
+            "arn:aws:secretsmanager:ap-northeast-1:123:secret:db", "ap-northeast-1"
+        )
+
+    @patch("src.shared.infrastructure.secrets_client.fetch_jwt_credentials")
+    def test_deployed_env_resolves_jwt_secret(self, mock_fetch_jwt) -> None:
+        """部署环境下配置 JWT_SECRET_ARN 时从 Secrets Manager 获取 JWT 密钥。"""
+        mock_fetch_jwt.return_value = JwtCredentials(
+            secret_key="sm-jwt-key-that-is-very-long-and-secure-at-least-32-chars",
+        )
+        settings = Settings(
+            APP_ENV="production",
+            AWS_REGION="ap-northeast-1",
+            JWT_SECRET_ARN="arn:aws:secretsmanager:ap-northeast-1:123:secret:jwt",
+        )
+        assert settings.JWT_SECRET_KEY.get_secret_value() == "sm-jwt-key-that-is-very-long-and-secure-at-least-32-chars"
+        mock_fetch_jwt.assert_called_once_with(
+            "arn:aws:secretsmanager:ap-northeast-1:123:secret:jwt", "ap-northeast-1"
+        )
+
+    def test_deployed_env_without_arn_uses_env_vars(self) -> None:
+        """部署环境下未配置 ARN 时使用环境变量 (ECS Secrets 注入路径)。"""
+        settings = Settings(
+            APP_ENV="production",
+            DATABASE_USER="ecs_user",
+            DATABASE_PASSWORD=SecretStr("ecs_password"),
+            DATABASE_NAME="ecs_db",
+            JWT_SECRET_KEY=SecretStr("a-very-strong-secret-key-that-is-at-least-32-chars-long"),
+        )
+        assert settings.DATABASE_USER == "ecs_user"
+        assert settings.DATABASE_PASSWORD.get_secret_value() == "ecs_password"
+
+    def test_secret_arn_defaults_empty(self) -> None:
+        """ARN 字段默认为空字符串。"""
+        settings = Settings()
+        assert settings.DB_SECRET_ARN == ""
+        assert settings.JWT_SECRET_ARN == ""
+
+    @patch("src.shared.infrastructure.secrets_client.fetch_database_credentials")
+    def test_db_secret_host_not_overwritten_when_empty(self, mock_fetch_db) -> None:
+        """Secret 中 host 为空时保留原有 DATABASE_HOST。"""
+        mock_fetch_db.return_value = DatabaseCredentials(
+            username="user",
+            password="pw",
+            dbname="db",
+            host="",
+            port=0,
+        )
+        settings = Settings(
+            APP_ENV="dev",
+            DATABASE_HOST="original-host",
+            DB_SECRET_ARN="arn:db",
+            JWT_SECRET_KEY=SecretStr("a-very-strong-secret-key-that-is-at-least-32-chars-long"),
+        )
+        assert settings.DATABASE_HOST == "original-host"
 
 
 @pytest.mark.unit

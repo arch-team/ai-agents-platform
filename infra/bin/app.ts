@@ -10,6 +10,7 @@ import {
   DatabaseStack,
   ComputeStack,
   AgentCoreStack,
+  MonitoringStack,
 } from '../lib/stacks';
 
 const app = new cdk.App();
@@ -71,5 +72,17 @@ const agentCoreStack = new AgentCoreStack(app, `AgentCore-${envConfig.envName}`,
   envName: envConfig.envName,
 });
 agentCoreStack.addDependency(networkStack);
+
+const monitoringStack = new MonitoringStack(app, `Monitoring-${envConfig.envName}`, {
+  env: cdkEnv,
+  cluster: databaseStack.cluster,
+  service: computeStack.service,
+  loadBalancer: computeStack.loadBalancer,
+  targetGroup: computeStack.targetGroup,
+  alertEmail: envConfig.alertEmail,
+  envName: envConfig.envName,
+});
+monitoringStack.addDependency(databaseStack);
+monitoringStack.addDependency(computeStack);
 
 app.synth();

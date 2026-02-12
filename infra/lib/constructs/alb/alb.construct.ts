@@ -2,7 +2,7 @@ import * as cdk from 'aws-cdk-lib';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as elbv2 from 'aws-cdk-lib/aws-elasticloadbalancingv2';
 import { Construct } from 'constructs';
-import type { EnvironmentName } from '../../config/types';
+import type { EnvironmentName } from '../../config';
 
 export interface AlbConstructProps {
   /** ALB 所在的 VPC */
@@ -15,8 +15,6 @@ export interface AlbConstructProps {
   readonly containerPort?: number;
   /** ACM 证书 ARN — 提供时启用 HTTPS，HTTP 自动重定向到 HTTPS */
   readonly certificateArn?: string;
-  /** 自定义域名 (与 certificateArn 配合使用) */
-  readonly domainName?: string;
 }
 
 /**

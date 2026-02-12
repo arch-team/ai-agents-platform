@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from typing import Any
 
 import structlog
+from opentelemetry import trace
 
 from src.modules.execution.application.dto.execution_dto import (
     ContextWindowConfig,
@@ -73,6 +74,7 @@ class _SendContext:
 AsyncCallback = Callable[[], Coroutine[Any, Any, None]]
 
 logger = structlog.get_logger(__name__)
+tracer = trace.get_tracer(__name__)
 
 # token 估算: 约 4 字符/token (中英混合文本的经验值)
 _CHARS_PER_TOKEN = 4
@@ -425,25 +427,40 @@ class ExecutionService:
         if self._agent_runtime is None:
             msg = "Agent runtime 未配置"
             raise ValueError(msg)
-        tools = await self._get_agent_tools()
-        request = self._build_agent_request(ctx, tools)
-        response = await self._agent_runtime.execute(request)
-        total_tokens = response.input_tokens + response.output_tokens
-        return response.content, total_tokens
+        with tracer.start_as_current_span(
+            "agent.execute",
+            attributes={
+                "agent.id": str(ctx.agent_info.id),
+                "agent.type": ctx.agent_info.runtime_type,
+                "agent.model_id": ctx.agent_info.model_id,
+            },
+        ):
+            tools = await self._get_agent_tools()
+            request = self._build_agent_request(ctx, tools)
+            response = await self._agent_runtime.execute(request)
+            total_tokens = response.input_tokens + response.output_tokens
+            return response.content, total_tokens
 
     async def _execute_llm(self, ctx: _SendContext) -> tuple[str, int]:
         """通过 ILLMClient 执行（降级路径）。返回 (content, total_tokens)。"""
-        response = await self._llm_client.invoke(
-            model_id=ctx.agent_info.model_id,
-            messages=ctx.llm_messages,
-            system_prompt=ctx.system_prompt,
-            temperature=ctx.agent_info.temperature,
-            max_tokens=ctx.agent_info.max_tokens,
-            top_p=ctx.agent_info.top_p,
-            stop_sequences=ctx.agent_info.stop_sequences,
-        )
-        total_tokens = response.input_tokens + response.output_tokens
-        return response.content, total_tokens
+        with tracer.start_as_current_span(
+            "llm.invoke",
+            attributes={
+                "llm.model_id": ctx.agent_info.model_id,
+                "llm.max_tokens": ctx.agent_info.max_tokens,
+            },
+        ):
+            response = await self._llm_client.invoke(
+                model_id=ctx.agent_info.model_id,
+                messages=ctx.llm_messages,
+                system_prompt=ctx.system_prompt,
+                temperature=ctx.agent_info.temperature,
+                max_tokens=ctx.agent_info.max_tokens,
+                top_p=ctx.agent_info.top_p,
+                stop_sequences=ctx.agent_info.stop_sequences,
+            )
+            total_tokens = response.input_tokens + response.output_tokens
+            return response.content, total_tokens
 
     async def _generate_agent_stream(self, ctx: _SendContext) -> AsyncIterator[AgentResponseChunk]:
         """Agent 路径的流式生成器。"""
@@ -473,8 +490,12 @@ class ExecutionService:
         """通过 IToolQuerier 获取已审批工具并转换为 AgentTool。"""
         if self._tool_querier is None:
             return []
-        approved = await self._tool_querier.list_approved_tools()
-        return [self._to_agent_tool(t) for t in approved]
+        with tracer.start_as_current_span("tools.load"):
+            approved = await self._tool_querier.list_approved_tools()
+            tools = [self._to_agent_tool(t) for t in approved]
+            span = trace.get_current_span()
+            span.set_attribute("tools.count", len(tools))
+            return tools
 
     _TOOL_CONFIG_FIELDS: tuple[str, ...] = (
         "server_url",
@@ -548,11 +569,18 @@ class ExecutionService:
         # RAG 上下文注入: 将检索结果附加到 system prompt
         system_prompt = agent_info.system_prompt
         if agent_info.knowledge_base_id and self._knowledge_querier:
-            rag_results = await self._knowledge_querier.retrieve(
-                agent_info.knowledge_base_id,
-                content,
-                top_k=5,
-            )
+            with tracer.start_as_current_span(
+                "rag.retrieve",
+                attributes={
+                    "rag.knowledge_base_id": str(agent_info.knowledge_base_id),
+                    "rag.top_k": 5,
+                },
+            ):
+                rag_results = await self._knowledge_querier.retrieve(
+                    agent_info.knowledge_base_id,
+                    content,
+                    top_k=5,
+                )
             if rag_results:
                 rag_context = "\n\n".join(f"[参考文档] {r.content}" for r in rag_results)
                 system_prompt = f"{system_prompt}\n\n## 知识库参考资料\n\n{rag_context}"

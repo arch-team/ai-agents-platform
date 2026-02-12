@@ -50,6 +50,7 @@ from src.shared.api.middleware.rate_limit import setup_rate_limiting
 from src.shared.infrastructure.database import init_db
 from src.shared.infrastructure.logging import setup_logging
 from src.shared.infrastructure.settings import get_settings
+from src.shared.infrastructure.tracing import setup_tracing
 
 
 if TYPE_CHECKING:
@@ -58,13 +59,65 @@ if TYPE_CHECKING:
     from src.shared.domain.exceptions import DomainError
 
 
+def _register_gateway_event_subscriptions() -> None:
+    """注册 Gateway 工具同步事件订阅。
+
+    在 init_db 之后调用，确保 session factory 已初始化。
+    事件处理器使用独立的 DB session 以避免与发布侧 session 冲突。
+    """
+    from src.modules.tool_catalog.domain.events import ToolApprovedEvent, ToolDeprecatedEvent
+    from src.modules.tool_catalog.infrastructure.external.gateway_event_handlers import (
+        handle_tool_approved,
+        handle_tool_deprecated,
+    )
+    from src.modules.tool_catalog.infrastructure.persistence.repositories.tool_repository_impl import (
+        ToolRepositoryImpl,
+    )
+    from src.presentation.api.providers import get_gateway_sync
+    from src.shared.domain.event_bus import event_bus
+    from src.shared.infrastructure.database import get_session_factory
+
+    session_factory = get_session_factory()
+    gateway_sync = get_gateway_sync()
+
+    async def _on_tool_approved(event: ToolApprovedEvent) -> None:
+        async with session_factory() as session:
+            try:
+                repo = ToolRepositoryImpl(session=session)
+                await handle_tool_approved(event, repo=repo, gateway_sync=gateway_sync)  # type: ignore[arg-type]
+                await session.commit()
+            except Exception:
+                await session.rollback()
+                raise
+
+    async def _on_tool_deprecated(event: ToolDeprecatedEvent) -> None:
+        async with session_factory() as session:
+            try:
+                repo = ToolRepositoryImpl(session=session)
+                await handle_tool_deprecated(event, repo=repo, gateway_sync=gateway_sync)  # type: ignore[arg-type]
+                await session.commit()
+            except Exception:
+                await session.rollback()
+                raise
+
+    event_bus.subscribe(ToolApprovedEvent, _on_tool_approved)
+    event_bus.subscribe(ToolDeprecatedEvent, _on_tool_deprecated)
+
+
 @asynccontextmanager
 async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
-    """应用生命周期: 启动时初始化数据库和日志。"""
+    """应用生命周期: 启动时初始化数据库、日志、追踪和事件订阅。"""
     settings = get_settings()
+    is_dev = settings.APP_ENV in ("development", "test")
     setup_logging(
         log_level=settings.LOG_LEVEL,
-        is_dev=settings.APP_ENV in ("development", "test"),
+        is_dev=is_dev,
+    )
+    setup_tracing(
+        service_name=settings.APP_NAME,
+        is_dev=is_dev,
+        otlp_endpoint=settings.OTEL_EXPORTER_OTLP_ENDPOINT,
+        environment=settings.APP_ENV,
     )
     init_db(
         settings.database_url,
@@ -74,6 +127,7 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
         pool_timeout=settings.DB_POOL_TIMEOUT,
         pool_recycle=settings.DB_POOL_RECYCLE,
     )
+    _register_gateway_event_subscriptions()
     yield
 
 
@@ -149,6 +203,11 @@ def create_app() -> FastAPI:
 
     # Rate Limiting
     setup_rate_limiting(app)
+
+    # OpenTelemetry FastAPI 自动追踪 (为所有 HTTP 请求生成 Span)
+    from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
+
+    FastAPIInstrumentor.instrument_app(app)
 
     return app
 

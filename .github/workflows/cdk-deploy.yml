@@ -9,36 +9,115 @@ on:
   workflow_dispatch:
     inputs:
       environment:
-        description: 'Target environment'
+        description: '目标部署环境'
         type: choice
         options: [dev, staging, prod]
         default: dev
 
+# 同一分支/PR 上的新推送取消旧的运行
+concurrency:
+  group: cdk-deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: "22"
+  PNPM_VERSION: "9"
+
 jobs:
+  # ============================================================
+  # 测试 + CDK Synth
+  # ============================================================
   test:
+    name: 测试 + CDK Synth
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: infra
     steps:
       - uses: actions/checkout@v4
+
       - uses: pnpm/action-setup@v4
         with:
-          version: 9
+          version: ${{ env.PNPM_VERSION }}
+
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: ${{ env.NODE_VERSION }}
           cache: 'pnpm'
           cache-dependency-path: infra/pnpm-lock.yaml
+
       - run: pnpm install --frozen-lockfile
       - run: pnpm lint
       - run: pnpm typecheck
       - run: pnpm test:coverage
       - run: pnpm cdk synth --context env=${{ inputs.environment || 'dev' }}
 
-  deploy-dev:
+  # ============================================================
+  # CDK Diff — PR 中自动评论变更内容
+  # ============================================================
+  cdk-diff:
+    name: CDK Diff
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
     needs: test
-    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/ai-agents-factory-v1'
+    defaults:
+      run:
+        working-directory: infra
+    permissions:
+      id-token: write
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+          cache-dependency-path: infra/pnpm-lock.yaml
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ap-northeast-1
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: 运行 CDK Diff
+        id: diff
+        run: |
+          DIFF_OUTPUT=$(pnpm cdk diff --context env=dev 2>&1) || true
+          echo "diff<<EOF" >> "$GITHUB_OUTPUT"
+          echo "$DIFF_OUTPUT" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+
+      - name: 评论 PR — CDK 变更内容
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            ## CDK Diff 变更预览
+
+            ```
+            ${{ steps.diff.outputs.diff }}
+            ```
+
+            > 由 CDK Deploy 工作流自动生成
+
+  # ============================================================
+  # 部署 — Dev 环境 (push to main 自动触发)
+  # ============================================================
+  deploy-dev:
+    name: 部署 Dev
+    needs: test
+    if: >-
+      (github.event_name == 'push' &&
+       (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/ai-agents-factory-v1')) ||
+      (github.event_name == 'workflow_dispatch' && inputs.environment == 'dev')
     runs-on: ubuntu-latest
     environment: dev
     defaults:
@@ -49,17 +128,106 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v4
+
       - uses: pnpm/action-setup@v4
         with:
-          version: 9
+          version: ${{ env.PNPM_VERSION }}
+
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: ${{ env.NODE_VERSION }}
           cache: 'pnpm'
           cache-dependency-path: infra/pnpm-lock.yaml
+
       - uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: ap-northeast-1
+
       - run: pnpm install --frozen-lockfile
       - run: pnpm cdk deploy --all --context env=dev --require-approval never
+
+  # ============================================================
+  # 部署 — Staging 环境 (Dev 成功后自动触发)
+  # ============================================================
+  deploy-staging:
+    name: 部署 Staging
+    needs: deploy-dev
+    if: >-
+      (github.event_name == 'push' &&
+       (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/ai-agents-factory-v1')) ||
+      (github.event_name == 'workflow_dispatch' && inputs.environment == 'staging')
+    runs-on: ubuntu-latest
+    environment: staging
+    defaults:
+      run:
+        working-directory: infra
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+          cache-dependency-path: infra/pnpm-lock.yaml
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_STAGING_ROLE_ARN }}
+          aws-region: ap-northeast-1
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm cdk deploy --all --context env=staging --require-approval never
+
+  # ============================================================
+  # 部署 — Prod 环境 (需要手动审批)
+  # ============================================================
+  deploy-prod:
+    name: 部署 Prod
+    needs: deploy-staging
+    if: >-
+      (github.event_name == 'push' &&
+       (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/ai-agents-factory-v1')) ||
+      (github.event_name == 'workflow_dispatch' && inputs.environment == 'prod')
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      # GitHub 环境保护规则中配置 required_reviewers
+    defaults:
+      run:
+        working-directory: infra
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+          cache-dependency-path: infra/pnpm-lock.yaml
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_PROD_ROLE_ARN }}
+          aws-region: ap-northeast-1
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: CDK Diff (生产变更确认)
+        run: pnpm cdk diff --context env=prod
+
+      - name: 部署到生产环境
+        run: pnpm cdk deploy --all --context env=prod --require-approval never

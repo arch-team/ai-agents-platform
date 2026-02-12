@@ -3,8 +3,7 @@ import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as ecs from 'aws-cdk-lib/aws-ecs';
 import * as logs from 'aws-cdk-lib/aws-logs';
 import { Construct } from 'constructs';
-import { getRemovalPolicy, isProd } from '../../config/constants';
-import type { EnvironmentName } from '../../config/types';
+import { getRemovalPolicy, isProd, type EnvironmentName } from '../../config';
 
 export interface EcsServiceConstructProps {
   /** ECS 服务所在的 VPC */

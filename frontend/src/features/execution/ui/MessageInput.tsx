@@ -42,13 +42,13 @@ export function MessageInput({ onSend, disabled = false, className }: MessageInp
     [handleSend],
   );
 
-  const handleChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setContent(e.target.value);
     // 自动调整高度
     const textarea = e.target;
     textarea.style.height = 'auto';
     textarea.style.height = `${Math.min(textarea.scrollHeight, 160)}px`;
-  }, []);
+  };
 
   return (
     <div className={cn('flex items-end gap-2 border-t border-gray-200 bg-white p-4', className)}>

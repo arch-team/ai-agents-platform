@@ -16,7 +16,7 @@ from src.modules.tool_catalog.domain.exceptions import (
     ToolNotFoundError,
 )
 from src.presentation.api.main import create_app
-from src.shared.domain.exceptions import DomainError, InvalidStateTransitionError, ValidationError
+from src.shared.domain.exceptions import InvalidStateTransitionError, ValidationError
 
 
 def _make_user_dto(
@@ -76,6 +76,7 @@ def _make_tool_dto(
         auth_type=auth_type,
         auth_config=[],
         allowed_roles=allowed_roles or ["admin", "developer"],
+        gateway_target_id="",
         reviewer_id=reviewer_id,
         review_comment=review_comment,
         reviewed_at=reviewed_at,

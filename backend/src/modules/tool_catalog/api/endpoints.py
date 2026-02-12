@@ -58,6 +58,7 @@ def _to_response(dto: ToolDTO) -> ToolResponse:
             auth_type=dto.auth_type,
         ),
         allowed_roles=dto.allowed_roles,
+        gateway_target_id=dto.gateway_target_id,
         reviewer_id=dto.reviewer_id,
         review_comment=dto.review_comment,
         reviewed_at=dto.reviewed_at,

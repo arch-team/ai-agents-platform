@@ -3,7 +3,6 @@
 from unittest.mock import AsyncMock
 
 import pytest
-import pytest_asyncio
 
 from src.modules.tool_catalog.domain.entities.tool import Tool
 from src.modules.tool_catalog.domain.value_objects.tool_config import ToolConfig

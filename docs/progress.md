@@ -4,12 +4,13 @@
 
 ## 当前状态
 
-- **阶段**: Phase 2 核心功能 (3-6 月) — ✅ 后端全部完成
-- **里程碑**: M6 模板生态 — ✅ 已完成 (templates 模块 + 10 预置模板)
-- **变更积压**: S0 ✅ + S1 ✅ + S2 ✅ + S3 ✅ + 3 S4 = 3 项 | AgentCore 集成: P0 ✅ + P1 ✅ + P2 (0/3) + P3 (0/3) = 16 项
+- **阶段**: Phase 3 生态扩展 (6-12 月) — M7-prep ✅ 已完成
+- **里程碑**: M7-prep AgentCore P2 + 运维基础 — ✅ 已完成 (6/6 任务)
+- **变更积压**: S0-S4 全部完成 ✅ (24/24) | AgentCore 集成: P0 ✅ + P1 ✅ + P2 ✅ (3/3) + P3 (0/3) = 16 项
 - **关键决策**: ADR-006 已采纳 — Agent 框架选型: Claude Agent SDK + Claude Code CLI (单一框架)
-- **CDK 部署**: 5/5 Stack 全部部署成功 ✅ | ALB: `http://ai-agents-dev-436462227.us-east-1.elb.amazonaws.com/health` → `{"status":"ok"}`
-- **下一步**: Phase 2 快速收尾完成 ✅ → Phase 3 启动前处理 M7-prep (P2 + S4 剩余 3 项)
+- **CDK 部署**: 6/6 Stack (含 MonitoringStack) ✅ | ALB: `http://ai-agents-dev-436462227.us-east-1.elb.amazonaws.com/health` → `{"status":"ok"}`
+- **测试**: 后端 ~1512 测试 + 基础设施 163 测试
+- **下一步**: M7-prep ✅ → 启动 M7 Multi-Agent 编排 (orchestration 模块, 第 29-36 周)
 
 ## 模块状态
 
@@ -429,10 +430,10 @@
 
 | 编号 | 变更描述 | 状态 | 依赖 | 来源 | 影响范围 | 参考规范 | 会话 |
 |------|---------|:----:|:----:|------|---------|---------|------|
-| C-S4-1 | CI/CD Pipeline 完善 | 待开始 | C-S0-3, C-S0-4 | DevOps 审查 D3 | .github/workflows/ | `improvement-plan.md` §6 S4-1 | - |
+| C-S4-1 | CI/CD Pipeline 完善 | 已完成 | C-S0-3, C-S0-4 | DevOps 审查 D3 | .github/workflows/ | `improvement-plan.md` §6 S4-1 | 2026-02-11 |
 | C-S4-2 | CDK 首次部署验证 | 已完成 | C-S0-3 | DevOps 审查 D1 (阻塞级) | infra/ | `improvement-plan.md` §6 S4-2 | 2026-02-11 |
-| C-S4-3 | Secrets 管理统一 | 待开始 | C-S0-6 | DevOps 审查 D6 | shared/settings + infra | `improvement-plan.md` §6 S4-3 | - |
-| C-S4-4 | 基础监控告警 | 待开始 | C-S4-2 | DevOps 审查 D8 | infra/ CDK | `improvement-plan.md` §6 S4-4 | - |
+| C-S4-3 | Secrets 管理统一 | 已完成 | C-S0-6 | DevOps 审查 D6 | shared/settings + infra | `improvement-plan.md` §6 S4-3 | 2026-02-11 |
+| C-S4-4 | 基础监控告警 | 已完成 | C-S4-2 | DevOps 审查 D8 | infra/ CDK | `improvement-plan.md` §6 S4-4 | 2026-02-11 |
 | C-S4-5 | python-jose 迁移到 PyJWT | 已完成 | - | 安全审查 SEC19 | auth 模块 | `improvement-plan.md` §6 S4-5 | 2026-02-11 |
 | C-S4-6 | 硬编码配置集中管理 (消除魔术数字 DRY 违规) | 已完成 | - | 代码审查 (2026-02-11) | agents + execution + templates + knowledge + shared | 见下方详细说明 | 2026-02-11 |
 
@@ -465,8 +466,8 @@
 | S1 安全加固 | 5 | M5 开发期间并行 | **5/5 ✅** |
 | S2 性能解锁 | 4 | M5 开发期间并行 | **4/4 ✅** |
 | S3 战略决策 | 3 | M5 启动前决策 | **3/3 ✅** |
-| S4 中期改进 | 6 | Phase 2 完成前 | 3/6 |
-| **合计** | **24** | - | **21/24** |
+| S4 中期改进 | 6 | Phase 2 完成前 | **6/6 ✅** |
+| **合计** | **24** | - | **24/24 ✅** |
 
 ### AgentCore 集成积压 (来源: ADR-006 + agentcore-integration-plan.md)
 
@@ -485,21 +486,27 @@
 | C-P1-3 | AgentCore Runtime CDK 资源 | 已完成 | C-P1-1 | infra/ | `agentcore-integration-plan.md` §3 P1-3 | 2026-02-10 |
 | C-P1-4 | Agent 应用入口点 (BedrockAgentCoreApp + Claude Agent SDK) | 已完成 | C-P1-1, C-P1-3 | backend/agent_entrypoint | `agentcore-integration-plan.md` §3 P1-4 | 2026-02-10 |
 
-> P2/P3 行动项（Gateway、Memory、Observability、Claude Agent SDK 等）详见 `agentcore-integration-plan.md` §4-5，Phase 3 前启动。
+> P2 行动项在 M7-prep 中完成。P3 行动项详见 `agentcore-integration-plan.md` §5，Phase 3-4 执行。
+
+| 编号 | 行动项 | 状态 | 依赖 | 影响范围 | 参考规范 | 会话 |
+|------|--------|:----:|:----:|---------|---------|------|
+| C-P2-1 | AgentCore Gateway 工具同步集成 | 已完成 | C-P1-1 | tool_catalog + execution | `agentcore-integration-plan.md` §4 P2-1 | 2026-02-11 |
+| C-P2-2 | AgentCore Memory MCP 桥接 | 已完成 | C-P1-2 | execution 模块 | `agentcore-integration-plan.md` §4 P2-2 | 2026-02-11 |
+| C-P2-3 | OpenTelemetry / AgentCore Observability | 已完成 | C-P0-5 | shared + execution + knowledge | `agentcore-integration-plan.md` §4 P2-3 | 2026-02-11 |
 
 | 级别 | 数量 | 时间窗口 | 当前进度 |
 |------|:----:|---------|---------|
 | P0 基础就绪 | 6 | M6 之前 | **6/6 ✅** |
 | P1 核心集成 | 4 | M6 期间 | **4/4 ✅** |
-| P2 平台能力 | 3 | Phase 3 前 | 0/3 |
+| P2 平台能力 | 3 | M7-prep | **3/3 ✅** |
 | P3 深度集成 | 3 | Phase 3-4 | 0/3 |
-| **合计** | **16** | - | **10/16** |
+| **合计** | **16** | - | **13/16** |
 
 ---
 
 ## 遗留事项
 
-(当前无代码缺陷遗留)
+(当前无遗留事项 — M7-prep 全部清零)
 
 ### 部署信息
 
@@ -517,10 +524,8 @@
 
 | # | 日期 | 类型 | 完成项 | 关键决策 |
 |---|------|------|-------|---------|
+| 22 | 2026-02-11 | M7-prep | **M7-prep 6/6 + 遗留 4/4 全部完成**: P2-3 OTEL + P2-1 Gateway 同步 + P2-2 Memory MCP + C-S4-1 CI/CD + C-S4-3 Secrets + C-S4-4 监控 + Alembic 迁移 + EventBus 订阅 + DEPLOYMENT.md + Memory 入口点; **变更 24/24 ✅ + AgentCore P2 3/3 ✅**; 后端 ~1512 测试 + infra 163 测试 | Agent Teams 并行开发; 事件驱动 Gateway 同步; Secrets Manager 双路径; OTEL 降级; stdio MCP Server |
 | 21 | 2026-02-11 | 变更 (S4-5+S3-3) | C-S4-5 python-jose→PyJWT ✅; C-S3-3 路线图评审 ✅ (ADR-007, 10 项调整: 18月压缩/marketplace 移除/滚动规划); **Phase 2 快速收尾完成, 变更 21/24** | PyJWT >=2.8.0; roadmap v1.2; 季度评审模式 |
 | 20 | 2026-02-11 | 变更 (C-S3-2) | C-S3-2 端到端验证通过: 注册→登录→JWT→Agent CRUD→对话创建全流程 OK; 修复 MySQL session auto-commit + ECS 健康检查 curl→httpx | get_db auto-commit/rollback; python httpx 替代 curl |
 | 19 | 2026-02-11 | 变更 (C-S4-2+S4-6) | C-S4-2 完成: **5/5 Stack 全部部署成功**, ALB `/health` 可用; C-S4-6 DRY 常量提取; 代码优化 (backend+infra); Dockerfile 修复 (gcc/AMD64/ECR Public/MySQL TEXT); Alembic 迁移 MySQL 兼容 | LINUX_AMD64; ECR Public 镜像源; Aurora 3.10.0 db.t3.medium; TEXT 列无 server_default |
 | 18 | 2026-02-11 | 变更 (C-S4-2) | CDK 首次部署验证: ComputeStack 创建 + 4/5 Stack 部署成功 (Network/Security/Database/AgentCore), Alembic 迁移补充, infra 136 测试 | Agent Teams 并行开发; Aurora 3.10.0 + db.t3.medium; AgentCore AZ 限制 |
-| 17 | 2026-02-11 | Milestone+变更 | M6 templates 模块 (107 测试) + 10 预置模板 + C-S1-2 Refresh Token + C-S1-3 审计日志 + C-S1-4 注册保护 + C-S2-1 连接池 + 3 子项目代码优化, **1427 测试** | S0/S1/S2 全部清零; Phase 2 后端完成 |
-| 16 | 2026-02-11 | Milestone+变更 | insights 模块完成 (74 测试, 97.56%) + C-S1-1 Rate Limiting + C-S2-2 滑动窗口 + C-S2-4 Agent 缓存, 1266 测试 | Agent Teams 并行开发; slowapi; TTLCache |
-| 15 | 2026-02-10 | 审查+修复 | P0 修复: gateway_url + permission_mode + SDK 消息解析统一, 1126 测试 | AGENTCORE_GATEWAY_URL; bypassPermissions; sdk_message_utils.py |

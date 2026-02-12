@@ -56,9 +56,7 @@ export function AgentFormFields({ register, errors }: AgentFormFieldsProps) {
           aria-expanded={showAdvanced}
           aria-controls="advanced-options"
         >
-          <span className={`transition-transform ${showAdvanced ? 'rotate-90' : ''}`}>
-            &#9654;
-          </span>
+          <span className={`transition-transform ${showAdvanced ? 'rotate-90' : ''}`}>&#9654;</span>
           模型配置（高级选项）
         </button>
 

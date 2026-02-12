@@ -1,10 +1,10 @@
 """Insights 应用服务。"""
 
+import asyncio
 from datetime import datetime
 
 from src.modules.insights.application.dto.insights_dto import (
     CreateUsageRecordDTO,
-    PagedUsageRecordDTO,
     UsageRecordDTO,
     UsageSummaryDTO,
 )
@@ -20,6 +20,7 @@ from src.modules.insights.domain.exceptions import (
 from src.modules.insights.domain.repositories.usage_record_repository import (
     IUsageRecordRepository,
 )
+from src.shared.application.dtos import PagedResult
 from src.shared.domain.event_bus import event_bus
 
 
@@ -86,29 +87,27 @@ class InsightsService:
         agent_id: int | None = None,
         page: int = 1,
         page_size: int = 20,
-    ) -> PagedUsageRecordDTO:
+    ) -> PagedResult[UsageRecordDTO]:
         """获取使用记录列表 (按用户或 Agent 过滤)。"""
         offset = (page - 1) * page_size
 
         if user_id is not None:
-            items = await self._usage_repo.list_by_user(
-                user_id,
-                offset=offset,
-                limit=page_size,
+            items, total = await asyncio.gather(
+                self._usage_repo.list_by_user(user_id, offset=offset, limit=page_size),
+                self._usage_repo.count_by_user(user_id),
             )
-            total = await self._usage_repo.count_by_user(user_id)
         elif agent_id is not None:
-            items = await self._usage_repo.list_by_agent(
-                agent_id,
-                offset=offset,
-                limit=page_size,
+            items, total = await asyncio.gather(
+                self._usage_repo.list_by_agent(agent_id, offset=offset, limit=page_size),
+                self._usage_repo.count_by_agent(agent_id),
             )
-            total = await self._usage_repo.count_by_agent(agent_id)
         else:
-            items = await self._usage_repo.list(offset=offset, limit=page_size)
-            total = await self._usage_repo.count()
+            items, total = await asyncio.gather(
+                self._usage_repo.list(offset=offset, limit=page_size),
+                self._usage_repo.count(),
+            )
 
-        return PagedUsageRecordDTO(
+        return PagedResult(
             items=[self._to_dto(r) for r in items],
             total=total,
             page=page,

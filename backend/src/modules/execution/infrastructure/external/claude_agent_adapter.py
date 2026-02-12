@@ -18,6 +18,10 @@ from src.modules.execution.application.interfaces import (
     AgentTool,
     IAgentRuntime,
 )
+from src.modules.execution.infrastructure.external.memory_mcp_server import (
+    MemoryMcpConfig,
+    build_memory_mcp_server_config,
+)
 from src.modules.execution.infrastructure.external.sdk_message_utils import (
     extract_content,
     extract_usage,
@@ -34,6 +38,15 @@ class ClaudeAgentAdapter(IAgentRuntime):
     通过 claude_agent_sdk.query() 执行 Agent Loop，
     支持 MCP Server 工具调用和流式响应。
     """
+
+    def __init__(
+        self,
+        *,
+        memory_id: str = "",
+        region: str = "us-east-1",
+    ) -> None:
+        self._memory_id = memory_id
+        self._region = region
 
     async def execute(self, request: AgentRequest) -> AgentResponseChunk:
         """同步执行 Agent，收集所有消息后返回完整结果。"""
@@ -156,6 +169,14 @@ class ClaudeAgentAdapter(IAgentRuntime):
         if non_mcp_tools:
             mcp_servers["platform-tools"] = self._build_platform_tools_config(non_mcp_tools)
 
+        # Memory MCP 配置 (可选)
+        if self._memory_id:
+            memory_config = build_memory_mcp_server_config(
+                MemoryMcpConfig(memory_id=self._memory_id, region=self._region),
+            )
+            if memory_config:
+                mcp_servers["memory"] = memory_config
+
         return mcp_servers
 
     def _build_platform_tools_config(self, tools: list[AgentTool]) -> dict[str, Any]:
@@ -191,6 +212,11 @@ class ClaudeAgentAdapter(IAgentRuntime):
             elif tool.tool_type in ("api", "function"):
                 # Platform 工具: mcp__platform-tools__{tool_name}
                 allowed.append(f"mcp__platform-tools__{tool.name}")
+
+        # Memory 工具白名单 (可选)
+        if self._memory_id:
+            allowed.append("mcp__memory__save_memory")
+            allowed.append("mcp__memory__recall_memory")
 
         return allowed
 

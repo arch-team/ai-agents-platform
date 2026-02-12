@@ -1,6 +1,6 @@
 """ClaudeAgentAdapter 单元测试。"""
 
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 
@@ -430,3 +430,50 @@ class TestBuildOptions:
         assert options.permission_mode == "bypassPermissions"
         assert options.mcp_servers is not None
         assert options.allowed_tools is not None
+
+
+@pytest.mark.unit
+class TestMemoryMcpIntegration:
+    """Memory MCP Server 集成测试。"""
+
+    def test_memory_config_added_when_memory_id_set(self) -> None:
+        adapter = ClaudeAgentAdapter(memory_id="mem-test-123", region="us-east-1")
+        request = _make_request()
+        config = adapter._build_mcp_config(request)
+        assert "memory" in config
+        assert config["memory"]["type"] == "stdio"
+        assert config["memory"]["env"]["AGENTCORE_MEMORY_ID"] == "mem-test-123"
+
+    def test_no_memory_config_when_memory_id_empty(self) -> None:
+        adapter = ClaudeAgentAdapter(memory_id="", region="us-east-1")
+        request = _make_request()
+        config = adapter._build_mcp_config(request)
+        assert "memory" not in config
+
+    def test_memory_tools_in_allowed_list_when_memory_id_set(self) -> None:
+        adapter = ClaudeAgentAdapter(memory_id="mem-abc", region="us-east-1")
+        request = _make_request()
+        allowed = adapter._build_allowed_tools(request)
+        assert "mcp__memory__save_memory" in allowed
+        assert "mcp__memory__recall_memory" in allowed
+
+    def test_no_memory_tools_when_memory_id_empty(self) -> None:
+        adapter = ClaudeAgentAdapter(memory_id="", region="us-east-1")
+        request = _make_request()
+        allowed = adapter._build_allowed_tools(request)
+        assert "mcp__memory__save_memory" not in allowed
+        assert "mcp__memory__recall_memory" not in allowed
+
+    def test_memory_coexists_with_gateway_and_platform_tools(self) -> None:
+        adapter = ClaudeAgentAdapter(memory_id="mem-xyz", region="ap-northeast-1")
+        request = _make_request(
+            tools=[
+                _make_tool("web-search", "mcp_server"),
+                _make_tool("http-call", "api"),
+            ],
+            gateway_url="https://gw.example.com",
+        )
+        config = adapter._build_mcp_config(request)
+        assert "gateway" in config
+        assert "platform-tools" in config
+        assert "memory" in config

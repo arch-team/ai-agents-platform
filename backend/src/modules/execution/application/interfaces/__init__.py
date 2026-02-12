@@ -10,6 +10,10 @@ from src.modules.execution.application.interfaces.llm_client import (
     LLMResponse,
     LLMStreamChunk,
 )
+from src.modules.execution.application.interfaces.memory_service import (
+    IMemoryService,
+    MemoryItem,
+)
 
 
 __all__ = [
@@ -18,7 +22,9 @@ __all__ = [
     "AgentTool",
     "IAgentRuntime",
     "ILLMClient",
+    "IMemoryService",
     "LLMMessage",
     "LLMResponse",
     "LLMStreamChunk",
+    "MemoryItem",
 ]

@@ -1,0 +1,272 @@
+import * as cdk from 'aws-cdk-lib';
+import * as cloudwatch from 'aws-cdk-lib/aws-cloudwatch';
+import * as cw_actions from 'aws-cdk-lib/aws-cloudwatch-actions';
+import * as ecs from 'aws-cdk-lib/aws-ecs';
+import * as elbv2 from 'aws-cdk-lib/aws-elasticloadbalancingv2';
+import * as rds from 'aws-cdk-lib/aws-rds';
+import * as sns from 'aws-cdk-lib/aws-sns';
+import * as subscriptions from 'aws-cdk-lib/aws-sns-subscriptions';
+import { NagSuppressions } from 'cdk-nag';
+import { Construct } from 'constructs';
+import { PROJECT_NAME, type BaseStackProps } from '../config';
+
+export interface MonitoringStackProps extends BaseStackProps {
+  /** Aurora 数据库集群 */
+  readonly cluster: rds.IDatabaseCluster;
+  /** ECS Fargate 服务 */
+  readonly service: ecs.FargateService;
+  /** Application Load Balancer */
+  readonly loadBalancer: elbv2.IApplicationLoadBalancer;
+  /** ALB Target Group */
+  readonly targetGroup: elbv2.IApplicationTargetGroup;
+  /** 告警通知邮箱 (可选) */
+  readonly alertEmail?: string;
+}
+
+/**
+ * MonitoringStack - 监控和告警基础设施栈。
+ * @remarks
+ * 包含 SNS 告警主题、Aurora/ECS/ALB CloudWatch Alarms 和 CloudWatch Dashboard。
+ * 所有告警动作指向 SNS Topic。
+ */
+export class MonitoringStack extends cdk.Stack {
+  /** SNS 告警主题 */
+  public readonly alertTopic: sns.Topic;
+  /** 告警动作 (所有 Alarm 共享) */
+  private readonly alarmAction: cw_actions.SnsAction;
+
+  constructor(scope: Construct, id: string, props: MonitoringStackProps) {
+    super(scope, id, props);
+
+    const { cluster, service, loadBalancer, targetGroup, alertEmail, envName } = props;
+
+    // SNS 告警主题
+    this.alertTopic = new sns.Topic(this, 'AlertTopic', {
+      topicName: `${PROJECT_NAME}-alerts-${envName}`,
+      displayName: `${PROJECT_NAME} ${envName} Alerts`,
+    });
+    this.alarmAction = new cw_actions.SnsAction(this.alertTopic);
+
+    // 如有 alertEmail，添加邮件订阅
+    if (alertEmail) {
+      this.alertTopic.addSubscription(new subscriptions.EmailSubscription(alertEmail));
+    }
+
+    // Aurora CloudWatch Alarms
+    this.createAuroraAlarms(cluster, envName);
+
+    // ECS CloudWatch Alarms
+    this.createEcsAlarms(service, envName);
+
+    // ALB CloudWatch Alarms
+    this.createAlbAlarms(loadBalancer, targetGroup, envName);
+
+    // CloudWatch Dashboard
+    this.createDashboard(cluster, service, loadBalancer, targetGroup, envName);
+
+    // CDK Nag 抑制
+    this.suppressNagRules();
+  }
+
+  /** 创建 Alarm 并自动绑定告警动作 */
+  private createAlarm(id: string, props: cloudwatch.AlarmProps): cloudwatch.Alarm {
+    const alarm = new cloudwatch.Alarm(this, id, props);
+    alarm.addAlarmAction(this.alarmAction);
+    return alarm;
+  }
+
+  /** 创建 Aurora 数据库监控告警 */
+  private createAuroraAlarms(cluster: rds.IDatabaseCluster, envName: string): void {
+    // Aurora CPU 利用率告警 — 连续 3 个 5 分钟数据点超过 80%
+    this.createAlarm('AuroraCpuAlarm', {
+      alarmName: `${PROJECT_NAME}-${envName}-aurora-cpu-high`,
+      alarmDescription: 'Aurora CPU utilization exceeds 80%',
+      metric: cluster.metricCPUUtilization({
+        period: cdk.Duration.minutes(5),
+        statistic: 'Average',
+      }),
+      threshold: 80,
+      evaluationPeriods: 3,
+      comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
+      treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
+    });
+
+    // Aurora 可用内存告警 — 低于 500MB
+    this.createAlarm('AuroraMemoryAlarm', {
+      alarmName: `${PROJECT_NAME}-${envName}-aurora-memory-low`,
+      alarmDescription: 'Aurora freeable memory below 500MB',
+      metric: cluster.metric('FreeableMemory', {
+        period: cdk.Duration.minutes(5),
+        statistic: 'Average',
+      }),
+      threshold: 524288000, // 500MB in bytes
+      evaluationPeriods: 3,
+      comparisonOperator: cloudwatch.ComparisonOperator.LESS_THAN_THRESHOLD,
+      treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
+    });
+
+    // Aurora 数据库连接数告警 — 超过最大连接数 80% (db.t3.medium 默认约 90)
+    this.createAlarm('AuroraConnectionsAlarm', {
+      alarmName: `${PROJECT_NAME}-${envName}-aurora-connections-high`,
+      alarmDescription: 'Aurora database connections exceed 80% of max',
+      metric: cluster.metric('DatabaseConnections', {
+        period: cdk.Duration.minutes(5),
+        statistic: 'Average',
+      }),
+      threshold: 72, // 90 * 0.8 = 72
+      evaluationPeriods: 3,
+      comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
+      treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
+    });
+  }
+
+  /** 创建 ECS 服务监控告警 */
+  private createEcsAlarms(service: ecs.FargateService, envName: string): void {
+    // ECS CPU 利用率告警 — 连续 3 个 5 分钟数据点超过 80%
+    this.createAlarm('EcsCpuAlarm', {
+      alarmName: `${PROJECT_NAME}-${envName}-ecs-cpu-high`,
+      alarmDescription: 'ECS service CPU utilization exceeds 80%',
+      metric: service.metricCpuUtilization({
+        period: cdk.Duration.minutes(5),
+        statistic: 'Average',
+      }),
+      threshold: 80,
+      evaluationPeriods: 3,
+      comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
+      treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
+    });
+
+    // ECS 内存利用率告警 — 连续 3 个 5 分钟数据点超过 80%
+    this.createAlarm('EcsMemoryAlarm', {
+      alarmName: `${PROJECT_NAME}-${envName}-ecs-memory-high`,
+      alarmDescription: 'ECS service memory utilization exceeds 80%',
+      metric: service.metricMemoryUtilization({
+        period: cdk.Duration.minutes(5),
+        statistic: 'Average',
+      }),
+      threshold: 80,
+      evaluationPeriods: 3,
+      comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
+      treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
+    });
+  }
+
+  /** 创建 ALB 监控告警 */
+  private createAlbAlarms(
+    loadBalancer: elbv2.IApplicationLoadBalancer,
+    targetGroup: elbv2.IApplicationTargetGroup,
+    envName: string,
+  ): void {
+    // ALB UnHealthyHostCount 告警 — 有不健康实例
+    this.createAlarm('UnhealthyHostAlarm', {
+      alarmName: `${PROJECT_NAME}-${envName}-alb-unhealthy-hosts`,
+      alarmDescription: 'ALB target group has unhealthy hosts',
+      metric: targetGroup.metrics.unhealthyHostCount({
+        period: cdk.Duration.minutes(5),
+        statistic: 'Maximum',
+      }),
+      threshold: 1,
+      evaluationPeriods: 1,
+      comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
+      treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
+    });
+
+    // ALB 5XX 错误告警 — 5 分钟内超过 10 个 5XX 响应
+    this.createAlarm('Alb5xxAlarm', {
+      alarmName: `${PROJECT_NAME}-${envName}-alb-5xx-high`,
+      alarmDescription: 'ALB 5XX error count exceeds 10 per 5 minutes',
+      metric: loadBalancer.metrics.httpCodeElb(elbv2.HttpCodeElb.ELB_5XX_COUNT, {
+        period: cdk.Duration.minutes(5),
+        statistic: 'Sum',
+      }),
+      threshold: 10,
+      evaluationPeriods: 1,
+      comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
+      treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
+    });
+  }
+
+  /** 创建 CloudWatch Dashboard */
+  private createDashboard(
+    cluster: rds.IDatabaseCluster,
+    service: ecs.FargateService,
+    loadBalancer: elbv2.IApplicationLoadBalancer,
+    targetGroup: elbv2.IApplicationTargetGroup,
+    envName: string,
+  ): void {
+    const dashboard = new cloudwatch.Dashboard(this, 'Dashboard', {
+      dashboardName: `${PROJECT_NAME}-${envName}`,
+    });
+
+    // Aurora 指标
+    dashboard.addWidgets(
+      new cloudwatch.GraphWidget({
+        title: 'Aurora CPU Utilization',
+        left: [cluster.metricCPUUtilization({ period: cdk.Duration.minutes(5) })],
+        width: 8,
+      }),
+      new cloudwatch.GraphWidget({
+        title: 'Aurora Freeable Memory',
+        left: [cluster.metric('FreeableMemory', { period: cdk.Duration.minutes(5) })],
+        width: 8,
+      }),
+      new cloudwatch.GraphWidget({
+        title: 'Aurora Database Connections',
+        left: [cluster.metric('DatabaseConnections', { period: cdk.Duration.minutes(5) })],
+        width: 8,
+      }),
+    );
+
+    // ECS 指标
+    dashboard.addWidgets(
+      new cloudwatch.GraphWidget({
+        title: 'ECS CPU Utilization',
+        left: [service.metricCpuUtilization({ period: cdk.Duration.minutes(5) })],
+        width: 12,
+      }),
+      new cloudwatch.GraphWidget({
+        title: 'ECS Memory Utilization',
+        left: [service.metricMemoryUtilization({ period: cdk.Duration.minutes(5) })],
+        width: 12,
+      }),
+    );
+
+    // ALB 指标
+    dashboard.addWidgets(
+      new cloudwatch.GraphWidget({
+        title: 'ALB Request Count',
+        left: [loadBalancer.metrics.requestCount({ period: cdk.Duration.minutes(5) })],
+        width: 8,
+      }),
+      new cloudwatch.GraphWidget({
+        title: 'ALB 5XX Errors',
+        left: [
+          loadBalancer.metrics.httpCodeElb(elbv2.HttpCodeElb.ELB_5XX_COUNT, {
+            period: cdk.Duration.minutes(5),
+          }),
+        ],
+        width: 8,
+      }),
+      new cloudwatch.GraphWidget({
+        title: 'ALB Unhealthy Hosts',
+        left: [targetGroup.metrics.unhealthyHostCount({ period: cdk.Duration.minutes(5) })],
+        width: 8,
+      }),
+    );
+  }
+
+  /** CDK Nag 合规规则抑制 */
+  private suppressNagRules(): void {
+    // SNS Topic 未使用 KMS 加密 (告警通知不含敏感数据)
+    NagSuppressions.addResourceSuppressions(this.alertTopic, [
+      {
+        id: 'AwsSolutions-SNS2',
+        reason: 'Alert notifications do not contain sensitive data; KMS encryption is unnecessary',
+      },
+      {
+        id: 'AwsSolutions-SNS3',
+        reason: 'Alert notifications do not require SSL enforcement for publishing',
+      },
+    ]);
+  }
+}

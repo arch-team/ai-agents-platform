@@ -1135,6 +1135,18 @@ exports[`Snapshot Tests ComputeStack 快照匹配 1`] = `
                 "Name": "LOG_LEVEL",
                 "Value": "DEBUG",
               },
+              {
+                "Name": "DB_SECRET_ARN",
+                "Value": {
+                  "Fn::ImportValue": "DepsStack:ExportsOutputRefTestDbSecret7BB7706D3D9ABD74",
+                },
+              },
+              {
+                "Name": "JWT_SECRET_ARN",
+                "Value": {
+                  "Fn::ImportValue": "DepsStack:ExportsOutputRefTestJwtSecretEA58522FC30156D5",
+                },
+              },
             ],
             "Essential": true,
             "HealthCheck": {
@@ -1148,7 +1160,7 @@ exports[`Snapshot Tests ComputeStack 快照匹配 1`] = `
               "Timeout": 5,
             },
             "Image": {
-              "Fn::Sub": "000000000000.dkr.ecr.us-east-1.\${AWS::URLSuffix}/cdk-hnb659fds-container-assets-000000000000-us-east-1:52257fd426ac2a722c73c4ffe135a3857a351cc2232524d8a15c1c787e3459ad",
+              "Fn::Sub": "000000000000.dkr.ecr.us-east-1.\${AWS::URLSuffix}/cdk-hnb659fds-container-assets-000000000000-us-east-1:9edc3d264cc35f2862590540747427e508bcb9987490b2733185ac059eb9702b",
             },
             "LogConfiguration": {
               "LogDriver": "awslogs",

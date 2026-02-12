@@ -75,7 +75,7 @@ describe('getEnvironmentConfig', () => {
       },
     });
 
-    expect(() => getEnvironmentConfig(app)).toThrow('未找到环境配置: nonexistent');
+    expect(() => getEnvironmentConfig(app)).toThrow('无效的环境名称: nonexistent');
   });
 
   describe('环境变量覆盖', () => {

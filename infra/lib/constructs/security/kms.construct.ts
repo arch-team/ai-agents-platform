@@ -1,7 +1,6 @@
 import * as kms from 'aws-cdk-lib/aws-kms';
 import { Construct } from 'constructs';
-import { getRemovalPolicy } from '../../config/constants';
-import type { EnvironmentName } from '../../config/types';
+import { getRemovalPolicy, type EnvironmentName } from '../../config';
 
 export interface KmsConstructProps {
   /** 环境名称 (dev, staging, prod) */

@@ -1,10 +1,25 @@
-"""应用配置管理。"""
+"""应用配置管理。
 
+配置读取优先级:
+  1. 环境变量 (ECS Secrets Manager 注入、系统环境变量)
+  2. .env 文件 (本地开发)
+  3. Secrets Manager 直接读取 (部署环境, 当 SECRET_ARN 配置时)
+
+部署环境下 (APP_ENV 不为 development/test), 若配置了 DB_SECRET_ARN 或
+JWT_SECRET_ARN, 应用启动时会从 Secrets Manager 获取对应凭证覆盖默认值。
+ECS 容器通常已通过 ecs.Secret.fromSecretsManager 注入凭证为环境变量,
+此时无需配置 ARN 字段 — 两种方式互为补充。
+"""
+
+import logging
 from functools import lru_cache
 from typing import Self
 
 from pydantic import SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+logger = logging.getLogger(__name__)
 
 
 class Settings(BaseSettings):
@@ -32,6 +47,11 @@ class Settings(BaseSettings):
     JWT_ALGORITHM: str = "HS256"
     JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
 
+    # Secrets Manager ARN — 部署环境下用于直接从 Secrets Manager 读取凭证
+    # 为空时跳过 (依赖 ECS Secrets 注入或环境变量)
+    DB_SECRET_ARN: str = ""
+    JWT_SECRET_ARN: str = ""
+
     # CORS 配置 — 生产环境必须配置具体域名
     CORS_ALLOWED_ORIGINS: list[str] = ["http://localhost:3000"]
 
@@ -42,7 +62,9 @@ class Settings(BaseSettings):
     BEDROCK_DEFAULT_MODEL_ID: str = "anthropic.claude-3-5-sonnet-20241022-v2:0"
 
     # AgentCore 配置
+    AGENTCORE_GATEWAY_ID: str = ""  # AgentCore Gateway 资源 ID (用于 Tool 注册/注销)
     AGENTCORE_GATEWAY_URL: str = ""  # AgentCore Gateway MCP 端点 (SSE URL)
+    AGENTCORE_MEMORY_ID: str = ""  # AgentCore Memory 资源 ID (可选)
 
     # Bedrock Knowledge Base 配置 (开发环境允许为空)
     BEDROCK_KB_ROLE_ARN: str = ""
@@ -75,6 +97,52 @@ class Settings(BaseSettings):
 
     # 日志
     LOG_LEVEL: str = "INFO"
+
+    # OpenTelemetry 可观测性
+    OTEL_EXPORTER_OTLP_ENDPOINT: str = ""  # OTLP 导出端点 (如 http://localhost:4317)
+
+    @model_validator(mode="after")
+    def _resolve_secrets_manager(self) -> Self:
+        """部署环境下从 Secrets Manager 获取凭证覆盖默认值。
+
+        当 DB_SECRET_ARN / JWT_SECRET_ARN 非空且 APP_ENV 为部署环境时,
+        调用 Secrets Manager API 读取实际凭证。ECS 容器若已通过 ecs.Secret
+        注入环境变量, 则 ARN 字段可留空, 此 validator 跳过。
+        """
+        from src.shared.infrastructure.secrets_client import is_deployed_env
+
+        if not is_deployed_env(self.APP_ENV):
+            return self
+
+        # 数据库凭证
+        if self.DB_SECRET_ARN:
+            self._resolve_db_secret()
+
+        # JWT 签名密钥
+        if self.JWT_SECRET_ARN:
+            self._resolve_jwt_secret()
+
+        return self
+
+    def _resolve_db_secret(self) -> None:
+        from src.shared.infrastructure.secrets_client import fetch_database_credentials
+
+        logger.info("从 Secrets Manager 读取数据库凭证: %s", self.DB_SECRET_ARN)
+        creds = fetch_database_credentials(self.DB_SECRET_ARN, self.AWS_REGION)
+        self.DATABASE_USER = creds.username
+        self.DATABASE_PASSWORD = SecretStr(creds.password)
+        self.DATABASE_NAME = creds.dbname
+        if creds.host:
+            self.DATABASE_HOST = creds.host
+        if creds.port:
+            self.DATABASE_PORT = creds.port
+
+    def _resolve_jwt_secret(self) -> None:
+        from src.shared.infrastructure.secrets_client import fetch_jwt_credentials
+
+        logger.info("从 Secrets Manager 读取 JWT 密钥: %s", self.JWT_SECRET_ARN)
+        creds = fetch_jwt_credentials(self.JWT_SECRET_ARN, self.AWS_REGION)
+        self.JWT_SECRET_KEY = SecretStr(creds.secret_key)
 
     @model_validator(mode="after")
     def _validate_secrets(self) -> Self:

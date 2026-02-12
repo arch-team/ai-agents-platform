@@ -32,8 +32,7 @@ class AgentQuerierImpl(IAgentQuerier):
         """Agent 不存在或非 ACTIVE 状态时返回 None, 结果缓存 5 分钟。"""
         cached = self._cache.get(agent_id, _MISS)
         if cached is not _MISS:
-            result: ActiveAgentInfo | None = cached if isinstance(cached, ActiveAgentInfo) else None
-            return result
+            return cached
 
         agent = await self._agent_repository.get_by_id(agent_id)
         if agent is None or agent.status != AgentStatus.ACTIVE:

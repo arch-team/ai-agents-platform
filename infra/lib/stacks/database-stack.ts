@@ -1,12 +1,12 @@
 import * as cdk from 'aws-cdk-lib';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as kms from 'aws-cdk-lib/aws-kms';
+import * as rds from 'aws-cdk-lib/aws-rds';
+import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
 import { NagSuppressions } from 'cdk-nag';
 import { Construct } from 'constructs';
 import type { BaseStackProps } from '../config';
 import { AuroraConstruct } from '../constructs/aurora';
-import type { DatabaseCluster } from 'aws-cdk-lib/aws-rds';
-import type { ISecret } from 'aws-cdk-lib/aws-secretsmanager';
 
 export interface DatabaseStackProps extends BaseStackProps {
   /** 数据库所在的 VPC */
@@ -22,8 +22,8 @@ export interface DatabaseStackProps extends BaseStackProps {
  * @remarks 包含 Aurora MySQL 集群。通过 Props 接收 VPC 和安全组依赖。
  */
 export class DatabaseStack extends cdk.Stack {
-  public readonly cluster: DatabaseCluster;
-  public readonly dbSecret: ISecret;
+  public readonly cluster: rds.DatabaseCluster;
+  public readonly dbSecret: secretsmanager.ISecret;
 
   constructor(scope: Construct, id: string, props: DatabaseStackProps) {
     super(scope, id, props);

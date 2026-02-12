@@ -35,6 +35,7 @@ class TestToolModelStructure:
             "auth_type",
             "auth_config",
             "allowed_roles",
+            "gateway_target_id",
             "reviewer_id",
             "review_comment",
             "reviewed_at",

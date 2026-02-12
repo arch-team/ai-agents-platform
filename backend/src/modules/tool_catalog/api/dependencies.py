@@ -16,4 +16,10 @@ async def get_tool_service(
     session: Annotated[AsyncSession, Depends(get_db)],
 ) -> ToolCatalogService:
     """创建 ToolCatalogService 实例。"""
-    return ToolCatalogService(repository=ToolRepositoryImpl(session=session))
+    # 延迟导入避免循环依赖 (providers ↔ tool_catalog)
+    from src.presentation.api.providers import get_gateway_sync
+
+    return ToolCatalogService(
+        repository=ToolRepositoryImpl(session=session),
+        gateway_sync=get_gateway_sync(),  # type: ignore[arg-type]
+    )

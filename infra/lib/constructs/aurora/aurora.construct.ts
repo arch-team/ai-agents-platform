@@ -4,8 +4,7 @@ import * as kms from 'aws-cdk-lib/aws-kms';
 import * as rds from 'aws-cdk-lib/aws-rds';
 import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
 import { Construct } from 'constructs';
-import { getRemovalPolicy, isDev, isProd } from '../../config/constants';
-import type { EnvironmentName } from '../../config/types';
+import { getRemovalPolicy, isDev, isProd, type EnvironmentName } from '../../config';
 
 export interface AuroraConstructProps {
   /** Aurora 集群所在的 VPC */

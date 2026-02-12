@@ -30,6 +30,7 @@ class ToolResponse(BaseModel):
     creator_id: int
     config: ToolConfigResponse
     allowed_roles: list[str]
+    gateway_target_id: str
     reviewer_id: int | None
     review_comment: str
     reviewed_at: datetime | None

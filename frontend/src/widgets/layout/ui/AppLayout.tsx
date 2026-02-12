@@ -8,19 +8,11 @@ import { Sidebar } from '@/widgets/sidebar';
 export function AppLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  const handleToggleSidebar = () => {
-    setSidebarOpen((prev) => !prev);
-  };
-
-  const handleCloseSidebar = () => {
-    setSidebarOpen(false);
-  };
-
   return (
     <div className="flex h-screen flex-col">
-      <Header onToggleSidebar={handleToggleSidebar} />
+      <Header onToggleSidebar={() => setSidebarOpen((prev) => !prev)} />
       <div className="flex min-h-0 flex-1">
-        <Sidebar isOpen={sidebarOpen} onClose={handleCloseSidebar} />
+        <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
         <main id="main-content" className="flex-1 overflow-y-auto bg-gray-50" tabIndex={-1}>
           <Outlet />
         </main>

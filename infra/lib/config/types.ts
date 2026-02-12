@@ -18,4 +18,6 @@ export interface EnvironmentConfig {
   readonly region: string;
   readonly vpcCidr: string;
   readonly envName: EnvironmentName;
+  /** 告警通知邮箱地址 (可选) */
+  readonly alertEmail?: string;
 }

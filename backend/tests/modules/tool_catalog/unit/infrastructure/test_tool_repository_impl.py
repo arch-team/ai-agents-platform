@@ -50,6 +50,7 @@ class TestToolRepositoryImplStructure:
                 "auth_type",
                 "auth_config",
                 "allowed_roles",
+                "gateway_target_id",
                 "reviewer_id",
                 "review_comment",
                 "reviewed_at",
@@ -81,6 +82,7 @@ class TestToolRepositoryImplToEntity:
             auth_type="none",
             auth_config="",
             allowed_roles='["admin","developer"]',
+            gateway_target_id="",
             reviewer_id=None,
             review_comment="",
             reviewed_at=None,
@@ -104,6 +106,7 @@ class TestToolRepositoryImplToEntity:
         assert entity.config.auth_type == "none"
         assert entity.config.auth_config == ()
         assert entity.allowed_roles == ("admin", "developer")
+        assert entity.gateway_target_id == ""
         assert entity.reviewer_id is None
         assert entity.reviewed_at is None
 
@@ -130,6 +133,7 @@ class TestToolRepositoryImplToEntity:
             auth_type="api_key",
             auth_config=auth_config_json,
             allowed_roles='["admin"]',
+            gateway_target_id="",
             reviewer_id=10,
             review_comment="通过审批",
             reviewed_at=now,
@@ -315,6 +319,7 @@ class TestToolRepositoryImplQueryMethods:
             auth_type="none",
             auth_config="",
             allowed_roles='["admin","developer"]',
+            gateway_target_id="",
             reviewer_id=None,
             review_comment="",
             reviewed_at=None,

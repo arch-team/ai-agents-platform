@@ -13,14 +13,15 @@ const VALID_ENV_NAMES: ReadonlySet<string> = new Set<EnvironmentName>(['dev', 's
  */
 export function getEnvironmentConfig(app: cdk.App): EnvironmentConfig {
   const envName = (app.node.tryGetContext('env') || 'dev') as string;
-  const environments = app.node.tryGetContext('environments');
 
-  if (!environments || !environments[envName]) {
-    throw new Error(`未找到环境配置: ${envName}`);
-  }
-
+  // 先校验环境名称合法性，再检查配置是否存在
   if (!VALID_ENV_NAMES.has(envName)) {
     throw new Error(`无效的环境名称: ${envName}，支持的值: ${[...VALID_ENV_NAMES].join(', ')}`);
+  }
+
+  const environments = app.node.tryGetContext('environments');
+  if (!environments || !environments[envName]) {
+    throw new Error(`未找到环境配置: ${envName}`);
   }
 
   const config = environments[envName];
@@ -46,5 +47,6 @@ export function getEnvironmentConfig(app: cdk.App): EnvironmentConfig {
     region,
     vpcCidr: config.vpcCidr,
     envName: envName as EnvironmentName,
+    alertEmail: config.alertEmail,
   };
 }

@@ -33,16 +33,6 @@ class UsageRecordDTO:
 
 
 @dataclass
-class PagedUsageRecordDTO:
-    """使用记录分页响应数据。"""
-
-    items: list[UsageRecordDTO]
-    total: int
-    page: int
-    page_size: int
-
-
-@dataclass
 class UsageSummaryDTO:
     """使用量摘要数据。"""
 

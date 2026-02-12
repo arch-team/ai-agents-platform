@@ -2,6 +2,8 @@
 
 import asyncio
 
+from opentelemetry import trace
+
 from src.modules.knowledge.application.dto.knowledge_dto import (
     CreateKnowledgeBaseDTO,
     DocumentDTO,
@@ -46,6 +48,8 @@ from src.shared.application.ownership import check_ownership, get_or_raise
 from src.shared.domain.event_bus import event_bus
 from src.shared.domain.exceptions import InvalidStateTransitionError
 
+
+tracer = trace.get_tracer(__name__)
 
 _QUERYABLE_STATUSES: frozenset[KnowledgeBaseStatus] = frozenset(
     {KnowledgeBaseStatus.ACTIVE, KnowledgeBaseStatus.SYNCING},
@@ -338,11 +342,19 @@ class KnowledgeService:
                 target_state="query",
             )
 
-        chunks = await self._knowledge_svc.retrieve(
-            kb.bedrock_kb_id,
-            dto.query,
-            top_k=dto.top_k,
-        )
+        with tracer.start_as_current_span(
+            "rag.retrieve",
+            attributes={
+                "rag.knowledge_base_id": str(kb_id),
+                "rag.bedrock_kb_id": kb.bedrock_kb_id,
+                "rag.top_k": dto.top_k,
+            },
+        ):
+            chunks = await self._knowledge_svc.retrieve(
+                kb.bedrock_kb_id,
+                dto.query,
+                top_k=dto.top_k,
+            )
 
         if kb.id is None:
             msg = "KnowledgeBase ID 不能为空"

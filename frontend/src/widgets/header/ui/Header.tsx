@@ -3,8 +3,16 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 
 import { useAuth, useLogout } from '@/features/auth';
+import type { User } from '@/entities/user';
 import { cn } from '@/shared/lib/cn';
 import { Button } from '@/shared/ui';
+
+// 角色样式映射 — 避免嵌套三元运算符
+const ROLE_STYLES: Record<User['role'], string> = {
+  admin: 'bg-purple-100 text-purple-700',
+  developer: 'bg-blue-100 text-blue-700',
+  viewer: 'bg-gray-100 text-gray-700',
+};
 
 interface HeaderProps {
   onToggleSidebar?: () => void;
@@ -68,11 +76,7 @@ export function Header({ onToggleSidebar }: HeaderProps) {
                 <span
                   className={cn(
                     'rounded-full px-2 py-0.5 text-xs font-medium',
-                    user.role === 'admin'
-                      ? 'bg-purple-100 text-purple-700'
-                      : user.role === 'developer'
-                        ? 'bg-blue-100 text-blue-700'
-                        : 'bg-gray-100 text-gray-700',
+                    ROLE_STYLES[user.role],
                   )}
                 >
                   {user.role}

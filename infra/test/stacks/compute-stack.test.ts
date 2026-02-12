@@ -86,6 +86,8 @@ describe('ComputeStack', () => {
               Match.objectLike({ Name: 'APP_ENV', Value: 'development' }),
               Match.objectLike({ Name: 'DATABASE_HOST' }),
               Match.objectLike({ Name: 'DATABASE_PORT', Value: '3306' }),
+              Match.objectLike({ Name: 'DB_SECRET_ARN' }),
+              Match.objectLike({ Name: 'JWT_SECRET_ARN' }),
             ]),
           }),
         ]),

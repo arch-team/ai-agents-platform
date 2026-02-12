@@ -1,0 +1,78 @@
+# Dependabot 依赖自动更新配置
+# 文档: https://docs.github.com/en/code-security/dependabot/dependabot-version-updates
+
+version: 2
+
+updates:
+  # Python 依赖 (backend)
+  - package-ecosystem: "pip"
+    directory: "/backend"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Asia/Shanghai"
+    labels:
+      - "dependencies"
+      - "backend"
+    commit-message:
+      prefix: "chore(backend):"
+    open-pull-requests-limit: 10
+    reviewers:
+      - "platform-team"
+
+  # npm 依赖 (infra CDK)
+  - package-ecosystem: "npm"
+    directory: "/infra"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Asia/Shanghai"
+    labels:
+      - "dependencies"
+      - "infra"
+    commit-message:
+      prefix: "chore(infra):"
+    open-pull-requests-limit: 10
+    reviewers:
+      - "platform-team"
+    # CDK 相关依赖分组更新，避免版本不一致
+    groups:
+      aws-cdk:
+        patterns:
+          - "aws-cdk-lib"
+          - "@aws-cdk/*"
+          - "cdk-nag"
+
+  # npm 依赖 (frontend)
+  - package-ecosystem: "npm"
+    directory: "/frontend"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Asia/Shanghai"
+    labels:
+      - "dependencies"
+      - "frontend"
+    commit-message:
+      prefix: "chore(frontend):"
+    open-pull-requests-limit: 10
+    reviewers:
+      - "platform-team"
+
+  # GitHub Actions 版本更新
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Asia/Shanghai"
+    labels:
+      - "dependencies"
+      - "ci"
+    commit-message:
+      prefix: "chore(ci):"
+    open-pull-requests-limit: 5

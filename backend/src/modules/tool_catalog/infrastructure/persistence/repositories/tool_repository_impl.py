@@ -59,6 +59,7 @@ class ToolRepositoryImpl(PydanticRepository[Tool, ToolModel, int], IToolReposito
             "reviewer_id",
             "review_comment",
             "reviewed_at",
+            "gateway_target_id",
         },
     )
 
@@ -84,6 +85,7 @@ class ToolRepositoryImpl(PydanticRepository[Tool, ToolModel, int], IToolReposito
                 auth_config=_deserialize_tuple_pairs(model.auth_config),
             ),
             allowed_roles=_deserialize_roles(model.allowed_roles),
+            gateway_target_id=model.gateway_target_id,
             reviewer_id=model.reviewer_id,
             review_comment=model.review_comment,
             reviewed_at=model.reviewed_at,
@@ -109,6 +111,7 @@ class ToolRepositoryImpl(PydanticRepository[Tool, ToolModel, int], IToolReposito
             "auth_type": entity.config.auth_type,
             "auth_config": _serialize_tuple_pairs(entity.config.auth_config),
             "allowed_roles": _serialize_roles(entity.allowed_roles),
+            "gateway_target_id": entity.gateway_target_id,
             "reviewer_id": entity.reviewer_id,
             "review_comment": entity.review_comment,
             "reviewed_at": entity.reviewed_at,

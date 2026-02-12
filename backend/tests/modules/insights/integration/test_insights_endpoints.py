@@ -10,10 +10,10 @@ from src.modules.auth.api.dependencies import get_current_user
 from src.modules.auth.application.dto.user_dto import UserDTO
 from src.modules.insights.api.dependencies import get_insights_service
 from src.modules.insights.application.dto.insights_dto import (
-    PagedUsageRecordDTO,
     UsageRecordDTO,
     UsageSummaryDTO,
 )
+from src.shared.application.dtos import PagedResult
 from src.modules.insights.domain.exceptions import (
     UsageRecordNotFoundError,
 )
@@ -76,7 +76,7 @@ class TestListUsageRecordsEndpoint:
     """GET /api/v1/insights/usage-records 测试。"""
 
     def test_list_success(self, client: TestClient, mock_service: AsyncMock) -> None:
-        mock_service.list_usage_records.return_value = PagedUsageRecordDTO(
+        mock_service.list_usage_records.return_value = PagedResult(
             items=[_make_record_dto()], total=1, page=1, page_size=20,
         )
         resp = client.get("/api/v1/insights/usage-records")
@@ -86,7 +86,7 @@ class TestListUsageRecordsEndpoint:
         assert len(data["items"]) == 1
 
     def test_list_with_pagination(self, client: TestClient, mock_service: AsyncMock) -> None:
-        mock_service.list_usage_records.return_value = PagedUsageRecordDTO(
+        mock_service.list_usage_records.return_value = PagedResult(
             items=[], total=0, page=2, page_size=10,
         )
         resp = client.get("/api/v1/insights/usage-records?page=2&page_size=10")
@@ -100,7 +100,7 @@ class TestListUsageRecordsEndpoint:
         self, client: TestClient, mock_service: AsyncMock,
     ) -> None:
         """非 ADMIN 用户请求时，user_id 被强制为当前用户 ID。"""
-        mock_service.list_usage_records.return_value = PagedUsageRecordDTO(
+        mock_service.list_usage_records.return_value = PagedResult(
             items=[], total=0, page=1, page_size=20,
         )
         # 即使传入 user_id=99，非 admin 用户也应被强制过滤为自己的 id
@@ -114,7 +114,7 @@ class TestListUsageRecordsEndpoint:
         self, admin_client: TestClient, mock_service: AsyncMock,
     ) -> None:
         """ADMIN 用户可以按任意 user_id 过滤。"""
-        mock_service.list_usage_records.return_value = PagedUsageRecordDTO(
+        mock_service.list_usage_records.return_value = PagedResult(
             items=[], total=0, page=1, page_size=20,
         )
         resp = admin_client.get("/api/v1/insights/usage-records?user_id=99")

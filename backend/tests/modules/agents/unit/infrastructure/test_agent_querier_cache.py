@@ -6,7 +6,6 @@ import pytest
 
 from src.modules.agents.domain import Agent, AgentConfig, AgentStatus, IAgentRepository
 from src.modules.agents.infrastructure import AgentQuerierImpl
-from src.shared.domain import ActiveAgentInfo
 
 
 def _make_agent(

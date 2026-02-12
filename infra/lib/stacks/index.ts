@@ -9,3 +9,5 @@ export { ComputeStack } from './compute-stack';
 export type { ComputeStackProps } from './compute-stack';
 export { AgentCoreStack } from './agentcore-stack';
 export type { AgentCoreStackProps } from './agentcore-stack';
+export { MonitoringStack } from './monitoring-stack';
+export type { MonitoringStackProps } from './monitoring-stack';

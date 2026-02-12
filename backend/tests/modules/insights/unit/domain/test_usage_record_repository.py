@@ -1,7 +1,5 @@
 """IUsageRecordRepository 接口测试。"""
 
-from abc import abstractmethod
-
 import pytest
 
 from src.modules.insights.domain.repositories.usage_record_repository import (

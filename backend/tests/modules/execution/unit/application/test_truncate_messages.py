@@ -2,7 +2,6 @@
 
 import pytest
 
-from src.modules.execution.application.interfaces.llm_client import LLMMessage
 from src.modules.execution.domain.entities.message import Message
 from src.modules.execution.domain.value_objects.message_role import MessageRole
 
