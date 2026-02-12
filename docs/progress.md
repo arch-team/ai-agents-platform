@@ -4,14 +4,15 @@
 
 ## 当前状态
 
-- **阶段**: Phase 3 生态扩展 (6-12 月) — M8 ✅ + M8.5 ✅ 已完成
-- **里程碑**: M8 评估体系 + M8.5 前端 MVP — ✅ 并行完成 (Agent Teams 协作)
+- **阶段**: Phase 3 生态扩展 (6-12 月) — M8 ✅ + M8.5 ✅ + Dev 部署 ✅ + 功能打磨 ✅
+- **里程碑**: Phase 3 技术交付全部完成，仅剩 M9 生产部署
 - **变更积压**: S0-S4 全部完成 ✅ (24/24) | AgentCore 集成: P0 ✅ + P1 ✅ + P2 ✅ (3/3) + P3 (0/3) = 16 项
-- **关键决策**: ADR-008 (Agent Teams) + ADR-009 (季度评审) | M8+M8.5 通过 Agent Teams 并行开发
-- **CDK 部署**: 6/6 Stack (含 MonitoringStack) ✅ | ALB: `http://ai-agents-dev-436462227.us-east-1.elb.amazonaws.com/health` → `{"status":"ok"}`
-- **测试**: 后端 ~1653 测试 + 基础设施 163 测试
-- **后端模块**: 9 个 (新增 evaluation) | **前端**: 113 个源文件, FSD 架构, 8 个页面
-- **下一步**: M8+M8.5 ✅ → M9 生产部署 (Staging 验证 → Prod 部署 → 核心团队推广)
+- **关键决策**: ADR-008 (Agent Teams) + ADR-009 (季度评审) | SDK bundled CLI 调研 (不需要 Node.js)
+- **Dev 环境**: 后端 ECS (512 CPU/1024 MiB) + 前端 S3 + CORS + Bedrock IAM ✅ | SSE 流式对话 ✅
+- **测试**: 后端 ~1653 测试 + 基础设施 163 测试 + 前端 80 测试
+- **后端模块**: 9 个 | **前端**: 113+ 源文件, FSD 架构, 8 个页面
+- **SDK**: claude-agent-sdk 0.1.35 (bundled CLI 2.1.39, 自包含 ELF 二进制, 无需 Node.js)
+- **下一步**: Dev 功能打磨完成 → M9 生产部署 (Staging → Prod → 核心团队推广)
 
 ## 模块状态
 
@@ -566,20 +567,24 @@
 
 ## 遗留事项
 
-1. ~~**Alembic 迁移待部署**~~ → ✅ 本地 MySQL 验证通过 (13 个迁移全部成功)，远程 Aurora 待部署
-2. ~~**Agent Teams 端到端验证**~~ → ✅ 本地验证通过 (6 个端点全部正常，状态机 PENDING→RUNNING→FAILED/CANCELLED 完整)
-3. **pytest-cov 缺失**: venv 中未安装 pytest-cov，无法运行覆盖率报告（`uv add --dev pytest-cov`）
-4. **Claude Agent SDK 本地不可用**: SDK 需要 Bedrock 凭证或 Anthropic API Key 才能实际执行 Agent Teams。已验证 SDK 调用链路正确（错误来自 Bedrock API 模型不可用而非代码问题）
-5. **远程部署验证**: 需在 ECS + Aurora 环境部署新迁移并验证 Agent Teams 端到端
+1. ~~**Alembic 迁移待部署**~~ → ✅ 远程 Aurora 已通过 ECS 启动 CMD 自动执行（15 个迁移全部成功）
+2. ~~**Agent Teams 端到端验证**~~ → ✅ 本地 + 远程均验证通过
+3. ~~**远程部署验证**~~ → ✅ Dev 环境全链路验证通过（注册→登录→创建Agent→激活→SSE对话→Team Executions）
+4. ~~**Claude Agent SDK 版本**~~ → ✅ 升级 0.1.3 → 0.1.35 (bundled CLI 2.1.39, 无需 Node.js)
+5. **SSE 流后 DB 写操作**: 流式对话尾部报 "Message(id=N) 不存在"——独立 session 查找占位消息 ID 失败。不影响用户看到的对话内容，属于优化项
+6. **Sonnet 模型不可用**: 当前 AWS 账户 Bedrock Sonnet inference profile 有 prompt caching 限制，暂用 Haiku 替代。需要在 AWS 控制台申请 Sonnet 模型访问权限
+7. **pytest-cov 缺失**: `uv add --dev pytest-cov` 即可
 
 ### 部署信息
 
 - **前端**: `http://ai-agents-platform-frontend-dev-897473.s3-website-us-east-1.amazonaws.com`
-- **ALB 端点**: `http://ai-agents-dev-289071019.us-east-1.elb.amazonaws.com`
+- **后端 API**: `http://ai-agents-dev-289071019.us-east-1.elb.amazonaws.com`
 - **Aurora 端点**: `database-dev-auroraclusterd4efe71c-4vafhqgr3qe9.cluster-cqm7um8tgaji.us-east-1.rds.amazonaws.com`
 - **AgentCore Gateway**: `https://ai-agents-platform-gateway-dev-3vv1wfgdeg.gateway.bedrock-agentcore.us-east-1.amazonaws.com/mcp`
 - **DB 凭证**: `dev/ai-agents-platform/db-credentials` (Secrets Manager)
-- Alembic 迁移已通过容器启动 CMD 自动执行完成（10 个迁移文件全部成功）
+- **ECS 配置**: 512 CPU / 1024 MiB | Task Definition: `ComputedevEcsTaskDef90906720:13`
+- **CORS**: 前端 S3 域名已加入允许列表
+- **Bedrock IAM**: `BedrockInvokeAccess` 策略（含 inference-profile 资源）
 
 ---
 
@@ -589,8 +594,8 @@
 
 | # | 日期 | 类型 | 完成项 | 关键决策 |
 |---|------|------|-------|---------|
-| 26 | 2026-02-12 | M8+M8.5 (并行) | **M8+M8.5 通过 Agent Teams 并行完成**: M8 evaluation 模块 (30 文件, 14 端点, 58 测试) + M8.5 前端 MVP (113 源文件, 8 页面, FSD 架构); 后端 1653 测试全通过; **团队: backend-dev + frontend-dev 并行协作** | Agent Teams 并行开发验证成功; React 19 + Vite 7; evaluation MVP 范围 |
-| 25 | 2026-02-12 | 季度评审 | **Phase 3 季度评审 (ADR-009)**: orchestration 取消 + 前端提升优先级 + evaluation 精简 + M9 目标调整 | orchestration 取消; 前端零到一; 滚动规划 |
-| 24 | 2026-02-12 | M7 (完成) | **M7 13/13 全部完成**: #11 生产化加固 (错误分类 + SDK 重试 2 次指数退避 + Token 500K 告警) + #12 insights 集成 (conversation_id 可选化 + 迁移 + TeamExecutionCompletedEvent → UsageRecord 事件桥接) + #13 质量验收 (1595 通过 0 失败) | SDK 错误可重试; conversation_id nullable |
-| 23 | 2026-02-12 | M7 (Agent Teams) | **Agent Teams 核心能力完成 (M7 #1-#9)**: AgentConfig enable_teams + ClaudeAgentAdapter env 注入 + TeamExecution 领域模型/ORM/迁移 + TeamExecutionService (asyncio.Task + Semaphore) + 6 API 端点 (含 SSE) + Settings + 79 新测试 (共 1591 通过) + ADR-008; **修改 14 文件 + 新建 15 文件 + 2 迁移** | ADR-008: Agent Teams 替代 DAG 引擎; enable_teams 布尔开关; asyncio.Task MVP; Semaphore(3) 并发控制 |
-| 22 | 2026-02-11 | M7-prep | **M7-prep 6/6 + 遗留 4/4 全部完成**: P2-3 OTEL + P2-1 Gateway 同步 + P2-2 Memory MCP + C-S4-1 CI/CD + C-S4-3 Secrets + C-S4-4 监控 + Alembic 迁移 + EventBus 订阅 + DEPLOYMENT.md + Memory 入口点; **变更 24/24 ✅ + AgentCore P2 3/3 ✅**; 后端 ~1512 测试 + infra 163 测试 | Agent Teams 并行开发; 事件驱动 Gateway 同步; Secrets Manager 双路径; OTEL 降级; stdio MCP Server |
+| 27 | 2026-02-12 | Dev 部署+打磨 | **Dev 全链路打通**: 后端 ECS 部署 + 前端 S3 部署 + CORS + Bedrock IAM; Playwright E2E 验证 8 页面; **修复**: 空气泡/SSE execute_stream await/Dockerfile 移除 Node.js (bundled CLI 调研)/ECS 1024MiB/inference profile; SDK 0.1.3→0.1.35 升级; 代码优化 (4 Agent 并行) | bundled CLI 无需 Node.js; Haiku 替代 Sonnet; hasattr(__anext__) 兼容 |
+| 26 | 2026-02-12 | M8+M8.5 (并行) | **M8+M8.5 Agent Teams 并行**: evaluation 30 文件 14 端点 58 测试 + 前端 113 文件 8 页面; 1653 测试通过 | Agent Teams 并行开发; React 19; evaluation MVP |
+| 25 | 2026-02-12 | 季度评审 | **ADR-009**: orchestration 取消 + 前端提升优先级 + evaluation 精简 | orchestration 取消; 前端零到一; 滚动规划 |
+| 24 | 2026-02-12 | M7 (完成) | **M7 13/13**: 生产化加固 + insights 集成 + 质量验收 | SDK 重试; conversation_id nullable |
+| 23 | 2026-02-12 | M7 (Agent Teams) | **Agent Teams 核心**: enable_teams + TeamExecution + 6 端点 + 79 测试 + ADR-008 | Agent Teams 替代 DAG; asyncio.Task; Semaphore(3) |
