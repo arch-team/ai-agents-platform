@@ -21,7 +21,7 @@
 | `shared` | 已完成 | ai-agents-factory-v1 | PydanticEntity, IRepository, EventBus, DomainError, get_db, get_settings, PydanticRepository, exception_handlers, schemas |
 | `auth` | 已完成 | ai-agents-factory-v1 | User, Role, JWT, RBAC, get_current_user, 登录/注册/me 端点, **Rate Limiting + 账户锁定 (C-S1-1)**, **Refresh Token (C-S1-2)**, **安全审计日志 (C-S1-3)**, **注册权限保护 (C-S1-4)** |
 | `agents` | 已完成 | ai-agents-factory-v1 | Agent CRUD (7 端点), 状态机 (draft → active → archived), AgentConfig, 领域事件 |
-| `execution` | 已完成 | ai-agents-factory-v1 | 单 Agent 对话 (6 端点), Bedrock ConverseStream, SSE 流式, IAgentQuerier 跨模块, **对话历史滑动窗口 (C-S2-2)**, **Agent 配置 TTL 缓存 (C-S2-4)**。**待升级**: ADR-006 → IAgentRuntime + StrandsAgentAdapter |
+| `execution` | 已完成 | ai-agents-factory-v1 | 单 Agent 对话 (6 端点) + **Agent Teams (6 端点)**, Bedrock ConverseStream, SSE 流式, IAgentQuerier 跨模块, **对话历史滑动窗口 (C-S2-2)**, **Agent 配置 TTL 缓存 (C-S2-4)**, IAgentRuntime + ClaudeAgentAdapter (ADR-006), **TeamExecution 异步执行 + SSE 进度推送 (ADR-008)** |
 
 ### Phase 2 (3-6 月)
 
@@ -36,8 +36,8 @@
 
 | 阶段 | 模块 |
 |------|------|
-| Phase 3 | orchestration, evaluation |
-| Phase 4 | audit, marketplace, analytics |
+| Phase 3 | ~~orchestration~~ (ADR-008: Agent Teams 替代，已在 execution 模块实现), evaluation |
+| Phase 4 | audit, ~~marketplace~~ (ADR-007: 移除), ~~analytics~~ (ADR-007: 降级为 insights 增强) |
 
 ## 基础设施
 
@@ -373,6 +373,58 @@
 #1-#13 ──► #14 (质量验收)
 ```
 
+### M7: Multi-Agent 编排 (第 29-36 周) — 进行中
+
+> 交付物: Agent Teams 能力 (ADR-008: 替代 DAG 引擎) + 生产化加固 + insights 集成
+> 验收标准: ruff check + mypy + pytest --cov-fail-under=85 全通过；用户可提交团队执行任务并追踪进度
+> 技术决策: ADR-008 — Agent Teams 替代 DAG 引擎，在 execution 模块内扩展
+
+#### 领域模型设计摘要
+
+**TeamExecution 实体**: agent_id, user_id, conversation_id(可选), prompt, status(TeamExecutionStatus), result, error_message, input_tokens, output_tokens, started_at, completed_at
+**TeamExecutionLog 实体**: execution_id, sequence, log_type, content
+**TeamExecutionStatus 枚举**: PENDING → RUNNING → COMPLETED / FAILED / CANCELLED
+
+**核心流程**:
+- 提交团队执行: 校验 Agent ACTIVE + enable_teams → 创建 TeamExecution(PENDING) → 启动 asyncio.Task 后台执行
+- 后台执行: asyncio.Semaphore(3) 并发控制 → 注入 `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` → 流式消费 SDK → 记录进度日志 → 完成/失败
+- SSE 进度推送: 轮询日志表 yield 增量日志
+- 取消执行: PENDING/RUNNING → CANCELLED, 取消 asyncio.Task
+
+**AgentConfig 扩展**: `enable_teams: bool = False` 开关字段
+**ClaudeAgentAdapter**: 团队模式注入环境变量 + 自动提升 max_turns=200
+
+**API 端点**: POST /team-executions, GET /team-executions, GET /team-executions/{id}, GET /team-executions/{id}/logs, GET /team-executions/{id}/stream, POST /team-executions/{id}/cancel
+
+#### 任务拆解
+
+| # | 任务 | 状态 | 依赖 | 参考规范 | 会话 |
+|---|------|:----:|:----:|---------|------|
+| 1 | AgentConfig 扩展 enable_teams + 全链路传递 (constants/DTO/Schema/Response/ORM/Querier) | 已完成 | - | `rules/architecture.md` §5 | 2026-02-12 |
+| 2 | ClaudeAgentAdapter Teams 支持 (env 注入 + max_turns 提升) | 已完成 | #1 | ADR-008 + `rules/sdk-first.md` | 2026-02-12 |
+| 3 | TeamExecution 领域模型 (实体 + 状态机 + 日志 + 仓库接口 + 事件 + 异常) | 已完成 | - | `rules/architecture.md` §5 DDD 战术模式 | 2026-02-12 |
+| 4 | TeamExecution ORM + Alembic 迁移 (enable_teams 列 + team_executions + team_execution_logs 表) | 已完成 | #3 | `rules/tech-stack.md` | 2026-02-12 |
+| 5 | TeamExecutionService (submit/get/list/cancel/stream_logs + asyncio.Task 后台执行) | 已完成 | #2, #3, #4 | `rules/architecture.md` §5 + ADR-008 | 2026-02-12 |
+| 6 | API 层 (6 端点 + SSE + dependencies + main.py 注册) | 已完成 | #5 | `rules/api-design.md` | 2026-02-12 |
+| 7 | Settings 扩展 (TEAM_EXECUTION_MAX_TURNS/TIMEOUT/MAX_CONCURRENT) | 已完成 | #5 | `rules/tech-stack.md` | 2026-02-12 |
+| 8 | 测试 (79 个: 领域 + 应用 + 基础设施 + 既有测试适配) | 已完成 | #1-#7 | `rules/testing.md` TDD | 2026-02-12 |
+| 9 | ADR-008 创建 (Agent Teams 替代 DAG 引擎决策记录) | 已完成 | - | `rules/architecture.md` §2 ADR 触发 | 2026-02-12 |
+| 10 | 端到端验证 (部署迁移 + 创建 Teams Agent + 提交执行) | 待开始 | #1-#9 | - | - |
+| 11 | 生产化加固 (重试机制 + Token 预算控制 + 错误分类) | 待开始 | #10 | - | - |
+| 12 | insights 集成 (团队执行的成本归因) | 待开始 | #10 | - | - |
+| 13 | 质量验收: ruff check + mypy --strict + pytest --cov-fail-under=85 全通过 | 待开始 | #10-#12 | `rules/checklist.md` | - |
+
+#### 关键设计决策
+
+| 决策 | 选择 | 理由 |
+|------|------|------|
+| 编排策略 | Agent Teams (非 DAG 引擎) | ADR-008: 复杂度低、灵活性高、SDK 杠杆、前端轻量 |
+| 配置方式 | `enable_teams` 布尔字段 | Teams 是 Agent 能力增强，非独立运行时 |
+| 数据模型 | 新增 TeamExecution (非扩展 Conversation) | 长任务 vs 多轮对话语义不同 |
+| 后台引擎 | asyncio.Task (MVP) | 无额外依赖；后续可升级 Celery/SQS |
+| 并发控制 | asyncio.Semaphore(3) | 防止资源耗尽 |
+| Token 控制 | max_turns=200 间接控制 | SDK 暂不支持 max_budget 直接参数 |
+
 ---
 
 ## 变更积压 (Change Backlog)
@@ -506,7 +558,9 @@
 
 ## 遗留事项
 
-(当前无遗留事项 — M7-prep 全部清零)
+1. **Alembic 迁移待部署**: 新增 2 个迁移文件 (`k0l1m2n3o4p5_add_enable_teams_to_agents` + `l1m2n3o4p5q6_create_team_executions_tables`)，需在目标环境执行
+2. **Agent Teams 端到端验证**: 需在开发环境创建 enable_teams=true Agent，提交团队执行任务验证全流程
+3. **pytest-cov 缺失**: venv 中未安装 pytest-cov，无法运行覆盖率报告（`uv add --dev pytest-cov`）
 
 ### 部署信息
 
@@ -524,8 +578,8 @@
 
 | # | 日期 | 类型 | 完成项 | 关键决策 |
 |---|------|------|-------|---------|
+| 23 | 2026-02-12 | M7 (Agent Teams) | **Agent Teams 核心能力完成 (M7 #1-#9)**: AgentConfig enable_teams + ClaudeAgentAdapter env 注入 + TeamExecution 领域模型/ORM/迁移 + TeamExecutionService (asyncio.Task + Semaphore) + 6 API 端点 (含 SSE) + Settings + 79 新测试 (共 1591 通过) + ADR-008; **修改 14 文件 + 新建 15 文件 + 2 迁移** | ADR-008: Agent Teams 替代 DAG 引擎; enable_teams 布尔开关; asyncio.Task MVP; Semaphore(3) 并发控制 |
 | 22 | 2026-02-11 | M7-prep | **M7-prep 6/6 + 遗留 4/4 全部完成**: P2-3 OTEL + P2-1 Gateway 同步 + P2-2 Memory MCP + C-S4-1 CI/CD + C-S4-3 Secrets + C-S4-4 监控 + Alembic 迁移 + EventBus 订阅 + DEPLOYMENT.md + Memory 入口点; **变更 24/24 ✅ + AgentCore P2 3/3 ✅**; 后端 ~1512 测试 + infra 163 测试 | Agent Teams 并行开发; 事件驱动 Gateway 同步; Secrets Manager 双路径; OTEL 降级; stdio MCP Server |
 | 21 | 2026-02-11 | 变更 (S4-5+S3-3) | C-S4-5 python-jose→PyJWT ✅; C-S3-3 路线图评审 ✅ (ADR-007, 10 项调整: 18月压缩/marketplace 移除/滚动规划); **Phase 2 快速收尾完成, 变更 21/24** | PyJWT >=2.8.0; roadmap v1.2; 季度评审模式 |
 | 20 | 2026-02-11 | 变更 (C-S3-2) | C-S3-2 端到端验证通过: 注册→登录→JWT→Agent CRUD→对话创建全流程 OK; 修复 MySQL session auto-commit + ECS 健康检查 curl→httpx | get_db auto-commit/rollback; python httpx 替代 curl |
 | 19 | 2026-02-11 | 变更 (C-S4-2+S4-6) | C-S4-2 完成: **5/5 Stack 全部部署成功**, ALB `/health` 可用; C-S4-6 DRY 常量提取; 代码优化 (backend+infra); Dockerfile 修复 (gcc/AMD64/ECR Public/MySQL TEXT); Alembic 迁移 MySQL 兼容 | LINUX_AMD64; ECR Public 镜像源; Aurora 3.10.0 db.t3.medium; TEXT 列无 server_default |
-| 18 | 2026-02-11 | 变更 (C-S4-2) | CDK 首次部署验证: ComputeStack 创建 + 4/5 Stack 部署成功 (Network/Security/Database/AgentCore), Alembic 迁移补充, infra 136 测试 | Agent Teams 并行开发; Aurora 3.10.0 + db.t3.medium; AgentCore AZ 限制 |
