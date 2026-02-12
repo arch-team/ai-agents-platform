@@ -4,13 +4,13 @@
 
 ## 当前状态
 
-- **阶段**: Phase 3 生态扩展 (6-12 月) — M7-prep ✅ 已完成
-- **里程碑**: M7-prep AgentCore P2 + 运维基础 — ✅ 已完成 (6/6 任务)
+- **阶段**: Phase 3 生态扩展 (6-12 月) — M7 进行中
+- **里程碑**: M7 Multi-Agent 编排 — 进行中 (Agent Teams 核心能力 ✅, 1/3 阶段完成)
 - **变更积压**: S0-S4 全部完成 ✅ (24/24) | AgentCore 集成: P0 ✅ + P1 ✅ + P2 ✅ (3/3) + P3 (0/3) = 16 项
-- **关键决策**: ADR-006 已采纳 — Agent 框架选型: Claude Agent SDK + Claude Code CLI (单一框架)
+- **关键决策**: ADR-008 已采纳 — Agent Teams 替代 DAG 引擎 (在 execution 模块内扩展，不引入独立 orchestration 模块)
 - **CDK 部署**: 6/6 Stack (含 MonitoringStack) ✅ | ALB: `http://ai-agents-dev-436462227.us-east-1.elb.amazonaws.com/health` → `{"status":"ok"}`
-- **测试**: 后端 ~1512 测试 + 基础设施 163 测试
-- **下一步**: M7-prep ✅ → 启动 M7 Multi-Agent 编排 (orchestration 模块, 第 29-36 周)
+- **测试**: 后端 ~1591 测试 + 基础设施 163 测试
+- **下一步**: Agent Teams 端到端验证 → 生产化加固 (重试/Token 预算/insights 集成) → M8 评估体系
 
 ## 模块状态
 
