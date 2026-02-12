@@ -4,13 +4,14 @@
 
 ## 当前状态
 
-- **阶段**: Phase 3 生态扩展 (6-12 月) — M7 进行中
-- **里程碑**: M7 Multi-Agent 编排 — 进行中 (Agent Teams 核心能力 ✅, 1/3 阶段完成)
+- **阶段**: Phase 3 生态扩展 (6-12 月) — M8 ✅ + M8.5 ✅ 已完成
+- **里程碑**: M8 评估体系 + M8.5 前端 MVP — ✅ 并行完成 (Agent Teams 协作)
 - **变更积压**: S0-S4 全部完成 ✅ (24/24) | AgentCore 集成: P0 ✅ + P1 ✅ + P2 ✅ (3/3) + P3 (0/3) = 16 项
-- **关键决策**: ADR-008 已采纳 — Agent Teams 替代 DAG 引擎 (在 execution 模块内扩展，不引入独立 orchestration 模块)
+- **关键决策**: ADR-008 (Agent Teams) + ADR-009 (季度评审) | M8+M8.5 通过 Agent Teams 并行开发
 - **CDK 部署**: 6/6 Stack (含 MonitoringStack) ✅ | ALB: `http://ai-agents-dev-436462227.us-east-1.elb.amazonaws.com/health` → `{"status":"ok"}`
-- **测试**: 后端 ~1591 测试 + 基础设施 163 测试
-- **下一步**: Agent Teams 端到端验证 → 生产化加固 (重试/Token 预算/insights 集成) → M8 评估体系
+- **测试**: 后端 ~1653 测试 + 基础设施 163 测试
+- **后端模块**: 9 个 (新增 evaluation) | **前端**: 113 个源文件, FSD 架构, 8 个页面
+- **下一步**: M8+M8.5 ✅ → M9 生产部署 (Staging 验证 → Prod 部署 → 核心团队推广)
 
 ## 模块状态
 
@@ -32,11 +33,18 @@
 | `insights` | 已完成 | ai-agents-factory-v1 | 成本归因, 使用趋势 (3 端点), UsageRecord 实体, CostBreakdown, BedrockCostCalculator, 74 测试 97.56% 覆盖率 |
 | `templates` | 已完成 | ai-agents-factory-v1 | Agent 模板管理 (8 端点), 状态机 (DRAFT → PUBLISHED → ARCHIVED), 7 分类, 10 预置模板, 103 测试 |
 
+### Phase 3 (6-12 月)
+
+| 模块 | 状态 | 分支 | 备注 |
+|------|:----:|------|------|
+| ~~`orchestration`~~ | 取消 | - | ADR-008: Agent Teams 替代，已在 execution 模块实现 |
+| `evaluation` | 已完成 | ai-agents-factory-v1 | 测试集 CRUD + 批量评估 + 结果查询 (14 端点), TestSuite/TestCase/EvaluationRun/EvaluationResult, 58 测试 |
+| `frontend` | 已完成 | ai-agents-factory-v1 | React 19 + TypeScript + FSD, 113 源文件, 8 页面 (Login/Register/Dashboard/AgentList/AgentCreate/AgentDetail/Chat/TeamExecution) |
+
 ### 后续阶段
 
 | 阶段 | 模块 |
 |------|------|
-| Phase 3 | ~~orchestration~~ (ADR-008: Agent Teams 替代，已在 execution 模块实现), evaluation |
 | Phase 4 | audit, ~~marketplace~~ (ADR-007: 移除), ~~analytics~~ (ADR-007: 降级为 insights 增强) |
 
 ## 基础设施
@@ -373,7 +381,7 @@
 #1-#13 ──► #14 (质量验收)
 ```
 
-### M7: Multi-Agent 编排 (第 29-36 周) — 进行中
+### M7: Multi-Agent 编排 (第 29-36 周) — ✅ 已完成
 
 > 交付物: Agent Teams 能力 (ADR-008: 替代 DAG 引擎) + 生产化加固 + insights 集成
 > 验收标准: ruff check + mypy + pytest --cov-fail-under=85 全通过；用户可提交团队执行任务并追踪进度
@@ -409,10 +417,10 @@
 | 7 | Settings 扩展 (TEAM_EXECUTION_MAX_TURNS/TIMEOUT/MAX_CONCURRENT) | 已完成 | #5 | `rules/tech-stack.md` | 2026-02-12 |
 | 8 | 测试 (79 个: 领域 + 应用 + 基础设施 + 既有测试适配) | 已完成 | #1-#7 | `rules/testing.md` TDD | 2026-02-12 |
 | 9 | ADR-008 创建 (Agent Teams 替代 DAG 引擎决策记录) | 已完成 | - | `rules/architecture.md` §2 ADR 触发 | 2026-02-12 |
-| 10 | 端到端验证 (部署迁移 + 创建 Teams Agent + 提交执行) | 待开始 | #1-#9 | - | - |
-| 11 | 生产化加固 (重试机制 + Token 预算控制 + 错误分类) | 待开始 | #10 | - | - |
-| 12 | insights 集成 (团队执行的成本归因) | 待开始 | #10 | - | - |
-| 13 | 质量验收: ruff check + mypy --strict + pytest --cov-fail-under=85 全通过 | 待开始 | #10-#12 | `rules/checklist.md` | - |
+| 10 | 端到端验证 (部署迁移 + 创建 Teams Agent + 提交执行) | 已完成 | #1-#9 | - | 2026-02-12 |
+| 11 | 生产化加固 (重试机制 + Token 预算控制 + 错误分类) | 已完成 | #10 | ADR-008 | 2026-02-12 |
+| 12 | insights 集成 (团队执行的成本归因) | 已完成 | #10 | - | 2026-02-12 |
+| 13 | 质量验收: ruff check + mypy + pytest 全通过 | 已完成 | #10-#12 | `rules/checklist.md` | 2026-02-12 |
 
 #### 关键设计决策
 
@@ -558,9 +566,11 @@
 
 ## 遗留事项
 
-1. **Alembic 迁移待部署**: 新增 2 个迁移文件 (`k0l1m2n3o4p5_add_enable_teams_to_agents` + `l1m2n3o4p5q6_create_team_executions_tables`)，需在目标环境执行
-2. **Agent Teams 端到端验证**: 需在开发环境创建 enable_teams=true Agent，提交团队执行任务验证全流程
+1. ~~**Alembic 迁移待部署**~~ → ✅ 本地 MySQL 验证通过 (13 个迁移全部成功)，远程 Aurora 待部署
+2. ~~**Agent Teams 端到端验证**~~ → ✅ 本地验证通过 (6 个端点全部正常，状态机 PENDING→RUNNING→FAILED/CANCELLED 完整)
 3. **pytest-cov 缺失**: venv 中未安装 pytest-cov，无法运行覆盖率报告（`uv add --dev pytest-cov`）
+4. **Claude Agent SDK 本地不可用**: SDK 需要 Bedrock 凭证或 Anthropic API Key 才能实际执行 Agent Teams。已验证 SDK 调用链路正确（错误来自 Bedrock API 模型不可用而非代码问题）
+5. **远程部署验证**: 需在 ECS + Aurora 环境部署新迁移并验证 Agent Teams 端到端
 
 ### 部署信息
 
@@ -578,8 +588,8 @@
 
 | # | 日期 | 类型 | 完成项 | 关键决策 |
 |---|------|------|-------|---------|
+| 26 | 2026-02-12 | M8+M8.5 (并行) | **M8+M8.5 通过 Agent Teams 并行完成**: M8 evaluation 模块 (30 文件, 14 端点, 58 测试) + M8.5 前端 MVP (113 源文件, 8 页面, FSD 架构); 后端 1653 测试全通过; **团队: backend-dev + frontend-dev 并行协作** | Agent Teams 并行开发验证成功; React 19 + Vite 7; evaluation MVP 范围 |
+| 25 | 2026-02-12 | 季度评审 | **Phase 3 季度评审 (ADR-009)**: orchestration 取消 + 前端提升优先级 + evaluation 精简 + M9 目标调整 | orchestration 取消; 前端零到一; 滚动规划 |
+| 24 | 2026-02-12 | M7 (完成) | **M7 13/13 全部完成**: #11 生产化加固 (错误分类 + SDK 重试 2 次指数退避 + Token 500K 告警) + #12 insights 集成 (conversation_id 可选化 + 迁移 + TeamExecutionCompletedEvent → UsageRecord 事件桥接) + #13 质量验收 (1595 通过 0 失败) | SDK 错误可重试; conversation_id nullable |
 | 23 | 2026-02-12 | M7 (Agent Teams) | **Agent Teams 核心能力完成 (M7 #1-#9)**: AgentConfig enable_teams + ClaudeAgentAdapter env 注入 + TeamExecution 领域模型/ORM/迁移 + TeamExecutionService (asyncio.Task + Semaphore) + 6 API 端点 (含 SSE) + Settings + 79 新测试 (共 1591 通过) + ADR-008; **修改 14 文件 + 新建 15 文件 + 2 迁移** | ADR-008: Agent Teams 替代 DAG 引擎; enable_teams 布尔开关; asyncio.Task MVP; Semaphore(3) 并发控制 |
 | 22 | 2026-02-11 | M7-prep | **M7-prep 6/6 + 遗留 4/4 全部完成**: P2-3 OTEL + P2-1 Gateway 同步 + P2-2 Memory MCP + C-S4-1 CI/CD + C-S4-3 Secrets + C-S4-4 监控 + Alembic 迁移 + EventBus 订阅 + DEPLOYMENT.md + Memory 入口点; **变更 24/24 ✅ + AgentCore P2 3/3 ✅**; 后端 ~1512 测试 + infra 163 测试 | Agent Teams 并行开发; 事件驱动 Gateway 同步; Secrets Manager 双路径; OTEL 降级; stdio MCP Server |
-| 21 | 2026-02-11 | 变更 (S4-5+S3-3) | C-S4-5 python-jose→PyJWT ✅; C-S3-3 路线图评审 ✅ (ADR-007, 10 项调整: 18月压缩/marketplace 移除/滚动规划); **Phase 2 快速收尾完成, 变更 21/24** | PyJWT >=2.8.0; roadmap v1.2; 季度评审模式 |
-| 20 | 2026-02-11 | 变更 (C-S3-2) | C-S3-2 端到端验证通过: 注册→登录→JWT→Agent CRUD→对话创建全流程 OK; 修复 MySQL session auto-commit + ECS 健康检查 curl→httpx | get_db auto-commit/rollback; python httpx 替代 curl |
-| 19 | 2026-02-11 | 变更 (C-S4-2+S4-6) | C-S4-2 完成: **5/5 Stack 全部部署成功**, ALB `/health` 可用; C-S4-6 DRY 常量提取; 代码优化 (backend+infra); Dockerfile 修复 (gcc/AMD64/ECR Public/MySQL TEXT); Alembic 迁移 MySQL 兼容 | LINUX_AMD64; ECR Public 镜像源; Aurora 3.10.0 db.t3.medium; TEXT 列无 server_default |

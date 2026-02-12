@@ -13,6 +13,7 @@ const AgentListPage = lazy(() => import('@/pages/agents/list'));
 const AgentCreatePage = lazy(() => import('@/pages/agents/create'));
 const AgentDetailPage = lazy(() => import('@/pages/agents/detail'));
 const ChatPage = lazy(() => import('@/pages/chat'));
+const TeamExecutionPage = lazy(() => import('@/pages/team-executions'));
 const NotFoundPage = lazy(() => import('@/pages/not-found'));
 
 // 延迟加载布局组件
@@ -33,7 +34,9 @@ export function AppRoutes() {
             <Route path="/agents" element={<AgentListPage />} />
             <Route path="/agents/create" element={<AgentCreatePage />} />
             <Route path="/agents/:agentId" element={<AgentDetailPage />} />
+            <Route path="/chat" element={<ChatPage />} />
             <Route path="/chat/:conversationId" element={<ChatPage />} />
+            <Route path="/team-executions" element={<TeamExecutionPage />} />
           </Route>
         </Route>
 

@@ -25,10 +25,10 @@ class UsageRecordModel(Base):
         ForeignKey("agents.id"),
         nullable=False,
     )
-    conversation_id: Mapped[int] = mapped_column(
+    conversation_id: Mapped[int | None] = mapped_column(
         Integer,
         ForeignKey("conversations.id"),
-        nullable=False,
+        nullable=True,
     )
     model_id: Mapped[str] = mapped_column(String(200), nullable=False)
     tokens_input: Mapped[int] = mapped_column(Integer, nullable=False, default=0)

@@ -11,7 +11,7 @@ class UsageRecordResponse(BaseModel):
     id: int
     user_id: int
     agent_id: int
-    conversation_id: int
+    conversation_id: int | None
     model_id: str
     tokens_input: int
     tokens_output: int

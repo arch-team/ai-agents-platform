@@ -34,7 +34,7 @@ def repo(session: AsyncSession) -> UsageRecordRepositoryImpl:
 def _make_record(
     user_id: int = 1,
     agent_id: int = 1,
-    conversation_id: int = 1,
+    conversation_id: int | None = 1,
     model_id: str = "anthropic.claude-sonnet-4-20250514",
     tokens_input: int = 1000,
     tokens_output: int = 500,
@@ -77,6 +77,21 @@ class TestUsageRecordRepositoryCreate:
         assert created.tokens_input == 1000
         assert created.tokens_output == 500
         assert created.estimated_cost == 0.0105
+
+    @pytest.mark.asyncio
+    async def test_create_usage_record_without_conversation(
+        self,
+        repo: UsageRecordRepositoryImpl,
+        session: AsyncSession,
+    ) -> None:
+        """团队执行场景: conversation_id 为 None 时可正常创建。"""
+        record = _make_record(conversation_id=None)
+        created = await repo.create(record)
+        await session.commit()
+
+        assert created.id is not None
+        assert created.conversation_id is None
+        assert created.user_id == 1
 
 
 @pytest.mark.integration

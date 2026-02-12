@@ -18,7 +18,7 @@ def make_usage_record(
     record_id: int = 1,
     user_id: int = 10,
     agent_id: int = 5,
-    conversation_id: int = 100,
+    conversation_id: int | None = 100,
     model_id: str = "anthropic.claude-sonnet-4-20250514",
     tokens_input: int = 1000,
     tokens_output: int = 500,

@@ -10,10 +10,10 @@ class CreateUsageRecordDTO:
 
     user_id: int
     agent_id: int
-    conversation_id: int
     model_id: str
     tokens_input: int
     tokens_output: int
+    conversation_id: int | None = None
 
 
 @dataclass
@@ -23,7 +23,7 @@ class UsageRecordDTO:
     id: int
     user_id: int
     agent_id: int
-    conversation_id: int
+    conversation_id: int | None
     model_id: str
     tokens_input: int
     tokens_output: int

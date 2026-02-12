@@ -56,6 +56,32 @@ class TestRecordUsage:
         mock_usage_repo.create.assert_called_once()
 
     @pytest.mark.asyncio
+    async def test_creates_record_without_conversation(
+        self,
+        insights_service: InsightsService,
+        mock_usage_repo: AsyncMock,
+        mock_cost_calculator: MagicMock,
+    ) -> None:
+        """团队执行场景: conversation_id 为 None 时可正常创建。"""
+        mock_usage_repo.create.return_value = make_usage_record(conversation_id=None)
+
+        dto = CreateUsageRecordDTO(
+            user_id=10,
+            agent_id=5,
+            model_id="anthropic.claude-sonnet",
+            tokens_input=800,
+            tokens_output=300,
+        )
+
+        with patch("src.modules.insights.application.services.insights_service.event_bus") as mock_bus:
+            mock_bus.publish_async = AsyncMock()
+            result = await insights_service.record_usage(dto)
+
+        assert isinstance(result, UsageRecordDTO)
+        assert result.conversation_id is None
+        mock_usage_repo.create.assert_called_once()
+
+    @pytest.mark.asyncio
     async def test_publishes_event(
         self,
         insights_service: InsightsService,

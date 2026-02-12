@@ -1,7 +1,7 @@
 """团队执行服务。"""
 
 import asyncio
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Callable
 
 import structlog
 
@@ -58,6 +58,16 @@ class TeamExecutionService:
         gateway_url: str = "",
         max_turns: int = 200,
         timeout_seconds: int = 1800,
+        bg_repo_factory: Callable[
+            [],
+            tuple[
+                ITeamExecutionRepository,
+                ITeamExecutionLogRepository,
+                Callable[[], object],
+                Callable[[], object],
+            ],
+        ]
+        | None = None,
     ) -> None:
         self._execution_repo = execution_repo
         self._log_repo = log_repo
@@ -66,6 +76,8 @@ class TeamExecutionService:
         self._gateway_url = gateway_url
         self._max_turns = max_turns
         self._timeout_seconds = timeout_seconds
+        # 后台任务用独立 session 的 repo 工厂
+        self._bg_repo_factory = bg_repo_factory
         # 后台任务追踪 (execution_id -> asyncio.Task)
         self._running_tasks: dict[int, asyncio.Task[None]] = {}
 
@@ -232,15 +244,50 @@ class TeamExecutionService:
         user_id: int,
         agent_info: ActiveAgentInfo,
     ) -> None:
-        """后台执行团队任务。"""
+        """后台执行团队任务。
+
+        使用独立 DB session (通过 bg_repo_factory)，
+        避免请求级 session 关闭后后台任务 DB 操作失败。
+        """
+        # 获取独立 session 的 repos
+        if self._bg_repo_factory is not None:
+            bg_exec_repo, bg_log_repo, bg_commit, bg_close = self._bg_repo_factory()
+        else:
+            bg_exec_repo = self._execution_repo
+            bg_log_repo = self._log_repo
+            bg_commit = None
+            bg_close = None
+
+        try:
+            await self._do_execute(
+                execution_id, dto, user_id, agent_info,
+                bg_exec_repo, bg_log_repo, bg_commit,
+            )
+        finally:
+            if bg_close is not None:
+                await bg_close()
+
+    async def _do_execute(
+        self,
+        execution_id: int,
+        dto: CreateTeamExecutionDTO,
+        user_id: int,
+        agent_info: ActiveAgentInfo,
+        exec_repo: ITeamExecutionRepository,
+        log_repo: ITeamExecutionLogRepository,
+        commit_fn: Callable[[], object] | None,
+    ) -> None:
+        """实际执行逻辑（使用传入的 repo）。"""
         async with _team_execution_semaphore:
-            execution = await self._execution_repo.get_by_id(execution_id)
+            execution = await exec_repo.get_by_id(execution_id)
             if execution is None or execution.status == TeamExecutionStatus.CANCELLED:
                 return
 
             # 更新状态为 RUNNING
             execution.start()
-            await self._execution_repo.update(execution)
+            await exec_repo.update(execution)
+            if commit_fn is not None:
+                await commit_fn()
 
             if execution.id is None:
                 return
@@ -258,81 +305,150 @@ class TeamExecutionService:
             output_tokens = 0
             content_parts: list[str] = []
 
-            try:
-                # 构建 AgentRequest
-                request = AgentRequest(
-                    prompt=dto.prompt,
-                    system_prompt=agent_info.system_prompt,
-                    model_id=agent_info.model_id,
-                    temperature=agent_info.temperature,
-                    max_tokens=agent_info.max_tokens,
-                    gateway_url=self._gateway_url,
-                    max_turns=self._max_turns,
-                    enable_teams=True,
-                )
+            max_retries = 2
+            retry_delay = 2.0
+            last_error: Exception | None = None
 
-                # 带超时的流式执行
-                async with asyncio.timeout(self._timeout_seconds):
-                    async for chunk in self._consume_stream(request):
-                        if chunk.content:
-                            content_parts.append(chunk.content)
-                            sequence += 1
-                            log = TeamExecutionLog(
-                                execution_id=execution_id,
-                                sequence=sequence,
-                                log_type="content",
-                                content=chunk.content,
-                            )
-                            await self._log_repo.append_log(log)
+            for attempt in range(max_retries + 1):
+                try:
+                    # 构建 AgentRequest
+                    request = AgentRequest(
+                        prompt=dto.prompt,
+                        system_prompt=agent_info.system_prompt,
+                        model_id=agent_info.model_id,
+                        temperature=agent_info.temperature,
+                        max_tokens=agent_info.max_tokens,
+                        gateway_url=self._gateway_url,
+                        max_turns=self._max_turns,
+                        enable_teams=True,
+                    )
 
-                        input_tokens += chunk.input_tokens
-                        output_tokens += chunk.output_tokens
+                    # 带超时的流式执行
+                    async with asyncio.timeout(self._timeout_seconds):
+                        async for chunk in self._consume_stream(request):
+                            if chunk.content:
+                                content_parts.append(chunk.content)
+                                sequence += 1
+                                log = TeamExecutionLog(
+                                    execution_id=execution_id,
+                                    sequence=sequence,
+                                    log_type="content",
+                                    content=chunk.content,
+                                )
+                                await log_repo.append_log(log)
+                                if commit_fn is not None:
+                                    await commit_fn()
 
-                # 执行完成
-                result = "".join(content_parts)
-                execution = await self._execution_repo.get_by_id(execution_id)
-                if execution is None:
-                    return
-                if execution.status == TeamExecutionStatus.CANCELLED:
-                    return
+                            input_tokens += chunk.input_tokens
+                            output_tokens += chunk.output_tokens
 
-                execution.complete(
-                    result=result,
-                    input_tokens=input_tokens,
-                    output_tokens=output_tokens,
-                )
-                await self._execution_repo.update(execution)
+                    # 执行完成
+                    result = "".join(content_parts)
+                    execution = await exec_repo.get_by_id(execution_id)
+                    if execution is None:
+                        return
+                    if execution.status == TeamExecutionStatus.CANCELLED:
+                        return
 
-                await event_bus.publish_async(
-                    TeamExecutionCompletedEvent(
-                        execution_id=execution_id,
-                        user_id=user_id,
+                    execution.complete(
+                        result=result,
                         input_tokens=input_tokens,
                         output_tokens=output_tokens,
-                    ),
-                )
-                logger.info(
-                    "团队执行完成",
-                    execution_id=execution_id,
-                    input_tokens=input_tokens,
-                    output_tokens=output_tokens,
-                )
+                    )
+                    await exec_repo.update(execution)
+                    if commit_fn is not None:
+                        await commit_fn()
 
-            except asyncio.CancelledError:
-                logger.info("团队执行已取消", execution_id=execution_id)
-            except Exception:
-                logger.exception("团队执行失败", execution_id=execution_id)
-                execution = await self._execution_repo.get_by_id(execution_id)
+                    await event_bus.publish_async(
+                        TeamExecutionCompletedEvent(
+                            execution_id=execution_id,
+                            user_id=user_id,
+                            input_tokens=input_tokens,
+                            output_tokens=output_tokens,
+                        ),
+                    )
+                    logger.info(
+                        "团队执行完成",
+                        execution_id=execution_id,
+                        input_tokens=input_tokens,
+                        output_tokens=output_tokens,
+                    )
+
+                    # Token 消耗告警
+                    total_tokens = input_tokens + output_tokens
+                    if total_tokens > 500_000:
+                        logger.warning(
+                            "团队执行 Token 消耗较高",
+                            execution_id=execution_id,
+                            total_tokens=total_tokens,
+                            input_tokens=input_tokens,
+                            output_tokens=output_tokens,
+                        )
+
+                    return  # 成功则退出重试循环  # noqa: TRY300
+
+                except asyncio.CancelledError:
+                    logger.info("团队执行已取消", execution_id=execution_id)
+                    return
+                except TimeoutError:
+                    logger.exception(
+                        "团队执行超时",
+                        execution_id=execution_id,
+                        timeout=self._timeout_seconds,
+                    )
+                    last_error = TimeoutError(
+                        f"执行超时 (超过 {self._timeout_seconds}s 限制)",
+                    )
+                    break  # 超时不重试
+                except DomainError as e:
+                    if e.code == "AGENT_SDK_ERROR" and attempt < max_retries:
+                        logger.warning(
+                            "Agent SDK 调用失败, 准备重试",
+                            execution_id=execution_id,
+                            attempt=attempt + 1,
+                            max_retries=max_retries,
+                        )
+                        last_error = e
+                        await asyncio.sleep(retry_delay * (2 ** attempt))
+                        # 重置累积状态
+                        content_parts.clear()
+                        sequence = 0
+                        input_tokens = 0
+                        output_tokens = 0
+                        continue
+                    logger.exception(
+                        "团队执行 SDK 错误",
+                        execution_id=execution_id,
+                    )
+                    last_error = e
+                    break
+                except Exception as e:
+                    logger.exception("团队执行失败", execution_id=execution_id)
+                    last_error = e
+                    break
+
+            # 重试耗尽或不可重试错误 - 标记为 FAILED
+            if last_error is not None:
+                if isinstance(last_error, TimeoutError):
+                    error_msg = f"执行超时 (超过 {self._timeout_seconds}s 限制)"
+                elif isinstance(last_error, DomainError):
+                    error_msg = f"Agent SDK 调用失败: {last_error.message}"
+                else:
+                    error_msg = "执行过程中发生内部错误"
+
+                execution = await exec_repo.get_by_id(execution_id)
                 if execution is not None and execution.status == TeamExecutionStatus.RUNNING:
-                    execution.fail("执行过程中发生异常")
-                    await self._execution_repo.update(execution)
+                    execution.fail(error_msg)
+                    await exec_repo.update(execution)
+                    if commit_fn is not None:
+                        await commit_fn()
 
                     if execution.id is not None:
                         await event_bus.publish_async(
                             TeamExecutionFailedEvent(
                                 execution_id=execution.id,
                                 user_id=user_id,
-                                error_message="执行过程中发生异常",
+                                error_message=error_msg,
                             ),
                         )
 
@@ -340,8 +456,13 @@ class TeamExecutionService:
         self,
         request: AgentRequest,
     ) -> AsyncIterator[AgentResponseChunk]:
-        """消费 agent_runtime 流式响应。"""
-        async for chunk in self._agent_runtime.execute_stream(request):
+        """消费 agent_runtime 流式响应。
+
+        execute_stream 是 async def 返回 AsyncIterator，
+        需先 await 获取迭代器再 async for 消费。
+        """
+        stream = await self._agent_runtime.execute_stream(request)
+        async for chunk in stream:
             yield chunk
 
     # ── 辅助方法 ──

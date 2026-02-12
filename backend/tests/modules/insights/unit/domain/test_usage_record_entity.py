@@ -73,6 +73,32 @@ class TestUsageRecordCreation:
         )
         assert record.recorded_at is not None
 
+    def test_create_without_conversation_id(self) -> None:
+        """团队执行场景: conversation_id 可为 None。"""
+        record = UsageRecord(
+            user_id=1,
+            agent_id=2,
+            model_id="anthropic.claude-sonnet",
+            tokens_input=500,
+            tokens_output=200,
+            estimated_cost=0.005,
+        )
+        assert record.conversation_id is None
+        assert record.user_id == 1
+
+    def test_create_with_explicit_none_conversation_id(self) -> None:
+        """显式传入 conversation_id=None。"""
+        record = UsageRecord(
+            user_id=1,
+            agent_id=2,
+            conversation_id=None,
+            model_id="anthropic.claude-sonnet",
+            tokens_input=500,
+            tokens_output=200,
+            estimated_cost=0.005,
+        )
+        assert record.conversation_id is None
+
     def test_total_tokens_property(self) -> None:
         """total_tokens 属性应返回输入和输出 token 的总和。"""
         record = UsageRecord(

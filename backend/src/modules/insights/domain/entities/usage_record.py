@@ -14,7 +14,7 @@ class UsageRecord(PydanticEntity):
 
     user_id: int
     agent_id: int
-    conversation_id: int
+    conversation_id: int | None = None
     model_id: str
     tokens_input: int
     tokens_output: int

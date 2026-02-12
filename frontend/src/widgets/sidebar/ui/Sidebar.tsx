@@ -2,7 +2,7 @@
 import { Link, useLocation } from 'react-router-dom';
 
 import { cn } from '@/shared/lib/cn';
-import { HomeIcon, AgentIcon } from '@/shared/ui';
+import { HomeIcon, AgentIcon, ChatIcon, TeamIcon } from '@/shared/ui';
 
 interface SidebarProps {
   isOpen?: boolean;
@@ -25,6 +25,16 @@ const navItems: NavItem[] = [
     label: 'Agents',
     path: '/agents',
     icon: <AgentIcon />,
+  },
+  {
+    label: '对话',
+    path: '/chat',
+    icon: <ChatIcon />,
+  },
+  {
+    label: 'Team Executions',
+    path: '/team-executions',
+    icon: <TeamIcon />,
   },
 ];
 

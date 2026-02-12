@@ -93,11 +93,31 @@ async def get_team_execution_service(
     session: Annotated[AsyncSession, Depends(get_db)],
     agent_querier: Annotated[IAgentQuerier, Depends(get_agent_querier)],
 ) -> TeamExecutionService:
-    """创建 TeamExecutionService 实例。"""
+    """创建 TeamExecutionService 实例。
+
+    bg_repo_factory 为后台 asyncio.Task 提供独立 DB session 的 repos,
+    避免请求级 session 关闭后后台任务 DB 操作失败 (与 stream_finalize_repos 同理)。
+    """
     execution_repo = TeamExecutionRepositoryImpl(session=session)
     log_repo = TeamExecutionLogRepositoryImpl(session=session)
     agent_runtime = get_agent_runtime()
     settings = get_settings()
+
+    def _bg_repo_factory() -> tuple[
+        TeamExecutionRepositoryImpl,
+        TeamExecutionLogRepositoryImpl,
+        object,
+        object,
+    ]:
+        """为后台任务创建独立 session 的 repos。"""
+        bg_session = get_session_factory()()
+        return (
+            TeamExecutionRepositoryImpl(session=bg_session),
+            TeamExecutionLogRepositoryImpl(session=bg_session),
+            bg_session.commit,
+            bg_session.close,
+        )
+
     return TeamExecutionService(
         execution_repo=execution_repo,
         log_repo=log_repo,
@@ -106,4 +126,5 @@ async def get_team_execution_service(
         gateway_url=settings.AGENTCORE_GATEWAY_URL,
         max_turns=settings.TEAM_EXECUTION_MAX_TURNS,
         timeout_seconds=settings.TEAM_EXECUTION_TIMEOUT_SECONDS,
+        bg_repo_factory=_bg_repo_factory,
     )

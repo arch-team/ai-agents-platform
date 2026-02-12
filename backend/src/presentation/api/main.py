@@ -38,6 +38,15 @@ from src.modules.knowledge.domain.exceptions import (
     KnowledgeBaseNameDuplicateError,
     KnowledgeBaseNotFoundError,
 )
+from src.modules.evaluation.api.endpoints import router as evaluation_router
+from src.modules.evaluation.domain.exceptions import (
+    EvaluationRunNotFoundError,
+    TestCaseNotFoundError,
+    TestSuiteEmptyError,
+    TestSuiteNotActiveError,
+    TestSuiteNotDeletableError,
+    TestSuiteNotFoundError,
+)
 from src.modules.templates.api.endpoints import router as templates_router
 from src.modules.templates.domain.exceptions import (
     DuplicateTemplateNameError,
@@ -107,6 +116,66 @@ def _register_gateway_event_subscriptions() -> None:
     event_bus.subscribe(ToolDeprecatedEvent, _on_tool_deprecated)
 
 
+def _register_team_execution_event_subscriptions() -> None:
+    """注册团队执行完成事件订阅 -> insights 成本归因。
+
+    团队执行完成后，将 Token 消耗记录到 usage_records 表，
+    实现跨模块成本追踪。
+    """
+    from src.modules.execution.domain.events import TeamExecutionCompletedEvent
+    from src.modules.execution.infrastructure.persistence.repositories.team_execution_repository_impl import (
+        TeamExecutionRepositoryImpl,
+    )
+    from src.modules.insights.application.dto.insights_dto import CreateUsageRecordDTO
+    from src.modules.insights.application.services.insights_service import InsightsService
+    from src.modules.insights.infrastructure.external.bedrock_cost_calculator import BedrockCostCalculator
+    from src.modules.insights.infrastructure.persistence.repositories.usage_record_repository_impl import (
+        UsageRecordRepositoryImpl,
+    )
+    from src.shared.domain.event_bus import event_bus
+    from src.shared.infrastructure.database import get_session_factory
+
+    session_factory = get_session_factory()
+    cost_calculator = BedrockCostCalculator()
+
+    async def _on_team_execution_completed(event: TeamExecutionCompletedEvent) -> None:
+        """团队执行完成后记录 Token 消耗到 insights 模块。"""
+        if event.input_tokens == 0 and event.output_tokens == 0:
+            return
+
+        async with session_factory() as session:
+            try:
+                # 查询 TeamExecution 获取 agent_id 和 conversation_id
+                exec_repo = TeamExecutionRepositoryImpl(session=session)
+                execution = await exec_repo.get_by_id(event.execution_id)
+                if execution is None:
+                    return
+
+                repo = UsageRecordRepositoryImpl(session=session)
+                service = InsightsService(usage_repo=repo, cost_calculator=cost_calculator)
+
+                dto = CreateUsageRecordDTO(
+                    user_id=event.user_id,
+                    agent_id=execution.agent_id,
+                    conversation_id=execution.conversation_id,
+                    model_id="anthropic.claude-sonnet",
+                    tokens_input=event.input_tokens,
+                    tokens_output=event.output_tokens,
+                )
+                await service.record_usage(dto)
+                await session.commit()
+            except Exception:
+                await session.rollback()
+                import structlog
+
+                structlog.get_logger(__name__).exception(
+                    "team_execution_cost_attribution_failed",
+                    execution_id=event.execution_id,
+                )
+
+    event_bus.subscribe(TeamExecutionCompletedEvent, _on_team_execution_completed)
+
+
 @asynccontextmanager
 async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
     """应用生命周期: 启动时初始化数据库、日志、追踪和事件订阅。"""
@@ -131,6 +200,7 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
         pool_recycle=settings.DB_POOL_RECYCLE,
     )
     _register_gateway_event_subscriptions()
+    _register_team_execution_event_subscriptions()
     yield
 
 
@@ -189,6 +259,13 @@ def create_app() -> FastAPI:
         TemplateNotFoundError: 404,
         DuplicateTemplateNameError: 409,
         InvalidTemplateConfigError: 422,
+        # evaluation
+        TestSuiteNotFoundError: 404,
+        TestCaseNotFoundError: 404,
+        EvaluationRunNotFoundError: 404,
+        TestSuiteNotActiveError: 409,
+        TestSuiteEmptyError: 409,
+        TestSuiteNotDeletableError: 409,
     }
     for exc_type, status_code in _module_exception_mappings.items():
         register_status_mapping(exc_type, status_code)
@@ -206,6 +283,7 @@ def create_app() -> FastAPI:
     app.include_router(knowledge_router)
     app.include_router(insights_router)
     app.include_router(templates_router)
+    app.include_router(evaluation_router)
 
     # Rate Limiting
     setup_rate_limiting(app)
