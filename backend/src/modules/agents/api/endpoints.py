@@ -6,7 +6,11 @@ from fastapi import APIRouter, Depends, Query, status
 
 from src.modules.agents.api.dependencies import get_agent_service
 from src.modules.agents.api.schemas.requests import CreateAgentRequest, UpdateAgentRequest
-from src.modules.agents.api.schemas.responses import AgentConfigResponse, AgentListResponse, AgentResponse
+from src.modules.agents.api.schemas.responses import (
+    AgentConfigResponse,
+    AgentListResponse,
+    AgentResponse,
+)
 from src.modules.agents.application.dto.agent_dto import AgentDTO, CreateAgentDTO, UpdateAgentDTO
 from src.modules.agents.application.services.agent_service import AgentService
 from src.modules.agents.domain.value_objects.agent_status import AgentStatus

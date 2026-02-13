@@ -15,7 +15,7 @@ import {
   type BaseStackProps,
 } from '../config';
 import { AlbConstruct } from '../constructs/alb';
-import { EcsServiceConstruct } from '../constructs/ecs';
+import { EcsServiceConstruct, type ScheduledScalingConfig } from '../constructs/ecs';
 
 export interface ComputeStackProps extends BaseStackProps {
   /** ECS 服务所在的 VPC */
@@ -36,6 +36,8 @@ export interface ComputeStackProps extends BaseStackProps {
   readonly memoryLimitMiB?: number;
   /** 期望运行的任务数量 @default 1 */
   readonly desiredCount?: number;
+  /** 定时缩放配置 — Dev 环境非工作时段自动缩减 ECS 任务数 */
+  readonly scheduledScaling?: ScheduledScalingConfig;
 }
 
 /**
@@ -84,6 +86,7 @@ export class ComputeStack extends cdk.Stack {
       cpu: props.cpu,
       memoryLimitMiB: props.memoryLimitMiB,
       desiredCount: props.desiredCount,
+      scheduledScaling: props.scheduledScaling,
       containerImage: ecs.ContainerImage.fromAsset(path.join(__dirname, '../../..', 'backend'), {
         platform: cdk.aws_ecr_assets.Platform.LINUX_AMD64,
       }),

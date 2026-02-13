@@ -1,9 +1,24 @@
 import * as cdk from 'aws-cdk-lib';
+import * as appscaling from 'aws-cdk-lib/aws-applicationautoscaling';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as ecs from 'aws-cdk-lib/aws-ecs';
 import * as logs from 'aws-cdk-lib/aws-logs';
 import { Construct } from 'constructs';
 import { getRemovalPolicy, isProd, type EnvironmentName } from '../../config';
+
+/** 定时缩放配置 — 用于 Dev 环境非工作时段自动缩减 ECS 任务数 */
+export interface ScheduledScalingConfig {
+  /** 缩减 cron 表达式 (UTC 时间) */
+  readonly scaleDownSchedule: string;
+  /** 恢复 cron 表达式 (UTC 时间) */
+  readonly scaleUpSchedule: string;
+  /** 缩减时的最小任务数 @default 0 */
+  readonly scaleDownMinCapacity?: number;
+  /** 恢复时的最小任务数 */
+  readonly scaleUpMinCapacity: number;
+  /** 恢复时的最大任务数 */
+  readonly scaleUpMaxCapacity: number;
+}
 
 export interface EcsServiceConstructProps {
   /** ECS 服务所在的 VPC */
@@ -28,6 +43,8 @@ export interface EcsServiceConstructProps {
   readonly secrets?: Record<string, ecs.Secret>;
   /** 自定义容器健康检查命令 @default ['CMD-SHELL', 'python -c "import httpx; httpx.get(\'http://localhost:{port}/health\').raise_for_status()" || exit 1'] */
   readonly healthCheckCommand?: string[];
+  /** 定时缩放配置 — Dev 环境非工作时段自动缩减 ECS 任务数以降低成本 */
+  readonly scheduledScaling?: ScheduledScalingConfig;
 }
 
 /**
@@ -121,5 +138,28 @@ export class EcsServiceConstruct extends Construct {
       securityGroups: [this.serviceSecurityGroup],
       assignPublicIp: false,
     });
+
+    // 定时缩放 — Dev 环境非工作时段自动缩减任务数以降低成本
+    if (props.scheduledScaling) {
+      const { scaleDownSchedule, scaleUpSchedule, scaleDownMinCapacity = 0, scaleUpMinCapacity, scaleUpMaxCapacity } =
+        props.scheduledScaling;
+
+      const scalableTarget = this.service.autoScaleTaskCount({
+        minCapacity: scaleDownMinCapacity,
+        maxCapacity: scaleUpMaxCapacity,
+      });
+
+      scalableTarget.scaleOnSchedule('ScaleDown', {
+        schedule: appscaling.Schedule.expression(`cron(${scaleDownSchedule})`),
+        minCapacity: scaleDownMinCapacity,
+        maxCapacity: scaleDownMinCapacity,
+      });
+
+      scalableTarget.scaleOnSchedule('ScaleUp', {
+        schedule: appscaling.Schedule.expression(`cron(${scaleUpSchedule})`),
+        minCapacity: scaleUpMinCapacity,
+        maxCapacity: scaleUpMaxCapacity,
+      });
+    }
   }
 }

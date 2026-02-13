@@ -30,6 +30,7 @@ from src.modules.evaluation.domain.exceptions import (
     TestSuiteNotFoundError,
 )
 from src.modules.execution.api.endpoints import router as execution_router
+from src.modules.execution.api.preview_endpoints import router as preview_router
 from src.modules.execution.api.team_endpoints import router as team_execution_router
 from src.modules.execution.domain.exceptions import (
     AgentNotAvailableError,
@@ -444,6 +445,7 @@ def create_app() -> FastAPI:
     app.include_router(agents_router)
     app.include_router(execution_router)
     app.include_router(team_execution_router)
+    app.include_router(preview_router)
     app.include_router(tool_catalog_router)
     app.include_router(knowledge_router)
     app.include_router(insights_router)

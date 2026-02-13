@@ -4,7 +4,7 @@ import * as cdk from 'aws-cdk-lib';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import { Aspects } from 'aws-cdk-lib';
 import { AwsSolutionsChecks } from 'cdk-nag';
-import { getEnvironmentConfig, getRequiredTags, isProd } from '../lib/config';
+import { getEnvironmentConfig, getRequiredTags, isDev, isProd } from '../lib/config';
 import {
   NetworkStack,
   SecurityStack,
@@ -74,6 +74,15 @@ const computeStack = new ComputeStack(app, `${prefix}-compute-${env}`, {
     cpu: 512,
     memoryLimitMiB: 1024,
     desiredCount: 2,
+  }),
+  // Dev: 非工作时段 (UTC 12:00 = 北京 20:00) 缩减到 0，工作时段 (UTC 00:00 = 北京 08:00) 恢复到 1
+  ...(isDev(env) && {
+    scheduledScaling: {
+      scaleDownSchedule: '0 12 * * ? *',
+      scaleUpSchedule: '0 0 * * ? *',
+      scaleUpMinCapacity: 1,
+      scaleUpMaxCapacity: 1,
+    },
   }),
 });
 computeStack.addDependency(networkStack);

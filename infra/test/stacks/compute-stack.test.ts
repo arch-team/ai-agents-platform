@@ -150,4 +150,55 @@ describe('ComputeStack', () => {
       expect(stack.service).toBeDefined();
     });
   });
+
+  describe('定时缩放', () => {
+    it('配置 scheduledScaling 时应创建 ScalableTarget 和 2 个 ScheduledAction', () => {
+      const app = new cdk.App();
+      const deps = createCrossStackComputeDependencies(app);
+
+      const stackWithScaling = new ComputeStack(app, 'TestComputeStackScaling', {
+        ...deps,
+        envName: 'dev',
+        scheduledScaling: {
+          scaleDownSchedule: '0 12 * * ? *',
+          scaleUpSchedule: '0 0 * * ? *',
+          scaleUpMinCapacity: 1,
+          scaleUpMaxCapacity: 1,
+        },
+      });
+      const tmpl = Template.fromStack(stackWithScaling);
+
+      // 应创建 ScalableTarget (Application Auto Scaling)
+      tmpl.hasResourceProperties('AWS::ApplicationAutoScaling::ScalableTarget', {
+        MinCapacity: 0,
+        MaxCapacity: 1,
+        ScalableDimension: 'ecs:service:DesiredCount',
+        ServiceNamespace: 'ecs',
+      });
+
+      // 应创建 2 个 ScheduledAction (缩减 + 恢复)
+      tmpl.resourceCountIs('AWS::ApplicationAutoScaling::ScalableTarget', 1);
+
+      // 验证缩减 ScheduledAction
+      tmpl.hasResourceProperties('AWS::ApplicationAutoScaling::ScalableTarget', {
+        ScheduledActions: Match.arrayWith([
+          Match.objectLike({
+            ScalableTargetAction: { MinCapacity: 0, MaxCapacity: 0 },
+            Schedule: 'cron(0 12 * * ? *)',
+            ScheduledActionName: 'ScaleDown',
+          }),
+          Match.objectLike({
+            ScalableTargetAction: { MinCapacity: 1, MaxCapacity: 1 },
+            Schedule: 'cron(0 0 * * ? *)',
+            ScheduledActionName: 'ScaleUp',
+          }),
+        ]),
+      });
+    });
+
+    it('未配置 scheduledScaling 时不应创建缩放资源', () => {
+      // 使用 beforeEach 中创建的默认 template (未配置 scheduledScaling)
+      template.resourceCountIs('AWS::ApplicationAutoScaling::ScalableTarget', 0);
+    });
+  });
 });

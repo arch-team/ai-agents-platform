@@ -1,12 +1,19 @@
 // Agent 详情页面
+import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
-import { useAgent, useActivateAgent, useArchiveAgent, AgentStatusBadge } from '@/features/agents';
+import {
+  useAgent,
+  useActivateAgent,
+  useArchiveAgent,
+  usePreviewAgent,
+  AgentStatusBadge,
+} from '@/features/agents';
 import { useConversations, useCreateConversation } from '@/features/execution';
 import { extractApiError } from '@/shared/lib/extractApiError';
 import { formatDate, formatDateTime } from '@/shared/lib/formatDate';
 import { parseNumericParam } from '@/shared/lib/parseNumericParam';
-import { Button, Card, Spinner, ErrorMessage } from '@/shared/ui';
+import { Button, Card, Spinner, ErrorMessage, Textarea } from '@/shared/ui';
 
 export default function AgentDetailPage() {
   const { agentId } = useParams<{ agentId: string }>();
@@ -19,6 +26,11 @@ export default function AgentDetailPage() {
   const archiveMutation = useArchiveAgent();
   const createConversation = useCreateConversation();
 
+  // 预览面板状态
+  const [showPreview, setShowPreview] = useState(false);
+  const [previewPrompt, setPreviewPrompt] = useState('');
+  const previewMutation = usePreviewAgent();
+
   const handleStartChat = async () => {
     if (!agent) return;
     try {
@@ -30,6 +42,11 @@ export default function AgentDetailPage() {
     } catch {
       // 错误由 mutation 状态处理
     }
+  };
+
+  const handleSendPreview = () => {
+    if (!agent || !previewPrompt.trim()) return;
+    previewMutation.mutate({ agentId: agent.id, prompt: previewPrompt.trim() });
   };
 
   if (isLoading) {
@@ -98,6 +115,18 @@ export default function AgentDetailPage() {
               <Button
                 variant="outline"
                 size="sm"
+                onClick={() => {
+                  setShowPreview(!showPreview);
+                  previewMutation.reset();
+                }}
+                aria-expanded={showPreview}
+                aria-controls="preview-panel"
+              >
+                测试 Agent
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
                 loading={archiveMutation.isPending}
                 onClick={() => archiveMutation.mutate(agent.id)}
                 aria-label={`归档 ${agent.name}`}
@@ -111,6 +140,74 @@ export default function AgentDetailPage() {
           </Button>
         </div>
       </div>
+
+      {/* 测试 Agent 预览面板 */}
+      {showPreview && (
+        <Card id="preview-panel" className="mb-6">
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-gray-900">测试 Agent</h2>
+            <button
+              type="button"
+              className="text-sm text-gray-500 hover:text-gray-700"
+              onClick={() => setShowPreview(false)}
+              aria-label="关闭测试面板"
+            >
+              关闭
+            </button>
+          </div>
+
+          <div className="space-y-4">
+            <Textarea
+              label="测试消息"
+              placeholder="输入测试消息..."
+              rows={3}
+              value={previewPrompt}
+              onChange={(e) => setPreviewPrompt(e.target.value)}
+              maxLength={2000}
+            />
+
+            <div className="flex justify-end">
+              <Button
+                size="sm"
+                loading={previewMutation.isPending}
+                disabled={!previewPrompt.trim()}
+                onClick={handleSendPreview}
+              >
+                发送测试
+              </Button>
+            </div>
+
+            {/* 预览结果 */}
+            {previewMutation.isPending && (
+              <div className="flex items-center justify-center py-6">
+                <Spinner />
+              </div>
+            )}
+
+            {previewMutation.isError && (
+              <ErrorMessage
+                error={extractApiError(previewMutation.error, '预览请求失败')}
+              />
+            )}
+
+            {previewMutation.data && (
+              <div className="rounded-md border border-gray-200 bg-gray-50 p-4">
+                <h3 className="mb-2 text-sm font-medium text-gray-700">预览结果</h3>
+                <p className="whitespace-pre-wrap text-sm text-gray-900">
+                  {previewMutation.data.content}
+                </p>
+                <div className="mt-3 flex gap-4 border-t border-gray-200 pt-3 text-xs text-gray-500">
+                  <span>模型: {previewMutation.data.model_id}</span>
+                  <span>
+                    Token: 输入 {previewMutation.data.tokens_input} / 输出{' '}
+                    {previewMutation.data.tokens_output}
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
+        </Card>
+      )}
 
       {/* Agent 详情信息 */}
       <Card className="mb-6">

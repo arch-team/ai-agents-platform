@@ -13,3 +13,10 @@ export interface CreateAgentRequest {
 export type UpdateAgentRequest = Partial<CreateAgentRequest>;
 
 export type AgentListResponse = PageResponse<Agent>;
+
+export interface AgentPreviewResponse {
+  content: string;
+  model_id: string;
+  tokens_input: number;
+  tokens_output: number;
+}

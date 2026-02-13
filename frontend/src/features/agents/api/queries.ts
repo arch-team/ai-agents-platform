@@ -5,7 +5,12 @@ import { apiClient } from '@/shared/api';
 
 import type { AgentFilters } from '../model/types';
 
-import type { AgentListResponse, CreateAgentRequest, UpdateAgentRequest } from './types';
+import type {
+  AgentListResponse,
+  AgentPreviewResponse,
+  CreateAgentRequest,
+  UpdateAgentRequest,
+} from './types';
 
 // Query Key Factory
 export const agentKeys = {
@@ -108,5 +113,18 @@ export function useArchiveAgent() {
       return data;
     },
     onSuccess: (data) => invalidateAndUpdateDetail(queryClient, data),
+  });
+}
+
+// 预览 Agent（单轮测试对话，不持久化）
+export function usePreviewAgent() {
+  return useMutation({
+    mutationFn: async ({ agentId, prompt }: { agentId: number; prompt: string }) => {
+      const { data } = await apiClient.post<AgentPreviewResponse>(
+        `/api/v1/agents/${agentId}/preview`,
+        { prompt },
+      );
+      return data;
+    },
   });
 }

@@ -13,8 +13,14 @@ export {
   useDeleteAgent,
   useActivateAgent,
   useArchiveAgent,
+  usePreviewAgent,
 } from './api/queries';
 
 // 类型
-export type { CreateAgentRequest, UpdateAgentRequest, AgentListResponse } from './api/types';
+export type {
+  CreateAgentRequest,
+  UpdateAgentRequest,
+  AgentListResponse,
+  AgentPreviewResponse,
+} from './api/types';
 export type { AgentFilters } from './model/types';

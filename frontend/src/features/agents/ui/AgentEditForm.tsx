@@ -49,6 +49,7 @@ function AgentEditFormInner({ agent, onSuccess, onCancel }: AgentEditFormInnerPr
   const {
     register,
     handleSubmit,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<UpdateAgentFormData>({
     resolver: zodResolver(updateAgentSchema),
@@ -73,7 +74,7 @@ function AgentEditFormInner({ agent, onSuccess, onCancel }: AgentEditFormInnerPr
 
   return (
     <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6" noValidate>
-      <AgentFormFields register={register} errors={errors} />
+      <AgentFormFields register={register} errors={errors} watch={watch} />
 
       {/* 提交错误提示 */}
       {updateMutation.isError && (

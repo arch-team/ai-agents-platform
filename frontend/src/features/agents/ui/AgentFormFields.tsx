@@ -6,17 +6,24 @@ import { Input, Textarea } from '@/shared/ui';
 
 import { MODEL_OPTIONS } from '../model/constants';
 
-import type { FieldErrors, UseFormRegister } from 'react-hook-form';
+import type { FieldErrors, UseFormRegister, UseFormWatch } from 'react-hook-form';
 
 import type { CreateAgentFormData } from '../lib/validation';
+
+/** 系统提示词最大字符数 */
+const SYSTEM_PROMPT_MAX_LENGTH = 10000;
 
 interface AgentFormFieldsProps {
   register: UseFormRegister<CreateAgentFormData>;
   errors: FieldErrors<CreateAgentFormData>;
+  watch: UseFormWatch<CreateAgentFormData>;
 }
 
-export function AgentFormFields({ register, errors }: AgentFormFieldsProps) {
+export function AgentFormFields({ register, errors, watch }: AgentFormFieldsProps) {
   const [showAdvanced, setShowAdvanced] = useState(false);
+
+  const systemPromptValue = watch('system_prompt') ?? '';
+  const temperatureValue = watch('temperature') ?? 0.7;
 
   return (
     <>
@@ -39,14 +46,19 @@ export function AgentFormFields({ register, errors }: AgentFormFieldsProps) {
         {...register('description')}
       />
 
-      {/* 系统提示词 */}
-      <Textarea
-        label="系统提示词"
-        placeholder="输入系统提示词，定义 Agent 的行为和角色"
-        rows={6}
-        error={errors.system_prompt?.message}
-        {...register('system_prompt')}
-      />
+      {/* 系统提示词 + 字符计数 */}
+      <div>
+        <Textarea
+          label="系统提示词"
+          placeholder="输入系统提示词，定义 Agent 的行为和角色"
+          rows={6}
+          error={errors.system_prompt?.message}
+          {...register('system_prompt')}
+        />
+        <p className="mt-1 text-right text-xs text-gray-400" aria-live="polite">
+          {systemPromptValue.length.toLocaleString()} / {SYSTEM_PROMPT_MAX_LENGTH.toLocaleString()}
+        </p>
+      </div>
 
       {/* 高级选项折叠区 */}
       <div>
@@ -66,7 +78,7 @@ export function AgentFormFields({ register, errors }: AgentFormFieldsProps) {
             id="advanced-options"
             className="mt-4 space-y-4 rounded-md border border-gray-200 p-4"
           >
-            {/* 模型选择 */}
+            {/* 模型选择 + 成本对比说明 */}
             <div className="flex flex-col gap-1.5">
               <label htmlFor="model_id" className="text-sm font-medium text-gray-700">
                 模型
@@ -82,12 +94,15 @@ export function AgentFormFields({ register, errors }: AgentFormFieldsProps) {
                   </option>
                 ))}
               </select>
+              <p className="text-xs text-gray-500">
+                Haiku: 最经济 ($0.25/百万输入) | Sonnet: 均衡 ($3/百万输入) | Opus: 最强 ($15/百万输入)
+              </p>
             </div>
 
-            {/* 温度滑块 */}
+            {/* 温度滑块 + 说明 */}
             <div className="flex flex-col gap-1.5">
               <label htmlFor="temperature" className="text-sm font-medium text-gray-700">
-                温度 (Temperature)
+                温度: {temperatureValue}
               </label>
               <input
                 id="temperature"
@@ -97,7 +112,9 @@ export function AgentFormFields({ register, errors }: AgentFormFieldsProps) {
                 step="0.1"
                 className="w-full"
                 aria-invalid={errors.temperature ? true : undefined}
-                aria-describedby={errors.temperature ? 'temperature-error' : undefined}
+                aria-describedby={
+                  errors.temperature ? 'temperature-error' : 'temperature-hint'
+                }
                 {...register('temperature', { valueAsNumber: true })}
               />
               {errors.temperature && (
@@ -105,6 +122,9 @@ export function AgentFormFields({ register, errors }: AgentFormFieldsProps) {
                   {errors.temperature.message}
                 </span>
               )}
+              <p id="temperature-hint" className="text-xs text-gray-500">
+                低温度 (0-0.3): 精确、一致 | 中温度 (0.4-0.7): 均衡 | 高温度 (0.8-1.0): 创意、多样
+              </p>
             </div>
 
             {/* 最大 Token 数 */}
