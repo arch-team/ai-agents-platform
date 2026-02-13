@@ -4,18 +4,18 @@
 
 ## 当前状态
 
-- **阶段**: Phase 4 企业成熟 (12-18 月) — M11 平台成熟化 任务拆解完成，准备执行
-- **里程碑**: Phase 4: M10-prep ✅ → M10 ✅ → **M11 (进行中)** → M12
+- **阶段**: Phase 4 企业成熟 (12-18 月) — **M11 ✅ 已完成**, 准备进入 M12
+- **里程碑**: Phase 4: M10-prep ✅ → M10 ✅ → **M11 ✅** → M12
 - **变更积压**: Phase 2-3: 24/24 ✅ | Phase 4: 15/19 | AgentCore P3: 2/5
 - **关键发现**: 无当前阻断项
 - **Dev 环境**: 后端 ECS (256 CPU/512 MiB) + 前端 S3 + CORS + Bedrock IAM ✅ | ALB `ai-agents-dev-546356512.us-east-1.elb.amazonaws.com`
 - **Prod 环境**: 后端 ECS (512 CPU/1024 MiB/2 任务) + Aurora db.r6g.large (Writer+Reader) ✅ | ALB `ai-agents-prod-1419512933.us-east-1.elb.amazonaws.com`
 - **Stack 命名**: `ai-agents-plat-{stack}-{env}` (v1.4 规范化, 12 个 Stack 全部重建)
-- **测试**: 后端 1826 测试 + 基础设施 167 测试 + 前端 80+ 测试 = **2070+ 测试**
+- **测试**: 后端 1826 测试 + 基础设施 179 测试 + 前端 80+ 测试 = **2085+ 测试**
 - **后端模块**: 10 个 (9 业务 + shared) | **前端**: 190 源文件, FSD 架构, 12 页面 + 20 测试文件
 - **SDK**: claude-agent-sdk 0.1.35 | bedrock-agentcore 1.3.0
 - **环境策略**: Dev (开发+验证) + Prod (生产)，无 Staging (v1.4 简化)
-- **下一步**: M11 #7 — CDK 增强: Prod Performance Insights + S3 版本管理 + infra 快照更新
+- **下一步**: M12 规划拆解 — 全公司推广 + AgentCore Identity/Memory 深度集成
 
 ## 模块状态
 
@@ -530,8 +530,8 @@
 
 | # | 任务 | 状态 | 依赖 | 参考规范 | 会话 |
 |---|------|:----:|:----:|---------|------|
-| 7 | CDK 增强: Prod Performance Insights 启用 + S3 知识库文档版本管理 + infra 快照测试更新 | 待开始 | - | infra 规范 | - |
-| 8 | 灾备演练方案文档 (RPO < 5min / RTO < 15min) + Aurora 快照恢复验证脚本 + S3 版本回滚测试 | 待开始 | #7 | roadmap.md §5.4 | - |
+| 7 | CDK 增强: Prod Performance Insights + KnowledgeDocsBucket (S3 版本管理) + infra 179 测试 | 已完成 | - | infra 规范 | 2026-02-13 |
+| 8 | 灾备演练方案 (RPO<5min/RTO<15min) + Aurora 快照恢复脚本 + S3 版本回滚脚本 | 已完成 | #7 | roadmap.md §5.4 | 2026-02-13 |
 | 9 | C-S4-8: Dev 环境非工作时段定时缩减 (ECS Scheduled Scaling, UTC 12:00 缩减到 0, UTC 00:00 恢复到 1) | 已完成 | - | roadmap.md §5.4 成本优化 | 2026-02-13 |
 
 #### E. Agent 体验优化
@@ -545,8 +545,8 @@
 
 | # | 任务 | 状态 | 依赖 | 参考规范 | 会话 |
 |---|------|:----:|:----:|---------|------|
-| 12 | Opus 4.6 深度集成评估 (ADR): 适用场景分析 (复杂推理/代码生成 vs 成本) + 模型选择指南文档 (场景 → 推荐模型 → 成本矩阵) | 待开始 | #2 | ADR 流程 | - |
-| 13 | M11 质量验收: ruff + mypy + pytest 全通过 + 前端测试 + 架构合规测试更新 + insights 覆盖率 >= 85% | 待开始 | #1-#12 | `rules/checklist.md` | - |
+| 12 | ADR-010: Opus 4.6 模型集成评估 — 维持 Haiku 默认 + 模型选择指南 (简单→Haiku/代码→Sonnet/推理→Opus) | 已完成 | #2 | ADR 流程 | 2026-02-13 |
+| 13 | M11 质量验收: ruff ✅ mypy ✅ 1826 后端测试 ✅ 179 infra 测试 ✅ 前端 TS ✅ 架构合规 14/14 ✅ | 已完成 | #1-#12 | `rules/checklist.md` | 2026-02-13 |
 
 #### M11 并行策略
 
@@ -800,8 +800,8 @@
 
 | # | 日期 | 类型 | 完成项 | 关键决策 |
 |---|------|------|-------|---------|
+| 39 | 2026-02-14 | **M11 关闭** | **M11 全 13 任务完成**: #7 CDK 增强 (Performance Insights + S3 KnowledgeDocsBucket) + #8 灾备演练方案 (文档+2脚本) + #12 ADR-010 Opus 4.6 评估 + #13 质量验收; 2085+ 测试全通过; M11 关闭, 进入 M12 | ADR-010: 维持 Haiku 默认; 灾备 RPO<5min/RTO<15min |
 | 38 | 2026-02-13 | M11 (D-E 完成) | **M11 #9/#10/#11 完成 (Agent Teams 并行)**: ECS Scheduled Scaling (Dev 成本降 50%) + Agent 预览端点 (execution 模块, §4.4 架构修正) + 前端测试面板/Prompt Editor 增强; SDK 升级 0.1.35+1.3.0; audit 导入修复; 1826 后端 + 167 infra 测试全通过 | preview 归 execution (职责域); AgentNotAvailableError (409) |
 | 37 | 2026-02-13 | M11 (A-C 完成) | **M11 #1-#6 全部完成 (Agent Teams 并行)**: CostExplorerAdapter + model_id 修复 + MessageReceivedEvent 订阅 + 3 新端点 + 22 新测试 (96 总) + 前端 4 组件对齐; 1817 后端测试全通过 | 弃用 BedrockCostCalculator; estimated_cost=0.0; Cost Explorer 真实账单 |
 | 36 | 2026-02-13 | M11 任务拆解 | **M11 13 任务拆解完成**: 深度探索 insights/execution/infra 现状; 发现前后端 API 不匹配; 砍掉 ROI 虚荣指标 + avg_response_time_ms 虚字段; 6 个工作流 A-F 并行策略 | insights 聚焦成本归因和使用量 (砍 ROI); 灾备/体验/评估并行 |
 | 35 | 2026-02-13 | M10 (大幅推进) | **M10 15/17 任务完成 (Agent Teams 并行)**: audit 模块全 10 任务 (65 测试, 5 端点, 23 事件订阅 + 中间件); 前端 5 页面 (Knowledge/Templates/ToolCatalog/Insights/Evaluation, 48+ 文件); 变更修复 6 项 (C-S0-10 bedrock-agentcore 1.2.1 + C-S1-9/10 Ruff/MyPy + C-S2-6/7/8); 1760 后端测试; 全量验收通过 | Opus 4.6 默认不升级 (成本); audit append-only; 3 模型常量 |
-| 34 | 2026-02-13 | 季度评审 v1.6 | **v1.6 四维度评审**: 代码审计 B+89 + 技术扫描 + 经验教训 + M10 拆解; Docker 构建推送 ECR; 5 项新变更注入 | bedrock-agentcore 升级; Strands 战略观察; 评审验证轮 |
