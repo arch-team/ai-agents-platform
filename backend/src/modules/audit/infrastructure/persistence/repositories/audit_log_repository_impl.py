@@ -3,6 +3,7 @@
 from datetime import datetime
 
 from sqlalchemy import ColumnElement, func, select
+from sqlalchemy.orm import InstrumentedAttribute
 
 from src.modules.audit.domain.entities.audit_log import AuditAction, AuditCategory, AuditLog
 from src.modules.audit.domain.repositories.audit_log_repository import IAuditLogRepository
@@ -128,25 +129,30 @@ class AuditLogRepositoryImpl(
         offset = (page - 1) * page_size
         return await self._list_and_count(*filters, offset=offset, limit=page_size)
 
-    async def count_by_category(
+    async def _count_grouped_by(
         self,
+        column: InstrumentedAttribute[str] | ColumnElement[str],
         start_date: datetime | None = None,
         end_date: datetime | None = None,
     ) -> dict[str, int]:
-        """按分类统计审计日志数量。"""
+        """按指定列分组统计审计日志数量。"""
         filters: list[ColumnElement[bool]] = []
         if start_date is not None:
             filters.append(AuditLogModel.occurred_at >= start_date)
         if end_date is not None:
             filters.append(AuditLogModel.occurred_at <= end_date)
 
-        stmt = (
-            select(AuditLogModel.category, func.count())
-            .where(*filters)
-            .group_by(AuditLogModel.category)
-        )
+        stmt = select(column, func.count()).where(*filters).group_by(column)
         result = await self._session.execute(stmt)
         return dict(result.all())  # type: ignore[arg-type]
+
+    async def count_by_category(
+        self,
+        start_date: datetime | None = None,
+        end_date: datetime | None = None,
+    ) -> dict[str, int]:
+        """按分类统计审计日志数量。"""
+        return await self._count_grouped_by(AuditLogModel.category, start_date, end_date)
 
     async def count_by_action(
         self,
@@ -154,19 +160,7 @@ class AuditLogRepositoryImpl(
         end_date: datetime | None = None,
     ) -> dict[str, int]:
         """按操作类型统计审计日志数量。"""
-        filters: list[ColumnElement[bool]] = []
-        if start_date is not None:
-            filters.append(AuditLogModel.occurred_at >= start_date)
-        if end_date is not None:
-            filters.append(AuditLogModel.occurred_at <= end_date)
-
-        stmt = (
-            select(AuditLogModel.action, func.count())
-            .where(*filters)
-            .group_by(AuditLogModel.action)
-        )
-        result = await self._session.execute(stmt)
-        return dict(result.all())  # type: ignore[arg-type]
+        return await self._count_grouped_by(AuditLogModel.action, start_date, end_date)
 
     async def get_by_resource(
         self,

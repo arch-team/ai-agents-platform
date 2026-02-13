@@ -4,6 +4,7 @@ export { TestSuiteDetail } from './ui/TestSuiteDetail';
 export { TestSuiteCreateDialog } from './ui/TestSuiteCreateDialog';
 export { TestCaseForm } from './ui/TestCaseForm';
 export { TestSuiteStatusBadge } from './ui/TestSuiteStatusBadge';
+export { EvaluationRunStatusBadge } from './ui/EvaluationRunStatusBadge';
 export { EvaluationRunList } from './ui/EvaluationRunList';
 export { EvaluationResults } from './ui/EvaluationResults';
 export { RunEvaluationDialog } from './ui/RunEvaluationDialog';

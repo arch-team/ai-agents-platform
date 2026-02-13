@@ -1,7 +1,7 @@
 // 文档上传组件
 import { useRef } from 'react';
 
-import { Button, ErrorMessage } from '@/shared/ui';
+import { ErrorMessage } from '@/shared/ui';
 import { extractApiError } from '@/shared/lib/extractApiError';
 
 import { useUploadDocument } from '../api/queries';

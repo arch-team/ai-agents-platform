@@ -440,7 +440,7 @@ exports[`Snapshot Tests AgentCoreStack 快照匹配 1`] = `
           "rules_to_suppress": [
             {
               "id": "AwsSolutions-IAM5",
-              "reason": "Bedrock InvokeModel requires wildcard resources for multi-model invocation; Runtime execution role is auto-created by L2 Construct",
+              "reason": "Bedrock InvokeModel uses scoped wildcards (foundation-model/*, inference-profile/*); Runtime execution role is auto-created by L2 Construct",
             },
           ],
         },
@@ -543,7 +543,7 @@ exports[`Snapshot Tests AgentCoreStack 快照匹配 1`] = `
           "rules_to_suppress": [
             {
               "id": "AwsSolutions-IAM5",
-              "reason": "Bedrock InvokeModel requires wildcard resources for multi-model invocation; Runtime execution role is auto-created by L2 Construct",
+              "reason": "Bedrock InvokeModel uses scoped wildcards (foundation-model/*, inference-profile/*); Runtime execution role is auto-created by L2 Construct",
             },
           ],
         },
@@ -572,7 +572,7 @@ exports[`Snapshot Tests AgentCoreStack 快照匹配 1`] = `
           "rules_to_suppress": [
             {
               "id": "AwsSolutions-IAM5",
-              "reason": "Bedrock InvokeModel requires wildcard resources for multi-model invocation; Runtime execution role is auto-created by L2 Construct",
+              "reason": "Bedrock InvokeModel uses scoped wildcards (foundation-model/*, inference-profile/*); Runtime execution role is auto-created by L2 Construct",
             },
           ],
         },
@@ -701,7 +701,11 @@ exports[`Snapshot Tests AgentCoreStack 快照匹配 1`] = `
                 "bedrock:ListInferenceProfiles",
               ],
               "Effect": "Allow",
-              "Resource": "*",
+              "Resource": [
+                "arn:aws:bedrock:*::foundation-model/*",
+                "arn:aws:bedrock:*:000000000000:inference-profile/*",
+                "arn:aws:bedrock:*:000000000000:application-inference-profile/*",
+              ],
             },
             {
               "Action": [
@@ -1164,7 +1168,7 @@ exports[`Snapshot Tests ComputeStack 快照匹配 1`] = `
               "Timeout": 5,
             },
             "Image": {
-              "Fn::Sub": "000000000000.dkr.ecr.us-east-1.\${AWS::URLSuffix}/cdk-hnb659fds-container-assets-000000000000-us-east-1:df3e8bb14fc94768762b64d928e88d24c44a660d24ce066d74e5ed1c0e5ffb64",
+              "Fn::Sub": "000000000000.dkr.ecr.us-east-1.\${AWS::URLSuffix}/cdk-hnb659fds-container-assets-000000000000-us-east-1:883655674fa6b20de281b0e5450504f531ccc28b8aa321379f6f50593bfd8cfb",
             },
             "LogConfiguration": {
               "LogDriver": "awslogs",

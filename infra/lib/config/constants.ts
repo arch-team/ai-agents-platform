@@ -40,3 +40,22 @@ export function isDev(envName: EnvironmentName): boolean {
 export function isProd(envName: EnvironmentName): boolean {
   return envName === 'prod';
 }
+
+/** Bedrock 调用模型所需的 IAM actions (ComputeStack + AgentCoreStack 共享) */
+export const BEDROCK_INVOKE_ACTIONS = [
+  'bedrock:InvokeModel',
+  'bedrock:InvokeModelWithResponseStream',
+  'bedrock:ListInferenceProfiles',
+] as const;
+
+/**
+ * 获取 Bedrock 调用权限的 IAM 资源 ARN 列表。
+ * @remarks 限制到 foundation-model 和 inference-profile 资源
+ */
+export function getBedrockResourceArns(accountId: string): string[] {
+  return [
+    'arn:aws:bedrock:*::foundation-model/*',
+    `arn:aws:bedrock:*:${accountId}:inference-profile/*`,
+    `arn:aws:bedrock:*:${accountId}:application-inference-profile/*`,
+  ];
+}

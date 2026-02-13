@@ -7,14 +7,9 @@ import { formatDateTime } from '@/shared/lib/formatDate';
 import { Spinner, ErrorMessage, Pagination } from '@/shared/ui';
 
 import { useEvaluationRuns } from '../api/queries';
-import type { EvaluationRunStatus, EvaluationRunFilters } from '../api/types';
+import type { EvaluationRunFilters } from '../api/types';
 
-const RUN_STATUS_CONFIG: Record<EvaluationRunStatus, { label: string; className: string }> = {
-  pending: { label: '等待中', className: 'bg-gray-100 text-gray-700' },
-  running: { label: '运行中', className: 'bg-blue-100 text-blue-700' },
-  completed: { label: '已完成', className: 'bg-green-100 text-green-700' },
-  failed: { label: '失败', className: 'bg-red-100 text-red-700' },
-};
+import { EvaluationRunStatusBadge } from './EvaluationRunStatusBadge';
 
 interface EvaluationRunListProps {
   /** 按测试集 ID 筛选 */
@@ -59,10 +54,6 @@ export function EvaluationRunList({ suiteId, onSelect }: EvaluationRunListProps)
     <div className="space-y-4">
       <div className="divide-y divide-gray-200 rounded-lg border border-gray-200">
         {data.items.map((run) => {
-          const statusConfig = RUN_STATUS_CONFIG[run.status as EvaluationRunStatus] ?? {
-            label: run.status,
-            className: 'bg-gray-100 text-gray-700',
-          };
           const passRate =
             run.total_cases > 0 ? ((run.passed_cases / run.total_cases) * 100).toFixed(1) : '0.0';
 
@@ -77,11 +68,7 @@ export function EvaluationRunList({ suiteId, onSelect }: EvaluationRunListProps)
               <div>
                 <div className="flex items-center gap-3">
                   <span className="text-sm font-medium text-gray-900">运行 #{run.id}</span>
-                  <span
-                    className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${statusConfig.className}`}
-                  >
-                    {statusConfig.label}
-                  </span>
+                  <EvaluationRunStatusBadge status={run.status} />
                 </div>
                 <p className="mt-1 text-xs text-gray-500">
                   测试集 #{run.suite_id} | Agent #{run.agent_id} |{' '}

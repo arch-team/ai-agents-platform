@@ -8,12 +8,7 @@ import { Card, Spinner, ErrorMessage } from '@/shared/ui';
 import { useEvaluationRun, useEvaluationResults } from '../api/queries';
 import type { EvaluationRunStatus } from '../api/types';
 
-const RUN_STATUS_CONFIG: Record<EvaluationRunStatus, { label: string; className: string }> = {
-  pending: { label: '等待中', className: 'text-gray-600' },
-  running: { label: '运行中', className: 'text-blue-600' },
-  completed: { label: '已完成', className: 'text-green-600' },
-  failed: { label: '失败', className: 'text-red-600' },
-};
+import { RUN_STATUS_TEXT_CONFIG } from './runStatusConfig';
 
 interface EvaluationResultsProps {
   runId: number;
@@ -35,7 +30,7 @@ export function EvaluationResults({ runId }: EvaluationResultsProps) {
     return <ErrorMessage error={extractApiError(runError, '加载评估运行详情失败')} />;
   }
 
-  const statusConfig = RUN_STATUS_CONFIG[run.status as EvaluationRunStatus] ?? {
+  const statusConfig = RUN_STATUS_TEXT_CONFIG[run.status as EvaluationRunStatus] ?? {
     label: run.status,
     className: 'text-gray-600',
   };

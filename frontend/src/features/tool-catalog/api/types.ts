@@ -5,6 +5,13 @@ import type { PageResponse } from '@/shared/types';
 // 工具类型
 export type ToolType = 'MCP_SERVER' | 'API' | 'FUNCTION';
 
+// 工具类型显示名
+export const TOOL_TYPE_LABELS: Record<ToolType, string> = {
+  MCP_SERVER: 'MCP Server',
+  API: 'API',
+  FUNCTION: 'Function',
+};
+
 // 工具状态
 export type ToolStatus = 'DRAFT' | 'PENDING_REVIEW' | 'APPROVED' | 'REJECTED' | 'DEPRECATED';
 

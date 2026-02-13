@@ -14,7 +14,14 @@ import {
 } from '@aws-cdk/aws-bedrock-agentcore-alpha';
 import { NagSuppressions } from 'cdk-nag';
 import { Construct } from 'constructs';
-import { PROJECT_NAME, getRemovalPolicy, isProd, type BaseStackProps } from '../config';
+import {
+  PROJECT_NAME,
+  getRemovalPolicy,
+  isProd,
+  BEDROCK_INVOKE_ACTIONS,
+  getBedrockResourceArns,
+  type BaseStackProps,
+} from '../config';
 
 export interface AgentCoreStackProps extends BaseStackProps {
   /** Agent Runtime 所在的 VPC */
@@ -82,14 +89,12 @@ export class AgentCoreStack extends cdk.Stack {
     });
 
     // 为 Runtime 的执行角色添加 Bedrock InvokeModel 权限
+    // 限制到 foundation-model 和 inference-profile 资源 (与 ComputeStack 一致)
+    const accountId = cdk.Stack.of(this).account;
     this.runtime.addToRolePolicy(
       new iam.PolicyStatement({
-        actions: [
-          'bedrock:InvokeModel',
-          'bedrock:InvokeModelWithResponseStream',
-          'bedrock:ListInferenceProfiles',
-        ],
-        resources: ['*'],
+        actions: [...BEDROCK_INVOKE_ACTIONS],
+        resources: getBedrockResourceArns(accountId),
       }),
     );
 
@@ -134,7 +139,7 @@ export class AgentCoreStack extends cdk.Stack {
         {
           id: 'AwsSolutions-IAM5',
           reason:
-            'Bedrock InvokeModel requires wildcard resources for multi-model invocation; Runtime execution role is auto-created by L2 Construct',
+            'Bedrock InvokeModel uses scoped wildcards (foundation-model/*, inference-profile/*); Runtime execution role is auto-created by L2 Construct',
         },
       ],
       true,

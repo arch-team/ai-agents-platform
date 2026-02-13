@@ -43,7 +43,7 @@ export default function InsightsPage() {
       <InsightsSummary dateRange={dateRange} />
 
       {/* 图表区域 */}
-      <div className="grid gap-6 lg:grid-cols-1">
+      <div className="space-y-6">
         <UsageTrendChart dateRange={dateRange} />
         <CostBreakdownChart dateRange={dateRange} />
       </div>

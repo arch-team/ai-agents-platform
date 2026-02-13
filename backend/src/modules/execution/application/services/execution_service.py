@@ -22,6 +22,7 @@ from src.modules.execution.application.interfaces.agent_runtime import (
     AgentResponseChunk,
     AgentTool,
     IAgentRuntime,
+    resolve_stream,
 )
 from src.modules.execution.application.interfaces.llm_client import (
     ILLMClient,
@@ -243,11 +244,7 @@ class ExecutionService:
             total_output_tokens = 0
 
             # 根据 runtime_type 路由到对应的流式生成器
-            source = (
-                self._generate_agent_stream(ctx)
-                if use_agent
-                else self._generate_llm_stream(ctx)
-            )
+            source = self._generate_agent_stream(ctx) if use_agent else self._generate_llm_stream(ctx)
             async for chunk in source:
                 if chunk.content:
                     collected_content += chunk.content
@@ -463,21 +460,13 @@ class ExecutionService:
             return response.content, total_tokens
 
     async def _generate_agent_stream(self, ctx: _SendContext) -> AsyncIterator[AgentResponseChunk]:
-        """Agent 路径的流式生成器。
-
-        兼容 async generator (直接返回 AsyncIterator) 和
-        async def (返回 Coroutine 需要 await) 两种实现方式。
-        """
+        """Agent 路径的流式生成器。"""
         if self._agent_runtime is None:
             msg = "Agent runtime 未配置"
             raise ValueError(msg)
         tools = await self._get_agent_tools()
         request = self._build_agent_request(ctx, tools)
-        result = self._agent_runtime.execute_stream(request)
-        if hasattr(result, "__anext__"):
-            stream: AsyncIterator[AgentResponseChunk] = result
-        else:
-            stream = await result  # type: ignore[misc]
+        stream = await resolve_stream(self._agent_runtime, request)
         async for chunk in stream:
             yield chunk
 

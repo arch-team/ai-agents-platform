@@ -143,6 +143,7 @@ export function TestSuiteDetail({ suiteId, onBack, onRunEvaluation }: TestSuiteD
         {editingCase && (
           <div className="mb-4">
             <TestCaseForm
+              key={editingCase.id}
               suiteId={suiteId}
               editCase={editingCase}
               onSuccess={() => setEditingCase(null)}

@@ -19,7 +19,7 @@ export {
   useDeprecateTool,
 } from './api/queries';
 
-// 类型
+// 类型与常量
 export type {
   Tool,
   ToolType,
@@ -30,3 +30,4 @@ export type {
   RejectToolRequest,
   ToolListResponse,
 } from './api/types';
+export { TOOL_TYPE_LABELS } from './api/types';

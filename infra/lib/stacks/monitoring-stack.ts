@@ -147,15 +147,18 @@ export class MonitoringStack extends cdk.Stack {
     targetGroup: elbv2.IApplicationTargetGroup,
     envName: string,
   ): void {
+    /** ALB 告警使用即时触发 (单个数据点) */
+    const ALB_ALARM_OVERRIDES = { evaluationPeriods: 1 } as const;
+
     // ALB UnHealthyHostCount 告警 — 有不健康实例
     this.createAlarm('UnhealthyHostAlarm', {
       alarmName: `${PROJECT_NAME}-${envName}-alb-unhealthy-hosts`,
       alarmDescription: 'ALB target group has unhealthy hosts',
       metric: targetGroup.metrics.unhealthyHostCount({ period: METRIC_PERIOD, statistic: 'Maximum' }),
       threshold: 1,
-      evaluationPeriods: 1,
+      ...ALARM_DEFAULTS,
+      ...ALB_ALARM_OVERRIDES,
       comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
-      treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
     });
 
     // ALB 5XX 错误告警 — 5 分钟内超过 10 个 5XX 响应
@@ -167,9 +170,9 @@ export class MonitoringStack extends cdk.Stack {
         statistic: 'Sum',
       }),
       threshold: 10,
-      evaluationPeriods: 1,
+      ...ALARM_DEFAULTS,
+      ...ALB_ALARM_OVERRIDES,
       comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
-      treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
     });
   }
 

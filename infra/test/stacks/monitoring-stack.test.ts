@@ -5,40 +5,49 @@ import { ComputeStack } from '../../lib/stacks/compute-stack';
 import { DatabaseStack } from '../../lib/stacks/database-stack';
 import { createCrossStackComputeDependencies } from '../helpers/test-utils';
 
+/** 唯一后缀计数器，确保同一 App 内 Stack 名称不冲突 */
+let monitoringDepsCounter = 0;
+
+/** 创建 MonitoringStack 测试所需的完整依赖链 */
+function createMonitoringDeps(app: cdk.App) {
+  const suffix = monitoringDepsCounter++;
+  const {
+    vpc,
+    dbSecurityGroup,
+    databaseSecret,
+    jwtSecretArn,
+    databaseEndpoint,
+    encryptionKey,
+    encryptionKeyArn,
+  } = createCrossStackComputeDependencies(app);
+
+  const databaseStack = new DatabaseStack(app, `TestDatabaseStack-${suffix}`, {
+    vpc,
+    dbSecurityGroup,
+    encryptionKey,
+    envName: 'dev',
+  });
+
+  const computeStack = new ComputeStack(app, `TestComputeStack-${suffix}`, {
+    vpc,
+    dbSecurityGroup,
+    databaseSecret,
+    databaseEndpoint,
+    encryptionKeyArn,
+    jwtSecretArn,
+    envName: 'dev',
+  });
+
+  return { databaseStack, computeStack };
+}
+
 describe('MonitoringStack', () => {
   let template: Template;
   let stack: MonitoringStack;
 
   beforeEach(() => {
     const app = new cdk.App();
-
-    // 创建依赖 Stack
-    const {
-      vpc,
-      dbSecurityGroup,
-      databaseSecret,
-      jwtSecretArn,
-      databaseEndpoint,
-      encryptionKey,
-      encryptionKeyArn,
-    } = createCrossStackComputeDependencies(app);
-
-    const databaseStack = new DatabaseStack(app, 'TestDatabaseStack', {
-      vpc,
-      dbSecurityGroup,
-      encryptionKey,
-      envName: 'dev',
-    });
-
-    const computeStack = new ComputeStack(app, 'TestComputeStack', {
-      vpc,
-      dbSecurityGroup,
-      databaseSecret,
-      databaseEndpoint,
-      encryptionKeyArn,
-      jwtSecretArn,
-      envName: 'dev',
-    });
+    const { databaseStack, computeStack } = createMonitoringDeps(app);
 
     stack = new MonitoringStack(app, 'TestMonitoringStack', {
       cluster: databaseStack.cluster,
@@ -176,32 +185,7 @@ describe('MonitoringStack', () => {
   describe('无 alertEmail 时', () => {
     it('不应创建邮件订阅', () => {
       const app = new cdk.App();
-      const {
-        vpc,
-        dbSecurityGroup,
-        databaseSecret,
-        jwtSecretArn,
-        databaseEndpoint,
-        encryptionKey,
-        encryptionKeyArn,
-      } = createCrossStackComputeDependencies(app);
-
-      const databaseStack = new DatabaseStack(app, 'TestDatabaseStack2', {
-        vpc,
-        dbSecurityGroup,
-        encryptionKey,
-        envName: 'dev',
-      });
-
-      const computeStack = new ComputeStack(app, 'TestComputeStack2', {
-        vpc,
-        dbSecurityGroup,
-        databaseSecret,
-        databaseEndpoint,
-        encryptionKeyArn,
-        jwtSecretArn,
-        envName: 'dev',
-      });
+      const { databaseStack, computeStack } = createMonitoringDeps(app);
 
       const noEmailStack = new MonitoringStack(app, 'TestMonitoringNoEmail', {
         cluster: databaseStack.cluster,

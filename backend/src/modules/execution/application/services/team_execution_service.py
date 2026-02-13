@@ -14,6 +14,7 @@ from src.modules.execution.application.interfaces.agent_runtime import (
     AgentRequest,
     AgentResponseChunk,
     IAgentRuntime,
+    resolve_stream,
 )
 from src.modules.execution.domain.entities.team_execution import TeamExecution
 from src.modules.execution.domain.entities.team_execution_log import TeamExecutionLog
@@ -34,8 +35,9 @@ from src.modules.execution.domain.value_objects.team_execution_status import (
     TeamExecutionStatus,
 )
 from src.shared.application.dtos import PagedResult
+from src.shared.application.ownership import check_ownership
 from src.shared.domain.event_bus import event_bus
-from src.shared.domain.exceptions import DomainError, ForbiddenError
+from src.shared.domain.exceptions import DomainError
 from src.shared.domain.interfaces.agent_querier import ActiveAgentInfo, IAgentQuerier
 
 
@@ -143,12 +145,14 @@ class TeamExecutionService:
     ) -> PagedResult[TeamExecutionDTO]:
         """分页列出用户的团队执行。"""
         offset = (page - 1) * page_size
-        executions = await self._execution_repo.list_by_user(
-            user_id=user_id,
-            offset=offset,
-            limit=page_size,
+        executions, total = await asyncio.gather(
+            self._execution_repo.list_by_user(
+                user_id=user_id,
+                offset=offset,
+                limit=page_size,
+            ),
+            self._execution_repo.count_by_user(user_id),
         )
-        total = await self._execution_repo.count_by_user(user_id)
         return PagedResult(
             items=[self._to_dto(e) for e in executions],
             total=total,
@@ -260,8 +264,13 @@ class TeamExecutionService:
 
         try:
             await self._do_execute(
-                execution_id, dto, user_id, agent_info,
-                bg_exec_repo, bg_log_repo, bg_commit,
+                execution_id,
+                dto,
+                user_id,
+                agent_info,
+                bg_exec_repo,
+                bg_log_repo,
+                bg_commit,
             )
         finally:
             if bg_close is not None:
@@ -409,7 +418,7 @@ class TeamExecutionService:
                             max_retries=max_retries,
                         )
                         last_error = e
-                        await asyncio.sleep(retry_delay * (2 ** attempt))
+                        await asyncio.sleep(retry_delay * (2**attempt))
                         # 重置累积状态
                         content_parts.clear()
                         sequence = 0
@@ -456,16 +465,8 @@ class TeamExecutionService:
         self,
         request: AgentRequest,
     ) -> AsyncIterator[AgentResponseChunk]:
-        """消费 agent_runtime 流式响应。
-
-        兼容 async generator (直接返回 AsyncIterator) 和
-        async def (返回 Coroutine 需要 await) 两种实现方式。
-        """
-        result = self._agent_runtime.execute_stream(request)
-        if hasattr(result, "__anext__"):
-            stream: AsyncIterator[AgentResponseChunk] = result
-        else:
-            stream = await result  # type: ignore[misc]
+        """消费 agent_runtime 流式响应。"""
+        stream = await resolve_stream(self._agent_runtime, request)
         async for chunk in stream:
             yield chunk
 
@@ -479,9 +480,7 @@ class TeamExecutionService:
 
     @staticmethod
     def _check_ownership(execution: TeamExecution, user_id: int) -> None:
-        if execution.user_id != user_id:
-            msg = "无权访问此团队执行"
-            raise ForbiddenError(msg)
+        check_ownership(execution, user_id, owner_field="user_id", error_code="FORBIDDEN_TEAM_EXECUTION")
 
     @staticmethod
     def _to_dto(execution: TeamExecution) -> TeamExecutionDTO:

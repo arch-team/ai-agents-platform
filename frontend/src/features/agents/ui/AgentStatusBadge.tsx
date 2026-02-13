@@ -1,5 +1,5 @@
-import { cn } from '@/shared/lib/cn';
-
+// Agent 状态徽章组件
+import { StatusBadge } from '@/shared/ui';
 import { AGENT_STATUS_CONFIG } from '@/entities/agent';
 import type { AgentStatus } from '@/entities/agent';
 
@@ -9,17 +9,5 @@ interface AgentStatusBadgeProps {
 }
 
 export function AgentStatusBadge({ status, className }: AgentStatusBadgeProps) {
-  const config = AGENT_STATUS_CONFIG[status];
-
-  return (
-    <span
-      className={cn(
-        'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium',
-        config.className,
-        className,
-      )}
-    >
-      {config.label}
-    </span>
-  );
+  return <StatusBadge status={status} config={AGENT_STATUS_CONFIG} className={className} />;
 }

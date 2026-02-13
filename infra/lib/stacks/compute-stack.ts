@@ -8,7 +8,7 @@ import * as kms from 'aws-cdk-lib/aws-kms';
 import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
 import { NagSuppressions } from 'cdk-nag';
 import { Construct } from 'constructs';
-import type { BaseStackProps } from '../config';
+import { BEDROCK_INVOKE_ACTIONS, getBedrockResourceArns, type BaseStackProps } from '../config';
 import { AlbConstruct } from '../constructs/alb';
 import { EcsServiceConstruct } from '../constructs/ecs';
 
@@ -149,16 +149,8 @@ export class ComputeStack extends cdk.Stack {
     const accountId = cdk.Stack.of(this).account;
     ecsConstruct.service.taskDefinition.taskRole.addToPrincipalPolicy(
       new iam.PolicyStatement({
-        actions: [
-          'bedrock:InvokeModel',
-          'bedrock:InvokeModelWithResponseStream',
-          'bedrock:ListInferenceProfiles',
-        ],
-        resources: [
-          'arn:aws:bedrock:*::foundation-model/*',
-          `arn:aws:bedrock:*:${accountId}:inference-profile/*`,
-          `arn:aws:bedrock:*:${accountId}:application-inference-profile/*`,
-        ],
+        actions: [...BEDROCK_INVOKE_ACTIONS],
+        resources: getBedrockResourceArns(accountId),
       }),
     );
 

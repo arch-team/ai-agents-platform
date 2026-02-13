@@ -2,18 +2,13 @@
 
 import { Card, Button, Spinner, ErrorMessage } from '@/shared/ui';
 import { extractApiError } from '@/shared/lib/extractApiError';
+import { formatDateTime } from '@/shared/lib/formatDate';
 
 import { useTool, useSubmitTool, useDeprecateTool, useDeleteTool } from '../api/queries';
+import { TOOL_TYPE_LABELS } from '../api/types';
 
 import { ToolStatusBadge } from './ToolStatusBadge';
 import { ToolApprovalPanel } from './ToolApprovalPanel';
-
-// 工具类型显示名
-const TOOL_TYPE_LABELS: Record<string, string> = {
-  MCP_SERVER: 'MCP Server',
-  API: 'API',
-  FUNCTION: 'Function',
-};
 
 interface ToolDetailProps {
   toolId: string;
@@ -122,13 +117,13 @@ export function ToolDetail({ toolId, onBack }: ToolDetailProps) {
           <div>
             <dt className="text-xs font-medium text-gray-500">创建时间</dt>
             <dd className="mt-1 text-sm text-gray-900">
-              {new Date(tool.created_at).toLocaleString('zh-CN')}
+              {formatDateTime(tool.created_at)}
             </dd>
           </div>
           <div>
             <dt className="text-xs font-medium text-gray-500">更新时间</dt>
             <dd className="mt-1 text-sm text-gray-900">
-              {new Date(tool.updated_at).toLocaleString('zh-CN')}
+              {formatDateTime(tool.updated_at)}
             </dd>
           </div>
           {tool.approved_by && (

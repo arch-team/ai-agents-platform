@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Button, Card, Spinner, ErrorMessage } from '@/shared/ui';
 import { extractApiError } from '@/shared/lib/extractApiError';
 import { formatDateTime } from '@/shared/lib/formatDate';
+import { formatFileSize } from '@/shared/lib/formatFileSize';
 
 import {
   useKnowledgeBase,
@@ -60,13 +61,6 @@ export function KnowledgeDetail({ knowledgeBaseId, onBack }: KnowledgeDetailProp
       </div>
     );
   }
-
-  // 格式化文件大小
-  const formatFileSize = (bytes: number): string => {
-    if (bytes < 1024) return `${bytes} B`;
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-  };
 
   return (
     <div className="space-y-6">

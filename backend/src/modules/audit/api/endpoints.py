@@ -2,6 +2,7 @@
 
 import csv
 import io
+from datetime import datetime
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query
@@ -69,8 +70,6 @@ async def list_audit_logs(
     end_date: str | None = None,
 ) -> AuditLogListResponse:
     """获取审计日志列表（分页 + 筛选）。"""
-    from datetime import datetime
-
     start_dt = datetime.fromisoformat(start_date) if start_date else None
     end_dt = datetime.fromisoformat(end_date) if end_date else None
 
@@ -102,8 +101,6 @@ async def get_audit_stats(
     end_date: str | None = None,
 ) -> AuditStatsResponse:
     """获取审计统计信息。"""
-    from datetime import datetime
-
     start_dt = datetime.fromisoformat(start_date) if start_date else None
     end_dt = datetime.fromisoformat(end_date) if end_date else None
 
@@ -152,8 +149,6 @@ async def export_audit_logs(
     max_rows: Annotated[int, Query(ge=1, le=100000)] = 10000,
 ) -> StreamingResponse:
     """导出审计日志为 CSV 文件。"""
-    from datetime import datetime
-
     start_dt = datetime.fromisoformat(start_date) if start_date else None
     end_dt = datetime.fromisoformat(end_date) if end_date else None
 
@@ -170,19 +165,47 @@ async def export_audit_logs(
     # 生成 CSV 内容
     output = io.StringIO()
     writer = csv.writer(output)
-    writer.writerow([
-        "id", "actor_id", "actor_name", "action", "category",
-        "resource_type", "resource_id", "resource_name", "module",
-        "ip_address", "request_method", "request_path", "status_code",
-        "result", "error_message", "occurred_at",
-    ])
+    writer.writerow(
+        [
+            "id",
+            "actor_id",
+            "actor_name",
+            "action",
+            "category",
+            "resource_type",
+            "resource_id",
+            "resource_name",
+            "module",
+            "ip_address",
+            "request_method",
+            "request_path",
+            "status_code",
+            "result",
+            "error_message",
+            "occurred_at",
+        ],
+    )
     for item in paged.items:
-        writer.writerow([
-            item.id, item.actor_id, item.actor_name, item.action, item.category,
-            item.resource_type, item.resource_id, item.resource_name, item.module,
-            item.ip_address, item.request_method, item.request_path, item.status_code,
-            item.result, item.error_message, item.occurred_at.isoformat(),
-        ])
+        writer.writerow(
+            [
+                item.id,
+                item.actor_id,
+                item.actor_name,
+                item.action,
+                item.category,
+                item.resource_type,
+                item.resource_id,
+                item.resource_name,
+                item.module,
+                item.ip_address,
+                item.request_method,
+                item.request_path,
+                item.status_code,
+                item.result,
+                item.error_message,
+                item.occurred_at.isoformat(),
+            ],
+        )
 
     csv_bytes = output.getvalue().encode("utf-8-sig")
     return StreamingResponse(

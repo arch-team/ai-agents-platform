@@ -3,6 +3,7 @@ from src.modules.execution.application.interfaces.agent_runtime import (
     AgentResponseChunk,
     AgentTool,
     IAgentRuntime,
+    resolve_stream,
 )
 from src.modules.execution.application.interfaces.llm_client import (
     ILLMClient,
@@ -27,4 +28,5 @@ __all__ = [
     "LLMResponse",
     "LLMStreamChunk",
     "MemoryItem",
+    "resolve_stream",
 ]

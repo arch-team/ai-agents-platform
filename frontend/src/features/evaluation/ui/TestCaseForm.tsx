@@ -1,6 +1,6 @@
 // 测试用例表单组件（添加/编辑）
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 
 import { extractApiError } from '@/shared/lib/extractApiError';
 import { Button, Textarea, ErrorMessage } from '@/shared/ui';
@@ -18,23 +18,16 @@ interface TestCaseFormProps {
   onCancel?: () => void;
 }
 
+// 注意: 当 editCase 变化时，调用方应使用 key={editCase?.id} 确保组件重新创建
 export function TestCaseForm({ suiteId, editCase, onSuccess, onCancel }: TestCaseFormProps) {
-  const [inputPrompt, setInputPrompt] = useState('');
-  const [expectedOutput, setExpectedOutput] = useState('');
-  const [evaluationCriteria, setEvaluationCriteria] = useState('');
+  const [inputPrompt, setInputPrompt] = useState(editCase?.input_prompt ?? '');
+  const [expectedOutput, setExpectedOutput] = useState(editCase?.expected_output ?? '');
+  const [evaluationCriteria, setEvaluationCriteria] = useState(editCase?.evaluation_criteria ?? '');
 
   const createMutation = useCreateTestCase();
   const updateMutation = useUpdateTestCase();
   const isEditing = !!editCase;
   const mutation = isEditing ? updateMutation : createMutation;
-
-  useEffect(() => {
-    if (editCase) {
-      setInputPrompt(editCase.input_prompt);
-      setExpectedOutput(editCase.expected_output);
-      setEvaluationCriteria(editCase.evaluation_criteria);
-    }
-  }, [editCase]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

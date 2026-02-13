@@ -4,9 +4,11 @@ import { useState } from 'react';
 
 import { Button, Card, Spinner, ErrorMessage, Pagination } from '@/shared/ui';
 import { extractApiError } from '@/shared/lib/extractApiError';
+import { formatDateTime } from '@/shared/lib/formatDate';
 
 import { useTools } from '../api/queries';
 import type { ToolStatus, ToolType, ToolFilters, Tool } from '../api/types';
+import { TOOL_TYPE_LABELS } from '../api/types';
 
 import { ToolStatusBadge } from './ToolStatusBadge';
 import { ToolRegisterDialog } from './ToolRegisterDialog';
@@ -28,13 +30,6 @@ const TYPE_OPTIONS: Array<{ value: ToolType | ''; label: string }> = [
   { value: 'API', label: 'API' },
   { value: 'FUNCTION', label: 'Function' },
 ];
-
-// 工具类型显示名
-const TOOL_TYPE_LABELS: Record<string, string> = {
-  MCP_SERVER: 'MCP Server',
-  API: 'API',
-  FUNCTION: 'Function',
-};
 
 interface ToolListProps {
   onSelect?: (id: string) => void;
@@ -66,7 +61,7 @@ function ToolCard({ tool, onSelect }: { tool: Tool; onSelect?: (id: string) => v
         <div className="mt-3 flex items-center gap-4 text-xs text-gray-400">
           <span>{TOOL_TYPE_LABELS[tool.tool_type] ?? tool.tool_type}</span>
           {tool.version && <span>v{tool.version}</span>}
-          <span>{new Date(tool.updated_at).toLocaleDateString('zh-CN')}</span>
+          <span>{formatDateTime(tool.updated_at)}</span>
         </div>
       </div>
     </Card>

@@ -68,3 +68,15 @@ class IAgentRuntime(ABC):
     @abstractmethod
     def execute_stream(self, request: AgentRequest) -> AsyncIterator[AgentResponseChunk]:
         """流式执行 Agent（逐步返回结果）。"""
+
+
+async def resolve_stream(runtime: IAgentRuntime, request: AgentRequest) -> AsyncIterator[AgentResponseChunk]:
+    """解析 execute_stream 返回值，兼容 async generator 和 async def 两种实现。
+
+    部分实现 (如 ClaudeAgentAdapter) 的 execute_stream 是 async def 返回 coroutine，
+    需 await 后才得到 AsyncIterator；而纯 async generator 实现则直接返回 AsyncIterator。
+    """
+    result = runtime.execute_stream(request)
+    if hasattr(result, "__anext__"):
+        return result
+    return await result  # type: ignore[misc,no-any-return]

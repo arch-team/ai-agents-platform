@@ -24,13 +24,15 @@ if TYPE_CHECKING:
 logger = structlog.get_logger(__name__)
 
 # 排除的非业务端点 — 不记录审计日志
-_EXCLUDED_PATHS: frozenset[str] = frozenset({
-    "/health",
-    "/health/ready",
-    "/docs",
-    "/redoc",
-    "/openapi.json",
-})
+_EXCLUDED_PATHS: frozenset[str] = frozenset(
+    {
+        "/health",
+        "/health/ready",
+        "/docs",
+        "/redoc",
+        "/openapi.json",
+    },
+)
 
 # 排除的路径前缀
 _EXCLUDED_PREFIXES: tuple[str, ...] = (

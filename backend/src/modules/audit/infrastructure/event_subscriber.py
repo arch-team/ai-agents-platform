@@ -231,11 +231,7 @@ class AuditEventSubscriber(IAuditEventSubscriber):
         # 从事件属性中提取资源 ID 和操作者 ID
         resource_id = str(getattr(event, mapping.resource_id_field, 0))
         actor_id = getattr(event, mapping.actor_id_field, 0)
-        resource_name = (
-            getattr(event, mapping.resource_name_field, None)
-            if mapping.resource_name_field
-            else None
-        )
+        resource_name = getattr(event, mapping.resource_name_field, None) if mapping.resource_name_field else None
 
         # 构建额外详情
         details: dict[str, str | int | float | bool | None] | None = None

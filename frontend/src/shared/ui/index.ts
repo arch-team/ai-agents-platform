@@ -5,6 +5,7 @@ export { Card } from './Card';
 export { Spinner } from './Spinner';
 export { ErrorMessage } from './ErrorMessage';
 export { Pagination } from './Pagination';
+export { StatusBadge } from './StatusBadge';
 export {
   HomeIcon,
   AgentIcon,

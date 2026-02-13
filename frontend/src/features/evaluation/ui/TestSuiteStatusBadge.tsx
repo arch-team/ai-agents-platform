@@ -1,6 +1,5 @@
 // 测试集状态徽章组件
-
-import { cn } from '@/shared/lib/cn';
+import { StatusBadge } from '@/shared/ui';
 
 import type { TestSuiteStatus } from '../api/types';
 
@@ -16,17 +15,5 @@ interface TestSuiteStatusBadgeProps {
 }
 
 export function TestSuiteStatusBadge({ status, className }: TestSuiteStatusBadgeProps) {
-  const config = STATUS_CONFIG[status];
-
-  return (
-    <span
-      className={cn(
-        'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium',
-        config.className,
-        className,
-      )}
-    >
-      {config.label}
-    </span>
-  );
+  return <StatusBadge status={status} config={STATUS_CONFIG} className={className} />;
 }
