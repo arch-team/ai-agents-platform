@@ -65,24 +65,24 @@ export function InsightsSummary({ dateRange }: InsightsSummaryProps) {
       <MetricCard
         label="Agent 总数"
         value={data.total_agents}
-        subLabel={`${data.active_agents} 个活跃`}
+      />
+      <MetricCard
+        label="活跃 Agent"
+        value={data.active_agents}
+        subLabel={`共 ${data.total_agents} 个`}
       />
       <MetricCard
         label="调用总量"
         value={formatNumber(data.total_invocations)}
       />
       <MetricCard
-        label="总成本"
+        label="总 Token"
+        value={formatNumber(data.total_tokens)}
+      />
+      <MetricCard
+        label="平台总成本"
         value={formatCurrency(data.total_cost)}
-      />
-      <MetricCard
-        label="平均响应时间"
-        value={`${data.avg_response_time_ms}ms`}
-      />
-      <MetricCard
-        label="活跃 Agent"
-        value={data.active_agents}
-        subLabel={`共 ${data.total_agents} 个`}
+        subLabel="来自 AWS Cost Explorer"
       />
     </div>
   );

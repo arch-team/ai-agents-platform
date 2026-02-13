@@ -1,4 +1,8 @@
-"""成本计算器接口。"""
+"""成本计算器接口。
+
+已弃用: 平台总成本改用 AWS Cost Explorer (ICostExplorer)，
+estimated_cost 固定为 0.0。保留此接口仅用于向后兼容。
+"""
 
 from abc import ABC, abstractmethod
 

@@ -10,13 +10,12 @@ from src.modules.insights.application.dto.insights_dto import (
     UsageRecordDTO,
     UsageSummaryDTO,
 )
-from src.shared.application.dtos import PagedResult
 from src.modules.insights.application.services.insights_service import InsightsService
 from src.modules.insights.domain.exceptions import (
     InvalidDateRangeError,
     UsageRecordNotFoundError,
 )
-
+from src.shared.application.dtos import PagedResult
 from tests.modules.insights.conftest import make_usage_record
 
 
@@ -31,7 +30,8 @@ class TestRecordUsage:
         mock_usage_repo: AsyncMock,
         mock_cost_calculator: MagicMock,
     ) -> None:
-        mock_usage_repo.create.return_value = make_usage_record()
+        # record_usage 不再调用 calculate_cost, estimated_cost 固定为 0.0
+        mock_usage_repo.create.return_value = make_usage_record(estimated_cost=0.0)
 
         dto = CreateUsageRecordDTO(
             user_id=10,
@@ -49,10 +49,9 @@ class TestRecordUsage:
         assert isinstance(result, UsageRecordDTO)
         assert result.id == 1
         assert result.user_id == 10
-        assert result.estimated_cost == 0.0105
-        mock_cost_calculator.calculate_cost.assert_called_once_with(
-            "anthropic.claude-sonnet-4-20250514", 1000, 500,
-        )
+        assert result.estimated_cost == 0.0
+        # record_usage 不再调用 cost_calculator
+        mock_cost_calculator.calculate_cost.assert_not_called()
         mock_usage_repo.create.assert_called_once()
 
     @pytest.mark.asyncio
@@ -60,7 +59,6 @@ class TestRecordUsage:
         self,
         insights_service: InsightsService,
         mock_usage_repo: AsyncMock,
-        mock_cost_calculator: MagicMock,
     ) -> None:
         """团队执行场景: conversation_id 为 None 时可正常创建。"""
         mock_usage_repo.create.return_value = make_usage_record(conversation_id=None)

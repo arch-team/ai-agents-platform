@@ -1,4 +1,4 @@
-// 成本归因图表组件
+// Token 消耗归因图表组件
 
 import {
   BarChart,
@@ -15,6 +15,13 @@ import { extractApiError } from '@/shared/lib/extractApiError';
 
 import { useCostBreakdown } from '../api/queries';
 import type { DateRangeParams } from '../api/types';
+
+// 格式化 Token 数量 (K/M)
+function formatTokens(value: number): string {
+  if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M`;
+  if (value >= 1_000) return `${(value / 1_000).toFixed(1)}K`;
+  return value.toString();
+}
 
 interface CostBreakdownChartProps {
   dateRange: DateRangeParams;
@@ -34,35 +41,35 @@ export function CostBreakdownChart({ dateRange }: CostBreakdownChartProps) {
   }
 
   if (error) {
-    return <ErrorMessage error={extractApiError(error, '加载成本归因数据失败')} />;
+    return <ErrorMessage error={extractApiError(error, '加载 Token 消耗归因数据失败')} />;
   }
 
   if (!data || !data.items.length) {
     return (
       <Card>
-        <h3 className="mb-4 text-base font-semibold text-gray-900">成本归因</h3>
+        <h3 className="mb-4 text-base font-semibold text-gray-900">Token 消耗归因</h3>
         <div className="py-8 text-center text-sm text-gray-500">暂无数据</div>
       </Card>
     );
   }
 
-  // 按成本降序排列，取前 10 个
+  // 按 Token 消耗降序排列，取前 10 个
   const chartData = [...data.items]
-    .sort((a, b) => b.total_cost - a.total_cost)
+    .sort((a, b) => b.total_tokens - a.total_tokens)
     .slice(0, 10)
     .map((item) => ({
       name: item.agent_name.length > 12 ? `${item.agent_name.slice(0, 12)}...` : item.agent_name,
       fullName: item.agent_name,
-      cost: Number(item.total_cost.toFixed(2)),
+      tokens: item.total_tokens,
       count: item.invocation_count,
     }));
 
   return (
     <Card>
       <div className="mb-4 flex items-center justify-between">
-        <h3 className="text-base font-semibold text-gray-900">成本归因 (Top 10)</h3>
+        <h3 className="text-base font-semibold text-gray-900">Token 消耗归因 (Top 10)</h3>
         <span className="text-sm text-gray-500">
-          总成本: ${data.total_cost.toFixed(2)}
+          总 Token: {formatTokens(data.total_tokens)}
         </span>
       </div>
       <div className="h-80">
@@ -76,15 +83,15 @@ export function CostBreakdownChart({ dateRange }: CostBreakdownChartProps) {
               textAnchor="end"
               height={60}
             />
-            <YAxis tick={{ fontSize: 12 }} tickFormatter={(v: number) => `$${v}`} />
+            <YAxis tick={{ fontSize: 12 }} tickFormatter={(v: number) => formatTokens(v)} />
             <Tooltip
-              formatter={(value: number) => [`$${value.toFixed(2)}`, '成本']}
+              formatter={(value: number) => [`${value.toLocaleString()} Token`, 'Token 消耗']}
               labelFormatter={(label: string, payload) => {
                 const item = payload?.[0]?.payload as { fullName?: string } | undefined;
                 return item?.fullName ?? label;
               }}
             />
-            <Bar dataKey="cost" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+            <Bar dataKey="tokens" fill="#3b82f6" radius={[4, 4, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
       </div>
@@ -96,8 +103,9 @@ export function CostBreakdownChart({ dateRange }: CostBreakdownChartProps) {
             <tr className="border-b border-gray-200">
               <th className="py-2 font-medium text-gray-500">Agent</th>
               <th className="py-2 text-right font-medium text-gray-500">调用次数</th>
-              <th className="py-2 text-right font-medium text-gray-500">总成本</th>
-              <th className="py-2 text-right font-medium text-gray-500">平均成本</th>
+              <th className="py-2 text-right font-medium text-gray-500">总 Token</th>
+              <th className="py-2 text-right font-medium text-gray-500">输入 Token</th>
+              <th className="py-2 text-right font-medium text-gray-500">输出 Token</th>
             </tr>
           </thead>
           <tbody>
@@ -108,10 +116,13 @@ export function CostBreakdownChart({ dateRange }: CostBreakdownChartProps) {
                   {item.invocation_count.toLocaleString('zh-CN')}
                 </td>
                 <td className="py-2 text-right text-gray-600">
-                  ${item.total_cost.toFixed(2)}
+                  {item.total_tokens.toLocaleString('zh-CN')}
                 </td>
                 <td className="py-2 text-right text-gray-600">
-                  ${item.avg_cost_per_invocation.toFixed(4)}
+                  {item.tokens_input.toLocaleString('zh-CN')}
+                </td>
+                <td className="py-2 text-right text-gray-600">
+                  {item.tokens_output.toLocaleString('zh-CN')}
                 </td>
               </tr>
             ))}

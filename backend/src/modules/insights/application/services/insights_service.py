@@ -5,11 +5,15 @@ from datetime import datetime
 
 from src.modules.insights.application.dto.insights_dto import (
     CreateUsageRecordDTO,
+    InsightsSummaryDTO,
     UsageRecordDTO,
     UsageSummaryDTO,
 )
 from src.modules.insights.application.interfaces.cost_calculator import (
     ICostCalculator,
+)
+from src.modules.insights.application.interfaces.cost_explorer import (
+    ICostExplorer,
 )
 from src.modules.insights.domain.entities.usage_record import UsageRecord
 from src.modules.insights.domain.events import UsageRecordCreatedEvent
@@ -19,6 +23,12 @@ from src.modules.insights.domain.exceptions import (
 )
 from src.modules.insights.domain.repositories.usage_record_repository import (
     IUsageRecordRepository,
+)
+from src.modules.insights.domain.value_objects.agent_token_breakdown import (
+    AgentTokenBreakdown,
+)
+from src.modules.insights.domain.value_objects.daily_usage_trend import (
+    DailyUsageTrend,
 )
 from src.shared.application.dtos import PagedResult
 from src.shared.domain.event_bus import event_bus
@@ -31,18 +41,18 @@ class InsightsService:
         self,
         usage_repo: IUsageRecordRepository,
         cost_calculator: ICostCalculator,
+        cost_explorer: ICostExplorer | None = None,
     ) -> None:
         self._usage_repo = usage_repo
         self._cost_calculator = cost_calculator
+        self._cost_explorer = cost_explorer
 
     async def record_usage(self, dto: CreateUsageRecordDTO) -> UsageRecordDTO:
-        """创建使用记录并计算成本。"""
-        breakdown = self._cost_calculator.calculate_cost(
-            dto.model_id,
-            dto.tokens_input,
-            dto.tokens_output,
-        )
+        """创建使用记录。
 
+        成本估算已弃用 — 平台总成本由 AWS Cost Explorer 提供真实账单，
+        estimated_cost 固定为 0.0。
+        """
         record = UsageRecord(
             user_id=dto.user_id,
             agent_id=dto.agent_id,
@@ -50,7 +60,7 @@ class InsightsService:
             model_id=dto.model_id,
             tokens_input=dto.tokens_input,
             tokens_output=dto.tokens_output,
-            estimated_cost=breakdown.total_cost,
+            estimated_cost=0.0,
         )
 
         created = await self._usage_repo.create(record)
@@ -63,7 +73,7 @@ class InsightsService:
                 record_id=created.id,
                 user_id=dto.user_id,
                 agent_id=dto.agent_id,
-                estimated_cost=breakdown.total_cost,
+                estimated_cost=0.0,
             ),
         )
 
@@ -144,6 +154,52 @@ class InsightsService:
             conversation_count=stats.conversation_count,
             record_count=stats.record_count,
             period=period,
+        )
+
+    async def get_cost_breakdown(
+        self, start: datetime, end: datetime,
+    ) -> list[AgentTokenBreakdown]:
+        """获取按 Agent 维度的 Token 消耗归因。"""
+        if start > end:
+            raise InvalidDateRangeError
+        return await self._usage_repo.get_cost_breakdown_by_agent(start=start, end=end)
+
+    async def get_usage_trends(
+        self, start: datetime, end: datetime,
+    ) -> list[DailyUsageTrend]:
+        """获取按日维度的使用趋势。"""
+        if start > end:
+            raise InvalidDateRangeError
+        return await self._usage_repo.get_daily_usage_trends(start=start, end=end)
+
+    async def get_insights_summary(
+        self, start: datetime, end: datetime,
+    ) -> InsightsSummaryDTO:
+        """获取 Insights 概览 — 组合 Cost Explorer + Repository 聚合。"""
+        if start > end:
+            raise InvalidDateRangeError
+
+        # Repository 聚合
+        stats = await self._usage_repo.get_aggregated_stats(start=start, end=end)
+
+        # Cost Explorer 真实成本 (降级为 0.0)
+        total_cost = 0.0
+        if self._cost_explorer is not None:
+            cost_summary = await self._cost_explorer.get_bedrock_cost(
+                start_date=start.strftime("%Y-%m-%d"),
+                end_date=end.strftime("%Y-%m-%d"),
+            )
+            total_cost = cost_summary.total_cost
+
+        # Agent 计数从 UsageRecord 中近似获取
+        distinct_agents = await self._usage_repo.count_distinct_agents(start=start, end=end)
+
+        return InsightsSummaryDTO(
+            total_agents=distinct_agents,
+            active_agents=distinct_agents,
+            total_invocations=stats.record_count,
+            total_cost=total_cost,
+            total_tokens=stats.total_tokens,
         )
 
     @staticmethod

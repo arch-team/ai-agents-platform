@@ -34,9 +34,9 @@ dependencies = [
     "asyncmy>=0.2.9",
     # AWS SDK (Platform API 路径: AgentCore 资源管理 + Bedrock KB + 降级 Converse API)
     "boto3>=1.36.0",
-    "bedrock-agentcore>=1.0.0", # AgentCore SDK (Runtime 部署封装, 0.x→1.x 升级)
+    "bedrock-agentcore>=1.3.0", # AgentCore SDK (Runtime 部署封装, 0.x→1.x 升级)
     # Agent 框架 (Agent 执行路径: SDK → Claude Code CLI → Bedrock Invoke API, ADR-006)
-    "claude-agent-sdk>=0.1.0",
+    "claude-agent-sdk>=0.1.35",
     # 安全
     "PyJWT>=2.8.0",
     "bcrypt>=4.0.0",

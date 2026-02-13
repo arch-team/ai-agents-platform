@@ -13,11 +13,11 @@ from src.modules.insights.application.dto.insights_dto import (
     UsageRecordDTO,
     UsageSummaryDTO,
 )
-from src.shared.application.dtos import PagedResult
 from src.modules.insights.domain.exceptions import (
     UsageRecordNotFoundError,
 )
 from src.presentation.api.main import create_app
+from src.shared.application.dtos import PagedResult
 
 
 def _now() -> datetime:
@@ -103,7 +103,7 @@ class TestListUsageRecordsEndpoint:
         mock_service.list_usage_records.return_value = PagedResult(
             items=[], total=0, page=1, page_size=20,
         )
-        # 即使传入 user_id=99，非 admin 用户也应被强制过滤为自己的 id
+        # 即使传入 user_id=99, 非 admin 用户也应被强制过滤为自己的 id
         resp = client.get("/api/v1/insights/usage-records?user_id=99")
         assert resp.status_code == 200
         # 验证 service 被调用时 user_id=1 (当前用户)
@@ -147,7 +147,7 @@ class TestGetUsageRecordEndpoint:
 
 @pytest.mark.integration
 class TestUsageSummaryEndpoint:
-    """GET /api/v1/insights/summary 测试。"""
+    """GET /api/v1/insights/usage-summary (旧接口) 测试。"""
 
     def test_summary_success(self, client: TestClient, mock_service: AsyncMock) -> None:
         mock_service.get_usage_summary.return_value = UsageSummaryDTO(
@@ -157,7 +157,7 @@ class TestUsageSummaryEndpoint:
             record_count=25,
             period="daily",
         )
-        resp = client.get("/api/v1/insights/summary?period=daily")
+        resp = client.get("/api/v1/insights/usage-summary?period=daily")
         assert resp.status_code == 200
         data = resp.json()
         assert data["total_tokens"] == 15000
@@ -169,7 +169,7 @@ class TestUsageSummaryEndpoint:
             total_tokens=0, total_cost=0.0, conversation_count=0, record_count=0, period="all",
         )
         resp = client.get(
-            "/api/v1/insights/summary"
+            "/api/v1/insights/usage-summary"
             "?start_date=2025-01-01T00:00:00Z&end_date=2025-06-01T00:00:00Z",
         )
         assert resp.status_code == 200
@@ -177,11 +177,11 @@ class TestUsageSummaryEndpoint:
     def test_summary_non_admin_forced_user(
         self, client: TestClient, mock_service: AsyncMock,
     ) -> None:
-        """非 ADMIN 用户的 summary 请求被强制过滤为自己。"""
+        """非 ADMIN 用户的 usage-summary 请求被强制过滤为自己。"""
         mock_service.get_usage_summary.return_value = UsageSummaryDTO(
             total_tokens=0, total_cost=0.0, conversation_count=0, record_count=0, period="all",
         )
-        resp = client.get("/api/v1/insights/summary?user_id=99")
+        resp = client.get("/api/v1/insights/usage-summary?user_id=99")
         assert resp.status_code == 200
         call_kwargs = mock_service.get_usage_summary.call_args
         assert call_kwargs.kwargs["user_id"] == 1
@@ -197,7 +197,7 @@ class TestUnauthenticatedAccess:
     def test_unauthenticated_returns_401(self, mock_service: AsyncMock) -> None:
         """未提供认证信息时返回 401。"""
         app = create_app()
-        # 不覆盖 get_current_user，使用真实认证
+        # 不覆盖 get_current_user, 使用真实认证
         app.dependency_overrides[get_insights_service] = lambda: mock_service
         unauthenticated_client = TestClient(app)
 

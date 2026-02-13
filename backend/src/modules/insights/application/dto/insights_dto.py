@@ -41,3 +41,14 @@ class UsageSummaryDTO:
     conversation_count: int
     record_count: int
     period: str
+
+
+@dataclass
+class InsightsSummaryDTO:
+    """Insights 概览摘要数据。"""
+
+    total_agents: int
+    active_agents: int
+    total_invocations: int
+    total_cost: float
+    total_tokens: int

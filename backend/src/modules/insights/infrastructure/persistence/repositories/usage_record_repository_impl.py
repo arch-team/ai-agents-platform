@@ -2,13 +2,20 @@
 
 from datetime import datetime
 
-from sqlalchemy import ColumnElement, distinct, func, select
+from sqlalchemy import ColumnElement, String, distinct, func, select, text
+from sqlalchemy.sql.expression import cast
 
 from src.modules.insights.domain.entities.usage_record import UsageRecord
 from src.modules.insights.domain.repositories.usage_record_repository import (
     IUsageRecordRepository,
 )
+from src.modules.insights.domain.value_objects.agent_token_breakdown import (
+    AgentTokenBreakdown,
+)
 from src.modules.insights.domain.value_objects.aggregated_stats import AggregatedStats
+from src.modules.insights.domain.value_objects.daily_usage_trend import (
+    DailyUsageTrend,
+)
 from src.modules.insights.infrastructure.persistence.models.usage_record_model import (
     UsageRecordModel,
 )
@@ -143,3 +150,97 @@ class UsageRecordRepositoryImpl(
             conversation_count=int(row.conversation_count),
             record_count=int(row.record_count),
         )
+
+    async def get_cost_breakdown_by_agent(
+        self, *, start: datetime, end: datetime,
+    ) -> list[AgentTokenBreakdown]:
+        """按 Agent 维度聚合 Token 消耗 (LEFT JOIN agents 获取名称)。"""
+        # 使用 text() 构建 LEFT JOIN 获取 agent_name
+        # Infrastructure 层实现细节 — 直接访问 agents 表获取名称
+        agents_table = text("agents")
+        stmt = (
+            select(
+                UsageRecordModel.agent_id,
+                func.coalesce(
+                    func.max(text("agents.name")),
+                    cast(UsageRecordModel.agent_id, String),
+                ).label("agent_name"),
+                func.sum(UsageRecordModel.tokens_input + UsageRecordModel.tokens_output).label(
+                    "total_tokens",
+                ),
+                func.sum(UsageRecordModel.tokens_input).label("tokens_input"),
+                func.sum(UsageRecordModel.tokens_output).label("tokens_output"),
+                func.count().label("invocation_count"),
+            )
+            .select_from(
+                UsageRecordModel.__table__.outerjoin(
+                    agents_table,
+                    UsageRecordModel.agent_id == text("agents.id"),
+                ),
+            )
+            .where(
+                UsageRecordModel.recorded_at >= start,
+                UsageRecordModel.recorded_at <= end,
+            )
+            .group_by(UsageRecordModel.agent_id)
+            .order_by(text("total_tokens DESC"))
+        )
+        result = await self._session.execute(stmt)
+        return [
+            AgentTokenBreakdown(
+                agent_id=int(row.agent_id),
+                agent_name=str(row.agent_name),
+                total_tokens=int(row.total_tokens),
+                tokens_input=int(row.tokens_input),
+                tokens_output=int(row.tokens_output),
+                invocation_count=int(row.invocation_count),
+            )
+            for row in result.all()
+        ]
+
+    async def get_daily_usage_trends(
+        self, *, start: datetime, end: datetime,
+    ) -> list[DailyUsageTrend]:
+        """按日维度聚合使用趋势。"""
+        date_expr = func.date(UsageRecordModel.recorded_at)
+        stmt = (
+            select(
+                date_expr.label("date"),
+                func.count().label("invocation_count"),
+                func.coalesce(
+                    func.sum(UsageRecordModel.tokens_input + UsageRecordModel.tokens_output),
+                    0,
+                ).label("total_tokens"),
+                func.count(distinct(UsageRecordModel.user_id)).label("unique_users"),
+            )
+            .where(
+                UsageRecordModel.recorded_at >= start,
+                UsageRecordModel.recorded_at <= end,
+            )
+            .group_by(date_expr)
+            .order_by(date_expr)
+        )
+        result = await self._session.execute(stmt)
+        return [
+            DailyUsageTrend(
+                date=str(row.date),
+                invocation_count=int(row.invocation_count),
+                total_tokens=int(row.total_tokens),
+                unique_users=int(row.unique_users),
+            )
+            for row in result.all()
+        ]
+
+    async def count_distinct_agents(
+        self, *, start: datetime, end: datetime,
+    ) -> int:
+        """统计日期范围内的不重复 Agent 数。"""
+        stmt = (
+            select(func.count(distinct(UsageRecordModel.agent_id)))
+            .where(
+                UsageRecordModel.recorded_at >= start,
+                UsageRecordModel.recorded_at <= end,
+            )
+        )
+        result = await self._session.execute(stmt)
+        return int(result.scalar() or 0)

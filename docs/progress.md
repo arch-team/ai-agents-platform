@@ -4,18 +4,18 @@
 
 ## 当前状态
 
-- **阶段**: Phase 4 企业成熟 (12-18 月) — M10 audit 模块 + 前端 5 页面 + 变更修复 大幅推进
-- **里程碑**: Phase 4: M10-prep ✅ → M10 ✅ → **M11 (下一步)** → M12
+- **阶段**: Phase 4 企业成熟 (12-18 月) — M11 平台成熟化 任务拆解完成，准备执行
+- **里程碑**: Phase 4: M10-prep ✅ → M10 ✅ → **M11 (进行中)** → M12
 - **变更积压**: Phase 2-3: 24/24 ✅ | Phase 4: 14/19 | AgentCore P3: 2/5
-- **关键决策**: bedrock-agentcore 1.2.1 升级 | Opus 4.6 评估 (默认 Haiku 不变, 3 模型常量) | audit 模块 append-only 设计 | 前端 5 页面 FSD 补全
+- **关键发现**: ~~insights 前后端 API 不匹配~~ ✅ M11 #1-#6 已修复 (cost-breakdown/usage-trends 端点补全 + model_id 从事件传递 + MessageReceivedEvent 订阅 + Cost Explorer 真实账单)
 - **Dev 环境**: 后端 ECS (256 CPU/512 MiB) + 前端 S3 + CORS + Bedrock IAM ✅ | ALB `ai-agents-dev-546356512.us-east-1.elb.amazonaws.com`
 - **Prod 环境**: 后端 ECS (512 CPU/1024 MiB/2 任务) + Aurora db.r6g.large (Writer+Reader) ✅ | ALB `ai-agents-prod-1419512933.us-east-1.elb.amazonaws.com`
 - **Stack 命名**: `ai-agents-plat-{stack}-{env}` (v1.4 规范化, 12 个 Stack 全部重建)
-- **测试**: 后端 1760 测试 + 基础设施 161 测试 + 前端 80+ 测试 = **2000+ 测试**
-- **后端模块**: 10 个 (新增 audit) | **前端**: 160+ 源文件, FSD 架构, 13 个页面 (覆盖度 ~85%)
-- **SDK**: claude-agent-sdk 0.1.35 | bedrock-agentcore 1.2.1
+- **测试**: 后端 1817 测试 + 基础设施 161 测试 + 前端 80+ 测试 = **2050+ 测试**
+- **后端模块**: 10 个 (9 业务 + shared) | **前端**: 190 源文件, FSD 架构, 12 页面 + 20 测试文件
+- **SDK**: claude-agent-sdk 0.1.35 | bedrock-agentcore 1.3.0
 - **环境策略**: Dev (开发+验证) + Prod (生产)，无 Staging (v1.4 简化)
-- **下一步**: M11 — 平台成熟化 (insights 增强 + 灾备验证 + Agent 体验优化 + Opus 4.6 深度集成)
+- **下一步**: M11 #7 — CDK 增强: Prod Performance Insights + S3 版本管理 + infra 快照更新
 
 ## 模块状态
 
@@ -34,7 +34,7 @@
 |------|:----:|------|------|
 | `tool-catalog` | 已完成 | ai-agents-factory-v1 | 工具注册/审批 (10 端点), 5 状态审批流程, MCP Server/API/Function 三类工具 |
 | `knowledge` | 已完成 | ai-agents-factory-v1 | 知识库管理, RAG 检索 (Bedrock Knowledge Bases, ADR-005), 10 端点 |
-| `insights` | 已完成 | ai-agents-factory-v1 | 成本归因, 使用趋势 (3 端点), UsageRecord 实体, CostBreakdown, BedrockCostCalculator, 74 测试 97.56% 覆盖率 |
+| `insights` | 已完成 | ai-agents-factory-v1 | Token 归因 + 使用趋势 (6 端点), CostExplorerAdapter (AWS 真实账单), MessageReceivedEvent 订阅, 96 测试 |
 | `templates` | 已完成 | ai-agents-factory-v1 | Agent 模板管理 (8 端点), 状态机 (DRAFT → PUBLISHED → ARCHIVED), 7 分类, 10 预置模板, 103 测试 |
 
 ### Phase 3 (6-12 月)
@@ -499,6 +499,64 @@
 前端 5 页面 (#11-#15) 互相独立，可并行开发
 ```
 
+### M11: 平台成熟化 (第 65-70 周)
+
+> 交付物: insights 修复 (前后端 API 对齐 + 数据采集修复) + 灾备验证 + Agent 体验优化 + Opus 4.6 评估
+> 验收标准: insights 前端 3 个图表全部有真实数据；普通对话和团队执行均记录成本；灾备演练方案可执行；ruff + mypy + pytest 全通过
+> 关键发现: M10 构建的 InsightsPage 前端调用 `cost-breakdown` 和 `usage-trends` 两个后端不存在的端点；model_id 硬编码；普通对话不记录成本
+
+#### A. Insights 数据采集修复（优先级最高）
+
+| # | 任务 | 状态 | 依赖 | 参考规范 | 会话 |
+|---|------|:----:|:----:|---------|------|
+| 1 | 修复 model_id 硬编码 + CostExplorerAdapter + 订阅 MessageReceivedEvent + estimated_cost 弃用 (改用 AWS Cost Explorer 真实账单) | 已完成 | - | `rules/architecture.md` §4.2 EventBus | 2026-02-13 |
+| 2 | ~~BedrockCostCalculator 定价表扩展~~ — 已弃用: 平台总成本依托 AWS Cost Explorer, estimated_cost 固定为 0.0 | 已完成 | - | `rules/sdk-first.md` | 2026-02-13 |
+
+#### B. Insights 后端 API 补全（修复 M10 前后端 gap）
+
+| # | 任务 | 状态 | 依赖 | 参考规范 | 会话 |
+|---|------|:----:|:----:|---------|------|
+| 3 | InsightsService 新增 `get_cost_breakdown()` + `get_usage_trends()` + `get_insights_summary()`; Repository 新增 3 个聚合查询 | 已完成 | #1 | `rules/architecture.md` §5 DDD | 2026-02-13 |
+| 4 | insights API 新增 2 端点 (`GET /cost-breakdown`, `GET /usage-trends`) + 增强 `GET /summary` (total_agents/active_agents/total_tokens/total_cost from CE) | 已完成 | #3 | `rules/api-design.md` | 2026-02-13 |
+| 5 | Insights 后端测试 (22 个新测试: CostExplorerAdapter 3 + InsightsService 增强 8 + 集成测试 11), 全模块 96 测试通过 | 已完成 | #1-#4 | `rules/testing.md` TDD | 2026-02-13 |
+
+#### C. Insights 前端联调
+
+| # | 任务 | 状态 | 依赖 | 参考规范 | 会话 |
+|---|------|:----:|:----:|---------|------|
+| 6 | 前端 types/CostBreakdownChart/InsightsSummary/UsageTrendChart 全部对齐: cost→tokens, 移除 avg_response_time_ms, 新增 total_tokens 卡片 | 已完成 | #4 | FSD 架构 | 2026-02-13 |
+
+#### D. 灾备验证
+
+| # | 任务 | 状态 | 依赖 | 参考规范 | 会话 |
+|---|------|:----:|:----:|---------|------|
+| 7 | CDK 增强: Prod Performance Insights 启用 + S3 知识库文档版本管理 + infra 快照测试更新 | 待开始 | - | infra 规范 | - |
+| 8 | 灾备演练方案文档 (RPO < 5min / RTO < 15min) + Aurora 快照恢复验证脚本 + S3 版本回滚测试 | 待开始 | #7 | roadmap.md §5.4 | - |
+| 9 | C-S4-8: Dev 环境非工作时段定时缩减 (ECS Scheduled Scaling，UTC 14:00-22:00 缩减到 0 任务，目标成本降低 50%) | 待开始 | - | roadmap.md §5.4 成本优化 | - |
+
+#### E. Agent 体验优化
+
+| # | 任务 | 状态 | 依赖 | 参考规范 | 会话 |
+|---|------|:----:|:----:|---------|------|
+| 10 | 后端: Agent 配置预览端点 (`POST /agents/{id}/preview`) — 测试 prompt 快速验证 Agent 效果 (max_turns=1, 无需创建 Conversation) | 待开始 | - | `rules/api-design.md` | - |
+| 11 | 前端: Prompt Editor 增强 (变量占位符高亮 + 模板插入) + 配置向导 (模型选择成本对比 + temperature 说明) + AgentDetailPage 测试按钮 | 待开始 | #10 | FSD 架构 | - |
+
+#### F. Opus 4.6 评估 + 质量验收
+
+| # | 任务 | 状态 | 依赖 | 参考规范 | 会话 |
+|---|------|:----:|:----:|---------|------|
+| 12 | Opus 4.6 深度集成评估 (ADR): 适用场景分析 (复杂推理/代码生成 vs 成本) + 模型选择指南文档 (场景 → 推荐模型 → 成本矩阵) | 待开始 | #2 | ADR 流程 | - |
+| 13 | M11 质量验收: ruff + mypy + pytest 全通过 + 前端测试 + 架构合规测试更新 + insights 覆盖率 >= 85% | 待开始 | #1-#12 | `rules/checklist.md` | - |
+
+#### M11 并行策略
+
+```
+主线: A 数据采集修复 (#1-#2) ──► B 后端 API 补全 (#3-#5) ──► C 前端联调 (#6)
+并行: D 灾备验证 (#7-#9)        与主线 100% 并行，无交叉依赖
+并行: E Agent 体验优化 (#10-#11) 与主线 100% 并行，无交叉依赖
+并行: F Opus 评估 (#12)          依赖 #2 (定价表)，可与 B/D/E 并行
+```
+
 ---
 
 ## 变更积压 (Change Backlog)
@@ -711,10 +769,12 @@
 8. ~~**test_database_defaults 测试失败**~~ → ✅ 修复: 所有 Settings 单元测试添加 `_env_file=None` 隔离 `.env` 文件，确保测试验证代码默认值而非环境覆盖值
 9. ~~**OTEL instrumentation-sqlalchemy 安装问题**~~ → ✅ 根因: `python -m pytest` 调用了系统 Python 而非 uv 虚拟环境；统一使用 `uv run pytest` 后 1673 测试全通过
 10. ~~**infra 快照测试过期**~~ → ✅ 快照已更新 + worker 泄漏修复 (workerIdleMemoryLimit)，161 测试全通过
-11. **前端覆盖度缺口**: 5 个后端模块 (Knowledge/Templates/ToolCatalog/Insights/Evaluation) 无对应前端页面，覆盖度仅 ~45%。M10 前端并行补全
+11. ~~**前端覆盖度缺口**~~ → ✅ M10 已补全 5 个页面，覆盖度 45% → 85%
 12. ~~**SDK 包名过时**~~ → ✅ 已确认: pyproject.toml 和所有 Python imports 已使用 `claude-agent-sdk` / `claude_agent_sdk`，无残留旧包名
 13. ~~**CDK agentcore alpha BREAKING CHANGE**~~ → ✅ 已确认: 当前 `@aws-cdk/aws-bedrock-agentcore-alpha` 2.238.0-alpha.0 为最新版本，TypeScript 编译通过，Gateway User Pool Client API 无破坏性变更
 14. **Docker 本地构建待验证**: Dockerfile.agent + agent_entrypoint.py + ECR 仓库均审查通过，但 Docker Desktop 未运行，需启动后执行本地构建验证并推送到 ECR
+15. ~~**Insights 前后端 API 不匹配**~~ → ✅ M11 #1-#6 修复: cost-breakdown/usage-trends/summary 端点补全; model_id 从事件传递; MessageReceivedEvent 订阅; 前端 3 图表对齐
+16. ~~**Insights 数据采集不完整**~~ → ✅ 架构变更: 平台总成本依托 AWS Cost Explorer (真实账单), estimated_cost 弃用为 0.0, BedrockCostCalculator 标记弃用
 
 ### 部署信息
 
@@ -740,8 +800,8 @@
 
 | # | 日期 | 类型 | 完成项 | 关键决策 |
 |---|------|------|-------|---------|
+| 37 | 2026-02-13 | M11 (A-C 完成) | **M11 #1-#6 全部完成 (Agent Teams 并行)**: CostExplorerAdapter + model_id 修复 + MessageReceivedEvent 订阅 + 3 新端点 + 22 新测试 (96 总) + 前端 4 组件对齐; 1817 后端测试全通过 | 弃用 BedrockCostCalculator; estimated_cost=0.0; Cost Explorer 真实账单 |
+| 36 | 2026-02-13 | M11 任务拆解 | **M11 13 任务拆解完成**: 深度探索 insights/execution/infra 现状; 发现前后端 API 不匹配; 砍掉 ROI 虚荣指标 + avg_response_time_ms 虚字段; 6 个工作流 A-F 并行策略 | insights 聚焦成本归因和使用量 (砍 ROI); 灾备/体验/评估并行 |
 | 35 | 2026-02-13 | M10 (大幅推进) | **M10 15/17 任务完成 (Agent Teams 并行)**: audit 模块全 10 任务 (65 测试, 5 端点, 23 事件订阅 + 中间件); 前端 5 页面 (Knowledge/Templates/ToolCatalog/Insights/Evaluation, 48+ 文件); 变更修复 6 项 (C-S0-10 bedrock-agentcore 1.2.1 + C-S1-9/10 Ruff/MyPy + C-S2-6/7/8); 1760 后端测试; 全量验收通过 | Opus 4.6 默认不升级 (成本); audit append-only; 3 模型常量 |
 | 34 | 2026-02-13 | 季度评审 v1.6 | **v1.6 四维度评审**: 代码审计 B+89 + 技术扫描 + 经验教训 + M10 拆解; Docker 构建推送 ECR; 5 项新变更注入 | bedrock-agentcore 升级; Strands 战略观察; 评审验证轮 |
 | 33 | 2026-02-13 | M10-prep (完成) | **M10-prep 全 9 任务完成**: AgentCoreRuntimeAdapter + AGENT_RUNTIME_MODE; SDK MCP Server; infra 快照 + worker; Docker ECR; 1834 测试 | AGENT_RUNTIME_MODE; create_sdk_mcp_server |
-| 32 | 2026-02-13 | 季度评审 v1.5 | **Phase 4 季度评审**: 四维度评审; roadmap v1.5; M10-prep 新增; 14 项变更注入 | M10-prep 前置; 前后端并行 |
-| 31 | 2026-02-12 | M9 (完成) | **M9 Prod 部署完成**: Stack 命名规范化; Dev+Prod 12 个 Stack 全部重建 | Stack 命名 ai-agents-plat-*; KMS grant |

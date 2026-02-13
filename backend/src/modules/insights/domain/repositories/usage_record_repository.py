@@ -4,7 +4,13 @@ from abc import abstractmethod
 from datetime import datetime
 
 from src.modules.insights.domain.entities.usage_record import UsageRecord
+from src.modules.insights.domain.value_objects.agent_token_breakdown import (
+    AgentTokenBreakdown,
+)
 from src.modules.insights.domain.value_objects.aggregated_stats import AggregatedStats
+from src.modules.insights.domain.value_objects.daily_usage_trend import (
+    DailyUsageTrend,
+)
 from src.shared.domain.repositories import IRepository
 
 
@@ -60,3 +66,21 @@ class IUsageRecordRepository(IRepository[UsageRecord, int]):
         end: datetime | None = None,
     ) -> AggregatedStats:
         """获取聚合统计数据（总 token、总 cost、对话数）。"""
+
+    @abstractmethod
+    async def get_cost_breakdown_by_agent(
+        self, *, start: datetime, end: datetime,
+    ) -> list[AgentTokenBreakdown]:
+        """按 Agent 维度聚合 Token 消耗。"""
+
+    @abstractmethod
+    async def get_daily_usage_trends(
+        self, *, start: datetime, end: datetime,
+    ) -> list[DailyUsageTrend]:
+        """按日维度聚合使用趋势。"""
+
+    @abstractmethod
+    async def count_distinct_agents(
+        self, *, start: datetime, end: datetime,
+    ) -> int:
+        """统计日期范围内的不重复 Agent 数。"""

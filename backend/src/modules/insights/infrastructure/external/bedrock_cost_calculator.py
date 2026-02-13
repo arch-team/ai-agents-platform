@@ -1,4 +1,10 @@
-"""Bedrock 模型成本计算器 — ICostCalculator 实现。"""
+"""Bedrock 模型成本计算器 — ICostCalculator 实现。
+
+已弃用: 平台总成本改用 AWS Cost Explorer (真实账单)，
+按 Agent/用户归因改用自建 Token 追踪。
+新记录的 estimated_cost 固定为 0.0。
+保留此类仅用于向后兼容和单元测试。
+"""
 
 from src.modules.insights.application.interfaces.cost_calculator import ICostCalculator
 from src.modules.insights.domain.value_objects.cost_breakdown import CostBreakdown

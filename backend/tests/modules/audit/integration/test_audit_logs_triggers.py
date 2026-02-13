@@ -11,7 +11,7 @@ import pytest
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.shared.infrastructure.database import async_session_factory
+from src.shared.infrastructure.database import get_session_factory
 
 
 def _is_mysql(session: AsyncSession) -> bool:
@@ -23,7 +23,8 @@ def _is_mysql(session: AsyncSession) -> bool:
 @pytest.fixture
 async def db_session() -> AsyncSession:  # type: ignore[misc]
     """获取异步数据库会话。"""
-    async with async_session_factory() as session:
+    factory = get_session_factory()
+    async with factory() as session:
         yield session  # type: ignore[misc]
         await session.rollback()
 

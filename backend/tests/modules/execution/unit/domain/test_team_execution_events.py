@@ -46,26 +46,29 @@ class TestTeamExecutionCompletedEvent:
     """TeamExecutionCompletedEvent 测试。"""
 
     def test_completed_event_fields(self) -> None:
-        """验证 execution_id, user_id, input_tokens, output_tokens。"""
+        """验证 execution_id, user_id, input_tokens, output_tokens, model_id。"""
         event = TeamExecutionCompletedEvent(
             execution_id=1,
             user_id=10,
             input_tokens=100,
             output_tokens=200,
+            model_id="anthropic.claude-sonnet-4-20250514",
         )
         assert event.execution_id == 1
         assert event.user_id == 10
         assert event.input_tokens == 100
         assert event.output_tokens == 200
+        assert event.model_id == "anthropic.claude-sonnet-4-20250514"
 
     def test_inherits_domain_event(self) -> None:
         assert issubclass(TeamExecutionCompletedEvent, DomainEvent)
 
     def test_default_token_values(self) -> None:
-        """验证 token 默认值为 0。"""
+        """验证 token 和 model_id 默认值。"""
         event = TeamExecutionCompletedEvent(execution_id=1, user_id=10)
         assert event.input_tokens == 0
         assert event.output_tokens == 0
+        assert event.model_id == ""
 
 
 @pytest.mark.unit

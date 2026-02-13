@@ -374,6 +374,7 @@ class TeamExecutionService:
                             user_id=user_id,
                             input_tokens=input_tokens,
                             output_tokens=output_tokens,
+                            model_id=agent_info.model_id,
                         ),
                     )
                     logger.info(

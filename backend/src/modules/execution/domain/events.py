@@ -71,6 +71,7 @@ class TeamExecutionCompletedEvent(_TeamExecutionEvent):
     user_id: int = 0
     input_tokens: int = 0
     output_tokens: int = 0
+    model_id: str = ""
 
 
 @dataclass

@@ -253,7 +253,7 @@ def _register_team_execution_event_subscriptions() -> None:
                     user_id=event.user_id,
                     agent_id=execution.agent_id,
                     conversation_id=execution.conversation_id,
-                    model_id="anthropic.claude-sonnet",
+                    model_id=event.model_id or "unknown",
                     tokens_input=event.input_tokens,
                     tokens_output=event.output_tokens,
                 )
@@ -269,6 +269,70 @@ def _register_team_execution_event_subscriptions() -> None:
                 )
 
     event_bus.subscribe(TeamExecutionCompletedEvent, _on_team_execution_completed)
+
+
+def _register_message_received_event_subscriptions() -> None:
+    """注册普通对话消息接收事件订阅 -> insights 成本归因。
+
+    助手回复消息后，将 Token 消耗记录到 usage_records 表，
+    覆盖普通对话（非团队执行）的成本追踪。
+    """
+    from src.modules.execution.domain.events import MessageReceivedEvent
+    from src.modules.execution.infrastructure.persistence.repositories.conversation_repository_impl import (
+        ConversationRepositoryImpl,
+    )
+    from src.modules.insights.application.dto.insights_dto import CreateUsageRecordDTO
+    from src.modules.insights.application.services.insights_service import InsightsService
+    from src.modules.insights.infrastructure.external.bedrock_cost_calculator import BedrockCostCalculator
+    from src.modules.insights.infrastructure.persistence.repositories.usage_record_repository_impl import (
+        UsageRecordRepositoryImpl,
+    )
+    from src.shared.domain.event_bus import event_bus
+    from src.shared.infrastructure.database import get_session_factory
+
+    session_factory = get_session_factory()
+    cost_calculator = BedrockCostCalculator()
+
+    async def _on_message_received(event: MessageReceivedEvent) -> None:
+        """助手消息接收后记录 Token 消耗到 insights 模块。"""
+        if event.token_count == 0:
+            return
+
+        async with session_factory() as session:
+            try:
+                # 通过 conversation_id 查询 Conversation 获取 agent_id 和 user_id
+                conv_repo = ConversationRepositoryImpl(session=session)
+                conversation = await conv_repo.get_by_id(event.conversation_id)
+                if conversation is None:
+                    return
+
+                repo = UsageRecordRepositoryImpl(session=session)
+                service = InsightsService(usage_repo=repo, cost_calculator=cost_calculator)
+
+                # MessageReceivedEvent.token_count 未拆分 input/output,
+                # 记为 tokens_input=token_count, tokens_output=0 (总量准确,
+                # Cost Explorer 负责实际成本)
+                dto = CreateUsageRecordDTO(
+                    user_id=conversation.user_id,
+                    agent_id=conversation.agent_id,
+                    conversation_id=event.conversation_id,
+                    model_id=event.model_id or "unknown",
+                    tokens_input=event.token_count,
+                    tokens_output=0,
+                )
+                await service.record_usage(dto)
+                await session.commit()
+            except Exception:
+                await session.rollback()
+                import structlog
+
+                structlog.get_logger(__name__).exception(
+                    "message_received_cost_attribution_failed",
+                    conversation_id=event.conversation_id,
+                    message_id=event.message_id,
+                )
+
+    event_bus.subscribe(MessageReceivedEvent, _on_message_received)
 
 
 @asynccontextmanager
@@ -296,6 +360,7 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
     )
     _register_gateway_event_subscriptions()
     _register_team_execution_event_subscriptions()
+    _register_message_received_event_subscriptions()
     _register_audit_event_subscriptions()
     yield
 

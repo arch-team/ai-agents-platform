@@ -6,19 +6,20 @@ export interface DateRangeParams {
   end_date: string;
 }
 
-// 成本归因项
+// Token 消耗归因项
 export interface CostBreakdownItem {
   agent_id: string;
   agent_name: string;
-  total_cost: number;
+  total_tokens: number;
+  tokens_input: number;
+  tokens_output: number;
   invocation_count: number;
-  avg_cost_per_invocation: number;
 }
 
-// 成本归因响应
+// Token 消耗归因响应
 export interface CostBreakdownResponse {
   items: CostBreakdownItem[];
-  total_cost: number;
+  total_tokens: number;
   period: {
     start_date: string;
     end_date: string;
@@ -29,7 +30,7 @@ export interface CostBreakdownResponse {
 export interface UsageTrendPoint {
   date: string;
   invocation_count: number;
-  total_cost: number;
+  total_tokens: number;
   unique_users: number;
 }
 
@@ -47,8 +48,8 @@ export interface InsightsSummaryResponse {
   total_agents: number;
   active_agents: number;
   total_invocations: number;
+  total_tokens: number;
   total_cost: number;
-  avg_response_time_ms: number;
   period: {
     start_date: string;
     end_date: string;

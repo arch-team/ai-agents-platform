@@ -30,14 +30,14 @@ class TestIUsageRecordRepository:
         """应声明 list_by_date_range 抽象方法。"""
         assert hasattr(IUsageRecordRepository, "list_by_date_range")
         assert getattr(
-            IUsageRecordRepository.list_by_date_range, "__isabstractmethod__", False
+            IUsageRecordRepository.list_by_date_range, "__isabstractmethod__", False,
         )
 
     def test_has_get_aggregated_stats_method(self) -> None:
         """应声明 get_aggregated_stats 抽象方法。"""
         assert hasattr(IUsageRecordRepository, "get_aggregated_stats")
         assert getattr(
-            IUsageRecordRepository.get_aggregated_stats, "__isabstractmethod__", False
+            IUsageRecordRepository.get_aggregated_stats, "__isabstractmethod__", False,
         )
 
     def test_cannot_instantiate(self) -> None:

@@ -57,7 +57,7 @@ export function UsageTrendChart({ dateRange }: UsageTrendChartProps) {
     date: formatDateLabel(point.date),
     fullDate: point.date,
     invocations: point.invocation_count,
-    cost: Number(point.total_cost.toFixed(2)),
+    tokens: point.total_tokens,
     users: point.unique_users,
   }));
 
@@ -70,7 +70,6 @@ export function UsageTrendChart({ dateRange }: UsageTrendChartProps) {
             <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
             <XAxis dataKey="date" tick={{ fontSize: 12 }} />
             <YAxis yAxisId="left" tick={{ fontSize: 12 }} />
-            <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 12 }} tickFormatter={(v: number) => `$${v}`} />
             <Tooltip
               labelFormatter={(_label: string, payload) => {
                 const item = payload?.[0]?.payload as { fullDate?: string } | undefined;
@@ -79,18 +78,17 @@ export function UsageTrendChart({ dateRange }: UsageTrendChartProps) {
               formatter={(value: number, name: string) => {
                 const labels: Record<string, string> = {
                   invocations: '调用次数',
-                  cost: '成本',
+                  tokens: 'Token 消耗',
                   users: '独立用户',
                 };
-                const formatted = name === 'cost' ? `$${value.toFixed(2)}` : value.toLocaleString('zh-CN');
-                return [formatted, labels[name] ?? name];
+                return [value.toLocaleString('zh-CN'), labels[name] ?? name];
               }}
             />
             <Legend
               formatter={(value: string) => {
                 const labels: Record<string, string> = {
                   invocations: '调用次数',
-                  cost: '成本 ($)',
+                  tokens: 'Token 消耗',
                   users: '独立用户',
                 };
                 return labels[value] ?? value;
@@ -106,9 +104,9 @@ export function UsageTrendChart({ dateRange }: UsageTrendChartProps) {
               activeDot={{ r: 4 }}
             />
             <Line
-              yAxisId="right"
+              yAxisId="left"
               type="monotone"
-              dataKey="cost"
+              dataKey="tokens"
               stroke="#10b981"
               strokeWidth={2}
               dot={false}
