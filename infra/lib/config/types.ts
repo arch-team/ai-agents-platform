@@ -1,14 +1,14 @@
 import * as cdk from 'aws-cdk-lib';
 
-/** 支持的环境名称 */
-export type EnvironmentName = 'dev' | 'staging' | 'prod';
+/** 支持的环境名称 (v1.4: 移除 staging，仅 Dev + Prod 两套环境) */
+export type EnvironmentName = 'dev' | 'prod';
 
 /**
  * 所有 Stack 的基础 Props 接口。
  * @remarks 统一提供 envName 属性，避免各 Stack 重复声明
  */
 export interface BaseStackProps extends cdk.StackProps {
-  /** 环境名称 (dev, staging, prod) */
+  /** 环境名称 (dev, prod) */
   readonly envName: EnvironmentName;
 }
 

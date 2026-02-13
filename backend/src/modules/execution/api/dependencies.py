@@ -1,5 +1,6 @@
 """Execution API 依赖注入。"""
 
+from collections.abc import Awaitable, Callable
 from functools import lru_cache
 from typing import Annotated
 
@@ -41,7 +42,26 @@ def get_bedrock_client() -> BedrockLLMClient:
 
 @lru_cache
 def get_agent_runtime() -> IAgentRuntime:
-    """创建 ClaudeAgentAdapter 单例。"""
+    """根据 AGENT_RUNTIME_MODE 配置创建 Agent 运行时单例。
+
+    - in_process: ClaudeAgentAdapter (本地 Claude Agent SDK)
+    - agentcore_runtime: AgentCoreRuntimeAdapter (远程 AgentCore Runtime API)
+    """
+    settings = get_settings()
+    mode = settings.AGENT_RUNTIME_MODE
+
+    if mode == "agentcore_runtime":
+        from src.modules.execution.infrastructure.external.agentcore_runtime_adapter import (
+            AgentCoreRuntimeAdapter,
+        )
+
+        client = boto3.client("bedrock-agent-runtime", region_name=settings.AWS_REGION)
+        return AgentCoreRuntimeAdapter(
+            client=client,
+            default_model_id=settings.BEDROCK_DEFAULT_MODEL_ID,
+        )
+
+    # 默认: in_process 模式
     return ClaudeAgentAdapter()
 
 
@@ -106,8 +126,8 @@ async def get_team_execution_service(
     def _bg_repo_factory() -> tuple[
         TeamExecutionRepositoryImpl,
         TeamExecutionLogRepositoryImpl,
-        object,
-        object,
+        Callable[[], Awaitable[None]],
+        Callable[[], Awaitable[None]],
     ]:
         """为后台任务创建独立 session 的 repos。"""
         bg_session = get_session_factory()()

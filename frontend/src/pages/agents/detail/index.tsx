@@ -49,6 +49,18 @@ export default function AgentDetailPage() {
 
   return (
     <div className="mx-auto max-w-3xl p-6">
+      {/* 操作错误提示 */}
+      {activateMutation.isError && (
+        <div className="mb-4">
+          <ErrorMessage error={extractApiError(activateMutation.error, '激活 Agent 失败')} />
+        </div>
+      )}
+      {archiveMutation.isError && (
+        <div className="mb-4">
+          <ErrorMessage error={extractApiError(archiveMutation.error, '归档 Agent 失败')} />
+        </div>
+      )}
+
       {/* 标题和操作 */}
       <div className="mb-6 flex items-start justify-between">
         <div>

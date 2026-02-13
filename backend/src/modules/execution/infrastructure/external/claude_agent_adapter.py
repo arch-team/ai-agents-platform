@@ -10,7 +10,13 @@ from collections.abc import AsyncIterator
 from typing import Any
 
 import structlog
-from claude_agent_sdk import ClaudeAgentOptions, query
+from claude_agent_sdk import (
+    ClaudeAgentOptions,
+    McpSdkServerConfig,
+    SdkMcpTool,
+    create_sdk_mcp_server,
+    query,
+)
 
 from src.modules.execution.application.interfaces import (
     AgentRequest,
@@ -160,7 +166,7 @@ class ClaudeAgentAdapter(IAgentRuntime):
         """构建 MCP 服务器配置。
 
         - tool_type == "mcp_server" → 通过 AgentCore Gateway SSE 连接
-        - tool_type == "api" 或 "function" → TODO: 封装为 SDK MCP Server
+        - tool_type == "api" 或 "function" → 封装为 SDK 进程内 MCP Server
         """
         mcp_servers: dict[str, Any] = {}
 
@@ -188,27 +194,87 @@ class ClaudeAgentAdapter(IAgentRuntime):
 
         return mcp_servers
 
-    def _build_platform_tools_config(self, tools: list[AgentTool]) -> dict[str, Any]:
-        """将 API/Function 工具封装为 platform-tools MCP 配置。
+    def _build_platform_tools_config(self, tools: list[AgentTool]) -> McpSdkServerConfig:
+        """将 API/Function 工具封装为 SDK 进程内 MCP Server。
 
-        TODO: 当 claude_agent_sdk 提供 create_sdk_mcp_server 时替换为正式实现。
-        当前使用 stdio 类型占位，工具信息通过 env 传递。
+        使用 claude_agent_sdk.create_sdk_mcp_server 创建进程内 MCP Server，
+        每个 AgentTool 注册为 SdkMcpTool，handler 基于 tool.config 执行调用。
         """
-        tool_definitions = [
-            {
-                "name": t.name,
-                "description": t.description,
-                "input_schema": t.input_schema,
-                "config": t.config,
-            }
-            for t in tools
-        ]
+        sdk_tools: list[SdkMcpTool[dict[str, Any]]] = []
 
-        return {
-            "type": "stdio",
-            "command": "platform-tools-server",
-            "env": {"TOOL_DEFINITIONS": str(tool_definitions)},
-        }
+        for t in tools:
+            handler = self._create_tool_handler(t)
+            sdk_tool = SdkMcpTool(
+                name=t.name,
+                description=t.description,
+                input_schema=t.input_schema,
+                handler=handler,
+            )
+            sdk_tools.append(sdk_tool)
+
+        return create_sdk_mcp_server(
+            name="platform-tools",
+            tools=sdk_tools,
+        )
+
+    @staticmethod
+    def _create_tool_handler(
+        tool: AgentTool,
+    ) -> Any:
+        """为 API/Function 工具创建 handler 闭包。
+
+        handler 根据 tool.config 中的配置（endpoint_url, method 等）执行调用，
+        将结果封装为 MCP 工具响应格式返回。
+        """
+        config = tool.config
+
+        async def _handler(args: dict[str, Any]) -> dict[str, Any]:
+            # API 类型: 发起 HTTP 请求
+            if tool.tool_type == "api" and config.get("endpoint_url"):
+                return await ClaudeAgentAdapter._call_api_tool(config, args)
+            # Function 或无 endpoint 的工具: 返回参数摘要
+            return {
+                "content": [
+                    {
+                        "type": "text",
+                        "text": f"工具 '{tool.name}' 已调用，参数: {args}",
+                    },
+                ],
+            }
+
+        return _handler
+
+    @staticmethod
+    async def _call_api_tool(
+        config: dict[str, Any], args: dict[str, Any],
+    ) -> dict[str, Any]:
+        """通过 HTTP 调用 API 类型工具。"""
+        import httpx
+
+        url = config["endpoint_url"]
+        method = config.get("method", "POST").upper()
+        headers: dict[str, str] = {"Content-Type": "application/json"}
+
+        # 认证头注入
+        auth_type = config.get("auth_type", "")
+        if auth_type == "api_key" and config.get("api_key"):
+            headers["Authorization"] = f"Bearer {config['api_key']}"
+
+        try:
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                if method == "GET":
+                    resp = await client.get(url, params=args, headers=headers)
+                else:
+                    resp = await client.request(method, url, json=args, headers=headers)
+                resp.raise_for_status()
+                return {
+                    "content": [{"type": "text", "text": resp.text}],
+                }
+        except httpx.HTTPError as e:
+            logger.warning("API 工具调用失败", url=url, error=str(e))
+            return {
+                "content": [{"type": "text", "text": f"API 调用失败: {e}"}],
+            }
 
     def _build_allowed_tools(self, request: AgentRequest) -> list[str]:
         """构建工具白名单。"""

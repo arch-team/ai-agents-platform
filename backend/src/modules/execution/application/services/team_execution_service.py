@@ -1,7 +1,7 @@
 """团队执行服务。"""
 
 import asyncio
-from collections.abc import AsyncIterator, Callable
+from collections.abc import AsyncIterator, Awaitable, Callable
 
 import structlog
 
@@ -63,8 +63,8 @@ class TeamExecutionService:
             tuple[
                 ITeamExecutionRepository,
                 ITeamExecutionLogRepository,
-                Callable[[], object],
-                Callable[[], object],
+                Callable[[], Awaitable[None]],
+                Callable[[], Awaitable[None]],
             ],
         ]
         | None = None,
@@ -275,7 +275,7 @@ class TeamExecutionService:
         agent_info: ActiveAgentInfo,
         exec_repo: ITeamExecutionRepository,
         log_repo: ITeamExecutionLogRepository,
-        commit_fn: Callable[[], object] | None,
+        commit_fn: Callable[[], Awaitable[None]] | None,
     ) -> None:
         """实际执行逻辑（使用传入的 repo）。"""
         async with _team_execution_semaphore:
@@ -458,13 +458,14 @@ class TeamExecutionService:
     ) -> AsyncIterator[AgentResponseChunk]:
         """消费 agent_runtime 流式响应。
 
-        兼容 coroutine (async def) 和 async generator 两种返回类型。
+        兼容 async generator (直接返回 AsyncIterator) 和
+        async def (返回 Coroutine 需要 await) 两种实现方式。
         """
         result = self._agent_runtime.execute_stream(request)
         if hasattr(result, "__anext__"):
-            stream = result
+            stream: AsyncIterator[AgentResponseChunk] = result
         else:
-            stream = await result
+            stream = await result  # type: ignore[misc]
         async for chunk in stream:
             yield chunk
 

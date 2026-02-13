@@ -66,6 +66,9 @@ class Settings(BaseSettings):
     AGENTCORE_GATEWAY_URL: str = ""  # AgentCore Gateway MCP 端点 (SSE URL)
     AGENTCORE_MEMORY_ID: str = ""  # AgentCore Memory 资源 ID (可选)
 
+    # Agent 运行时模式: in_process (本地 Claude Agent SDK) / agentcore_runtime (远程 AgentCore API)
+    AGENT_RUNTIME_MODE: str = "in_process"
+
     # Bedrock Knowledge Base 配置 (开发环境允许为空)
     BEDROCK_KB_ROLE_ARN: str = ""
     BEDROCK_KB_EMBEDDING_MODEL_ARN: str = ""

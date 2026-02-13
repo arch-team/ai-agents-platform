@@ -1,8 +1,8 @@
 import * as cdk from 'aws-cdk-lib';
 import type { EnvironmentConfig, EnvironmentName } from './types';
 
-/** 有效的环境名称集合 */
-const VALID_ENV_NAMES: ReadonlySet<string> = new Set<EnvironmentName>(['dev', 'staging', 'prod']);
+/** 有效的环境名称集合 (v1.4: 移除 staging) */
+const VALID_ENV_NAMES: ReadonlySet<string> = new Set<EnvironmentName>(['dev', 'prod']);
 
 /**
  * 从 CDK Context 读取环境配置。

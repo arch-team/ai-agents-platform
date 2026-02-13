@@ -1,20 +1,15 @@
 # ============================================================
-# Agent 应用 Docker 镜像
-# Python + Node.js 18+ 双运行时 (Claude Code CLI 依赖 Node.js)
+# Agent 应用 Docker 镜像 (AgentCore Runtime 部署用)
+# claude-agent-sdk wheel 自带 bundled CLI (Node.js SEA 编译 ELF)
+# 不需要额外安装 Node.js
 # ============================================================
 
 # -- Stage 1: Builder --
 FROM python:3.12-slim AS builder
 
-# 安装 Node.js 18+ — Claude Code CLI 运行时依赖
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends curl ca-certificates && \
-    curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
-    apt-get install -y --no-install-recommends nodejs && \
-    rm -rf /var/lib/apt/lists/*
-
-# 安装 uv
+# 安装 uv 和编译工具 (asyncmy 需要 gcc)
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
+RUN apt-get update && apt-get install -y --no-install-recommends gcc libc6-dev && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
@@ -22,24 +17,18 @@ WORKDIR /app
 COPY pyproject.toml uv.lock* ./
 
 # 安装生产依赖 (不含 dev 依赖)
-# claude-agent-sdk 安装时自动捆绑 Claude Code CLI
+# claude-agent-sdk wheel 自带 bundled CLI (Node.js SEA 编译的 ELF 二进制)，无需 Node.js
 RUN uv sync --no-dev --frozen --no-install-project
 
-# 复制源代码
+# 复制源代码和构建所需文件
 COPY src/ src/
+COPY README.md .
 
 # 安装项目本身
 RUN uv sync --no-dev --frozen
 
 # -- Stage 2: Runtime --
 FROM python:3.12-slim AS runtime
-
-# 安装 Node.js 18+ — Claude Code CLI 运行时依赖
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends curl ca-certificates && \
-    curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
-    apt-get install -y --no-install-recommends nodejs && \
-    rm -rf /var/lib/apt/lists/*
 
 # 安全: 非 root 用户运行
 RUN groupadd --gid 1000 appuser && \
@@ -52,18 +41,21 @@ COPY --from=builder /app/.venv /app/.venv
 COPY --from=builder /app/src /app/src
 
 # 设置 PATH 使用虚拟环境
+# CLAUDE_CODE_USE_BEDROCK: 启用 Bedrock 认证路径 (IAM Role → Bedrock Invoke API)
+# AWS_REGION 由部署时注入 (AgentCore Runtime 环境变量)
 ENV PATH="/app/.venv/bin:$PATH" \
     PYTHONUNBUFFERED=1 \
-    PYTHONDONTWRITEBYTECODE=1
-
-# Bedrock 认证通过 AWS 凭证链 (IAM Role / 环境变量)
-# 不需要 ANTHROPIC_API_KEY
-ENV CLAUDE_CODE_USE_BEDROCK=1
-# AWS_REGION 由部署时注入
+    PYTHONDONTWRITEBYTECODE=1 \
+    CLAUDE_CODE_USE_BEDROCK=1
 
 # 切换到非 root 用户
 USER appuser
 
 EXPOSE 8080
+
+# 健康检查: 使用 Python (不依赖 curl)
+# AgentCore Runtime 通过 BedrockAgentCoreApp 内建健康检查端点
+HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8080/health')" || exit 1
 
 CMD ["python", "src/agent_entrypoint.py"]

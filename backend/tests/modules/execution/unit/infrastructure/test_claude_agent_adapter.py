@@ -1,6 +1,6 @@
 """ClaudeAgentAdapter 单元测试。"""
 
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
@@ -278,7 +278,9 @@ class TestBuildMcpConfig:
         result = adapter._build_mcp_config(request)
 
         assert "platform-tools" in result
-        assert result["platform-tools"]["type"] == "stdio"
+        config = result["platform-tools"]
+        assert config["type"] == "sdk"
+        assert config["name"] == "platform-tools"
 
     def test_function_tools_create_platform_tools_config(self):
         adapter = ClaudeAgentAdapter()
@@ -288,6 +290,7 @@ class TestBuildMcpConfig:
         result = adapter._build_mcp_config(request)
 
         assert "platform-tools" in result
+        assert result["platform-tools"]["type"] == "sdk"
 
     def test_mixed_tools_create_both_configs(self):
         adapter = ClaudeAgentAdapter()
@@ -477,3 +480,59 @@ class TestMemoryMcpIntegration:
         assert "gateway" in config
         assert "platform-tools" in config
         assert "memory" in config
+
+
+# -- _create_tool_handler() / _call_api_tool() 测试 --
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio(loop_scope="class")
+class TestToolHandler:
+    async def test_function_tool_handler_returns_summary(self) -> None:
+        tool = _make_tool("my-func", "function")
+        handler = ClaudeAgentAdapter._create_tool_handler(tool)
+        result = await handler({"key": "value"})
+
+        assert len(result["content"]) == 1
+        assert "my-func" in result["content"][0]["text"]
+        assert "key" in result["content"][0]["text"]
+
+    async def test_api_tool_without_endpoint_returns_summary(self) -> None:
+        tool = _make_tool("no-endpoint", "api", config={})
+        handler = ClaudeAgentAdapter._create_tool_handler(tool)
+        result = await handler({"x": 1})
+
+        assert "no-endpoint" in result["content"][0]["text"]
+
+    @patch("httpx.AsyncClient")
+    async def test_api_tool_with_endpoint_calls_http(self, mock_client_cls) -> None:
+        mock_resp = AsyncMock()
+        mock_resp.text = '{"result": 42}'
+        mock_resp.raise_for_status = lambda: None
+
+        mock_client = AsyncMock()
+        mock_client.request.return_value = mock_resp
+        mock_client.__aenter__ = AsyncMock(return_value=mock_client)
+        mock_client.__aexit__ = AsyncMock(return_value=False)
+        mock_client_cls.return_value = mock_client
+
+        config = {"endpoint_url": "https://api.example.com/calc", "method": "POST"}
+        result = await ClaudeAgentAdapter._call_api_tool(config, {"a": 1})
+
+        assert result["content"][0]["text"] == '{"result": 42}'
+        mock_client.request.assert_called_once()
+
+    @patch("httpx.AsyncClient")
+    async def test_api_tool_http_error_returns_error_message(self, mock_client_cls) -> None:
+        import httpx
+
+        mock_client = AsyncMock()
+        mock_client.request.side_effect = httpx.HTTPError("连接超时")
+        mock_client.__aenter__ = AsyncMock(return_value=mock_client)
+        mock_client.__aexit__ = AsyncMock(return_value=False)
+        mock_client_cls.return_value = mock_client
+
+        config = {"endpoint_url": "https://api.example.com/fail", "method": "POST"}
+        result = await ClaudeAgentAdapter._call_api_tool(config, {})
+
+        assert "API 调用失败" in result["content"][0]["text"]

@@ -691,6 +691,50 @@ Claude Agent SDK 无内置 OpenTelemetry。独立集成 ADOT SDK：
 
 ---
 
+### P3-4: Agent 容器镜像构建 + ECR 推送 + AgentCore Runtime 部署验证
+
+**前置**: P1-3 (AgentCore Runtime CDK), P1-4 (agent_entrypoint.py)
+
+**背景**: P1-3 和 P1-4 完成了代码产物（AgentCoreStack CDK 资源、agent_entrypoint.py、Dockerfile.agent），但从未实际构建镜像推送到 ECR 并在 AgentCore Runtime 上运行验证。当前 AgentCore Runtime 处于"CDK 已部署但无容器运行"状态。
+
+**行动项**:
+1. 构建 `Dockerfile.agent` 镜像并推送到 AgentCoreStack 创建的 ECR Repository
+2. 触发 AgentCore Runtime 拉取镜像并启动容器
+3. 通过 `invoke_agent_runtime()` API 验证 agent_entrypoint.py 正常运行（健康检查 + 基础对话测试）
+4. 建立 CI/CD Pipeline 自动化 Agent 镜像构建和推送流程
+
+**影响文件**:
+- 新增/修改: `.github/workflows/agent-deploy.yml`（CI/CD Pipeline）
+- 修改: `infra/` CDK（可能需要调整 Runtime 配置参数）
+- 验证: `backend/src/agent_entrypoint.py`（Runtime 上运行正确性）
+
+**验证标准**: AgentCore Runtime 健康检查通过；通过 `invoke_agent_runtime()` API 发送测试 prompt 获得正确响应。
+
+---
+
+### P3-5: Platform API → AgentCore Runtime 调用路径切换
+
+**前置**: P3-4
+
+**背景**: 当前 Platform API 的 `ClaudeAgentAdapter` 在 ECS Fargate 进程内直接调用 `claude_agent_sdk.query()`，Agent Loop 运行在 Platform API 进程中。目标架构是 Platform API 通过 `invoke_agent_runtime()` 将 Agent 执行委托给 AgentCore Runtime，实现 Platform API 与 Agent 执行层的部署分离。
+
+**行动项**:
+1. 实现 `AgentCoreRuntimeAdapter`（新的 `IAgentRuntime` 实现），内部调用 `invoke_agent_runtime()` API
+2. 在 `dependencies.py` 中根据配置选择适配器：`ClaudeAgentAdapter`（进程内，降级路径）或 `AgentCoreRuntimeAdapter`（远程 Runtime）
+3. 处理 `invoke_agent_runtime()` 的流式响应映射到 `AgentResponseChunk`
+4. 性能对比测试：进程内执行 vs AgentCore Runtime 远程调用的延迟和吞吐量差异
+5. 更新 ExecutionService 的 OpenTelemetry Span，区分两种执行路径
+
+**影响文件**:
+- 新增: `backend/src/modules/execution/infrastructure/external/agentcore_runtime_adapter.py`
+- 修改: `backend/src/modules/execution/api/dependencies.py`（适配器选择逻辑）
+- 修改: `backend/src/shared/infrastructure/settings.py`（新增 `AGENT_RUNTIME_MODE` 配置）
+- 修改: `backend/src/modules/execution/application/services/execution_service.py`（Span 属性）
+
+**验证标准**: Platform API 通过 AgentCore Runtime 执行对话成功；流式 SSE 响应正常；两种路径可通过配置切换；进程内路径作为降级保留。
+
+---
+
 ## 6. 与 improvement-plan.md 的关系
 
 ### 依赖关系
@@ -707,14 +751,17 @@ improvement-plan S0 (已完成 ✅)
 └── P0-6: KB 参数完善
        ↓
 本计划 P1 (核心集成)
-├── P1-1: ClaudeAgentAdapter
+├── P1-1: ClaudeAgentAdapter (进程内调用 claude_agent_sdk.query())
 ├── P1-2: ExecutionService 扩展
-├── P1-3: AgentCore Runtime CDK
-└── P1-4: Agent 入口点
+├── P1-3: AgentCore Runtime CDK (资源已部署，无容器运行)
+└── P1-4: Agent 入口点 (代码已就绪，未构建部署)
        ↓
 本计划 P2 (平台能力)
        ↓
 本计划 P3 (深度集成)
+├── P3-1~3: Memory / 多 Agent / Identity
+├── P3-4: Agent 容器构建 + ECR 推送 + Runtime 部署验证 (依赖 P1-3, P1-4)
+└── P3-5: Platform API → AgentCore Runtime 调用路径切换 (依赖 P3-4)
 ```
 
 ### 互补关系
@@ -758,6 +805,8 @@ improvement-plan S0 (已完成 ✅)
 - [ ] P3-1: AgentCore Memory 长期记忆策略
 - [ ] P3-2: 多 Agent 编排 (orchestration 模块)
 - [ ] P3-3: AgentCore Identity 集成
+- [ ] P3-4: Agent 容器镜像构建 + ECR 推送 + AgentCore Runtime 部署验证
+- [ ] P3-5: Platform API → AgentCore Runtime 调用路径切换
 
 ### 后续 ADR
 

@@ -14,6 +14,16 @@ const AgentCreatePage = lazy(() => import('@/pages/agents/create'));
 const AgentDetailPage = lazy(() => import('@/pages/agents/detail'));
 const ChatPage = lazy(() => import('@/pages/chat'));
 const TeamExecutionPage = lazy(() => import('@/pages/team-executions'));
+const ToolListPage = lazy(() => import('@/pages/tools/list'));
+const ToolDetailPage = lazy(() => import('@/pages/tools/detail'));
+const InsightsPage = lazy(() => import('@/pages/insights'));
+const EvaluationListPage = lazy(() => import('@/pages/evaluation/list'));
+const EvaluationDetailPage = lazy(() => import('@/pages/evaluation/detail'));
+const EvaluationRunsPage = lazy(() => import('@/pages/evaluation/runs'));
+const KnowledgeListPage = lazy(() => import('@/pages/knowledge/list'));
+const KnowledgeDetailPage = lazy(() => import('@/pages/knowledge/detail'));
+const TemplateListPage = lazy(() => import('@/pages/templates/list'));
+const TemplateDetailPage = lazy(() => import('@/pages/templates/detail'));
 const NotFoundPage = lazy(() => import('@/pages/not-found'));
 
 // 延迟加载布局组件
@@ -37,6 +47,16 @@ export function AppRoutes() {
             <Route path="/chat" element={<ChatPage />} />
             <Route path="/chat/:conversationId" element={<ChatPage />} />
             <Route path="/team-executions" element={<TeamExecutionPage />} />
+            <Route path="/tools" element={<ToolListPage />} />
+            <Route path="/tools/:toolId" element={<ToolDetailPage />} />
+            <Route path="/insights" element={<InsightsPage />} />
+            <Route path="/evaluation" element={<EvaluationListPage />} />
+            <Route path="/evaluation/runs" element={<EvaluationRunsPage />} />
+            <Route path="/evaluation/:suiteId" element={<EvaluationDetailPage />} />
+            <Route path="/knowledge" element={<KnowledgeListPage />} />
+            <Route path="/knowledge/:knowledgeBaseId" element={<KnowledgeDetailPage />} />
+            <Route path="/templates" element={<TemplateListPage />} />
+            <Route path="/templates/:templateId" element={<TemplateDetailPage />} />
           </Route>
         </Route>
 

@@ -21,11 +21,22 @@ describe('NetworkStack', () => {
     });
   });
 
-  it('Prod 环境应使用 3 个 NAT Gateway', () => {
+  it('Prod 环境默认应使用 1 个 NAT Gateway (初期降低成本)', () => {
     const app = new cdk.App();
     const stack = new NetworkStack(app, 'ProdNetworkStack', {
       ...defaultProps,
       envName: 'prod',
+    });
+    const template = Template.fromStack(stack);
+
+    template.resourceCountIs('AWS::EC2::NatGateway', 1);
+  });
+
+  it('可通过 natGateways 参数自定义 NAT Gateway 数量', () => {
+    const app = new cdk.App();
+    const stack = new NetworkStack(app, 'CustomNatStack', {
+      ...defaultProps,
+      natGateways: 3,
     });
     const template = Template.fromStack(stack);
 

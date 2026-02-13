@@ -227,13 +227,13 @@ class ExecutionService:
         """
         ctx = await self._prepare_for_send(conversation_id, dto.content, user_id)
 
-        # 创建空助手消息占位
+        # 创建空助手消息占位 (使用 stream_session, 确保后续 _finalize_stream 能在同一 session 中更新)
         assistant_message = Message(
             conversation_id=conversation_id,
             role=MessageRole.ASSISTANT,
             content="",
         )
-        created_assistant_msg = await self._message_repo.create(assistant_message)
+        created_assistant_msg = await self._stream_msg_repo.create(assistant_message)
 
         use_agent = self._should_use_agent_runtime(ctx.agent_info)
 
@@ -465,9 +465,8 @@ class ExecutionService:
     async def _generate_agent_stream(self, ctx: _SendContext) -> AsyncIterator[AgentResponseChunk]:
         """Agent 路径的流式生成器。
 
-        ClaudeAgentAdapter.execute_stream 是 async def 返回 AsyncIterator (coroutine)，
-        需先 await 获取迭代器。但 IAgentRuntime 接口允许直接返回 AsyncIterator，
-        因此兼容两种情况。
+        兼容 async generator (直接返回 AsyncIterator) 和
+        async def (返回 Coroutine 需要 await) 两种实现方式。
         """
         if self._agent_runtime is None:
             msg = "Agent runtime 未配置"
@@ -475,11 +474,10 @@ class ExecutionService:
         tools = await self._get_agent_tools()
         request = self._build_agent_request(ctx, tools)
         result = self._agent_runtime.execute_stream(request)
-        # 兼容 coroutine (async def) 和 async generator 两种返回类型
         if hasattr(result, "__anext__"):
-            stream = result  # 已经是 AsyncIterator
+            stream: AsyncIterator[AgentResponseChunk] = result
         else:
-            stream = await result  # coroutine，需要 await
+            stream = await result  # type: ignore[misc]
         async for chunk in stream:
             yield chunk
 

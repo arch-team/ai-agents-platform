@@ -30,9 +30,6 @@ describe('constants', () => {
     it('应根据环境名称设置 Environment 标签', () => {
       const prodTags = getRequiredTags('prod');
       expect(prodTags.Environment).toBe('prod');
-
-      const stagingTags = getRequiredTags('staging');
-      expect(stagingTags.Environment).toBe('staging');
     });
   });
 
@@ -44,17 +41,12 @@ describe('constants', () => {
     it('Prod 环境应返回 RETAIN', () => {
       expect(getRemovalPolicy('prod')).toBe(cdk.RemovalPolicy.RETAIN);
     });
-
-    it('Staging 环境应返回 SNAPSHOT', () => {
-      expect(getRemovalPolicy('staging')).toBe(cdk.RemovalPolicy.SNAPSHOT);
-    });
   });
 
   describe('isDev', () => {
     it.each<[EnvironmentName, boolean]>([
       ['dev', true],
       ['prod', false],
-      ['staging', false],
     ])('环境 "%s" 应返回 %s', (envName, expected) => {
       expect(isDev(envName)).toBe(expected);
     });
@@ -64,7 +56,6 @@ describe('constants', () => {
     it.each<[EnvironmentName, boolean]>([
       ['prod', true],
       ['dev', false],
-      ['staging', false],
     ])('环境 "%s" 应返回 %s', (envName, expected) => {
       expect(isProd(envName)).toBe(expected);
     });

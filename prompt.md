@@ -243,3 +243,27 @@ docs/strategy/improvement-plan.md 相当于对/Users/jinhuasu/Project_Workspace/
 审查一下目前这个项目的实现或者技术选型与方向是否符合 使用 Claude Agent SDK （https://platform.claude.com/docs/en/agent-sdk/overview）+ Claude Code Cli 来构建Agent应用，通过
 AWS AgentCore Runtime解决该Agent应用的运行时，使用AWS AgentCore Gateway来对接外部MCP的统一入口，使用Amazon Bedrock Knowledge Base 作为Agent应用外接知识库，使用 AgentCore Observability Agent应用的观测性方案，使用使用 AgentCore Memory 管理Agent应用的Memory管理，并且当前的项目需要基于AWS AgentCore和Amazon Bedrock Knowledge Base提供的Python SDK来封装，请审查当前的技术方案是否符合这一要求。全面审查一下技术选型，启用Claude code agent teams 分配多个不同的agent进行全面分析
 
+
+
+  3. AgentCore P3 仍有 3 项未完成 (Identity 集成、长期记忆策略、高级可观测性)
+  4. 前端完全缺失 — 后端已有 60+ 端点但无前端 UI
+
+
+
+/Users/jinhuasu/Project_Workspace/Anker-Projects/ml-platform-research/llm-platform-solution/ai-agents-platform/infra 中的stack 命名为需要规范一下当前是：
+Database-prod
+AgentCore-prod
+Security-prod
+Network-prod
+Compute-dev
+
+改为这样的规范形式： 
+ai-agents-plat-database-dev
+ai-agents-plat-agentCore-dev
+ai-agents-plat-database-prod
+ai-agents-plat-agentCore-prod
+ai-agents-plat-agentCore-staging
+并且当前选择的是AWS ECS，我希望改为EKS
+
+请启用Claude Code Agent Teams完成以上的任务，完成之后需要将这些变更 并更新项目的进度跟踪和路线图  ，Agent Teams的规划参考：/Users/jinhuasu/Project_Workspace/Anker-Projects/ml-platform-research/llm-platform-solution/ai-agents-platform/plan-docs/claude-code-tooling-guide.md中的四、推荐的 Agent Teams 组合
+

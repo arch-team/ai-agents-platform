@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 import 'source-map-support/register';
 import * as cdk from 'aws-cdk-lib';
+import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import { Aspects } from 'aws-cdk-lib';
 import { AwsSolutionsChecks } from 'cdk-nag';
-import { getEnvironmentConfig, getRequiredTags } from '../lib/config';
+import { getEnvironmentConfig, getRequiredTags, isProd } from '../lib/config';
 import {
   NetworkStack,
   SecurityStack,
@@ -27,32 +28,38 @@ Aspects.of(app).add(new AwsSolutionsChecks({ verbose: true }));
 
 // 提取公共环境配置，避免重复构建 env 对象
 const cdkEnv = { account: envConfig.account, region: envConfig.region };
+const prefix = `ai-agents-plat`;  // Stack 命名前缀
+const env = envConfig.envName;
 
-// Stack 实例化
-const networkStack = new NetworkStack(app, `Network-${envConfig.envName}`, {
+// Stack 实例化 — 命名规范: ai-agents-plat-{stack}-{env}
+const networkStack = new NetworkStack(app, `${prefix}-network-${env}`, {
   env: cdkEnv,
   vpcCidr: envConfig.vpcCidr,
-  envName: envConfig.envName,
+  envName: env,
 });
 
-const securityStack = new SecurityStack(app, `Security-${envConfig.envName}`, {
+const securityStack = new SecurityStack(app, `${prefix}-security-${env}`, {
   env: cdkEnv,
   vpc: networkStack.vpc,
-  envName: envConfig.envName,
+  envName: env,
 });
 securityStack.addDependency(networkStack);
 
-const databaseStack = new DatabaseStack(app, `Database-${envConfig.envName}`, {
+const databaseStack = new DatabaseStack(app, `${prefix}-database-${env}`, {
   env: cdkEnv,
   vpc: networkStack.vpc,
   dbSecurityGroup: securityStack.dbSecurityGroup,
   encryptionKey: securityStack.encryptionKey,
-  envName: envConfig.envName,
+  envName: env,
+  // Prod: db.r6g.large (性能优化); Dev: db.t3.medium (默认)
+  instanceType: isProd(env)
+    ? ec2.InstanceType.of(ec2.InstanceClass.R6G, ec2.InstanceSize.LARGE)
+    : undefined,
 });
 databaseStack.addDependency(networkStack);
 databaseStack.addDependency(securityStack);
 
-const computeStack = new ComputeStack(app, `Compute-${envConfig.envName}`, {
+const computeStack = new ComputeStack(app, `${prefix}-compute-${env}`, {
   env: cdkEnv,
   vpc: networkStack.vpc,
   dbSecurityGroup: securityStack.dbSecurityGroup,
@@ -61,27 +68,33 @@ const computeStack = new ComputeStack(app, `Compute-${envConfig.envName}`, {
   // 使用 ARN 字符串避免跨 Stack 循环依赖 (CDK 2.1100+ 行为变化)
   encryptionKeyArn: securityStack.encryptionKey.keyArn,
   jwtSecretArn: securityStack.jwtSecret.secretArn,
-  envName: envConfig.envName,
+  envName: env,
+  // Prod: 512 CPU / 1024 MiB / 2 任务; Dev: 256 CPU / 512 MiB / 1 任务 (默认)
+  ...(isProd(env) && {
+    cpu: 512,
+    memoryLimitMiB: 1024,
+    desiredCount: 2,
+  }),
 });
 computeStack.addDependency(networkStack);
 computeStack.addDependency(securityStack);
 computeStack.addDependency(databaseStack);
 
-const agentCoreStack = new AgentCoreStack(app, `AgentCore-${envConfig.envName}`, {
+const agentCoreStack = new AgentCoreStack(app, `${prefix}-agentcore-${env}`, {
   env: cdkEnv,
   vpc: networkStack.vpc,
-  envName: envConfig.envName,
+  envName: env,
 });
 agentCoreStack.addDependency(networkStack);
 
-const monitoringStack = new MonitoringStack(app, `Monitoring-${envConfig.envName}`, {
+const monitoringStack = new MonitoringStack(app, `${prefix}-monitoring-${env}`, {
   env: cdkEnv,
   cluster: databaseStack.cluster,
   service: computeStack.service,
   loadBalancer: computeStack.loadBalancer,
   targetGroup: computeStack.targetGroup,
   alertEmail: envConfig.alertEmail,
-  envName: envConfig.envName,
+  envName: env,
 });
 monitoringStack.addDependency(databaseStack);
 monitoringStack.addDependency(computeStack);

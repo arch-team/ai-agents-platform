@@ -19,17 +19,10 @@ export function getRequiredTags(envName: EnvironmentName): Record<string, string
 
 /**
  * 根据环境名称获取 RemovalPolicy。
- * @remarks Dev 环境使用 DESTROY (便于迭代), Prod 使用 RETAIN, 其他使用 SNAPSHOT
+ * @remarks Dev 环境使用 DESTROY (便于迭代), Prod 使用 RETAIN
  */
 export function getRemovalPolicy(envName: EnvironmentName): cdk.RemovalPolicy {
-  switch (envName) {
-    case 'dev':
-      return cdk.RemovalPolicy.DESTROY;
-    case 'prod':
-      return cdk.RemovalPolicy.RETAIN;
-    default:
-      return cdk.RemovalPolicy.SNAPSHOT;
-  }
+  return envName === 'dev' ? cdk.RemovalPolicy.DESTROY : cdk.RemovalPolicy.RETAIN;
 }
 
 /**

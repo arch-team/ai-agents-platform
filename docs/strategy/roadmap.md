@@ -1,6 +1,6 @@
 # 四阶段迭代路线图
 
-> **文档类型**: 战略规划 | **维护者**: 后端架构师 | **状态**: v1.3 — Phase 3 M7 完成后季度评审 (ADR-009)
+> **文档类型**: 战略规划 | **维护者**: 后端架构师 | **状态**: v1.4 — M8.5 完成后环境策略简化 (移除 Staging)
 
 ---
 
@@ -138,7 +138,7 @@ CI/CD: GitHub Actions 基础 Pipeline (lint → test → cdk synth → deploy de
 | **AgentCoreStack** | AgentCore Runtime (Agent 执行层)、AgentCore Gateway (MCP 统一入口) | Agent 运行时部署 (ADR-006) |
 | **ApiStack** | API Gateway、WAF 规则、访问日志 | API 入口层 |
 
-新增 Staging 环境，资源配置参考环境矩阵 (db.t3.medium 多 AZ)。集成 CloudWatch 监控 (日志组、基础告警)。AgentCore CDK 使用 `@aws-cdk/aws-bedrock-agentcore-alpha` L2 Construct。
+~~新增 Staging 环境~~ (v1.4 移除: Dev+Prod 两套环境足够)。集成 CloudWatch 监控 (日志组、基础告警)。AgentCore CDK 使用 `@aws-cdk/aws-bedrock-agentcore-alpha` L2 Construct。
 
 ### 3.5 关键里程碑
 
@@ -200,7 +200,7 @@ CI/CD: GitHub Actions 基础 Pipeline (lint → test → cdk synth → deploy de
 
 ---
 
-## 4. Phase 3: 生态扩展 (6-12 月) — M7 ✅ + M8/M8.5/M9 待执行
+## 4. Phase 3: 生态扩展 (6-12 月) — M7 ✅ + M8 ✅ + M8.5 ✅ + M9 ✅
 
 ### 4.1 目标
 
@@ -216,7 +216,7 @@ Phase 3 核心依赖项 **全部就绪**：
 
 | 依赖项 | 状态 | 完成时间 |
 |--------|:----:|---------|
-| AgentCore Runtime | ✅ 已部署 (2 AZ) | M7-prep |
+| AgentCore Runtime | ⚠️ CDK 已部署 (2 AZ)，无容器运行 — 待 P3-4 构建推送 | M7-prep (CDK) |
 | AgentCore Gateway | ✅ 已部署 (MCP) | M7-prep |
 | AgentCore Gateway 集成 (P2-1) | ✅ 已完成 | M7-prep |
 | AgentCore Memory (P2-2) | ✅ 已完成 | M7-prep |
@@ -251,9 +251,9 @@ Phase 3 核心依赖项 **全部就绪**：
 | CDK Stack | 变更 | 说明 | 调整说明 |
 |-----------|------|------|---------|
 | **MonitoringStack** | 新增: OpenTelemetry (ADOT) + CloudWatch Dashboards + SNS 告警 | 全链路可观测 (P2-3 + C-S4-4) | **前移**: 从 Phase 3 中期前移到 M7 之前，作为 AgentCore P2 集成的一部分 |
-| **ComputeStack** | 增强: 蓝绿部署 (CodeDeploy)、Auto Scaling 策略优化 | 零停机部署 | 不变 |
-| **Staging 环境** | 增强: 完整 Prod 配置验证 | Prod 部署前验证 | 新增 — Staging 作为 Prod 镜像环境 |
-| **Prod 环境** | 全量 Stack 部署: db.r6g.large 多 AZ、每 AZ 一个 NAT Gateway | 生产就绪 | 不变 |
+| **ComputeStack** | 增强: Auto Scaling 策略优化 | ECS 滚动更新部署 | **简化 (v1.4)**: 蓝绿部署推迟到 Phase 4，初期 ECS 滚动更新足够 |
+| ~~**Staging 环境**~~ | ~~完整 Prod 配置验证~~ | - | **移除 (v1.4)**: 内部平台 Dev+Prod 两套环境足够，Staging 成本高于收益 |
+| **Prod 环境** | 全量 Stack 部署: db.r6g.large 多 AZ、每 AZ 一个 NAT Gateway、HTTPS + 域名 | 生产就绪 | **简化 (v1.4)**: Dev 承担预发布验证职责，`cdk diff` 审查后直接部署 Prod |
 
 ### 4.6 关键里程碑 — v1.3 (ADR-009)
 
@@ -263,7 +263,7 @@ Phase 3 核心依赖项 **全部就绪**：
 | **M7** | 第 29-36 周 | Agent Teams (ADR-008) — 替代 orchestration 模块 | ✅ 已完成 (13/13 任务) |
 | **M8: 评估体系 (精简)** | 第 37-40 周 (4 周) | evaluation 模块 MVP: 测试集 CRUD + 批量执行 + 基础评分 | **缩短**: 6→4 周，移除评估 Pipeline 自动化 |
 | **M8.5: 前端 MVP** | 第 41-48 周 (8 周) | 前端 React+TS+FSD: 登录 + Agent 管理 + 对话 + 团队执行 + 工具/知识库 | **新增**: 前端零到一，覆盖 Phase 1-3 后端全部核心能力 |
-| **M9: 生产部署** | 第 49-52 周 (4 周) | Staging 验证 → Prod 部署 + 核心团队试用 (目标 10+ 用户) | **缩短**: 6→4 周，用户目标 20→10 (前端新上线) |
+| **M9: 生产部署** | 第 49-52 周 (2-3 周) | CDK Prod 参数化 → `cdk diff` 审查 → Prod 部署 + HTTPS/域名 + 核心团队试用 (目标 10+ 用户) | **再简化 (v1.4)**: 移除 Staging，Dev 承担验证；蓝绿部署推迟；2-3 周完成 |
 
 ### 4.7 验收标准 — v1.3 (ADR-009)
 
@@ -278,16 +278,22 @@ Phase 3 核心依赖项 **全部就绪**：
 | P95 响应延迟 | < 300ms (非 LLM 接口) | 不变 |
 | AgentCore P2 集成 | Gateway + Memory + OTEL 全部完成 | ✅ 已达成 |
 | 运维成熟度 | CI/CD + Secrets + 监控告警全部就位 | ✅ 已达成 |
+| 环境策略 | Dev (开发+验证) + Prod (生产) 两套环境 | **简化 (v1.4)**: 移除 Staging，降低运维成本 |
 
 ---
 
-## 5. Phase 4: 企业成熟 (12-18 月) — 已调整
+## 5. Phase 4: 企业成熟 (12-18 月) — v1.5 详细规划
 
-> **调整说明** (C-S3-3): 时间窗口从 12-24 月缩短至 12-18 月。移除 marketplace 和多区域部署（200 人以内的内部平台不需要市场机制和跨区域容灾），降低灾备指标至合理水平。保留 audit 模块作为核心交付，analytics 简化为 insights 模块的增强而非独立模块。
+> **调整说明 v1.5** (Phase 4 季度评审, 2026-02-13): 基于四维度评审（代码审计 + 外部技术变化 + Phase 3 经验教训 + 路线图拆解），Phase 4 从方向性规划升级为详细规划。核心调整：新增 M10-prep（执行层分离 + 技术基线升级）；M10 后端 audit + 前端覆盖度补全并行；自助 Agent 构建器降级为体验优化（前端覆盖度更紧迫）；14 项新变更积压注入。
 
 ### 5.1 目标
 
 平台成熟化，完善合规审计和使用分析，支撑全公司推广使用。
+
+**v1.5 补充目标**:
+- 完成 Agent 执行层部署分离（P3-4/P3-5），实现 Platform API 与 AgentCore Runtime 架构解耦
+- 前端覆盖度从 45% 提升到 85%+，补全缺失的 5 个核心页面
+- 外部依赖全量升级（SDK 包名 + CDK alpha + Aurora），技术基线对齐最新版本
 
 ### 5.2 后端模块实现顺序
 
@@ -299,41 +305,85 @@ Phase 3 核心依赖项 **全部就绪**：
 
 `audit` 是本阶段唯一新建模块。Phase 2 的 `insights` 模块在本阶段增强（用户行为分析、ROI 计算），不单独建 `analytics` 模块。
 
-### 5.3 前端功能
+### 5.3 前端功能 — v1.5 更新
 
 | 功能模块 | 关键页面/组件 | 调整说明 |
 |---------|-------------|---------|
-| 审计与合规 | AuditLogPage (审计日志查询)、ComplianceReportPage (合规报告)、DataRetentionSettings | 不变 |
+| **前端覆盖度补全 (M10 并行)** | KnowledgePage、TemplatesPage、ToolCatalogPage、InsightsPage、EvaluationPage | **v1.5 新增**: Phase 3 教训 — 前端启动过晚是最大遗憾，5 个缺失页面必须在 M10 补齐 |
+| 审计与合规 | AuditLogPage (审计日志查询)、ComplianceReportPage (合规报告) | 与 audit 模块同步开发 |
 | 增强分析看板 | InsightsDashboardPage 增强 (用户行为分析、ROI 计算、使用趋势) | 原 analytics 降级为 insights 增强 |
-| 自助式 Agent 构建器 | AgentBuilderPage (低代码拖拽构建)、PromptEditor (提示词编辑器)、PreviewPanel (实时预览) | 保留，核心降低门槛功能 |
+| Agent 体验优化 (M11) | Prompt Editor 增强、配置向导、实时预览 | **v1.5 降级**: 原"自助式 Agent 构建器"降级为体验优化，前端覆盖度补全更紧迫 |
 
-### 5.4 基础设施
+### 5.4 基础设施 — v1.5 更新
 
 | 能力 | 实现方案 | 说明 | 调整说明 |
 |------|---------|------|---------|
-| ~~**多区域部署**~~ | ~~CDK Pipeline + 多区域 Stack 实例化~~ | - | **移除**: 内部平台用户量不支撑多区域 ROI |
-| **灾备方案** | Aurora 跨 AZ 高可用 + S3 版本管理 + 定期快照 | RPO < 5min, RTO < 15min | **降级**: 原金融级目标 (RPO<1s) → 内部平台合理目标 |
-| **成本优化** | AWS Budgets 告警 + Dev 环境定时缩减 + Savings Plans 评估 | 目标: Dev 环境成本降低 50% | 简化 — 聚焦 Dev 环境成本优化 |
+| **Agent 执行层分离 (M10-prep)** | P3-4 容器构建 + ECR 推送 + P3-5 调用路径切换 | Platform API → invoke_agent_runtime() → AgentCore Runtime | **v1.5 新增**: 前置到 M10 之前，Phase 3 教训 — 基础设施前置 |
+| **外部依赖升级 (M10-prep)** | SDK 包名 `claude-agent-sdk` + CDK alpha BREAKING CHANGE 适配 + Aurora 3.10.3 | 技术基线对齐 | **v1.5 新增**: CDK alpha 有 User Pool Client 替换 |
+| ~~**多区域部署**~~ | ~~CDK Pipeline 多区域~~ | - | **移除**: 内部平台用户量不支撑 ROI |
+| **灾备方案** | Aurora 跨 AZ 高可用 + S3 版本管理 + 定期快照 | RPO < 5min, RTO < 15min | 不变 |
+| **成本优化** | AWS Budgets 告警 + Dev 环境定时缩减 + Savings Plans 评估 | 目标: Dev 非工作时段成本降低 50% | **v1.5 细化**: "月均" → "非工作时段" |
 
-### 5.5 关键里程碑
+### 5.5 关键里程碑 — v1.5 详细规划
 
-| 里程碑 | 时间窗口 | 交付物 |
-|--------|---------|--------|
-| **M10: 审计合规** | 第 49-56 周 | audit 模块完成；全操作审计追踪；合规报告自动生成 |
-| **M11: 平台成熟化** | 第 57-64 周 | insights 增强 (ROI + 用户行为)；自助式 Agent 构建器；灾备方案验证 |
-| **M12: 全公司推广** | 第 65-72 周 | 全公司推广 (目标 50+ 活跃用户)；成本优化；AgentCore P3 深度集成 (Identity + 长期记忆策略) |
+| 里程碑 | 时间窗口 | 交付物 | 状态/调整 |
+|--------|---------|--------|---------|
+| **M10-prep: 执行层分离 + 技术基线** | 第 53-56 周 (4 周) | P3-4/P3-5 + SDK/CDK/Aurora 升级 + OTEL 修复 | **v1.5 新增**: Phase 3 教训 — 基础设施前置 |
+| **M10: 审计合规 + 前端补全** | 第 57-64 周 (8 周) | audit 模块 (10 任务) + 前端 5 页面补全 (7 任务)；覆盖度 45% → 85% | **v1.5 调整**: 前后端并行（Phase 3 教训） |
+| **M11: 平台成熟化** | 第 65-70 周 (6 周) | insights 增强 (ROI + 用户行为) + 灾备验证 + Agent 体验优化 + Opus 4.6 评估 | **v1.5 调整**: 自助构建器降级为体验优化 |
+| **M12: 全公司推广 + 深度集成** | 第 71-76 周 (6 周) | P3-3 Identity + P3-1 Memory 策略 + 推广运营 (50+ 用户) + 性能调优 | 不变 |
 
-### 5.6 验收标准 — 已调整
+### 5.6 验收标准 — v1.5 更新
 
 | 指标 | 目标值 | 调整说明 |
 |------|--------|---------|
-| 全公司活跃用户 | >= 50 人 | 原 200 人 → 50 人，阶段性目标更务实 |
+| 全公司活跃用户 | >= 50 人 | 不变 |
 | ~~Agent 市场发布数~~ | ~~>= 50 个~~ | 移除 — marketplace 已移除 |
-| 自助创建比例 | >= 40% 的 Agent 由非技术人员自助创建 | 原 60% → 40%，内部平台技术用户比例高 |
+| 自助创建比例 | >= 40% 的 Agent 由非技术人员自助创建 | 不变 |
 | API 可用性 | >= 99.9% (Prod 环境) | 不变 |
 | 审计覆盖率 | 100% 写操作有审计日志 | 不变 |
-| 灾备恢复 | RPO < 5min, RTO < 15min (演练验证) | 原 RPO<1s/RTO<1min → 更合理的内部平台标准 |
-| 成本效率 | Dev 环境月均成本降低 50% | 原全面降低 30% → 聚焦 Dev 环境 |
+| 灾备恢复 | RPO < 5min, RTO < 15min (演练验证) | 不变 |
+| 成本效率 | Dev 环境非工作时段成本降低 50% | **v1.5 细化**: "月均" → "非工作时段" |
+| **前端覆盖度** | **>= 85% (13+ 页面覆盖全部后端模块)** | **v1.5 新增**: Phase 3 教训 |
+| **执行层分离** | **AgentCore Runtime 部署运行 + 双路径可切换** | **v1.5 新增**: P3-4/P3-5 完成验证 |
+| **后端测试** | **>= 85% 覆盖率 + 0 个被阻断测试** | **v1.5 新增**: 解决 OTEL 阻断 |
+| **外部依赖** | **SDK/CDK/Aurora 全部更新到最新稳定版** | **v1.5 新增**: 技术基线对齐 |
+| P95 响应延迟 | < 300ms (非 LLM 接口) | 不变 |
+| AgentCore 深度集成 | Identity + Memory 长期策略完成 | 不变（M12 交付） |
+
+### 5.7 Phase 3 经验教训 (2026-02-13 评审补充)
+
+> 本节记录 Phase 3 开发过程中的关键经验，为 Phase 4 执行提供指导。
+
+#### 关键成功经验
+
+| 经验 | 说明 | Phase 4 应用 |
+|------|------|-------------|
+| SDK 能力优先于自建 | ADR-008 Agent Teams 替代 DAG 引擎，节省 6-8 周，代码量减半 | 评估 AgentCore Memory/Gateway L2 新能力，避免重复造轮子 |
+| 季度评审机制有效 | v1.2/v1.3/v1.4 三次调整都产生正确决策 | 保持，下一次评审在 M11 完成后 |
+| 变更积压管理 | 24 项 S0-S4 全部清零，穿插执行避免债务累积 | Phase 4 初始化 14 项新变更，继续 S0-S4 分级穿插 |
+| TDD + 高覆盖率 | 1653 测试 94%+ 覆盖率，重构和 Bug 修复信心高 | 继续保持，audit 模块同样 TDD 先行 |
+
+#### 关键教训
+
+| 教训 | 影响 | Phase 4 对策 |
+|------|------|-------------|
+| 前端启动过晚 | Phase 3 后期才有 UI，用户目标从 20 降到 10 | M10 后端 audit + 前端 5 页面并行开发 |
+| AgentCore Runtime 未实际部署 | CDK 已部署但"空转"，执行层未分离 | M10-prep 前置 P3-4/P3-5 |
+| Token 经济性无预算控制 | Agent Teams ~800K tokens/次，仅有告警无硬限 | Phase 4 评估 ClaudeAgentAdapter 层预算控制 |
+
+### 5.8 Phase 4 风险登记簿
+
+| # | 风险 | 概率 | 严重度 | 缓解策略 | 关联里程碑 |
+|---|------|:----:|:------:|---------|-----------|
+| R1 | P3-4/P3-5 执行层分离遇阻 | 中 | 高 | 保留进程内执行降级路径；预留 2 周缓冲；分步切换 | M10-prep |
+| R2 | CDK agentcore alpha BREAKING CHANGE 适配超预期 | 中 | 高 | 保留 L1 CfnResource 降级路径；锁定验证通过的版本 | M10-prep |
+| R3 | 前端 5 页面并行与后端 audit 资源竞争 | 中 | 中 | 前后端明确分工，前端使用已有后端 API 不阻塞 | M10 |
+| R4 | 50+ 用户并发性能瓶颈 | 中 | 高 | M12 压力测试；Runtime 分离后 Platform API 压力降低 | M12 |
+| R5 | Agent Teams 实验特性 SDK 变更 | 低 | 高 | 锁定 SDK 版本；IAgentRuntime 接口隔离变更 | 全 Phase |
+| R6 | Sonnet 模型权限未获批 | 中 | 中 | 持续跟进 AWS 申请；Opus 4.6 备选；Haiku 保底 | M11 |
+| R7 | AgentCore Identity 集成复杂度 | 中 | 中 | 渐进式集成：Gateway 认证 → Token Vault → 全量切换 | M12 |
+| R8 | 全公司推广用户增长不达预期 | 中 | 中 | 梯度推广 10 → 30 → 50；培训+文档+onboarding 配套 | M12 |
 
 ---
 
@@ -346,7 +396,7 @@ Phase 3 核心依赖项 **全部就绪**：
 | Phase 1 | 15% 工时 | 允许简化的错误处理、基础测试覆盖。MVP 速度优先，但不可跳过架构分层 | 实际偿还: 24 项变更积压中 19 项在 Phase 2 内完成 |
 | Phase 2 | 20% 工时 | 偿还 Phase 1 简化项；完善 EventBus 可靠性；补充集成测试 | 实际: 五维度审查 + S0-S2 全部修复 + 1427 测试 |
 | Phase 3 | **25% 工时** | AgentCore P2/P3 集成；CI/CD 完善；Secrets 统一；监控体系 | **上调**: Phase 2 遗留 S4 变更 + P2/P3 集成工作量超预期 |
-| Phase 4 | 15% 工时 | 架构审查和微调；文档完善；自动化运维工具 | - |
+| Phase 4 | **20% 工时** | P3-4/P3-5 执行层分离；前端覆盖度补全；外部依赖升级；14 项变更积压 | **上调**: Phase 3 遗留 P3 集成 + 前端补全 + 技术基线升级工作量超预期 |
 
 ### 6.2 重构窗口期
 
@@ -361,22 +411,32 @@ Phase 3 核心依赖项 **全部就绪**：
 ```
 Phase 1: Modular Monolith (单体部署, boto3 Converse API)           ✅ 完成
    ↓ 模块边界已通过 DDD + EventBus 清晰定义
-Phase 2: Platform API (ECS Fargate) + Agent 执行 (AgentCore Runtime)  ✅ 完成 ← ADR-006
+Phase 2: Platform API (ECS Fargate) + Agent SDK 进程内执行             ✅ 完成 ← ADR-006
    ↓ Claude Agent SDK + IAgentRuntime 接口抽象 + P0/P1 完成
+   ↓ 注: Agent 当前在 ECS Fargate 进程内通过 claude_agent_sdk.query() 直接执行
+   ↓ AgentCore Runtime CDK 已部署 + agent_entrypoint.py 已就绪，但尚未连接 (P3-4/P3-5)
 Phase 2→3 过渡: AgentCore P2 集成 (Gateway 工具同步 + Memory MCP + OTEL)  ← M7-prep ✅
    ↓ 运维基础完善 (CI/CD + Secrets + 监控) ✅
 Phase 3: Agent Teams 多智能体协作 (ADR-008 替代 DAG 引擎) ← M7 ✅
    ↓ evaluation MVP + 前端 MVP (M8 + M8.5)
    ↓ Prod 部署 + 核心团队推广 (M9)
-Phase 4: 平台成熟 (audit + insights 增强 + 自助构建器)
+Phase 3→4 过渡 (M10-prep): 执行层部署分离 (P3-4 容器部署 + P3-5 调用路径切换)  ← 下一步
+   ↓ SDK 包名更新 + CDK alpha 升级 + Aurora 3.10.3 + OTEL 修复
+   ↓ Platform API 通过 invoke_agent_runtime() 委托 AgentCore Runtime 执行
+Phase 4: 平台成熟 (audit + 前端补全 + insights 增强 + Identity/Memory + 推广 50+ 用户)
 ```
 
-**关键原则**: Platform API 层保持 Modular Monolith 部署；Agent 执行层通过 AgentCore Runtime 独立部署和扩展。两者通过 `invoke_agent_runtime()` API 通信。拆分决策基于 ADR-006 和实际负载数据。
+**关键原则**: Platform API 层保持 Modular Monolith 部署；Agent 执行层目标是通过 AgentCore Runtime 独立部署和扩展，两者通过 `invoke_agent_runtime()` API 通信。当前 Agent 在 ECS Fargate 进程内执行（ClaudeAgentAdapter），AgentCore Runtime 部署分离待 P3-4/P3-5 完成。拆分决策基于 ADR-006 和实际负载数据。
 
 **Phase 2 经验新增原则**:
 - **部署即验证**: 每个模块完成后尽早部署到真实环境验证（Phase 2 在 M6 后才首次部署，发现大量兼容性问题）
 - **MySQL-First 测试**: 集成测试必须同时覆盖 MySQL，不能仅依赖 SQLite
 - **基础镜像统一**: 所有 Docker 镜像统一使用 ECR Public 基础镜像 + AMD64 平台
+
+**v1.4 环境策略原则**:
+- **Dev+Prod 两套环境**: 内部平台无需 Staging，Dev 承担开发+验证双重职责
+- **`cdk diff` 审查替代 Staging**: Prod 部署前通过 `cdk diff` 审查配置差异，人工确认
+- **渐进式运维升级**: 蓝绿部署等高级运维能力推迟到用户量增长后按需引入
 
 ---
 
@@ -399,12 +459,13 @@ Phase 4: 平台成熟 (audit + insights 增强 + 自助构建器)
 | 依赖 | 影响范围 | 当前状态 | 备选方案 |
 |------|---------|---------|---------|
 | Amazon Bedrock AgentCore | execution, orchestration 模块 | GA (9 区域), boto3>=1.36.0 | Bedrock Converse API 降级路径 (ADR-003) |
-| Claude Agent SDK | Agent 执行层 (唯一框架, ADR-006) | 正式版, 需 Node.js CLI 依赖 | BedrockLLMClient 降级到单轮对话 |
-| AgentCore SDK (`bedrock-agentcore`) | Runtime 部署 | Python SDK 已发布 | 直接 boto3 调用 |
-| Aurora MySQL 3.x | 全部关系数据存储 | 稳定可用 (ADR-005) | 标准 MySQL 8.0 (降级方案) |
+| Claude Agent SDK | Agent 执行层 (唯一框架, ADR-006) | v0.1.35 (bundled CLI 2.1.39, 无需 Node.js); **包名改为 `claude-agent-sdk`** | BedrockLLMClient 降级到单轮对话 |
+| AgentCore SDK (`bedrock-agentcore`) | Runtime 部署 | v1.3.0 (2026-02-11) | 直接 boto3 调用 |
+| Aurora MySQL 3.x | 全部关系数据存储 | 3.10.0 → **3.10.3 待升级** (ADR-005) | 标准 MySQL 8.0 (降级方案) |
 | Bedrock Knowledge Bases | RAG 向量检索 (ADR-005) | GA | 自建 OpenSearch (降级方案 B) |
 | AWS CDK 生态 | 全部基础设施 | 稳定 (>= 2.130) | 版本锁定 + 定期升级评估 |
-| `@aws-cdk/aws-bedrock-agentcore-alpha` | AgentCore CDK 资源 | alpha (NPM 已发布) | L1 CfnResource 降级 |
+| `@aws-cdk/aws-bedrock-agentcore-alpha` | AgentCore CDK 资源 | 2.238.0-alpha.0 (**有 BREAKING CHANGE: User Pool Client 替换**) | L1 CfnResource 降级 |
+| Claude Opus 4.6 | 高端 Agent 任务 (可选) | 2026-02-05 上线 Bedrock; 1M 上下文 + 自适应思考 | Claude Sonnet/Haiku (成本优化) |
 
 ### 7.3 团队依赖
 
@@ -437,6 +498,9 @@ Phase 4: 平台成熟 (audit + insights 增强 + 自助构建器)
 | Phase 4 活跃用户目标 | 200 人 | **50 人** | 阶段性目标更务实 |
 | Phase 3 技术债务预算 | 20% | **25%** | P2 遗留 S4 + AgentCore P2/P3 集成 |
 | evaluation 模块 | 依赖 AgentCore Evaluations | **自建轻量框架** | AgentCore Evaluations 为预览版 |
+| Staging 环境 | 独立 Staging 环境 | **移除** | 内部平台 Dev+Prod 两套足够，Staging 成本高于收益 |
+| 蓝绿部署 | M9 实现 CodeDeploy | **推迟到 Phase 4** | 初期 ECS 滚动更新足够，用户量小 |
+| M9 周期 | 4 周 | **2-3 周** | 移除 Staging 后工作量缩减 |
 
 ### 8.2 规划模式调整
 
@@ -444,8 +508,8 @@ Phase 4: 平台成熟 (audit + insights 增强 + 自助构建器)
 
 | 阶段 | 规划模式 | 说明 |
 |------|---------|------|
-| Phase 3 (当前) | **详细规划** — 里程碑拆解到周 | 明确的交付物和验收标准 |
-| Phase 4 (下一阶段) | **方向性规划** — 季度目标 | 保留方向和核心模块，详细拆解待 Phase 3 末尾评审 |
+| Phase 3 | **已完成** — 全部 4 个里程碑交付 | M7 + M8 + M8.5 + M9 ✅ |
+| Phase 4 (当前) | **详细规划** — 里程碑拆解到周 | v1.5 季度评审后升级为详细规划 |
 | Phase 5+ (远期) | **愿景声明** — 年度方向 | 如需要，在 Phase 4 季度评审时决策 |
 
 ### 8.3 季度评审机制
@@ -464,11 +528,13 @@ Phase 4: 平台成熟 (audit + insights 增强 + 自助构建器)
 - 如有重大调整，创建 ADR
 - 更新 `progress.md` 变更积压表
 
-**下一次评审**: M8.5 前端 MVP 完成后 (约第 48 周)
+**下一次评审**: M11 完成后 (约第 70 周)
 
 **已完成评审**:
 - v1.2 (2026-02-11): Phase 2 完成后 → ADR-007 (路线图调整)
 - v1.3 (2026-02-12): M7 完成后 → ADR-009 (orchestration 取消, 前端提升优先级)
+- v1.4 (2026-02-12): M8.5 完成后 → 环境策略简化 (移除 Staging, Dev+Prod 两套环境)
+- v1.5 (2026-02-13): Phase 3 全部完成后 → Phase 4 季度评审 (四维度: 代码审计+技术变化+经验教训+路线图拆解; M10-prep 新增; 前后端并行; 14 项变更积压)
 
 ---
 
@@ -477,7 +543,7 @@ Phase 4: 平台成熟 (audit + insights 增强 + 自助构建器)
 | 核心能力 | 对应后端模块 | AgentCore 服务 | 首次交付阶段 | 调整说明 |
 |---------|-------------|---------------|:----------:|---------|
 | Agent 管理 | agents, templates | - | Phase 1/2 ✅ | - |
-| 运行时引擎 | execution + IAgentRuntime | **AgentCore Runtime** + Claude Agent SDK | Phase 1/2 ✅ | P0+P1 已完成 |
+| 运行时引擎 | execution + IAgentRuntime | **AgentCore Runtime** + Claude Agent SDK | Phase 1/2 ✅ | P0+P1 已完成; 当前进程内执行, Runtime 部署分离待 P3-4/P3-5 |
 | 工具集成 | tool-catalog | **AgentCore Gateway** (MCP) | Phase 2 ✅ / Phase 3 (P2-1) | 元数据管理 ✅；Gateway 工具同步待 M7-prep |
 | 编排协作 | ~~orchestration~~ → execution (Agent Teams) | Claude Agent SDK Teams + AgentCore Runtime | Phase 3 ✅ | ADR-008: Agent Teams 替代 DAG 引擎 |
 | 记忆管理 | execution (Conversation/Message) | **AgentCore Memory** (MCP 桥接) | Phase 2 ✅ / Phase 3 (P2-2) | MySQL 会话管理 ✅；Memory MCP 待 M7-prep |

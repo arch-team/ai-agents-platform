@@ -6,6 +6,11 @@ module.exports = {
   transform: {
     '^.+\\.tsx?$': 'ts-jest',
   },
+  // CDK 合成会产生异步资源（CloudFormation 模板生成），测试结束后可能未完全清理
+  // 导致 "worker process has failed to exit gracefully" 警告
+  forceExit: true,
+  // 限制 worker 内存，防止 CDK 合成导致的内存泄漏积累
+  workerIdleMemoryLimit: '512MB',
   collectCoverageFrom: [
     'lib/**/*.ts',
     'bin/**/*.ts',

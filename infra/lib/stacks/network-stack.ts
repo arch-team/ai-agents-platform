@@ -1,7 +1,7 @@
 import * as cdk from 'aws-cdk-lib';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import { Construct } from 'constructs';
-import { isProd, type BaseStackProps } from '../config';
+import type { BaseStackProps } from '../config';
 import { VpcConstruct } from '../constructs/vpc';
 
 export interface NetworkStackProps extends BaseStackProps {
@@ -22,10 +22,12 @@ export class NetworkStack extends cdk.Stack {
     super(scope, id, props);
     const { vpcCidr, envName, natGateways = 1 } = props;
 
+    // NAT Gateway 数量: Prod 初期使用 1 个 (与 Dev 一致，降低成本)
+    // 后续用户量增长后可通过 natGateways 参数提升到每 AZ 一个
     const vpcConstruct = new VpcConstruct(this, 'VpcConstruct', {
       vpcCidr,
       envName,
-      natGateways: isProd(envName) ? 3 : natGateways,
+      natGateways,
     });
 
     this.vpc = vpcConstruct.vpc;

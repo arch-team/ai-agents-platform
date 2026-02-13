@@ -11,50 +11,56 @@ from src.shared.infrastructure.settings import Settings, get_settings
 
 @pytest.mark.unit
 class TestSettings:
+    """Settings 默认值测试。
+
+    使用 _env_file=None 隔离 .env 文件，确保测试验证的是代码中定义的默认值，
+    而非被 .env 覆盖后的值。
+    """
+
     def test_default_app_name(self):
-        settings = Settings()
+        settings = Settings(_env_file=None)
         assert settings.APP_NAME == "ai-agents-platform"
 
     def test_default_app_env(self):
-        settings = Settings()
+        settings = Settings(_env_file=None)
         assert settings.APP_ENV == "development"
 
     def test_default_debug_false(self):
-        settings = Settings()
+        settings = Settings(_env_file=None)
         assert settings.APP_DEBUG is False
 
     def test_database_defaults(self):
-        settings = Settings()
+        settings = Settings(_env_file=None)
         assert settings.DATABASE_HOST == "localhost"
         assert settings.DATABASE_PORT == 3306
         assert settings.DATABASE_NAME == "ai_agents_platform"
         assert settings.DATABASE_USER == "root"
 
     def test_database_password_is_secret(self):
-        settings = Settings(DATABASE_PASSWORD=SecretStr("my-secret-pw"))
+        settings = Settings(DATABASE_PASSWORD=SecretStr("my-secret-pw"), _env_file=None)
         assert isinstance(settings.DATABASE_PASSWORD, SecretStr)
         assert settings.DATABASE_PASSWORD.get_secret_value() == "my-secret-pw"
 
     def test_database_password_default(self):
-        settings = Settings()
+        settings = Settings(_env_file=None)
         assert settings.DATABASE_PASSWORD.get_secret_value() == "changeme"
 
     def test_jwt_defaults(self):
-        settings = Settings()
+        settings = Settings(_env_file=None)
         assert settings.JWT_ALGORITHM == "HS256"
         assert settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES == 30
 
     def test_jwt_secret_key_is_secret(self):
-        settings = Settings(JWT_SECRET_KEY=SecretStr("my-jwt-secret"))
+        settings = Settings(JWT_SECRET_KEY=SecretStr("my-jwt-secret"), _env_file=None)
         assert isinstance(settings.JWT_SECRET_KEY, SecretStr)
         assert settings.JWT_SECRET_KEY.get_secret_value() == "my-jwt-secret"
 
     def test_aws_region_configurable(self):
-        settings = Settings(AWS_REGION="ap-northeast-1")
+        settings = Settings(AWS_REGION="ap-northeast-1", _env_file=None)
         assert settings.AWS_REGION == "ap-northeast-1"
 
     def test_log_level_default(self):
-        settings = Settings()
+        settings = Settings(_env_file=None)
         assert settings.LOG_LEVEL == "INFO"
 
     def test_database_url_property(self):
@@ -64,6 +70,7 @@ class TestSettings:
             DATABASE_NAME="testdb",
             DATABASE_USER="testuser",
             DATABASE_PASSWORD=SecretStr("testpw"),
+            _env_file=None,
         )
         url = settings.database_url
         assert "asyncmy" in url
@@ -81,44 +88,45 @@ class TestSettingsValidation:
     def test_production_with_default_jwt_secret_raises(self) -> None:
         """生产环境使用默认 JWT_SECRET_KEY 时应启动失败。"""
         with pytest.raises(ValueError, match="JWT_SECRET_KEY"):
-            Settings(APP_ENV="production", JWT_SECRET_KEY=SecretStr("changeme"))
+            Settings(APP_ENV="production", JWT_SECRET_KEY=SecretStr("changeme"), _env_file=None)
 
     def test_production_with_short_jwt_secret_raises(self) -> None:
         """生产环境 JWT_SECRET_KEY 长度不足 32 字符时应启动失败。"""
         with pytest.raises(ValueError, match="JWT_SECRET_KEY"):
-            Settings(APP_ENV="production", JWT_SECRET_KEY=SecretStr("short"))
+            Settings(APP_ENV="production", JWT_SECRET_KEY=SecretStr("short"), _env_file=None)
 
     def test_production_with_strong_jwt_secret_passes(self) -> None:
         """生产环境配置足够长度的 JWT_SECRET_KEY 时应正常启动。"""
         settings = Settings(
             APP_ENV="production",
             JWT_SECRET_KEY=SecretStr("a-very-strong-secret-key-that-is-at-least-32-chars-long"),
+            _env_file=None,
         )
         assert settings.APP_ENV == "production"
 
     def test_development_with_default_jwt_secret_passes(self) -> None:
         """开发环境允许使用默认 JWT_SECRET_KEY。"""
-        settings = Settings(APP_ENV="development", JWT_SECRET_KEY=SecretStr("changeme"))
+        settings = Settings(APP_ENV="development", JWT_SECRET_KEY=SecretStr("changeme"), _env_file=None)
         assert settings.JWT_SECRET_KEY.get_secret_value() == "changeme"
 
     def test_staging_with_default_jwt_secret_raises(self) -> None:
         """Staging 环境也不允许使用默认 JWT_SECRET_KEY。"""
         with pytest.raises(ValueError, match="JWT_SECRET_KEY"):
-            Settings(APP_ENV="staging", JWT_SECRET_KEY=SecretStr("changeme"))
+            Settings(APP_ENV="staging", JWT_SECRET_KEY=SecretStr("changeme"), _env_file=None)
 
     def test_cors_wildcard_origin_raises(self) -> None:
         """CORS_ALLOWED_ORIGINS 包含通配符 '*' 时应启动失败。"""
         with pytest.raises(ValueError, match="CORS_ALLOWED_ORIGINS"):
-            Settings(CORS_ALLOWED_ORIGINS=["*"])
+            Settings(CORS_ALLOWED_ORIGINS=["*"], _env_file=None)
 
     def test_cors_wildcard_among_others_raises(self) -> None:
         """CORS_ALLOWED_ORIGINS 混入通配符 '*' 时应启动失败。"""
         with pytest.raises(ValueError, match="CORS_ALLOWED_ORIGINS"):
-            Settings(CORS_ALLOWED_ORIGINS=["http://localhost:3000", "*"])
+            Settings(CORS_ALLOWED_ORIGINS=["http://localhost:3000", "*"], _env_file=None)
 
     def test_cors_specific_origins_passes(self) -> None:
         """CORS_ALLOWED_ORIGINS 配置具体域名时应正常启动。"""
-        settings = Settings(CORS_ALLOWED_ORIGINS=["http://localhost:3000"])
+        settings = Settings(CORS_ALLOWED_ORIGINS=["http://localhost:3000"], _env_file=None)
         assert settings.CORS_ALLOWED_ORIGINS == ["http://localhost:3000"]
 
 
@@ -128,7 +136,7 @@ class TestBedrockKBSettings:
 
     def test_kb_defaults_empty_string(self) -> None:
         """开发环境 KB 配置默认为空字符串。"""
-        settings = Settings()
+        settings = Settings(_env_file=None)
         assert settings.BEDROCK_KB_ROLE_ARN == ""
         assert settings.BEDROCK_KB_EMBEDDING_MODEL_ARN == ""
         assert settings.BEDROCK_KB_S3_BUCKET == ""
@@ -141,6 +149,7 @@ class TestBedrockKBSettings:
             BEDROCK_KB_EMBEDDING_MODEL_ARN="arn:aws:bedrock:us-east-1::foundation-model/titan",
             BEDROCK_KB_S3_BUCKET="my-kb-bucket",
             BEDROCK_KB_COLLECTION_ARN="arn:aws:aoss:us-east-1:123:collection/col1",
+            _env_file=None,
         )
         assert settings.BEDROCK_KB_ROLE_ARN == "arn:aws:iam::123:role/test"
         assert settings.BEDROCK_KB_EMBEDDING_MODEL_ARN.endswith("titan")
@@ -157,6 +166,7 @@ class TestSecretsManagerIntegration:
         settings = Settings(
             APP_ENV="development",
             DB_SECRET_ARN="arn:aws:secretsmanager:us-east-1:123:secret:test",
+            _env_file=None,
         )
         # 开发环境保持默认值
         assert settings.DATABASE_USER == "root"
@@ -168,6 +178,7 @@ class TestSecretsManagerIntegration:
             APP_ENV="test",
             DB_SECRET_ARN="arn:test",
             JWT_SECRET_ARN="arn:jwt",
+            _env_file=None,
         )
         assert settings.DATABASE_USER == "root"
 
@@ -186,6 +197,7 @@ class TestSecretsManagerIntegration:
             AWS_REGION="ap-northeast-1",
             DB_SECRET_ARN="arn:aws:secretsmanager:ap-northeast-1:123:secret:db",
             JWT_SECRET_KEY=SecretStr("a-very-strong-secret-key-that-is-at-least-32-chars-long"),
+            _env_file=None,
         )
         assert settings.DATABASE_USER == "sm_user"
         assert settings.DATABASE_PASSWORD.get_secret_value() == "sm_password_long_enough_for_test"
@@ -205,6 +217,7 @@ class TestSecretsManagerIntegration:
             APP_ENV="production",
             AWS_REGION="ap-northeast-1",
             JWT_SECRET_ARN="arn:aws:secretsmanager:ap-northeast-1:123:secret:jwt",
+            _env_file=None,
         )
         assert settings.JWT_SECRET_KEY.get_secret_value() == "sm-jwt-key-that-is-very-long-and-secure-at-least-32-chars"
         mock_fetch_jwt.assert_called_once_with(
@@ -219,13 +232,14 @@ class TestSecretsManagerIntegration:
             DATABASE_PASSWORD=SecretStr("ecs_password"),
             DATABASE_NAME="ecs_db",
             JWT_SECRET_KEY=SecretStr("a-very-strong-secret-key-that-is-at-least-32-chars-long"),
+            _env_file=None,
         )
         assert settings.DATABASE_USER == "ecs_user"
         assert settings.DATABASE_PASSWORD.get_secret_value() == "ecs_password"
 
     def test_secret_arn_defaults_empty(self) -> None:
         """ARN 字段默认为空字符串。"""
-        settings = Settings()
+        settings = Settings(_env_file=None)
         assert settings.DB_SECRET_ARN == ""
         assert settings.JWT_SECRET_ARN == ""
 
@@ -244,6 +258,7 @@ class TestSecretsManagerIntegration:
             DATABASE_HOST="original-host",
             DB_SECRET_ARN="arn:db",
             JWT_SECRET_KEY=SecretStr("a-very-strong-secret-key-that-is-at-least-32-chars-long"),
+            _env_file=None,
         )
         assert settings.DATABASE_HOST == "original-host"
 

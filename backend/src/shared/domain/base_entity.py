@@ -40,7 +40,7 @@ class PydanticEntity(BaseModel):
         target: str,
     ) -> None:
         """检查状态转换前置条件。不满足时抛出 InvalidStateTransitionError。"""
-        from src.shared.domain.exceptions import InvalidStateTransitionError  # noqa: PLC0415 - 避免循环导入
+        from src.shared.domain.exceptions import InvalidStateTransitionError  # - 避免循环导入
 
         valid = allowed if isinstance(allowed, frozenset) else frozenset({allowed})
         if current not in valid:

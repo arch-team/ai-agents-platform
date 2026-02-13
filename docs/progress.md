@@ -4,15 +4,18 @@
 
 ## 当前状态
 
-- **阶段**: Phase 3 生态扩展 (6-12 月) — M8 ✅ + M8.5 ✅ + Dev 部署 ✅ + 功能打磨 ✅
-- **里程碑**: Phase 3 技术交付全部完成，仅剩 M9 生产部署
-- **变更积压**: S0-S4 全部完成 ✅ (24/24) | AgentCore 集成: P0 ✅ + P1 ✅ + P2 ✅ (3/3) + P3 (0/3) = 16 项
-- **关键决策**: ADR-008 (Agent Teams) + ADR-009 (季度评审) | SDK bundled CLI 调研 (不需要 Node.js)
-- **Dev 环境**: 后端 ECS (512 CPU/1024 MiB) + 前端 S3 + CORS + Bedrock IAM ✅ | SSE 流式对话 ✅
-- **测试**: 后端 ~1653 测试 + 基础设施 163 测试 + 前端 80 测试
-- **后端模块**: 9 个 | **前端**: 113+ 源文件, FSD 架构, 8 个页面
-- **SDK**: claude-agent-sdk 0.1.35 (bundled CLI 2.1.39, 自包含 ELF 二进制, 无需 Node.js)
-- **下一步**: Dev 功能打磨完成 → M9 生产部署 (Staging → Prod → 核心团队推广)
+- **阶段**: Phase 4 企业成熟 (12-18 月) — M10-prep ✅ | v1.6 季度评审 ✅ | M10 启动
+- **里程碑**: Phase 3 全部完成 ✅ | Phase 4: M10-prep ✅ → **M10 (当前)** → M11 → M12
+- **变更积压**: Phase 2-3: 24/24 ✅ | Phase 4: 8/19 (含 5 项 v1.6 新增) | AgentCore P3: 2/5
+- **关键决策**: v1.6 季度评审 (代码审计 B+89 + 技术扫描 + 经验教训 + M10 拆解 17 任务) | bedrock-agentcore 0.x→1.x 升级 | Opus 4.6 评估 | Strands 战略观察
+- **Dev 环境**: 后端 ECS (256 CPU/512 MiB) + 前端 S3 + CORS + Bedrock IAM ✅ | ALB `ai-agents-dev-546356512.us-east-1.elb.amazonaws.com`
+- **Prod 环境**: 后端 ECS (512 CPU/1024 MiB/2 任务) + Aurora db.r6g.large (Writer+Reader) ✅ | ALB `ai-agents-prod-1419512933.us-east-1.elb.amazonaws.com`
+- **Stack 命名**: `ai-agents-plat-{stack}-{env}` (v1.4 规范化, 12 个 Stack 全部重建)
+- **测试**: 后端 1673 测试 (87.89% 覆盖) + 基础设施 161 测试 + 前端 80 测试 = **1914 测试**
+- **后端模块**: 9 个 | **前端**: 113+ 源文件, FSD 架构, 8 个页面 (覆盖度 ~45%)
+- **SDK**: claude-agent-sdk 0.1.35 | bedrock-agentcore >=0.1.0 (**需升级到 >=1.0.0**)
+- **环境策略**: Dev (开发+验证) + Prod (生产)，无 Staging (v1.4 简化)
+- **下一步**: M10 #1 — audit 模块 Domain 层 (AuditLog 实体 + 枚举 + 仓库接口)
 
 ## 模块状态
 
@@ -50,13 +53,14 @@
 
 ## 基础设施
 
-| CDK Stack | 状态 | 备注 |
-|-----------|:----:|------|
-| NetworkStack | ✅ 已部署 | VPC `vpc-0684fb72335a9687b` (3 AZ), 9 Subnets, NAT Gateway, Flow Log, S3 Endpoint |
-| SecurityStack | ✅ 已部署 | KMS `5fef68f3-...`, API SG, DB SG `sg-000c251fe003123a6` |
-| DatabaseStack | ✅ 已部署 | Aurora MySQL 3.10.0 (db.t3.medium, PRIVATE_ISOLATED), Secrets Manager |
-| AgentCoreStack | ✅ 已部署 | ECR + Runtime (2 AZ) + Gateway (MCP), Cognito |
-| ComputeStack | ✅ 已部署 | ECS Fargate (256 CPU/512 MiB) + ALB (HTTP:80) + CloudWatch Logs |
+| CDK Stack | Dev | Prod | 备注 |
+|-----------|:---:|:----:|------|
+| ai-agents-plat-network-{env} | ✅ | ✅ | VPC (3 AZ), NAT Gateway *1, Flow Log, S3 Endpoint |
+| ai-agents-plat-security-{env} | ✅ | ✅ | KMS, API SG, DB SG, JWT Secret; Prod: SM VPC Endpoint |
+| ai-agents-plat-database-{env} | ✅ | ✅ | Aurora MySQL 3.10.0; Dev: db.t3.medium 1实例; Prod: db.r6g.large Writer+Reader |
+| ai-agents-plat-agentcore-{env} | ✅ | ✅ | ECR + Runtime (2 AZ) + Gateway (MCP), Cognito |
+| ai-agents-plat-compute-{env} | ✅ | ✅ | ECS Fargate + ALB (HTTP:80); Dev: 256CPU/512MiB/1任务; Prod: 512CPU/1024MiB/2任务 |
+| ai-agents-plat-monitoring-{env} | ✅ | ✅ | CloudWatch Alarms + Dashboard + SNS 告警 |
 
 ---
 
@@ -434,6 +438,65 @@
 | 并发控制 | asyncio.Semaphore(3) | 防止资源耗尽 |
 | Token 控制 | max_turns=200 间接控制 | SDK 暂不支持 max_budget 直接参数 |
 
+### M10-prep: 执行层分离 + 技术基线升级 (第 53-56 周) — ✅ 已完成
+
+> 交付物: P3-4/P3-5 执行层部署分离 + SDK/CDK/Aurora 升级 + OTEL 修复
+> 验收标准: AgentCore Runtime 健康检查通过；双执行路径可切换；14 个被阻断集成测试恢复；infra 快照通过
+> 验收结果: **1673 后端测试 + 161 infra 测试全通过；AgentCoreRuntimeAdapter 实现 + AGENT_RUNTIME_MODE 配置切换；SDK MCP Server 正式集成**
+> 来源: Phase 4 季度评审 (v1.5, 2026-02-13) — 四维度评审产出
+
+| # | 任务 | 状态 | 依赖 | 参考规范 | 会话 |
+|---|------|:----:|:----:|---------|------|
+| 1 | SDK 包名更新 (`claude-agent-sdk`) + CDK agentcore alpha 升级 (BREAKING CHANGE 适配) | 已完成 | - | `agentcore-integration-plan.md` | 2026-02-13 |
+| 2 | Aurora MySQL 3.10.0 → 3.10.3 升级 (Dev 验证 → Prod 跟随) | 已完成 | - | `rules/tech-stack.md` | 2026-02-13 |
+| 3 | OTEL instrumentation-sqlalchemy 安装问题修复 (解除 14 个集成测试阻断) | 已完成 | - | `rules/testing.md` | 2026-02-13 |
+| 4 | C-P3-4: Agent 容器镜像构建 + ECR 推送 + Runtime 部署验证 | 已完成 | #1 | `agentcore-integration-plan.md` §5 P3-4 | 2026-02-13 |
+| 5 | C-P3-5: AgentCoreRuntimeAdapter 实现 + 调用路径切换 (配置可切换, 保留降级) | 已完成 | #4 | `agentcore-integration-plan.md` §5 P3-5 | 2026-02-13 |
+| 6 | infra 快照测试全量更新 + worker 进程泄漏修复 | 已完成 | #1 | `rules/testing.md` | 2026-02-13 |
+| 7 | ClaudeAgentAdapter 2 个 TODO 清理 | 已完成 | #5 | `rules/architecture.md` | 2026-02-13 |
+| 8 | CI/CD Pipeline 补充 Agent 镜像构建推送流程 | 已完成 | #4 | `.github/workflows/` | 2026-02-13 |
+| 9 | 质量验收: ruff + mypy + pytest 全通过 + Runtime E2E 验证 | 已完成 | #1-#8 | `rules/checklist.md` | 2026-02-13 |
+
+### M10: 审计合规 + 前端补全 (第 57-64 周) — 待开始
+
+> 交付物: audit 模块 (10 任务) + 前端 5 页面补全 (7 任务)；覆盖度 45% → 85%
+> 验收标准: 100% 写操作审计覆盖 + 前端 13+ 页面 + ruff/mypy/pytest 全通过
+> 来源: roadmap v1.5 §5.5 + v1.6 季度评审 M10 任务拆解
+
+#### 后端 audit 模块 (10 任务)
+
+| # | 任务 | 状态 | 依赖 | 参考规范 | 会话 |
+|---|------|:----:|:----:|---------|------|
+| 1 | audit/domain: AuditLog 实体 + AuditAction/AuditCategory 枚举 + IAuditLogRepository 接口 | 待开始 | - | `rules/architecture.md` §5 DDD | - |
+| 2 | audit/domain: 领域事件 (AuditLogCreated) + 模块异常 | 待开始 | #1 | `rules/architecture.md` §4.2 | - |
+| 3 | audit/application: DTO + AuditService (记录/查询/统计/按资源查询) | 待开始 | #1, #2 | `rules/architecture.md` §5 | - |
+| 4 | audit/application: IAuditEventSubscriber 接口 (订阅各模块 DomainEvent 自动记录审计) | 待开始 | #3 | `rules/architecture.md` §4.2 EventBus | - |
+| 5 | audit/infrastructure: AuditLogModel ORM + AuditLogRepositoryImpl + Alembic migration | 待开始 | #1 | `rules/tech-stack.md` | - |
+| 6 | audit/infrastructure: AuditEventSubscriber 实现 (EventBus 订阅 → AuditLog 记录) | 待开始 | #4, #5 | `rules/architecture.md` §4.2 | - |
+| 7 | audit/api: Schema + dependencies + endpoints (列表/筛选/统计/按资源/导出 CSV) — 仅 ADMIN | 待开始 | #3, #5 | `rules/api-design.md` | - |
+| 8 | 审计中间件: AuditMiddleware (自动记录 API 调用 — method/path/status/actor/duration) | 待开始 | #3 | `rules/observability.md` | - |
+| 9 | 模块注册: main.py 路由 + 异常映射 + EventBus 订阅注册 | 待开始 | #6, #7, #8 | `rules/architecture.md` §6.3 | - |
+| 10 | tests: audit 单元测试 + 集成测试 + 质量验收 | 待开始 | #1-#9 | `rules/testing.md` TDD | - |
+
+#### 前端 5 页面补全 (7 任务)
+
+| # | 任务 | 状态 | 依赖 | 参考规范 | 会话 |
+|---|------|:----:|:----:|---------|------|
+| 11 | KnowledgePage — 知识库管理 (列表/创建/详情/文档上传/RAG 查询, 对接 10 端点) | 待开始 | - | FSD 架构 | - |
+| 12 | TemplatesPage — 模板管理 (浏览/详情/从模板创建 Agent/分类筛选, 对接 8 端点) | 待开始 | - | FSD 架构 | - |
+| 13 | ToolCatalogPage — 工具目录 (列表/注册/审批流程/状态筛选, 对接 10 端点) | 待开始 | - | FSD 架构 | - |
+| 14 | InsightsPage — 使用洞察 (成本归因图表/使用趋势/Token 统计, 对接 3 端点) | 待开始 | - | FSD 架构 | - |
+| 15 | EvaluationPage — 评估管理 (测试集 CRUD/批量评估/结果展示, 对接 14 端点) | 待开始 | - | FSD 架构 | - |
+| 16 | 前端路由整合 + 导航更新 (Sidebar 5 入口 + 懒加载) | 待开始 | #11-#15 | - | - |
+| 17 | 前端测试 + 覆盖度验证 | 待开始 | #16 | - | - |
+
+#### M10 并行策略
+
+```
+后端 audit (#1-#10) 与前端 (#11-#15) 100% 并行，无交叉依赖
+前端 5 页面 (#11-#15) 互相独立，可并行开发
+```
+
 ---
 
 ## 变更积压 (Change Backlog)
@@ -555,13 +618,82 @@
 | C-P2-2 | AgentCore Memory MCP 桥接 | 已完成 | C-P1-2 | execution 模块 | `agentcore-integration-plan.md` §4 P2-2 | 2026-02-11 |
 | C-P2-3 | OpenTelemetry / AgentCore Observability | 已完成 | C-P0-5 | shared + execution + knowledge | `agentcore-integration-plan.md` §4 P2-3 | 2026-02-11 |
 
+> P3 行动项。注: C-P3-4/P3-5 为 Agent 容器部署和调用路径切换——当前 Platform API 通过 ClaudeAgentAdapter 在 ECS Fargate 进程内直接调用 claude_agent_sdk.query()，尚未经由 AgentCore Runtime 执行。agent_entrypoint.py + Dockerfile.agent + AgentCoreStack CDK 已就绪（P1-3/P1-4），但缺少容器构建推送和调用路径切换。
+
+| 编号 | 行动项 | 状态 | 依赖 | 影响范围 | 参考规范 | 会话 |
+|------|--------|:----:|:----:|---------|---------|------|
+| C-P3-1 | AgentCore Memory 长期记忆策略 | 待开始 | C-P2-2 | execution 模块 | `agentcore-integration-plan.md` §5 P3-1 | - |
+| C-P3-2 | 多 Agent 编排 (AgentCore Runtime A2A) | 待开始 | C-P1-1, C-P1-2 | execution 模块 | `agentcore-integration-plan.md` §5 P3-2 | - |
+| C-P3-3 | AgentCore Identity 集成 | 待开始 | C-P2-1 | auth + gateway | `agentcore-integration-plan.md` §5 P3-3 | - |
+| C-P3-4 | Agent 容器镜像构建 + ECR 推送 + AgentCore Runtime 部署验证 | 已完成 | C-P1-3, C-P1-4 | Dockerfile.agent + CI/CD + infra | `agentcore-integration-plan.md` §5 P3-4 | 2026-02-13 |
+| C-P3-5 | Platform API → AgentCore Runtime 调用路径切换 | 已完成 | C-P3-4 | execution 模块 (AgentCoreRuntimeAdapter 新增) | `agentcore-integration-plan.md` §5 P3-5 | 2026-02-13 |
+
 | 级别 | 数量 | 时间窗口 | 当前进度 |
 |------|:----:|---------|---------|
 | P0 基础就绪 | 6 | M6 之前 | **6/6 ✅** |
 | P1 核心集成 | 4 | M6 期间 | **4/4 ✅** |
 | P2 平台能力 | 3 | M7-prep | **3/3 ✅** |
-| P3 深度集成 | 3 | Phase 3-4 | 0/3 |
-| **合计** | **16** | - | **13/16** |
+| P3 深度集成 | 5 | M10-prep + M12 | **2/5** |
+| **合计** | **18** | - | **15/18** |
+
+### Phase 4 变更积压 (来源: Phase 4 季度评审 v1.5)
+
+> **注入日期**: 2026-02-13 | **来源**: 四维度评审 (代码审计 + 外部技术变化 + Phase 3 经验教训 + 路线图拆解)
+
+#### S0 — 阻断修复（M10-prep 之前）
+
+| 编号 | 变更描述 | 状态 | 依赖 | 来源 | 影响范围 | 参考规范 | 会话 |
+|------|---------|:----:|:----:|------|---------|---------|------|
+| C-S0-7 | SDK 包名更新 `claude-agent-sdk` (BREAKING) | 已完成 | - | 外部技术变化 | pyproject.toml + imports | `agentcore-integration-plan.md` | 2026-02-13 |
+| C-S0-8 | CDK agentcore alpha BREAKING CHANGE 适配 (User Pool Client 替换) | 已完成 | - | 外部技术变化 | infra/ AgentCoreStack | CDK 变更日志 | 2026-02-13 |
+| C-S0-9 | OTEL instrumentation-sqlalchemy 安装修复 (14 个集成测试被阻断) | 已完成 | - | 代码审计 | 测试基础设施 | `rules/testing.md` | 2026-02-13 |
+| C-S0-10 | bedrock-agentcore 升级 0.x→1.x + API 兼容性验证 | 待开始 | - | v1.6 外部技术扫描 | pyproject.toml + adapter 代码 | - | - |
+
+#### S1 — 安全与稳定（M10 期间并行）
+
+| 编号 | 变更描述 | 状态 | 依赖 | 来源 | 影响范围 | 参考规范 | 会话 |
+|------|---------|:----:|:----:|------|---------|---------|------|
+| C-S1-6 | Aurora MySQL 3.10.0 → 3.10.3 安全更新 | 已完成 | - | 外部技术变化 | infra/ DatabaseStack | CDK + Aurora 文档 | 2026-02-13 |
+| C-S1-7 | infra 快照测试全量更新 (当前过期) | 已完成 | C-S0-8 | 代码审计 | infra/test/ | `rules/testing.md` | 2026-02-13 |
+| C-S1-8 | infra worker 进程泄漏修复 | 已完成 | - | 代码审计 | infra/ 测试 | - | 2026-02-13 |
+| C-S1-9 | Ruff ANN101 配置忽略 + 自动修复 4 项 (RUF100/I001) | 待开始 | - | v1.6 代码审计 | pyproject.toml + src/ | - | - |
+| C-S1-10 | MyPy execution 模块 8 个新增类型错误修复 (bg_repo_factory 类型签名) | 待开始 | - | v1.6 代码审计 | execution 模块 | - | - |
+
+#### S2 — 技术债务（M10-M11 穿插）
+
+| 编号 | 变更描述 | 状态 | 依赖 | 来源 | 影响范围 | 参考规范 | 会话 |
+|------|---------|:----:|:----:|------|---------|---------|------|
+| C-S2-5 | ClaudeAgentAdapter 2 个 TODO 清理 (MCP Server 封装) | 已完成 | C-S0-7 | 代码审计 | execution 模块 | - | 2026-02-13 |
+| C-S2-6 | 前端覆盖度补全 (5 个缺失页面: Knowledge/Templates/ToolCatalog/Insights/Evaluation) | 待开始 | - | 代码审计 + Phase 3 教训 | frontend/ | - | - |
+| C-S2-7 | Opus 4.6 模型配置评估 (默认模型 + 自适应思考 + 1M 上下文) | 待开始 | - | 外部技术变化 | agents 模块 + settings | - | - |
+| C-S2-8 | logging 模块测试覆盖率 18%→80% 补测试 | 待开始 | - | v1.6 代码审计 | shared/infrastructure/logging | - | - |
+
+#### S3 — 战略决策（Phase 4 期间）
+
+| 编号 | 变更描述 | 状态 | 依赖 | 来源 | 影响范围 | 参考规范 | 会话 |
+|------|---------|:----:|:----:|------|---------|---------|------|
+| C-S3-4 | A2A 协议采纳评估 (ADR) | 待开始 | M12 | 外部技术变化 | execution + 架构 | ADR 流程 | - |
+| C-S3-5 | 蓝绿部署引入时机评估 | 待开始 | M12 | Phase 3 教训 (v1.4 推迟) | infra/ | - | - |
+| C-S3-6 | Strands Agents vs claude-agent-sdk 战略评估 (ADR) | 待开始 | M12 | v1.6 外部技术扫描 | execution + 架构 | ADR 流程 | - |
+
+#### S4 — 中期改进（Phase 4 完成前）
+
+| 编号 | 变更描述 | 状态 | 依赖 | 来源 | 影响范围 | 参考规范 | 会话 |
+|------|---------|:----:|:----:|------|---------|---------|------|
+| C-S4-7 | Agent 镜像 CI/CD Pipeline 自动化 | 已完成 | P3-4 完成 | 代码审计 | .github/workflows/ | - | 2026-02-13 |
+| C-S4-8 | Dev 环境定时缩减 (非工作时段 ECS 缩容) | 待开始 | M11 | 成本优化 | infra/ | - | - |
+| C-S4-9 | 全项目文档更新 (API 文档 + 用户手册) | 待开始 | M12 | 推广需要 | docs/ | - | - |
+
+#### Phase 4 变更统计
+
+| 级别 | 数量 | 时间窗口 | 当前进度 |
+|------|:----:|---------|---------|
+| S0 阻断修复 | 4 | M10-prep / M10 初 | **3/4** |
+| S1 安全稳定 | 5 | M10 期间并行 | **3/5** |
+| S2 技术债务 | 4 | M10-M11 穿插 | **1/4** |
+| S3 战略决策 | 3 | Phase 4 期间 | 0/3 |
+| S4 中期改进 | 3 | Phase 4 完成前 | **1/3** |
+| **合计** | **19** | - | **8/19** |
 
 ---
 
@@ -571,20 +703,32 @@
 2. ~~**Agent Teams 端到端验证**~~ → ✅ 本地 + 远程均验证通过
 3. ~~**远程部署验证**~~ → ✅ Dev 环境全链路验证通过（注册→登录→创建Agent→激活→SSE对话→Team Executions）
 4. ~~**Claude Agent SDK 版本**~~ → ✅ 升级 0.1.3 → 0.1.35 (bundled CLI 2.1.39, 无需 Node.js)
-5. **SSE 流后 DB 写操作**: 流式对话尾部报 "Message(id=N) 不存在"——独立 session 查找占位消息 ID 失败。不影响用户看到的对话内容，属于优化项
+5. ~~**SSE 流后 DB 写操作**~~ → ✅ 修复: 占位消息创建改用 stream_session（与 update 同一 session，消除跨事务可见性问题）
 6. **Sonnet 模型不可用**: 当前 AWS 账户 Bedrock Sonnet inference profile 有 prompt caching 限制，暂用 Haiku 替代。需要在 AWS 控制台申请 Sonnet 模型访问权限
-7. **pytest-cov 缺失**: `uv add --dev pytest-cov` 即可
+7. ~~**pytest-cov 缺失**~~ → ✅ 已安装 pytest-cov 7.0.0 + pytest-asyncio 1.3.0 + aiosqlite 0.22.1 + greenlet 3.3.1
+8. ~~**test_database_defaults 测试失败**~~ → ✅ 修复: 所有 Settings 单元测试添加 `_env_file=None` 隔离 `.env` 文件，确保测试验证代码默认值而非环境覆盖值
+9. ~~**OTEL instrumentation-sqlalchemy 安装问题**~~ → ✅ 根因: `python -m pytest` 调用了系统 Python 而非 uv 虚拟环境；统一使用 `uv run pytest` 后 1673 测试全通过
+10. ~~**infra 快照测试过期**~~ → ✅ 快照已更新 + worker 泄漏修复 (workerIdleMemoryLimit)，161 测试全通过
+11. **前端覆盖度缺口**: 5 个后端模块 (Knowledge/Templates/ToolCatalog/Insights/Evaluation) 无对应前端页面，覆盖度仅 ~45%。M10 前端并行补全
+12. ~~**SDK 包名过时**~~ → ✅ 已确认: pyproject.toml 和所有 Python imports 已使用 `claude-agent-sdk` / `claude_agent_sdk`，无残留旧包名
+13. ~~**CDK agentcore alpha BREAKING CHANGE**~~ → ✅ 已确认: 当前 `@aws-cdk/aws-bedrock-agentcore-alpha` 2.238.0-alpha.0 为最新版本，TypeScript 编译通过，Gateway User Pool Client API 无破坏性变更
+14. **Docker 本地构建待验证**: Dockerfile.agent + agent_entrypoint.py + ECR 仓库均审查通过，但 Docker Desktop 未运行，需启动后执行本地构建验证并推送到 ECR
 
 ### 部署信息
 
-- **前端**: `http://ai-agents-platform-frontend-dev-897473.s3-website-us-east-1.amazonaws.com`
-- **后端 API**: `http://ai-agents-dev-289071019.us-east-1.elb.amazonaws.com`
-- **Aurora 端点**: `database-dev-auroraclusterd4efe71c-4vafhqgr3qe9.cluster-cqm7um8tgaji.us-east-1.rds.amazonaws.com`
-- **AgentCore Gateway**: `https://ai-agents-platform-gateway-dev-3vv1wfgdeg.gateway.bedrock-agentcore.us-east-1.amazonaws.com/mcp`
+#### Dev 环境
+- **后端 API**: `http://ai-agents-dev-546356512.us-east-1.elb.amazonaws.com`
+- **Aurora 端点**: `ai-agents-plat-database-dev-auroraclusterd4efe71c-zmfookqjkiqn.cluster-cqm7um8tgaji.us-east-1.rds.amazonaws.com`
+- **AgentCore Gateway**: `https://ai-agents-platform-gateway-dev-xbgpxlgiwl.gateway.bedrock-agentcore.us-east-1.amazonaws.com/mcp`
 - **DB 凭证**: `dev/ai-agents-platform/db-credentials` (Secrets Manager)
-- **ECS 配置**: 512 CPU / 1024 MiB | Task Definition: `ComputedevEcsTaskDef90906720:13`
-- **CORS**: 前端 S3 域名已加入允许列表
-- **Bedrock IAM**: `BedrockInvokeAccess` 策略（含 inference-profile 资源）
+- **ECS 配置**: 256 CPU / 512 MiB / 1 任务
+
+#### Prod 环境
+- **后端 API**: `http://ai-agents-prod-1419512933.us-east-1.elb.amazonaws.com`
+- **Aurora 端点**: `ai-agents-plat-database-prod-auroraclusterd4efe71c-badfjgaibbbt.cluster-cqm7um8tgaji.us-east-1.rds.amazonaws.com`
+- **AgentCore Gateway**: `https://ai-agents-platform-gateway-prod-rmpczcriio.gateway.bedrock-agentcore.us-east-1.amazonaws.com/mcp`
+- **DB 凭证**: `prod/ai-agents-platform/db-credentials` (Secrets Manager)
+- **ECS 配置**: 512 CPU / 1024 MiB / 2 任务 | Aurora db.r6g.large (Writer + Reader)
 
 ---
 
@@ -594,8 +738,8 @@
 
 | # | 日期 | 类型 | 完成项 | 关键决策 |
 |---|------|------|-------|---------|
-| 27 | 2026-02-12 | Dev 部署+打磨 | **Dev 全链路打通**: 后端 ECS 部署 + 前端 S3 部署 + CORS + Bedrock IAM; Playwright E2E 验证 8 页面; **修复**: 空气泡/SSE execute_stream await/Dockerfile 移除 Node.js (bundled CLI 调研)/ECS 1024MiB/inference profile; SDK 0.1.3→0.1.35 升级; 代码优化 (4 Agent 并行) | bundled CLI 无需 Node.js; Haiku 替代 Sonnet; hasattr(__anext__) 兼容 |
-| 26 | 2026-02-12 | M8+M8.5 (并行) | **M8+M8.5 Agent Teams 并行**: evaluation 30 文件 14 端点 58 测试 + 前端 113 文件 8 页面; 1653 测试通过 | Agent Teams 并行开发; React 19; evaluation MVP |
-| 25 | 2026-02-12 | 季度评审 | **ADR-009**: orchestration 取消 + 前端提升优先级 + evaluation 精简 | orchestration 取消; 前端零到一; 滚动规划 |
-| 24 | 2026-02-12 | M7 (完成) | **M7 13/13**: 生产化加固 + insights 集成 + 质量验收 | SDK 重试; conversation_id nullable |
-| 23 | 2026-02-12 | M7 (Agent Teams) | **Agent Teams 核心**: enable_teams + TeamExecution + 6 端点 + 79 测试 + ADR-008 | Agent Teams 替代 DAG; asyncio.Task; Semaphore(3) |
+| 34 | 2026-02-13 | 季度评审 v1.6 | **v1.6 季度评审 (Agent Teams 四维度并行)**: 代码审计 B+89 (+4) + 外部技术扫描 (bedrock-agentcore 0.x→1.x, Opus 4.6, Strands Agents) + M10-prep 经验教训 (验证鸿沟+诊断分层) + M10 任务拆解 (17 任务); Docker 构建推送 ECR 完成; 5 项新变更注入 | bedrock-agentcore 升级; Strands 战略观察; 评审增加验证轮; 诊断分层排查 |
+| 33 | 2026-02-13 | M10-prep (完成) | **M10-prep 全 9 任务完成 (Agent Teams 并行)**: AgentCoreRuntimeAdapter 新增 + AGENT_RUNTIME_MODE 配置切换; SDK MCP Server 正式集成; infra 快照 + worker 修复; Docker 构建推送 ECR; 1673+161=1834 测试全通过 | AGENT_RUNTIME_MODE; SDK create_sdk_mcp_server |
+| 32 | 2026-02-13 | 季度评审 v1.5 | **Phase 4 季度评审**: 四维度并行评审; roadmap v1.5; M10-prep 新增; 14 项变更注入 | M10-prep 前置; 前后端并行; SDK 包名; CDK alpha |
+| 31 | 2026-02-12 | M9 (完成) | **M9 Prod 部署完成**: Stack 命名规范化; Dev+Prod 12 个 Stack 全部重建 | Stack 命名 ai-agents-plat-*; KMS grant |
+| 30 | 2026-02-12 | M9 (CDK) | **遗留清理 + CDK Prod 参数化**: test_database_defaults 修复; 移除 staging; Prod 差异化 | Prod: db.r6g.large; ECS 512/1024/2 |

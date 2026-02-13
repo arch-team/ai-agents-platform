@@ -379,6 +379,12 @@ class TestSendMessageStream:
 
         # 独立 session 的 repos (模拟 API 层通过独立 session 创建)
         stream_msg_repo = AsyncMock(spec=IMessageRepository)
+        stream_msg_repo.create.side_effect = lambda m: _make_message(
+            conversation_id=m.conversation_id,
+            role=m.role,
+            content=m.content,
+            token_count=m.token_count,
+        )
         stream_msg_repo.update.side_effect = lambda m: m
         stream_conv_repo = AsyncMock(spec=IConversationRepository)
         stream_conv_repo.update.side_effect = lambda c: c

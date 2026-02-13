@@ -3,6 +3,7 @@ import * as cdk from 'aws-cdk-lib';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as ecs from 'aws-cdk-lib/aws-ecs';
 import * as elbv2 from 'aws-cdk-lib/aws-elasticloadbalancingv2';
+import * as iam from 'aws-cdk-lib/aws-iam';
 import * as kms from 'aws-cdk-lib/aws-kms';
 import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
 import { NagSuppressions } from 'cdk-nag';
@@ -24,6 +25,12 @@ export interface ComputeStackProps extends BaseStackProps {
   readonly encryptionKeyArn: string;
   /** JWT 签名密钥 ARN — 使用 ARN 避免跨 Stack 循环依赖 */
   readonly jwtSecretArn: string;
+  /** Fargate CPU (256, 512, 1024, 2048, 4096) @default 256 */
+  readonly cpu?: number;
+  /** Fargate 内存 (MiB) @default 512 */
+  readonly memoryLimitMiB?: number;
+  /** 期望运行的任务数量 @default 1 */
+  readonly desiredCount?: number;
 }
 
 /**
@@ -69,6 +76,9 @@ export class ComputeStack extends cdk.Stack {
       vpc,
       albSecurityGroup: albConstruct.albSecurityGroup,
       envName,
+      cpu: props.cpu,
+      memoryLimitMiB: props.memoryLimitMiB,
+      desiredCount: props.desiredCount,
       containerImage: ecs.ContainerImage.fromAsset(path.join(__dirname, '../../..', 'backend'), {
         platform: cdk.aws_ecr_assets.Platform.LINUX_AMD64,
       }),
@@ -78,6 +88,17 @@ export class ComputeStack extends cdk.Stack {
         DATABASE_PORT: '3306',
         AWS_REGION: cdk.Stack.of(this).region,
         LOG_LEVEL: envName === 'prod' ? 'INFO' : 'DEBUG',
+        // CORS: 前端 S3 静态站点域名
+        CORS_ALLOWED_ORIGINS: JSON.stringify(
+          envName === 'prod'
+            ? [
+                'http://ai-agents-platform-frontend-prod-897473.s3-website-us-east-1.amazonaws.com',
+              ]
+            : [
+                'http://localhost:3000',
+                'http://ai-agents-platform-frontend-dev-897473.s3-website-us-east-1.amazonaws.com',
+              ],
+        ),
         // Secrets Manager ARN — 应用可选择直接读取 (备用路径, ECS Secrets 为主路径)
         DB_SECRET_ARN: databaseSecret.secretArn,
         JWT_SECRET_ARN: jwtSecret.secretArn,
@@ -113,11 +134,33 @@ export class ComputeStack extends cdk.Stack {
       description: 'Allow ECS service to access Aurora MySQL',
     });
 
-    // 授权 ECS Task 读取数据库 Secret 和 JWT Secret
+    // 授权 ECS Task Role 读取数据库 Secret 和 JWT Secret (应用运行时访问)
     // jwtSecret/encryptionKey 已在本 Stack 内通过 ARN 重新导入，grant 不会跨 Stack
     databaseSecret.grantRead(ecsConstruct.service.taskDefinition.taskRole);
     jwtSecret.grantRead(ecsConstruct.service.taskDefinition.taskRole);
     encryptionKey.grantDecrypt(ecsConstruct.service.taskDefinition.taskRole);
+
+    // 授权 ECS Execution Role 解密 KMS 密钥 (容器启动时注入 Secrets Manager 环境变量)
+    // JWT Secret 使用自定义 KMS key 加密，Execution Role 需要 kms:Decrypt 才能读取
+    encryptionKey.grantDecrypt(ecsConstruct.service.taskDefinition.executionRole!);
+
+    // 授权 ECS Task Role 调用 Bedrock (Claude Agent SDK + Agent Teams 所需)
+    // 参考: claude-code-bedrock-container.md — IAM inference-profile 权限
+    const accountId = cdk.Stack.of(this).account;
+    ecsConstruct.service.taskDefinition.taskRole.addToPrincipalPolicy(
+      new iam.PolicyStatement({
+        actions: [
+          'bedrock:InvokeModel',
+          'bedrock:InvokeModelWithResponseStream',
+          'bedrock:ListInferenceProfiles',
+        ],
+        resources: [
+          'arn:aws:bedrock:*::foundation-model/*',
+          `arn:aws:bedrock:*:${accountId}:inference-profile/*`,
+          `arn:aws:bedrock:*:${accountId}:application-inference-profile/*`,
+        ],
+      }),
+    );
 
     this.albDnsName = albConstruct.alb.loadBalancerDnsName;
     this.service = ecsConstruct.service;

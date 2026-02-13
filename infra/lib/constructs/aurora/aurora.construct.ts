@@ -51,7 +51,8 @@ export class AuroraConstruct extends Construct {
     // Aurora MySQL 3.x 集群
     this.cluster = new rds.DatabaseCluster(this, 'Cluster', {
       engine: rds.DatabaseClusterEngine.auroraMysql({
-        version: rds.AuroraMysqlEngineVersion.VER_3_10_0,
+        // VER_3_10_3 尚未内置于 CDK 2.238.0，使用 of() 自定义版本
+        version: rds.AuroraMysqlEngineVersion.of('8.0.mysql_aurora.3.10.3', '8.0'),
       }),
       credentials: rds.Credentials.fromGeneratedSecret('admin', {
         secretName: `${envName}/ai-agents-platform/db-credentials`,

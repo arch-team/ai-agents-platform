@@ -11,12 +11,23 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from src.modules.agents.api.endpoints import router as agents_router
 from src.modules.agents.domain.exceptions import AgentNameDuplicateError, AgentNotFoundError
+from src.modules.audit.api.endpoints import router as audit_router
+from src.modules.audit.domain.exceptions import AuditNotFoundError
 from src.modules.auth.api.endpoints import router as auth_router
 from src.modules.auth.domain.exceptions import (
     AccountLockedError,
     AuthenticationError,
     AuthorizationError,
     InvalidRefreshTokenError,
+)
+from src.modules.evaluation.api.endpoints import router as evaluation_router
+from src.modules.evaluation.domain.exceptions import (
+    EvaluationRunNotFoundError,
+    TestCaseNotFoundError,
+    TestSuiteEmptyError,
+    TestSuiteNotActiveError,
+    TestSuiteNotDeletableError,
+    TestSuiteNotFoundError,
 )
 from src.modules.execution.api.endpoints import router as execution_router
 from src.modules.execution.api.team_endpoints import router as team_execution_router
@@ -37,15 +48,6 @@ from src.modules.knowledge.domain.exceptions import (
     DocumentNotFoundError,
     KnowledgeBaseNameDuplicateError,
     KnowledgeBaseNotFoundError,
-)
-from src.modules.evaluation.api.endpoints import router as evaluation_router
-from src.modules.evaluation.domain.exceptions import (
-    EvaluationRunNotFoundError,
-    TestCaseNotFoundError,
-    TestSuiteEmptyError,
-    TestSuiteNotActiveError,
-    TestSuiteNotDeletableError,
-    TestSuiteNotFoundError,
 )
 from src.modules.templates.api.endpoints import router as templates_router
 from src.modules.templates.domain.exceptions import (
@@ -69,6 +71,93 @@ if TYPE_CHECKING:
     from collections.abc import AsyncIterator
 
     from src.shared.domain.exceptions import DomainError
+
+
+def _register_audit_event_subscriptions() -> None:
+    """注册审计事件订阅 — 将各模块 DomainEvent 自动记录为 AuditLog。
+
+    订阅 agents/execution/tool_catalog/knowledge/templates 模块事件，
+    通过 AuditEventSubscriber 统一转换为审计记录。
+    """
+    from src.modules.agents.domain.events import (
+        AgentActivatedEvent,
+        AgentArchivedEvent,
+        AgentCreatedEvent,
+        AgentDeletedEvent,
+        AgentUpdatedEvent,
+    )
+    from src.modules.audit.application.services.audit_service import AuditService
+    from src.modules.audit.infrastructure.event_subscriber import AuditEventSubscriber
+    from src.modules.audit.infrastructure.persistence.repositories.audit_log_repository_impl import (
+        AuditLogRepositoryImpl,
+    )
+    from src.modules.execution.domain.events import (
+        ConversationCreatedEvent,
+        TeamExecutionCompletedEvent,
+        TeamExecutionFailedEvent,
+        TeamExecutionStartedEvent,
+    )
+    from src.modules.knowledge.domain.events import (
+        DocumentUploadedEvent,
+        KnowledgeBaseActivatedEvent,
+        KnowledgeBaseCreatedEvent,
+        KnowledgeBaseDeletedEvent,
+    )
+    from src.modules.templates.domain.events import (
+        TemplateArchivedEvent,
+        TemplateCreatedEvent,
+        TemplatePublishedEvent,
+    )
+    from src.modules.tool_catalog.domain.events import (
+        ToolApprovedEvent as ToolApprovedAudit,
+        ToolCreatedEvent,
+        ToolDeletedEvent,
+        ToolDeprecatedEvent as ToolDeprecatedAudit,
+        ToolRejectedEvent,
+        ToolSubmittedEvent,
+        ToolUpdatedEvent,
+    )
+    from src.shared.domain.event_bus import event_bus
+    from src.shared.infrastructure.database import get_session_factory
+
+    session_factory = get_session_factory()
+
+    # 需要订阅的所有事件类型
+    event_types = [
+        # agents
+        AgentCreatedEvent, AgentUpdatedEvent, AgentActivatedEvent,
+        AgentArchivedEvent, AgentDeletedEvent,
+        # execution
+        ConversationCreatedEvent, TeamExecutionStartedEvent,
+        TeamExecutionCompletedEvent, TeamExecutionFailedEvent,
+        # tool_catalog
+        ToolCreatedEvent, ToolUpdatedEvent, ToolDeletedEvent,
+        ToolSubmittedEvent, ToolApprovedAudit, ToolRejectedEvent, ToolDeprecatedAudit,
+        # knowledge
+        KnowledgeBaseCreatedEvent, KnowledgeBaseActivatedEvent,
+        KnowledgeBaseDeletedEvent, DocumentUploadedEvent,
+        # templates
+        TemplateCreatedEvent, TemplatePublishedEvent, TemplateArchivedEvent,
+    ]
+
+    for event_type in event_types:
+        async def _handler(event: object, _sf: object = session_factory) -> None:
+            async with _sf() as session:  # type: ignore[operator]
+                try:
+                    repo = AuditLogRepositoryImpl(session=session)
+                    service = AuditService(repository=repo)
+                    subscriber = AuditEventSubscriber(service=service)
+                    await subscriber.handle(event)  # type: ignore[arg-type]
+                    await session.commit()
+                except Exception:
+                    await session.rollback()
+                    import structlog
+                    structlog.get_logger(__name__).exception(
+                        "audit_event_subscription_failed",
+                        event_type=type(event).__name__,
+                    )
+
+        event_bus.subscribe(event_type, _handler)
 
 
 def _register_gateway_event_subscriptions() -> None:
@@ -201,6 +290,7 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
     )
     _register_gateway_event_subscriptions()
     _register_team_execution_event_subscriptions()
+    _register_audit_event_subscriptions()
     yield
 
 
@@ -266,6 +356,8 @@ def create_app() -> FastAPI:
         TestSuiteNotActiveError: 409,
         TestSuiteEmptyError: 409,
         TestSuiteNotDeletableError: 409,
+        # audit
+        AuditNotFoundError: 404,
     }
     for exc_type, status_code in _module_exception_mappings.items():
         register_status_mapping(exc_type, status_code)
@@ -284,6 +376,7 @@ def create_app() -> FastAPI:
     app.include_router(insights_router)
     app.include_router(templates_router)
     app.include_router(evaluation_router)
+    app.include_router(audit_router)
 
     # Rate Limiting
     setup_rate_limiting(app)

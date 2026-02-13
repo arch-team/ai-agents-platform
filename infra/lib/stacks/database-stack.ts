@@ -15,6 +15,8 @@ export interface DatabaseStackProps extends BaseStackProps {
   readonly dbSecurityGroup: ec2.ISecurityGroup;
   /** KMS 加密密钥 */
   readonly encryptionKey?: kms.IKey;
+  /** Aurora 实例类型 @default db.t3.medium (Dev), db.r6g.large (Prod) */
+  readonly instanceType?: ec2.InstanceType;
 }
 
 /**
@@ -33,6 +35,7 @@ export class DatabaseStack extends cdk.Stack {
       securityGroup: props.dbSecurityGroup,
       encryptionKey: props.encryptionKey,
       envName: props.envName,
+      instanceType: props.instanceType,
     });
 
     this.cluster = auroraConstruct.cluster;
