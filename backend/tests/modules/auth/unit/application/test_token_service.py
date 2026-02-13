@@ -8,6 +8,7 @@ from src.modules.auth.application.services.token_service import (
 )
 from src.modules.auth.domain.exceptions import AuthenticationError
 
+
 # 测试用 JWT 配置
 _SECRET_KEY = "test-secret-key-for-jwt-minimum-32bytes!"
 _ALGORITHM = "HS256"
@@ -53,6 +54,29 @@ class TestCreateAccessToken:
         )
         payload = decode_access_token(token, secret_key=_SECRET_KEY, algorithm=_ALGORITHM)
         assert "exp" in payload
+
+
+    def test_token_contains_jti_claim(self) -> None:
+        """Token 包含 jti (JWT ID) 声明。"""
+        token = create_access_token(
+            "42", secret_key=_SECRET_KEY, algorithm=_ALGORITHM, expire_minutes=_EXPIRE_MINUTES,
+        )
+        payload = decode_access_token(token, secret_key=_SECRET_KEY, algorithm=_ALGORITHM)
+        assert "jti" in payload
+        assert isinstance(payload["jti"], str)
+        assert len(str(payload["jti"])) > 0
+
+    def test_jti_is_unique_per_token(self) -> None:
+        """每次创建的 Token 拥有唯一的 jti。"""
+        token1 = create_access_token(
+            "42", secret_key=_SECRET_KEY, algorithm=_ALGORITHM, expire_minutes=_EXPIRE_MINUTES,
+        )
+        token2 = create_access_token(
+            "42", secret_key=_SECRET_KEY, algorithm=_ALGORITHM, expire_minutes=_EXPIRE_MINUTES,
+        )
+        payload1 = decode_access_token(token1, secret_key=_SECRET_KEY, algorithm=_ALGORITHM)
+        payload2 = decode_access_token(token2, secret_key=_SECRET_KEY, algorithm=_ALGORITHM)
+        assert payload1["jti"] != payload2["jti"]
 
 
 @pytest.mark.unit

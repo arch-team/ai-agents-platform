@@ -13,6 +13,7 @@ import {
   BarChartIcon,
   ClipboardCheckIcon,
 } from '@/shared/ui';
+import type { IconProps } from '@/shared/ui';
 
 interface SidebarProps {
   isOpen?: boolean;
@@ -22,7 +23,8 @@ interface SidebarProps {
 interface NavItem {
   label: string;
   path: string;
-  icon: React.ReactNode;
+  // 存储组件引用而非 JSX 实例，避免每次渲染创建新对象
+  Icon: React.ComponentType<IconProps>;
 }
 
 interface NavGroup {
@@ -30,7 +32,7 @@ interface NavGroup {
   items: NavItem[];
 }
 
-// 导航分组配置
+// 导航分组配置 — Icon 字段存储组件引用，渲染时再实例化
 const navGroups: NavGroup[] = [
   {
     title: '概览',
@@ -38,7 +40,7 @@ const navGroups: NavGroup[] = [
       {
         label: '仪表盘',
         path: '/',
-        icon: <HomeIcon />,
+        Icon: HomeIcon,
       },
     ],
   },
@@ -48,17 +50,17 @@ const navGroups: NavGroup[] = [
       {
         label: 'Agent 列表',
         path: '/agents',
-        icon: <AgentIcon />,
+        Icon: AgentIcon,
       },
       {
         label: '对话',
         path: '/chat',
-        icon: <ChatIcon />,
+        Icon: ChatIcon,
       },
       {
         label: '团队执行',
         path: '/team-executions',
-        icon: <TeamIcon />,
+        Icon: TeamIcon,
       },
     ],
   },
@@ -68,17 +70,17 @@ const navGroups: NavGroup[] = [
       {
         label: '知识库',
         path: '/knowledge',
-        icon: <BookOpenIcon />,
+        Icon: BookOpenIcon,
       },
       {
         label: '模板',
         path: '/templates',
-        icon: <LayoutIcon />,
+        Icon: LayoutIcon,
       },
       {
         label: '工具目录',
         path: '/tools',
-        icon: <WrenchIcon />,
+        Icon: WrenchIcon,
       },
     ],
   },
@@ -88,12 +90,12 @@ const navGroups: NavGroup[] = [
       {
         label: '使用洞察',
         path: '/insights',
-        icon: <BarChartIcon />,
+        Icon: BarChartIcon,
       },
       {
         label: '评估',
         path: '/evaluation',
-        icon: <ClipboardCheckIcon />,
+        Icon: ClipboardCheckIcon,
       },
     ],
   },
@@ -136,6 +138,7 @@ export function Sidebar({ isOpen = true, onClose }: SidebarProps) {
               {/* 分组导航项 */}
               {group.items.map((item) => {
                 const active = isActive(item.path);
+                const Icon = item.Icon;
                 return (
                   <Link
                     key={item.path}
@@ -148,7 +151,7 @@ export function Sidebar({ isOpen = true, onClose }: SidebarProps) {
                       active ? 'bg-blue-50 text-blue-700' : 'text-gray-700',
                     )}
                   >
-                    {item.icon}
+                    <Icon />
                     {item.label}
                   </Link>
                 );

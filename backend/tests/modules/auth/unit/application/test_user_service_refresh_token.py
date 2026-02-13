@@ -55,21 +55,31 @@ class TestLoginWithRefreshToken:
 @pytest.mark.unit
 class TestRefreshAccessToken:
     @pytest.mark.asyncio
-    async def test_refresh_returns_new_access_token(self) -> None:
-        """有效 refresh_token 可以换发新的 access_token。"""
+    async def test_refresh_rotates_token(self) -> None:
+        """刷新时撤销旧 Token 并签发新 Token（Token Rotation）。"""
         mock_user_repo = AsyncMock(spec=IUserRepository)
         mock_user_repo.get_by_id.return_value = make_user()
 
+        old_rt = make_refresh_token(token="old-refresh-token")
+        new_rt = make_refresh_token(token="new-refresh-token")
+
         mock_rt_repo = AsyncMock(spec=IRefreshTokenRepository)
-        mock_rt_repo.get_by_token.return_value = make_refresh_token()
+        mock_rt_repo.get_by_token.return_value = old_rt
+        mock_rt_repo.create.return_value = new_rt
 
         service = make_service(mock_user_repo, mock_rt_repo=mock_rt_repo)
         result = await service.refresh_access_token(
-            RefreshTokenDTO(refresh_token="valid-refresh-token"),
+            RefreshTokenDTO(refresh_token="old-refresh-token"),
         )
 
         assert result.access_token != ""
-        assert result.refresh_token == "valid-refresh-token"
+        # 返回的是新 Token, 而非旧 Token
+        assert result.refresh_token == "new-refresh-token"
+        # 旧 Token 被撤销并更新到数据库
+        assert old_rt.revoked is True
+        mock_rt_repo.update.assert_called_once_with(old_rt)
+        # 新 Token 被创建
+        mock_rt_repo.create.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_refresh_with_invalid_token_raises(self) -> None:

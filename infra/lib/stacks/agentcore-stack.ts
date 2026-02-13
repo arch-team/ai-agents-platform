@@ -170,12 +170,28 @@ export class AgentCoreStack extends cdk.Stack {
       true,
     );
 
-    NagSuppressions.addStackSuppressions(this, [
-      {
-        id: 'AwsSolutions-IAM4',
-        reason:
-          'AgentCore L2 Construct internally uses AWS managed policies as best practice for this service',
-      },
-    ]);
+    // AgentCore Runtime 和 Gateway 的 L2 Construct 内部使用 AWS 托管策略
+    NagSuppressions.addResourceSuppressions(
+      this.runtime,
+      [
+        {
+          id: 'AwsSolutions-IAM4',
+          reason:
+            'AgentCore Runtime L2 Construct internally creates IAM roles with AWS managed policies as best practice for this service',
+        },
+      ],
+      true,
+    );
+    NagSuppressions.addResourceSuppressions(
+      this.gateway,
+      [
+        {
+          id: 'AwsSolutions-IAM4',
+          reason:
+            'AgentCore Gateway L2 Construct internally creates IAM roles with AWS managed policies as best practice for this service',
+        },
+      ],
+      true,
+    );
   }
 }

@@ -619,19 +619,17 @@ class ExecutionService:
 
     @staticmethod
     def _to_conversation_dto(conv: Conversation) -> ConversationDTO:
-        if conv.id is None or conv.created_at is None or conv.updated_at is None:
-            msg = "Conversation 缺少必要字段 (id/created_at/updated_at)"
-            raise ValueError(msg)
+        id_, created_at, updated_at = conv.require_persisted()
         return ConversationDTO(
-            id=conv.id,
+            id=id_,
             title=conv.title,
             agent_id=conv.agent_id,
             user_id=conv.user_id,
             status=conv.status.value,
             message_count=conv.message_count,
             total_tokens=conv.total_tokens,
-            created_at=conv.created_at,
-            updated_at=conv.updated_at,
+            created_at=created_at,
+            updated_at=updated_at,
         )
 
     @staticmethod

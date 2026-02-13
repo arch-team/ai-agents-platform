@@ -1,5 +1,7 @@
 import { BrowserRouter } from 'react-router-dom';
 
+import { ErrorBoundary } from '@/shared/ui';
+
 import { QueryProvider, AuthProvider } from './providers';
 import { AppRoutes } from './routes';
 
@@ -8,7 +10,9 @@ export function App() {
     <BrowserRouter>
       <QueryProvider>
         <AuthProvider>
-          <AppRoutes />
+          <ErrorBoundary>
+            <AppRoutes />
+          </ErrorBoundary>
         </AuthProvider>
       </QueryProvider>
     </BrowserRouter>

@@ -289,7 +289,7 @@ class TestTeamExecutionServiceGet:
         service = _make_service(execution_repo=execution_repo)
 
         # Act & Assert
-        with pytest.raises(ForbiddenError, match="无权访问"):
+        with pytest.raises(ForbiddenError, match="无权操作此资源"):
             await service.get(execution_id=1, user_id=999)
 
 
@@ -475,7 +475,7 @@ class TestTeamExecutionServiceCancel:
         service = _make_service(execution_repo=execution_repo)
 
         # Act & Assert
-        with pytest.raises(ForbiddenError, match="无权访问"):
+        with pytest.raises(ForbiddenError, match="无权操作此资源"):
             await service.cancel(execution_id=1, user_id=999)
 
 
@@ -561,7 +561,7 @@ class TestTeamExecutionServiceGetLogs:
         service = _make_service(execution_repo=execution_repo)
 
         # Act & Assert
-        with pytest.raises(ForbiddenError, match="无权访问"):
+        with pytest.raises(ForbiddenError, match="无权操作此资源"):
             await service.get_logs(execution_id=1, user_id=999)
 
     @pytest.mark.asyncio

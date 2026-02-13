@@ -1,7 +1,7 @@
 """Refresh Token 领域实体。"""
 
+import secrets
 from datetime import UTC, datetime, timedelta
-from uuid import uuid4
 
 from pydantic import Field
 
@@ -9,8 +9,8 @@ from src.shared.domain.base_entity import PydanticEntity
 
 
 def _generate_token() -> str:
-    """生成随机 Token 字符串。"""
-    return uuid4().hex
+    """生成高熵随机 Token 字符串（256 位）。"""
+    return secrets.token_urlsafe(32)
 
 
 class RefreshToken(PydanticEntity):

@@ -2,16 +2,6 @@
 
 exports[`Snapshot Tests AgentCoreStack 快照匹配 1`] = `
 {
-  "Metadata": {
-    "cdk_nag": {
-      "rules_to_suppress": [
-        {
-          "id": "AwsSolutions-IAM4",
-          "reason": "AgentCore L2 Construct internally uses AWS managed policies as best practice for this service",
-        },
-      ],
-    },
-  },
   "Outputs": {
     "EcrRepositoryUri": {
       "Description": "Agent container image repository URI",
@@ -126,6 +116,10 @@ exports[`Snapshot Tests AgentCoreStack 快照匹配 1`] = `
               "id": "AwsSolutions-COG3",
               "reason": "Gateway default Cognito User Pool is for M2M auth; no user interaction involved",
             },
+            {
+              "id": "AwsSolutions-IAM4",
+              "reason": "AgentCore Gateway L2 Construct internally creates IAM roles with AWS managed policies as best practice for this service",
+            },
           ],
         },
       },
@@ -192,6 +186,10 @@ exports[`Snapshot Tests AgentCoreStack 快照匹配 1`] = `
             {
               "id": "AwsSolutions-COG3",
               "reason": "Gateway default Cognito User Pool is for M2M auth; no user interaction involved",
+            },
+            {
+              "id": "AwsSolutions-IAM4",
+              "reason": "AgentCore Gateway L2 Construct internally creates IAM roles with AWS managed policies as best practice for this service",
             },
           ],
         },
@@ -260,6 +258,10 @@ exports[`Snapshot Tests AgentCoreStack 快照匹配 1`] = `
               "id": "AwsSolutions-COG3",
               "reason": "Gateway default Cognito User Pool is for M2M auth; no user interaction involved",
             },
+            {
+              "id": "AwsSolutions-IAM4",
+              "reason": "AgentCore Gateway L2 Construct internally creates IAM roles with AWS managed policies as best practice for this service",
+            },
           ],
         },
       },
@@ -314,6 +316,10 @@ exports[`Snapshot Tests AgentCoreStack 快照匹配 1`] = `
             {
               "id": "AwsSolutions-COG3",
               "reason": "Gateway default Cognito User Pool is for M2M auth; no user interaction involved",
+            },
+            {
+              "id": "AwsSolutions-IAM4",
+              "reason": "AgentCore Gateway L2 Construct internally creates IAM roles with AWS managed policies as best practice for this service",
             },
           ],
         },
@@ -377,6 +383,10 @@ exports[`Snapshot Tests AgentCoreStack 快照匹配 1`] = `
               "id": "AwsSolutions-COG3",
               "reason": "Gateway default Cognito User Pool is for M2M auth; no user interaction involved",
             },
+            {
+              "id": "AwsSolutions-IAM4",
+              "reason": "AgentCore Gateway L2 Construct internally creates IAM roles with AWS managed policies as best practice for this service",
+            },
           ],
         },
       },
@@ -407,6 +417,10 @@ exports[`Snapshot Tests AgentCoreStack 快照匹配 1`] = `
             {
               "id": "AwsSolutions-COG3",
               "reason": "Gateway default Cognito User Pool is for M2M auth; no user interaction involved",
+            },
+            {
+              "id": "AwsSolutions-IAM4",
+              "reason": "AgentCore Gateway L2 Construct internally creates IAM roles with AWS managed policies as best practice for this service",
             },
           ],
         },
@@ -441,6 +455,10 @@ exports[`Snapshot Tests AgentCoreStack 快照匹配 1`] = `
             {
               "id": "AwsSolutions-IAM5",
               "reason": "Bedrock InvokeModel uses scoped wildcards (foundation-model/*, inference-profile/*); Runtime execution role is auto-created by L2 Construct",
+            },
+            {
+              "id": "AwsSolutions-IAM4",
+              "reason": "AgentCore Runtime L2 Construct internally creates IAM roles with AWS managed policies as best practice for this service",
             },
           ],
         },
@@ -545,6 +563,10 @@ exports[`Snapshot Tests AgentCoreStack 快照匹配 1`] = `
               "id": "AwsSolutions-IAM5",
               "reason": "Bedrock InvokeModel uses scoped wildcards (foundation-model/*, inference-profile/*); Runtime execution role is auto-created by L2 Construct",
             },
+            {
+              "id": "AwsSolutions-IAM4",
+              "reason": "AgentCore Runtime L2 Construct internally creates IAM roles with AWS managed policies as best practice for this service",
+            },
           ],
         },
       },
@@ -573,6 +595,10 @@ exports[`Snapshot Tests AgentCoreStack 快照匹配 1`] = `
             {
               "id": "AwsSolutions-IAM5",
               "reason": "Bedrock InvokeModel uses scoped wildcards (foundation-model/*, inference-profile/*); Runtime execution role is auto-created by L2 Construct",
+            },
+            {
+              "id": "AwsSolutions-IAM4",
+              "reason": "AgentCore Runtime L2 Construct internally creates IAM roles with AWS managed policies as best practice for this service",
             },
           ],
         },
@@ -1168,7 +1194,7 @@ exports[`Snapshot Tests ComputeStack 快照匹配 1`] = `
               "Timeout": 5,
             },
             "Image": {
-              "Fn::Sub": "000000000000.dkr.ecr.us-east-1.\${AWS::URLSuffix}/cdk-hnb659fds-container-assets-000000000000-us-east-1:883655674fa6b20de281b0e5450504f531ccc28b8aa321379f6f50593bfd8cfb",
+              "Fn::Sub": "000000000000.dkr.ecr.us-east-1.\${AWS::URLSuffix}/cdk-hnb659fds-container-assets-000000000000-us-east-1:f4464fa6764552e5717838f22c78b9f06e8532cd2ee1685e080e765dd9c154d5",
             },
             "LogConfiguration": {
               "LogDriver": "awslogs",
@@ -1615,7 +1641,7 @@ exports[`Snapshot Tests DatabaseStack 快照匹配 1`] = `
             },
             {
               "id": "AwsSolutions-RDS16",
-              "reason": "db.t3.small instance type does not support Performance Insights; will enable after instance upgrade",
+              "reason": "Dev uses db.t3.medium which supports Performance Insights but incurs extra cost; will enable in Prod with db.r6g.large instances",
             },
             {
               "id": "AwsSolutions-SMG4",
@@ -1684,7 +1710,7 @@ exports[`Snapshot Tests DatabaseStack 快照匹配 1`] = `
             },
             {
               "id": "AwsSolutions-RDS16",
-              "reason": "db.t3.small instance type does not support Performance Insights; will enable after instance upgrade",
+              "reason": "Dev uses db.t3.medium which supports Performance Insights but incurs extra cost; will enable in Prod with db.r6g.large instances",
             },
             {
               "id": "AwsSolutions-SMG4",
@@ -1722,7 +1748,7 @@ exports[`Snapshot Tests DatabaseStack 快照匹配 1`] = `
             },
             {
               "id": "AwsSolutions-RDS16",
-              "reason": "db.t3.small instance type does not support Performance Insights; will enable after instance upgrade",
+              "reason": "Dev uses db.t3.medium which supports Performance Insights but incurs extra cost; will enable in Prod with db.r6g.large instances",
             },
             {
               "id": "AwsSolutions-SMG4",
@@ -1766,7 +1792,7 @@ exports[`Snapshot Tests DatabaseStack 快照匹配 1`] = `
             },
             {
               "id": "AwsSolutions-RDS16",
-              "reason": "db.t3.small instance type does not support Performance Insights; will enable after instance upgrade",
+              "reason": "Dev uses db.t3.medium which supports Performance Insights but incurs extra cost; will enable in Prod with db.r6g.large instances",
             },
             {
               "id": "AwsSolutions-SMG4",
@@ -1806,7 +1832,7 @@ exports[`Snapshot Tests DatabaseStack 快照匹配 1`] = `
             },
             {
               "id": "AwsSolutions-RDS16",
-              "reason": "db.t3.small instance type does not support Performance Insights; will enable after instance upgrade",
+              "reason": "Dev uses db.t3.medium which supports Performance Insights but incurs extra cost; will enable in Prod with db.r6g.large instances",
             },
             {
               "id": "AwsSolutions-SMG4",

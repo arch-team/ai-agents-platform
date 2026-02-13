@@ -1,6 +1,7 @@
 """JWT Token 服务。"""
 
 from datetime import UTC, datetime, timedelta
+from uuid import uuid4
 
 import jwt
 from jwt import InvalidTokenError
@@ -19,7 +20,12 @@ def create_access_token(
     """创建 JWT access token。"""
     now = datetime.now(UTC)
     expire = now + timedelta(minutes=expire_minutes)
-    payload: dict[str, object] = {"sub": subject, "exp": expire, "iat": now}
+    payload: dict[str, object] = {
+        "sub": subject,
+        "exp": expire,
+        "iat": now,
+        "jti": str(uuid4()),
+    }
     if extra_claims:
         payload.update(extra_claims)
     return str(jwt.encode(payload, secret_key, algorithm=algorithm))

@@ -5,6 +5,7 @@ export {
   getRemovalPolicy,
   isDev,
   isProd,
+  getCorsAllowedOrigins,
   BEDROCK_INVOKE_ACTIONS,
   getBedrockResourceArns,
 } from './constants';

@@ -8,7 +8,12 @@ import * as kms from 'aws-cdk-lib/aws-kms';
 import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
 import { NagSuppressions } from 'cdk-nag';
 import { Construct } from 'constructs';
-import { BEDROCK_INVOKE_ACTIONS, getBedrockResourceArns, type BaseStackProps } from '../config';
+import {
+  BEDROCK_INVOKE_ACTIONS,
+  getBedrockResourceArns,
+  getCorsAllowedOrigins,
+  type BaseStackProps,
+} from '../config';
 import { AlbConstruct } from '../constructs/alb';
 import { EcsServiceConstruct } from '../constructs/ecs';
 
@@ -88,17 +93,8 @@ export class ComputeStack extends cdk.Stack {
         DATABASE_PORT: '3306',
         AWS_REGION: cdk.Stack.of(this).region,
         LOG_LEVEL: envName === 'prod' ? 'INFO' : 'DEBUG',
-        // CORS: 前端 S3 静态站点域名
-        CORS_ALLOWED_ORIGINS: JSON.stringify(
-          envName === 'prod'
-            ? [
-                'http://ai-agents-platform-frontend-prod-897473.s3-website-us-east-1.amazonaws.com',
-              ]
-            : [
-                'http://localhost:3000',
-                'http://ai-agents-platform-frontend-dev-897473.s3-website-us-east-1.amazonaws.com',
-              ],
-        ),
+        // CORS: 前端 S3 静态站点域名 (从 config/constants 集中管理)
+        CORS_ALLOWED_ORIGINS: JSON.stringify(getCorsAllowedOrigins(envName)),
         // Secrets Manager ARN — 应用可选择直接读取 (备用路径, ECS Secrets 为主路径)
         DB_SECRET_ARN: databaseSecret.secretArn,
         JWT_SECRET_ARN: jwtSecret.secretArn,

@@ -1,11 +1,17 @@
 """Rate Limiting 中间件."""
 
+from collections.abc import Callable
+from typing import TypeVar
+
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from slowapi import Limiter
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 from slowapi.util import get_remote_address
+
+
+_F = TypeVar("_F", bound=Callable[..., object])
 
 
 def _custom_rate_limit_handler(_request: Request, exc: RateLimitExceeded) -> JSONResponse:
@@ -27,8 +33,22 @@ limiter = Limiter(
 )
 
 
+def rate_limit(limit_value: str) -> Callable[[_F], _F]:
+    """类型安全的 rate limit 装饰器，包装 slowapi limiter.limit。"""
+    raw_decorator = limiter.limit(limit_value)
+
+    def typed_decorator(func: _F) -> _F:
+        decorated: _F = raw_decorator(func)
+        return decorated
+
+    return typed_decorator
+
+
 def setup_rate_limiting(app: FastAPI) -> None:
     """注册 Rate Limiting 到 FastAPI 应用."""
     app.state.limiter = limiter
-    app.add_exception_handler(RateLimitExceeded, _custom_rate_limit_handler)  # type: ignore[arg-type]
+    app.add_exception_handler(
+        RateLimitExceeded,
+        _custom_rate_limit_handler,
+    )
     app.add_middleware(SlowAPIMiddleware)

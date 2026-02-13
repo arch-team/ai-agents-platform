@@ -29,6 +29,10 @@ from src.shared.application.ownership import get_or_raise
 from src.shared.domain.event_bus import event_bus
 
 
+# 单次评估运行最大测试用例数
+_MAX_EVALUATION_CASES = 1000
+
+
 class EvaluationService:
     """评估运行业务服务，编排评估执行和结果查询用例。"""
 
@@ -48,11 +52,9 @@ class EvaluationService:
 
     @staticmethod
     def _to_run_dto(run: EvaluationRun) -> EvaluationRunDTO:
-        if run.id is None or run.created_at is None or run.updated_at is None:
-            msg = "EvaluationRun 缺少必要字段 (id/created_at/updated_at)"
-            raise ValueError(msg)
+        id_, created_at, updated_at = run.require_persisted()
         return EvaluationRunDTO(
-            id=run.id,
+            id=id_,
             suite_id=run.suite_id,
             agent_id=run.agent_id,
             user_id=run.user_id,
@@ -63,25 +65,23 @@ class EvaluationService:
             score=run.score,
             started_at=run.started_at,
             completed_at=run.completed_at,
-            created_at=run.created_at,
-            updated_at=run.updated_at,
+            created_at=created_at,
+            updated_at=updated_at,
         )
 
     @staticmethod
     def _to_result_dto(result: EvaluationResult) -> EvaluationResultDTO:
-        if result.id is None or result.created_at is None or result.updated_at is None:
-            msg = "EvaluationResult 缺少必要字段 (id/created_at/updated_at)"
-            raise ValueError(msg)
+        id_, created_at, updated_at = result.require_persisted()
         return EvaluationResultDTO(
-            id=result.id,
+            id=id_,
             run_id=result.run_id,
             case_id=result.case_id,
             actual_output=result.actual_output,
             score=result.score,
             passed=result.passed,
             error_message=result.error_message,
-            created_at=result.created_at,
-            updated_at=result.updated_at,
+            created_at=created_at,
+            updated_at=updated_at,
         )
 
     # -- 评估运行 --
@@ -102,7 +102,7 @@ class EvaluationService:
             raise TestSuiteNotActiveError(dto.suite_id)
 
         # 获取所有测试用例
-        cases = await self._case_repo.list_by_suite(dto.suite_id, offset=0, limit=1000)
+        cases = await self._case_repo.list_by_suite(dto.suite_id, offset=0, limit=_MAX_EVALUATION_CASES)
 
         # 创建评估运行
         run = EvaluationRun(
@@ -115,6 +115,7 @@ class EvaluationService:
         if created_run.id is None:
             msg = "EvaluationRun 创建后 ID 不能为空"
             raise ValueError(msg)
+        run_id: int = created_run.id
 
         # 开始执行
         created_run.start()
@@ -128,7 +129,7 @@ class EvaluationService:
                 msg = "TestCase ID 不能为空"
                 raise ValueError(msg)
             result = EvaluationResult(
-                run_id=created_run.id,
+                run_id=run_id,
                 case_id=case.id,
                 actual_output="[MVP] 评估结果占位",
                 score=1.0,

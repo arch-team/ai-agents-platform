@@ -58,10 +58,12 @@ describe('streamSSE', () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue({
       ok: false,
       status: 500,
-    } as Response);
+      statusText: 'Internal Server Error',
+      text: () => Promise.resolve(''),
+    } as unknown as Response);
 
     const generator = streamSSE('/test', { content: '测试' }, null);
-    await expect(generator.next()).rejects.toThrow('SSE 请求失败: 500');
+    await expect(generator.next()).rejects.toThrow('SSE 请求失败');
   });
 
   it('应该在无响应体时抛出错误', async () => {

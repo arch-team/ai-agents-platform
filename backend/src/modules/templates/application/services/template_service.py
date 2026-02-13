@@ -1,7 +1,6 @@
 """Template 应用服务。"""
 
 import asyncio
-from dataclasses import replace
 
 from src.modules.templates.application.dto.template_dto import (
     CreateTemplateDTO,
@@ -128,14 +127,17 @@ class TemplateService:
             template.tags = dto.tags
 
         # 重建 TemplateConfig (frozen 值对象, 任一字段变化需整体替换)
-        config_overrides: dict[str, str | float | int | list[int]] = {}
-        for field in ("system_prompt", "model_id", "temperature", "max_tokens", "tool_ids", "knowledge_base_ids"):
-            value = getattr(dto, field)
-            if value is not None:
-                config_overrides[field] = value
-
-        if config_overrides:
-            template.config = replace(template.config, **config_overrides)
+        cfg = template.config
+        template.config = TemplateConfig(
+            system_prompt=dto.system_prompt if dto.system_prompt is not None else cfg.system_prompt,
+            model_id=dto.model_id if dto.model_id is not None else cfg.model_id,
+            temperature=dto.temperature if dto.temperature is not None else cfg.temperature,
+            max_tokens=dto.max_tokens if dto.max_tokens is not None else cfg.max_tokens,
+            tool_ids=dto.tool_ids if dto.tool_ids is not None else list(cfg.tool_ids),
+            knowledge_base_ids=(
+                dto.knowledge_base_ids if dto.knowledge_base_ids is not None else list(cfg.knowledge_base_ids)
+            ),
+        )
 
         template.touch()
         updated = await self._repo.update(template)
@@ -277,11 +279,9 @@ class TemplateService:
 
     @staticmethod
     def _to_dto(template: Template) -> TemplateDTO:
-        if template.id is None or template.created_at is None or template.updated_at is None:
-            msg = "Template 缺少必要字段 (id/created_at/updated_at)"
-            raise ValueError(msg)
+        id_, created_at, updated_at = template.require_persisted()
         return TemplateDTO(
-            id=template.id,
+            id=id_,
             name=template.name,
             description=template.description,
             category=template.category.value,
@@ -296,6 +296,6 @@ class TemplateService:
             tags=list(template.tags),
             usage_count=template.usage_count,
             is_featured=template.is_featured,
-            created_at=template.created_at,
-            updated_at=template.updated_at,
+            created_at=created_at,
+            updated_at=updated_at,
         )

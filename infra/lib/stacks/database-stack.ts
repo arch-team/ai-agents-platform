@@ -77,7 +77,7 @@ export class DatabaseStack extends cdk.Stack {
         {
           id: 'AwsSolutions-RDS16',
           reason:
-            'db.t3.small instance type does not support Performance Insights; will enable after instance upgrade',
+            'Dev uses db.t3.medium which supports Performance Insights but incurs extra cost; will enable in Prod with db.r6g.large instances',
         },
       ],
       true,

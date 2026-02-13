@@ -11,7 +11,7 @@ from src.modules.auth.api.schemas.responses import MessageResponse, TokenRespons
 from src.modules.auth.application.dto.user_dto import CreateUserDTO, LoginDTO, RefreshTokenDTO, UserDTO
 from src.modules.auth.application.services.user_service import UserService
 from src.modules.auth.domain.exceptions import RegistrationDisabledError
-from src.shared.api.middleware.rate_limit import limiter
+from src.shared.api.middleware.rate_limit import rate_limit
 from src.shared.infrastructure.settings import Settings, get_settings
 
 
@@ -44,7 +44,7 @@ def _user_response(user: UserDTO) -> UserResponse:
     response_model=UserResponse,
     status_code=status.HTTP_201_CREATED,
 )
-@limiter.limit("3/hour")
+@rate_limit("3/hour")
 async def register(
     request: Request,
     body: RegisterRequest,
@@ -61,7 +61,7 @@ async def register(
 
 
 @router.post("/login")
-@limiter.limit("5/minute")
+@rate_limit("5/minute")
 async def login(
     request: Request,
     body: LoginRequest,
@@ -79,7 +79,7 @@ async def login(
 
 
 @router.post("/refresh")
-@limiter.limit("10/minute")
+@rate_limit("10/minute")
 async def refresh_token(
     request: Request,
     body: RefreshTokenRequest,

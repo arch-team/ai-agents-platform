@@ -391,11 +391,9 @@ class KnowledgeService:
 
     @staticmethod
     def _to_kb_dto(kb: KnowledgeBase) -> KnowledgeBaseDTO:
-        if kb.id is None or kb.created_at is None or kb.updated_at is None:
-            msg = "KnowledgeBase 缺少必要字段 (id/created_at/updated_at)"
-            raise ValueError(msg)
+        id_, created_at, updated_at = kb.require_persisted()
         return KnowledgeBaseDTO(
-            id=kb.id,
+            id=id_,
             name=kb.name,
             description=kb.description,
             status=kb.status.value,
@@ -403,17 +401,15 @@ class KnowledgeService:
             agent_id=kb.agent_id,
             bedrock_kb_id=kb.bedrock_kb_id,
             s3_prefix=kb.s3_prefix,
-            created_at=kb.created_at,
-            updated_at=kb.updated_at,
+            created_at=created_at,
+            updated_at=updated_at,
         )
 
     @staticmethod
     def _to_doc_dto(doc: Document) -> DocumentDTO:
-        if doc.id is None or doc.created_at is None or doc.updated_at is None:
-            msg = "Document 缺少必要字段 (id/created_at/updated_at)"
-            raise ValueError(msg)
+        id_, created_at, updated_at = doc.require_persisted()
         return DocumentDTO(
-            id=doc.id,
+            id=id_,
             knowledge_base_id=doc.knowledge_base_id,
             filename=doc.filename,
             s3_key=doc.s3_key,
@@ -421,6 +417,6 @@ class KnowledgeService:
             status=doc.status.value,
             content_type=doc.content_type,
             chunk_count=doc.chunk_count,
-            created_at=doc.created_at,
-            updated_at=doc.updated_at,
+            created_at=created_at,
+            updated_at=updated_at,
         )

@@ -6,8 +6,10 @@ SDK-First: 薄封装层，直接委托 claude_agent_sdk.query()，
 依赖链: Python → claude-agent-sdk → Claude Code CLI (Node.js) → Bedrock Invoke API
 """
 
-from collections.abc import AsyncIterator
+import ipaddress
+from collections.abc import AsyncIterator, Callable, Coroutine
 from typing import Any
+from urllib.parse import urlparse
 
 import structlog
 from claude_agent_sdk import (
@@ -36,6 +38,40 @@ from src.shared.domain.exceptions import DomainError
 
 
 logger = structlog.get_logger(__name__)
+
+
+# SSRF 防护: 禁止访问的内部主机名
+_BLOCKED_HOSTS = frozenset({
+    "169.254.169.254",
+    "metadata.google.internal",
+    "localhost",
+    "127.0.0.1",
+    "0.0.0.0",  # noqa: S104
+})
+
+
+def _validate_url(url: str) -> None:
+    """验证 URL 安全性，防止 SSRF 攻击。
+
+    Raises:
+        ValueError: URL 不安全（内部地址、非 HTTP(S) 协议）
+    """
+    parsed = urlparse(url)
+    if parsed.scheme not in ("http", "https"):
+        msg = "仅支持 HTTP/HTTPS 协议"
+        raise ValueError(msg)
+    hostname = parsed.hostname or ""
+    if hostname in _BLOCKED_HOSTS:
+        msg = f"禁止访问内部地址: {hostname}"
+        raise ValueError(msg)
+    try:
+        ip = ipaddress.ip_address(hostname)
+    except ValueError:
+        # hostname 不是 IP 地址, DNS 解析后再验证
+        return
+    if ip.is_private or ip.is_loopback or ip.is_link_local:
+        msg = f"禁止访问内网地址: {hostname}"
+        raise ValueError(msg)
 
 
 class ClaudeAgentAdapter(IAgentRuntime):
@@ -220,7 +256,7 @@ class ClaudeAgentAdapter(IAgentRuntime):
     @staticmethod
     def _create_tool_handler(
         tool: AgentTool,
-    ) -> Any:
+    ) -> Callable[[dict[str, Any]], Coroutine[object, object, dict[str, Any]]]:
         """为 API/Function 工具创建 handler 闭包。
 
         handler 根据 tool.config 中的配置（endpoint_url, method 等）执行调用，
@@ -237,7 +273,7 @@ class ClaudeAgentAdapter(IAgentRuntime):
                 "content": [
                     {
                         "type": "text",
-                        "text": f"工具 '{tool.name}' 已调用，参数: {args}",
+                        "text": f"工具 '{tool.name}' 已调用, 参数: {args}",
                     },
                 ],
             }
@@ -252,6 +288,7 @@ class ClaudeAgentAdapter(IAgentRuntime):
         import httpx
 
         url = config["endpoint_url"]
+        _validate_url(url)
         method = config.get("method", "POST").upper()
         headers: dict[str, str] = {"Content-Type": "application/json"}
 

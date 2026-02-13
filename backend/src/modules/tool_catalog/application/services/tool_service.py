@@ -407,11 +407,9 @@ class ToolCatalogService:
 
     @staticmethod
     def _to_dto(tool: Tool) -> ToolDTO:
-        if tool.id is None or tool.created_at is None or tool.updated_at is None:
-            msg = "Tool 缺少必要字段 (id/created_at/updated_at)"
-            raise ValueError(msg)
+        id_, created_at, updated_at = tool.require_persisted()
         return ToolDTO(
-            id=tool.id,
+            id=id_,
             name=tool.name,
             description=tool.description,
             tool_type=tool.tool_type.value,
@@ -433,6 +431,6 @@ class ToolCatalogService:
             reviewer_id=tool.reviewer_id,
             review_comment=tool.review_comment,
             reviewed_at=tool.reviewed_at,
-            created_at=tool.created_at,
-            updated_at=tool.updated_at,
+            created_at=created_at,
+            updated_at=updated_at,
         )

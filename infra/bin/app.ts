@@ -93,10 +93,12 @@ const monitoringStack = new MonitoringStack(app, `${prefix}-monitoring-${env}`, 
   service: computeStack.service,
   loadBalancer: computeStack.loadBalancer,
   targetGroup: computeStack.targetGroup,
+  encryptionKey: securityStack.encryptionKey,
   alertEmail: envConfig.alertEmail,
   envName: env,
 });
 monitoringStack.addDependency(databaseStack);
 monitoringStack.addDependency(computeStack);
+monitoringStack.addDependency(securityStack);
 
 app.synth();

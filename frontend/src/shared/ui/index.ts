@@ -6,6 +6,7 @@ export { Spinner } from './Spinner';
 export { ErrorMessage } from './ErrorMessage';
 export { Pagination } from './Pagination';
 export { StatusBadge } from './StatusBadge';
+export { ErrorBoundary } from './ErrorBoundary';
 export {
   HomeIcon,
   AgentIcon,
@@ -17,3 +18,5 @@ export {
   BarChartIcon,
   ClipboardCheckIcon,
 } from './Icons';
+export type { IconProps } from './Icons';
+export { StatCard } from './StatCard';

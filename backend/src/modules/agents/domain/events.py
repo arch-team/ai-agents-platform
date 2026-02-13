@@ -6,7 +6,7 @@ from src.shared.domain.events import DomainEvent
 
 
 @dataclass
-class _AgentEvent(DomainEvent):
+class BaseAgentEvent(DomainEvent):
     """Agent 事件基类，携带 agent_id 和 owner_id。"""
 
     agent_id: int = 0
@@ -14,29 +14,29 @@ class _AgentEvent(DomainEvent):
 
 
 @dataclass
-class AgentCreatedEvent(_AgentEvent):
+class AgentCreatedEvent(BaseAgentEvent):
     """Agent 创建事件。"""
 
     name: str = ""
 
 
 @dataclass
-class AgentActivatedEvent(_AgentEvent):
+class AgentActivatedEvent(BaseAgentEvent):
     """Agent 激活事件。"""
 
 
 @dataclass
-class AgentArchivedEvent(_AgentEvent):
+class AgentArchivedEvent(BaseAgentEvent):
     """Agent 归档事件。"""
 
 
 @dataclass
-class AgentUpdatedEvent(_AgentEvent):
+class AgentUpdatedEvent(BaseAgentEvent):
     """Agent 更新事件。"""
 
     changed_fields: tuple[str, ...] = ()
 
 
 @dataclass
-class AgentDeletedEvent(_AgentEvent):
+class AgentDeletedEvent(BaseAgentEvent):
     """Agent 删除事件。"""

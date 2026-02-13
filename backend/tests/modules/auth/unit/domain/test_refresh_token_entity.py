@@ -50,3 +50,17 @@ class TestRefreshTokenEntity:
         rt = RefreshToken(user_id=1, expires_at=future)
         assert rt.expires_at == future
         assert rt.is_valid is True
+
+    def test_token_has_sufficient_entropy(self) -> None:
+        """Token 使用 secrets.token_urlsafe(32) 生成，长度 >= 43 字符（256 位）。"""
+        rt = RefreshToken(user_id=1)
+        # secrets.token_urlsafe(32) 生成 43 字符的 base64url 编码字符串
+        assert len(rt.token) >= 43
+
+    def test_token_is_url_safe(self) -> None:
+        """Token 仅包含 URL 安全字符。"""
+        import re
+
+        rt = RefreshToken(user_id=1)
+        # base64url: 字母、数字、连字符、下划线
+        assert re.match(r"^[A-Za-z0-9_-]+$", rt.token)

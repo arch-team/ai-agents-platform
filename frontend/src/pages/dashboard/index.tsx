@@ -5,38 +5,7 @@ import { useAuth } from '@/features/auth';
 import { useAgents } from '@/features/agents';
 import { useConversations } from '@/features/execution';
 import { useTeamExecutions } from '@/features/team-executions';
-import { Card, Spinner, AgentIcon, ChatIcon, TeamIcon } from '@/shared/ui';
-
-// 统计卡片 — 提取重复的图标+数字结构
-function StatCard({
-  icon,
-  iconBgClass,
-  label,
-  value,
-  isLoading,
-}: {
-  icon: React.ReactNode;
-  iconBgClass: string;
-  label: string;
-  value: number;
-  isLoading: boolean;
-}) {
-  return (
-    <Card className="flex items-center gap-4">
-      <div className={`flex h-12 w-12 items-center justify-center rounded-lg ${iconBgClass}`}>
-        {icon}
-      </div>
-      <div>
-        <p className="text-sm text-gray-500">{label}</p>
-        {isLoading ? (
-          <Spinner size="sm" />
-        ) : (
-          <p className="text-2xl font-bold text-gray-900">{value}</p>
-        )}
-      </div>
-    </Card>
-  );
-}
+import { AgentIcon, ChatIcon, TeamIcon, StatCard } from '@/shared/ui';
 
 export default function DashboardPage() {
   const { user } = useAuth();

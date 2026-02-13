@@ -29,6 +29,17 @@ class PydanticEntity(BaseModel):
         if self.updated_at is None:
             object.__setattr__(self, "updated_at", self.created_at)
 
+    def require_persisted(self) -> tuple[int, datetime, datetime]:
+        """确保实体已持久化（id/created_at/updated_at 不为 None）。
+
+        Returns:
+            (id, created_at, updated_at) 三元组，类型均为非 None
+        """
+        if self.id is None or self.created_at is None or self.updated_at is None:
+            msg = f"{type(self).__name__} 缺少必要字段 (id/created_at/updated_at)"
+            raise ValueError(msg)
+        return self.id, self.created_at, self.updated_at
+
     def touch(self) -> None:
         """更新 updated_at 时间戳。"""
         self.updated_at = utc_now()

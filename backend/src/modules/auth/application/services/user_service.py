@@ -205,6 +205,15 @@ class UserService:
             msg = "账户已停用"
             raise AuthenticationError(msg)
 
+        # Refresh Token Rotation: 撤销旧 Token, 签发新 Token
+        rt.revoke()
+        await self._refresh_token_repository.update(rt)
+
+        new_rt = RefreshToken(
+            user_id=user.id or 0,
+        )
+        created_rt = await self._refresh_token_repository.create(new_rt)
+
         access_token = create_access_token(
             subject=str(user.id),
             secret_key=self._jwt_secret_key,
@@ -217,7 +226,7 @@ class UserService:
             event_type="token_refreshed",
             user_id=user.id,
         )
-        return TokenDTO(access_token=access_token, refresh_token=dto.refresh_token)
+        return TokenDTO(access_token=access_token, refresh_token=created_rt.token)
 
     async def logout(self, refresh_token: str) -> bool:
         """撤销 Refresh Token（登出）。"""

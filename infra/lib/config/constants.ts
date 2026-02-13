@@ -41,6 +41,20 @@ export function isProd(envName: EnvironmentName): boolean {
   return envName === 'prod';
 }
 
+/**
+ * 获取 CORS 允许的源列表。
+ * @remarks Dev 环境包含 localhost 和 S3 静态站点; Prod 仅允许 S3 静态站点
+ */
+export function getCorsAllowedOrigins(envName: EnvironmentName): string[] {
+  if (envName === 'prod') {
+    return ['http://ai-agents-platform-frontend-prod-897473.s3-website-us-east-1.amazonaws.com'];
+  }
+  return [
+    'http://localhost:3000',
+    'http://ai-agents-platform-frontend-dev-897473.s3-website-us-east-1.amazonaws.com',
+  ];
+}
+
 /** Bedrock 调用模型所需的 IAM actions (ComputeStack + AgentCoreStack 共享) */
 export const BEDROCK_INVOKE_ACTIONS = [
   'bedrock:InvokeModel',

@@ -266,10 +266,10 @@ class TestUsageRecordRepositoryAggregatedStats:
         await session.commit()
 
         stats = await repo.get_aggregated_stats(user_id=1)
-        assert stats["total_tokens"] == 5200  # (1000+500) + (2000+1000) + (500+200)
-        assert stats["total_cost"] == pytest.approx(0.035)
-        assert stats["conversation_count"] == 2  # 两个不同的 conversation_id
-        assert stats["record_count"] == 3
+        assert stats.total_tokens == 5200  # (1000+500) + (2000+1000) + (500+200)
+        assert stats.total_cost == pytest.approx(0.035)
+        assert stats.conversation_count == 2  # 两个不同的 conversation_id
+        assert stats.record_count == 3
 
     @pytest.mark.asyncio
     async def test_get_aggregated_stats_empty(
@@ -278,10 +278,10 @@ class TestUsageRecordRepositoryAggregatedStats:
     ) -> None:
         """无记录时返回零值。"""
         stats = await repo.get_aggregated_stats()
-        assert stats["total_tokens"] == 0
-        assert stats["total_cost"] == 0.0
-        assert stats["conversation_count"] == 0
-        assert stats["record_count"] == 0
+        assert stats.total_tokens == 0
+        assert stats.total_cost == 0.0
+        assert stats.conversation_count == 0
+        assert stats.record_count == 0
 
     @pytest.mark.asyncio
     async def test_get_aggregated_stats_with_agent_filter(
@@ -295,5 +295,5 @@ class TestUsageRecordRepositoryAggregatedStats:
         await session.commit()
 
         stats = await repo.get_aggregated_stats(agent_id=1)
-        assert stats["record_count"] == 1
-        assert stats["total_cost"] == pytest.approx(0.01)
+        assert stats.record_count == 1
+        assert stats.total_cost == pytest.approx(0.01)

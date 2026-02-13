@@ -202,12 +202,14 @@ class TestGetUsageSummary:
         insights_service: InsightsService,
         mock_usage_repo: AsyncMock,
     ) -> None:
-        mock_usage_repo.get_aggregated_stats.return_value = {
-            "total_tokens": 15000,
-            "total_cost": 0.05,
-            "conversation_count": 10,
-            "record_count": 25,
-        }
+        from src.modules.insights.domain.value_objects.aggregated_stats import AggregatedStats
+
+        mock_usage_repo.get_aggregated_stats.return_value = AggregatedStats(
+            total_tokens=15000,
+            total_cost=0.05,
+            conversation_count=10,
+            record_count=25,
+        )
 
         result = await insights_service.get_usage_summary(user_id=10, period="daily")
         assert isinstance(result, UsageSummaryDTO)
@@ -234,12 +236,14 @@ class TestGetUsageSummary:
         insights_service: InsightsService,
         mock_usage_repo: AsyncMock,
     ) -> None:
-        mock_usage_repo.get_aggregated_stats.return_value = {
-            "total_tokens": 0,
-            "total_cost": 0.0,
-            "conversation_count": 0,
-            "record_count": 0,
-        }
+        from src.modules.insights.domain.value_objects.aggregated_stats import AggregatedStats
+
+        mock_usage_repo.get_aggregated_stats.return_value = AggregatedStats(
+            total_tokens=0,
+            total_cost=0.0,
+            conversation_count=0,
+            record_count=0,
+        )
 
         start = datetime(2025, 1, 1, tzinfo=UTC)
         end = datetime(2025, 6, 1, tzinfo=UTC)

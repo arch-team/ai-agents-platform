@@ -3,6 +3,7 @@ import * as cloudwatch from 'aws-cdk-lib/aws-cloudwatch';
 import * as cw_actions from 'aws-cdk-lib/aws-cloudwatch-actions';
 import * as ecs from 'aws-cdk-lib/aws-ecs';
 import * as elbv2 from 'aws-cdk-lib/aws-elasticloadbalancingv2';
+import * as kms from 'aws-cdk-lib/aws-kms';
 import * as rds from 'aws-cdk-lib/aws-rds';
 import * as sns from 'aws-cdk-lib/aws-sns';
 import * as subscriptions from 'aws-cdk-lib/aws-sns-subscriptions';
@@ -29,6 +30,8 @@ export interface MonitoringStackProps extends BaseStackProps {
   readonly loadBalancer: elbv2.IApplicationLoadBalancer;
   /** ALB Target Group */
   readonly targetGroup: elbv2.IApplicationTargetGroup;
+  /** KMS 加密密钥 — 用于 SNS Topic 加密 */
+  readonly encryptionKey?: kms.IKey;
   /** 告警通知邮箱 (可选) */
   readonly alertEmail?: string;
 }
@@ -48,12 +51,13 @@ export class MonitoringStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props: MonitoringStackProps) {
     super(scope, id, props);
 
-    const { cluster, service, loadBalancer, targetGroup, alertEmail, envName } = props;
+    const { cluster, service, loadBalancer, targetGroup, encryptionKey, alertEmail, envName } = props;
 
-    // SNS 告警主题
+    // SNS 告警主题 — 使用 KMS CMK 加密 (如提供)
     this.alertTopic = new sns.Topic(this, 'AlertTopic', {
       topicName: `${PROJECT_NAME}-alerts-${envName}`,
       displayName: `${PROJECT_NAME} ${envName} Alerts`,
+      masterKey: encryptionKey,
     });
     this.alarmAction = new cw_actions.SnsAction(this.alertTopic);
 
@@ -75,7 +79,7 @@ export class MonitoringStack extends cdk.Stack {
     this.createDashboard(cluster, service, loadBalancer, targetGroup, envName);
 
     // CDK Nag 抑制
-    this.suppressNagRules();
+    this.suppressNagRules(!!encryptionKey);
   }
 
   /** 创建 Alarm 并自动绑定告警动作 */
@@ -246,17 +250,27 @@ export class MonitoringStack extends cdk.Stack {
   }
 
   /** CDK Nag 合规规则抑制 */
-  private suppressNagRules(): void {
-    // SNS Topic 未使用 KMS 加密 (告警通知不含敏感数据)
-    NagSuppressions.addResourceSuppressions(this.alertTopic, [
-      {
+  private suppressNagRules(hasEncryptionKey: boolean): void {
+    const suppressions: Array<{ id: string; reason: string }> = [];
+
+    // SNS Topic: 未提供 encryptionKey 时抑制 KMS 加密规则
+    if (!hasEncryptionKey) {
+      suppressions.push({
         id: 'AwsSolutions-SNS2',
-        reason: 'Alert notifications do not contain sensitive data; KMS encryption is unnecessary',
-      },
-      {
-        id: 'AwsSolutions-SNS3',
-        reason: 'Alert notifications do not require SSL enforcement for publishing',
-      },
-    ]);
+        reason:
+          'SNS Topic KMS encryption is configured when encryptionKey is provided via MonitoringStackProps; alert notifications do not contain sensitive data',
+      });
+    }
+
+    // SNS Topic: HTTPS 发布强制策略 — 告警通知为内部 CloudWatch Alarm 使用
+    suppressions.push({
+      id: 'AwsSolutions-SNS3',
+      reason:
+        'Alert topic is for internal CloudWatch alarm notifications only; SSL enforcement for publishing will be added when external subscribers are introduced',
+    });
+
+    if (suppressions.length > 0) {
+      NagSuppressions.addResourceSuppressions(this.alertTopic, suppressions);
+    }
   }
 }

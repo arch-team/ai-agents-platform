@@ -484,11 +484,9 @@ class TeamExecutionService:
 
     @staticmethod
     def _to_dto(execution: TeamExecution) -> TeamExecutionDTO:
-        if execution.id is None or execution.created_at is None or execution.updated_at is None:
-            msg = "TeamExecution 缺少必要字段"
-            raise ValueError(msg)
+        id_, created_at, updated_at = execution.require_persisted()
         return TeamExecutionDTO(
-            id=execution.id,
+            id=id_,
             agent_id=execution.agent_id,
             user_id=execution.user_id,
             conversation_id=execution.conversation_id,
@@ -500,8 +498,8 @@ class TeamExecutionService:
             output_tokens=execution.output_tokens,
             started_at=execution.started_at,
             completed_at=execution.completed_at,
-            created_at=execution.created_at,
-            updated_at=execution.updated_at,
+            created_at=created_at,
+            updated_at=updated_at,
         )
 
     @staticmethod

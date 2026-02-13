@@ -7,3 +7,4 @@ export { LayoutIcon } from './LayoutIcon';
 export { WrenchIcon } from './WrenchIcon';
 export { BarChartIcon } from './BarChartIcon';
 export { ClipboardCheckIcon } from './ClipboardCheckIcon';
+export type { IconProps } from './types';

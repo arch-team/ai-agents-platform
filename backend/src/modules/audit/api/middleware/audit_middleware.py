@@ -1,4 +1,4 @@
-"""审计中间件 — 自动记录 API 调用。"""
+"""审计中间件 — 自动记录 API 调用（raw ASGI 实现）。"""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ import time
 from typing import TYPE_CHECKING
 
 import structlog
-from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.requests import Request
 
 from src.modules.audit.application.dto.audit_log_dto import CreateAuditLogDTO
 from src.modules.audit.application.services.audit_service import AuditService
@@ -16,10 +16,7 @@ from src.modules.audit.infrastructure.persistence.repositories.audit_log_reposit
 
 
 if TYPE_CHECKING:
-    from collections.abc import Awaitable, Callable
-
-    from starlette.requests import Request
-    from starlette.responses import Response
+    from starlette.types import ASGIApp, Receive, Scope, Send
 
 logger = structlog.get_logger(__name__)
 
@@ -53,41 +50,53 @@ def _extract_actor_id(request: Request) -> int | None:
     return getattr(request.state, "audit_user_id", None)
 
 
-class AuditMiddleware(BaseHTTPMiddleware):
-    """审计中间件 — 异步记录 API 调用到审计日志。
+class AuditMiddleware:
+    """审计中间件 — raw ASGI 实现，避免 BaseHTTPMiddleware 的性能和 streaming 兼容性问题。
 
     记录内容: method, path, status_code, actor_id, duration, ip_address, user_agent
     排除: 健康检查、文档等非业务端点
     """
 
-    async def dispatch(
-        self,
-        request: Request,
-        call_next: Callable[[Request], Awaitable[Response]],
-    ) -> Response:
-        """处理请求并异步记录审计日志。"""
+    def __init__(self, app: ASGIApp) -> None:
+        self.app = app
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        """ASGI 入口：仅拦截 HTTP 请求，其余直接透传。"""
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+
+        request = Request(scope, receive, send)
         path = request.url.path
 
         # 排除非业务端点
         if _should_exclude(path):
-            return await call_next(request)
+            await self.app(scope, receive, send)
+            return
 
         start_time = time.monotonic()
-        response: Response = await call_next(request)
+        status_code = 500  # 默认值, send 回调中会更新
+
+        async def send_wrapper(message: object) -> None:
+            nonlocal status_code
+            if isinstance(message, dict) and message.get("type") == "http.response.start":
+                status_code = message.get("status", 500)
+            await send(message)  # type: ignore[arg-type]
+
+        await self.app(scope, receive, send_wrapper)
+
         duration_ms = (time.monotonic() - start_time) * 1000
 
         # 异步记录审计日志 — 不阻塞响应
         try:
-            await self._record_audit(request, response, duration_ms)
+            await self._record_audit(request, status_code, duration_ms)
         except Exception:
             logger.exception("audit_middleware_record_failed", path=path)
-
-        return response
 
     async def _record_audit(
         self,
         request: Request,
-        response: Response,
+        status_code: int,
         duration_ms: float,
     ) -> None:
         """记录 API 调用审计日志。"""
@@ -120,8 +129,8 @@ class AuditMiddleware(BaseHTTPMiddleware):
                     user_agent=user_agent[:500] if user_agent and len(user_agent) > 500 else user_agent,
                     request_method=request.method,
                     request_path=str(request.url.path),
-                    status_code=response.status_code,
-                    result="success" if response.status_code < 400 else "failure",
+                    status_code=status_code,
+                    result="success" if status_code < 400 else "failure",
                     details={"duration_ms": round(duration_ms, 2)},
                 )
                 await service.record(dto)

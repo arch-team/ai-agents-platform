@@ -3,7 +3,7 @@
 from collections import defaultdict
 from collections.abc import Callable
 
-from cachetools import TTLCache  # type: ignore[import-untyped]
+from cachetools import TTLCache
 
 from src.shared.domain.events import DomainEvent
 

@@ -8,6 +8,7 @@ from src.modules.insights.domain.entities.usage_record import UsageRecord
 from src.modules.insights.domain.repositories.usage_record_repository import (
     IUsageRecordRepository,
 )
+from src.modules.insights.domain.value_objects.aggregated_stats import AggregatedStats
 from src.modules.insights.infrastructure.persistence.models.usage_record_model import (
     UsageRecordModel,
 )
@@ -113,7 +114,7 @@ class UsageRecordRepositoryImpl(
         agent_id: int | None = None,
         start: datetime | None = None,
         end: datetime | None = None,
-    ) -> dict[str, float | int]:
+    ) -> AggregatedStats:
         """获取聚合统计数据。"""
         stmt = select(
             func.coalesce(
@@ -136,9 +137,9 @@ class UsageRecordRepositoryImpl(
 
         result = await self._session.execute(stmt)
         row = result.one()
-        return {
-            "total_tokens": int(row.total_tokens),
-            "total_cost": float(row.total_cost),
-            "conversation_count": int(row.conversation_count),
-            "record_count": int(row.record_count),
-        }
+        return AggregatedStats(
+            total_tokens=int(row.total_tokens),
+            total_cost=float(row.total_cost),
+            conversation_count=int(row.conversation_count),
+            record_count=int(row.record_count),
+        )

@@ -1,5 +1,5 @@
 import * as cdk from 'aws-cdk-lib';
-import { Template } from 'aws-cdk-lib/assertions';
+import { Match, Template } from 'aws-cdk-lib/assertions';
 import { MonitoringStack } from '../../lib/stacks/monitoring-stack';
 import { ComputeStack } from '../../lib/stacks/compute-stack';
 import { DatabaseStack } from '../../lib/stacks/database-stack';
@@ -38,7 +38,7 @@ function createMonitoringDeps(app: cdk.App) {
     envName: 'dev',
   });
 
-  return { databaseStack, computeStack };
+  return { databaseStack, computeStack, encryptionKey };
 }
 
 describe('MonitoringStack', () => {
@@ -207,6 +207,34 @@ describe('MonitoringStack', () => {
   describe('公开属性', () => {
     it('应暴露 alertTopic', () => {
       expect(stack.alertTopic).toBeDefined();
+    });
+  });
+
+  describe('KMS 加密', () => {
+    it('提供 encryptionKey 时 SNS Topic 应使用 KMS 加密', () => {
+      const app = new cdk.App();
+      const { databaseStack, computeStack, encryptionKey } = createMonitoringDeps(app);
+
+      const encryptedStack = new MonitoringStack(app, 'TestMonitoringEncrypted', {
+        cluster: databaseStack.cluster,
+        service: computeStack.service,
+        loadBalancer: computeStack.loadBalancer,
+        targetGroup: computeStack.targetGroup,
+        encryptionKey,
+        envName: 'dev',
+      });
+
+      const encryptedTemplate = Template.fromStack(encryptedStack);
+      encryptedTemplate.hasResourceProperties('AWS::SNS::Topic', {
+        KmsMasterKeyId: Match.anyValue(),
+      });
+    });
+
+    it('未提供 encryptionKey 时 SNS Topic 不应有 KMS 加密', () => {
+      // 默认 beforeEach 的 stack 未传 encryptionKey
+      template.hasResourceProperties('AWS::SNS::Topic', {
+        TopicName: 'ai-agents-platform-alerts-dev',
+      });
     });
   });
 });

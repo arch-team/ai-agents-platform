@@ -8,6 +8,7 @@
 
 import asyncio
 from functools import lru_cache
+from typing import Protocol, cast
 
 import structlog
 
@@ -15,6 +16,13 @@ from src.shared.domain.exceptions import DomainError
 
 
 logger = structlog.get_logger(__name__)
+
+
+class _AgentCoreGatewayClient(Protocol):
+    """AgentCore Gateway boto3 客户端的类型协议。"""
+
+    def create_gateway_target(self, **kwargs: object) -> dict[str, str]: ...
+    def delete_gateway_target(self, **kwargs: object) -> dict[str, str]: ...
 
 
 class GatewaySyncAdapter:
@@ -25,11 +33,14 @@ class GatewaySyncAdapter:
         self._region = region
 
     @lru_cache(maxsize=1)  # noqa: B019
-    def _get_client(self) -> object:
+    def _get_client(self) -> _AgentCoreGatewayClient:
         """获取 bedrock-agentcore 控制面客户端 (懒加载单例)。"""
         import boto3
 
-        return boto3.client("bedrock-agentcore", region_name=self._region)
+        return cast(
+            _AgentCoreGatewayClient,
+            boto3.client("bedrock-agentcore", region_name=self._region),
+        )
 
     async def register_tool(
         self,
@@ -57,7 +68,7 @@ class GatewaySyncAdapter:
         try:
             client = self._get_client()
             response = await asyncio.to_thread(
-                client.create_gateway_target,  # type: ignore[union-attr]
+                client.create_gateway_target,
                 gatewayIdentifier=self._gateway_id,
                 name=target_name,
                 description=f"{description} [transport={transport}]",
@@ -97,7 +108,7 @@ class GatewaySyncAdapter:
         try:
             client = self._get_client()
             await asyncio.to_thread(
-                client.delete_gateway_target,  # type: ignore[union-attr]
+                client.delete_gateway_target,
                 gatewayIdentifier=self._gateway_id,
                 targetId=target_id,
             )

@@ -8,10 +8,12 @@ import type { TeamExecutionSSEChunk } from '../api/types';
 /**
  * SSE 流式日志生成器
  * Team Execution 的 SSE 端点使用 GET 请求
+ * @param signal - 可选 AbortSignal，用于取消 SSE 连接
  */
 export async function* streamSSE(
   url: string,
   token: string | null,
+  signal?: AbortSignal,
 ): AsyncGenerator<TeamExecutionSSEChunk> {
-  yield* parseSSEStream<TeamExecutionSSEChunk>({ url, token, method: 'GET' });
+  yield* parseSSEStream<TeamExecutionSSEChunk>({ url, token, method: 'GET', signal });
 }

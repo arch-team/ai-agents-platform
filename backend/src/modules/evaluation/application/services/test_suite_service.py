@@ -44,34 +44,30 @@ class TestSuiteService:
 
     @staticmethod
     def _to_suite_dto(suite: TestSuite) -> TestSuiteDTO:
-        if suite.id is None or suite.created_at is None or suite.updated_at is None:
-            msg = "TestSuite 缺少必要字段 (id/created_at/updated_at)"
-            raise ValueError(msg)
+        id_, created_at, updated_at = suite.require_persisted()
         return TestSuiteDTO(
-            id=suite.id,
+            id=id_,
             name=suite.name,
             description=suite.description,
             agent_id=suite.agent_id,
             status=suite.status.value,
             owner_id=suite.owner_id,
-            created_at=suite.created_at,
-            updated_at=suite.updated_at,
+            created_at=created_at,
+            updated_at=updated_at,
         )
 
     @staticmethod
     def _to_case_dto(case: TestCase) -> TestCaseDTO:
-        if case.id is None or case.created_at is None or case.updated_at is None:
-            msg = "TestCase 缺少必要字段 (id/created_at/updated_at)"
-            raise ValueError(msg)
+        id_, created_at, updated_at = case.require_persisted()
         return TestCaseDTO(
-            id=case.id,
+            id=id_,
             suite_id=case.suite_id,
             input_prompt=case.input_prompt,
             expected_output=case.expected_output,
             evaluation_criteria=case.evaluation_criteria,
             order_index=case.order_index,
-            created_at=case.created_at,
-            updated_at=case.updated_at,
+            created_at=created_at,
+            updated_at=updated_at,
         )
 
     # -- 测试集 CRUD --

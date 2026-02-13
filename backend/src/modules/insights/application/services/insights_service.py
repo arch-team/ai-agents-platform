@@ -139,10 +139,10 @@ class InsightsService:
         )
 
         return UsageSummaryDTO(
-            total_tokens=int(stats["total_tokens"]),
-            total_cost=float(stats["total_cost"]),
-            conversation_count=int(stats["conversation_count"]),
-            record_count=int(stats["record_count"]),
+            total_tokens=stats.total_tokens,
+            total_cost=stats.total_cost,
+            conversation_count=stats.conversation_count,
+            record_count=stats.record_count,
             period=period,
         )
 

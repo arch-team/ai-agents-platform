@@ -1,22 +1,38 @@
 // 核心对话界面组件
 
-import { useCallback, useEffect, useRef } from 'react';
+import { memo, useCallback, useEffect, useRef } from 'react';
 
 import { ErrorMessage, Spinner } from '@/shared/ui';
 
 import { useConversation } from '../api/queries';
 import { useSendMessageStream } from '../api/stream';
+import type { Message } from '../api/types';
 import { useIsStreaming, useStreamingContent, useChatError, useChatActions } from '../model/store';
 
-import { MessageBubble, StreamingBubble } from './MessageBubble';
+import { MessageBubble } from './MessageBubble';
 import { MessageInput } from './MessageInput';
-import { StreamingIndicator } from './StreamingIndicator';
+import { StreamingArea } from './StreamingArea';
 
 interface ChatInterfaceProps {
   conversationId: number;
   /** 认证 token，由调用方从 auth store 获取后传入（避免跨 feature 依赖） */
   token: string | null;
 }
+
+// 历史消息列表 — 独立 memo 组件，仅在 messages 数组变化时重渲染
+interface MessageListProps {
+  messages: Message[];
+}
+
+const MessageList = memo(function MessageList({ messages }: MessageListProps) {
+  return (
+    <>
+      {messages.map((msg) => (
+        <MessageBubble key={msg.id} message={msg} />
+      ))}
+    </>
+  );
+});
 
 export function ChatInterface({ conversationId, token }: ChatInterfaceProps) {
   const { data, isLoading, error } = useConversation(conversationId);
@@ -74,30 +90,26 @@ export function ChatInterface({ conversationId, token }: ChatInterfaceProps) {
         {isCompleted && <span className="text-xs text-gray-500">对话已结束</span>}
       </header>
 
-      {/* 消息列表 */}
-      <div
-        className="flex-1 overflow-y-auto p-4"
-        role="log"
-        aria-label="消息列表"
-        aria-live="polite"
-      >
+      {/* 消息列表 — 不使用 aria-live，避免流式更新时屏幕阅读器不断朗读 */}
+      <div className="flex-1 overflow-y-auto p-4" role="log" aria-label="消息列表">
         {messages.length === 0 && !isStreaming && (
           <p className="py-12 text-center text-sm text-gray-400">开始新的对话吧</p>
         )}
 
         <div className="flex flex-col gap-3">
-          {messages.map((msg) => (
-            <MessageBubble key={msg.id} message={msg} />
-          ))}
+          {/* 历史消息 — 独立 memo 组件，不受 streamingContent 更新影响 */}
+          <MessageList messages={messages} />
 
-          {/* 流式消息展示 */}
-          {streamingContent && <StreamingBubble content={streamingContent} />}
-
-          {/* 流式输入指示器 */}
-          {isStreaming && !streamingContent && <StreamingIndicator />}
+          {/* 流式展示区 — 独立 memo 组件，仅 streamingContent/isStreaming 变化时更新 */}
+          <StreamingArea streamingContent={streamingContent} isStreaming={isStreaming} />
         </div>
 
         <div ref={messagesEndRef} />
+      </div>
+
+      {/* 新消息完成通知 — 仅在消息列表变化时通知屏幕阅读器 */}
+      <div aria-live="polite" aria-relevant="additions" className="sr-only">
+        {messages.length > 0 && `收到新消息: ${messages[messages.length - 1].content}`}
       </div>
 
       {/* 流式错误提示 */}

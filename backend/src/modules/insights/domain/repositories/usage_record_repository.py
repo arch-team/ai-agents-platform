@@ -4,6 +4,7 @@ from abc import abstractmethod
 from datetime import datetime
 
 from src.modules.insights.domain.entities.usage_record import UsageRecord
+from src.modules.insights.domain.value_objects.aggregated_stats import AggregatedStats
 from src.shared.domain.repositories import IRepository
 
 
@@ -57,5 +58,5 @@ class IUsageRecordRepository(IRepository[UsageRecord, int]):
         agent_id: int | None = None,
         start: datetime | None = None,
         end: datetime | None = None,
-    ) -> dict[str, float | int]:
+    ) -> AggregatedStats:
         """获取聚合统计数据（总 token、总 cost、对话数）。"""

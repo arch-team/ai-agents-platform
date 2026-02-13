@@ -16,7 +16,7 @@ from src.modules.agents.domain.events import (
     AgentCreatedEvent,
     AgentDeletedEvent,
     AgentUpdatedEvent,
-    _AgentEvent,
+    BaseAgentEvent,
 )
 from src.modules.agents.domain.exceptions import (
     AgentNameDuplicateError,
@@ -241,7 +241,7 @@ class AgentService:
         agent_id: int,
         operator_id: int,
         action: Callable[[Agent], None],
-        event_cls: type[_AgentEvent],
+        event_cls: type[BaseAgentEvent],
     ) -> AgentDTO:
         """状态变更通用流程：获取 -> 校验所有权 -> 执行动作 -> 持久化 -> 发布事件。"""
         agent = await self._get_owned_agent(agent_id, operator_id)
@@ -270,11 +270,9 @@ class AgentService:
 
     @staticmethod
     def _to_dto(agent: Agent) -> AgentDTO:
-        if agent.id is None or agent.created_at is None or agent.updated_at is None:
-            msg = "Agent 缺少必要字段 (id/created_at/updated_at)"
-            raise ValueError(msg)
+        id_, created_at, updated_at = agent.require_persisted()
         return AgentDTO(
-            id=agent.id,
+            id=id_,
             name=agent.name,
             description=agent.description,
             system_prompt=agent.system_prompt,
@@ -286,6 +284,6 @@ class AgentService:
             top_p=agent.config.top_p,
             runtime_type=agent.config.runtime_type,
             enable_teams=agent.config.enable_teams,
-            created_at=agent.created_at,
-            updated_at=agent.updated_at,
+            created_at=created_at,
+            updated_at=updated_at,
         )
