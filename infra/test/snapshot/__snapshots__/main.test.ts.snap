@@ -1194,7 +1194,7 @@ exports[`Snapshot Tests ComputeStack 快照匹配 1`] = `
               "Timeout": 5,
             },
             "Image": {
-              "Fn::Sub": "000000000000.dkr.ecr.us-east-1.\${AWS::URLSuffix}/cdk-hnb659fds-container-assets-000000000000-us-east-1:524618643041d67faf7fce1d5c9cf2b50b79c68da34e409e7fe737d2b5559bc7",
+              "Fn::Sub": "000000000000.dkr.ecr.us-east-1.\${AWS::URLSuffix}/cdk-hnb659fds-container-assets-000000000000-us-east-1:9de0d73621fb0a3ad6927a6a9b4f99014ddbfb195012f10569f01fb623ced49d",
             },
             "LogConfiguration": {
               "LogDriver": "awslogs",

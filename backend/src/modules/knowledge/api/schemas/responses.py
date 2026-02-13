@@ -2,7 +2,7 @@
 
 from datetime import datetime
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class KnowledgeBaseResponse(BaseModel):
@@ -61,7 +61,7 @@ class QueryResultResponse(BaseModel):
     content: str
     score: float
     document_id: str = ""
-    metadata: dict[str, str] = {}
+    metadata: dict[str, str] = Field(default_factory=dict)
 
 
 class QueryResponse(BaseModel):
