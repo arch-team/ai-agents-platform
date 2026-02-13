@@ -262,8 +262,11 @@ ai-agents-plat-database-dev
 ai-agents-plat-agentCore-dev
 ai-agents-plat-database-prod
 ai-agents-plat-agentCore-prod
+ai-agents-plat-database-staging
 ai-agents-plat-agentCore-staging
 并且当前选择的是AWS ECS，我希望改为EKS
 
-请启用Claude Code Agent Teams完成以上的任务，完成之后需要将这些变更 并更新项目的进度跟踪和路线图  ，Agent Teams的规划参考：/Users/jinhuasu/Project_Workspace/Anker-Projects/ml-platform-research/llm-platform-solution/ai-agents-platform/plan-docs/claude-code-tooling-guide.md中的四、推荐的 Agent Teams 组合
+请启用Claude Code Agent Teams完成以上的任务，完成之后需要将这些变更 更新到项目的进度跟踪和路线图  ，Agent Teams的规划参考：/Users/jinhuasu/Project_Workspace/Anker-Projects/ml-platform-research/llm-platform-solution/ai-agents-platform/plan-docs/claude-code-tooling-guide.md中的四、推荐的 Agent Teams 组合
+
+
 

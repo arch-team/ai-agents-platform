@@ -5,4 +5,14 @@ export { Card } from './Card';
 export { Spinner } from './Spinner';
 export { ErrorMessage } from './ErrorMessage';
 export { Pagination } from './Pagination';
-export { HomeIcon, AgentIcon, ChatIcon, TeamIcon } from './Icons';
+export {
+  HomeIcon,
+  AgentIcon,
+  ChatIcon,
+  TeamIcon,
+  BookOpenIcon,
+  LayoutIcon,
+  WrenchIcon,
+  BarChartIcon,
+  ClipboardCheckIcon,
+} from './Icons';

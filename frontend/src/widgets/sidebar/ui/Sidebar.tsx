@@ -1,8 +1,18 @@
-// 应用侧边导航栏
+// 应用侧边导航栏 — 分组导航，覆盖全部页面入口
 import { Link, useLocation } from 'react-router-dom';
 
 import { cn } from '@/shared/lib/cn';
-import { HomeIcon, AgentIcon, ChatIcon, TeamIcon } from '@/shared/ui';
+import {
+  HomeIcon,
+  AgentIcon,
+  ChatIcon,
+  TeamIcon,
+  BookOpenIcon,
+  LayoutIcon,
+  WrenchIcon,
+  BarChartIcon,
+  ClipboardCheckIcon,
+} from '@/shared/ui';
 
 interface SidebarProps {
   isOpen?: boolean;
@@ -15,26 +25,77 @@ interface NavItem {
   icon: React.ReactNode;
 }
 
-const navItems: NavItem[] = [
+interface NavGroup {
+  title: string;
+  items: NavItem[];
+}
+
+// 导航分组配置
+const navGroups: NavGroup[] = [
   {
-    label: 'Dashboard',
-    path: '/',
-    icon: <HomeIcon />,
+    title: '概览',
+    items: [
+      {
+        label: '仪表盘',
+        path: '/',
+        icon: <HomeIcon />,
+      },
+    ],
   },
   {
-    label: 'Agents',
-    path: '/agents',
-    icon: <AgentIcon />,
+    title: 'Agent 管理',
+    items: [
+      {
+        label: 'Agent 列表',
+        path: '/agents',
+        icon: <AgentIcon />,
+      },
+      {
+        label: '对话',
+        path: '/chat',
+        icon: <ChatIcon />,
+      },
+      {
+        label: '团队执行',
+        path: '/team-executions',
+        icon: <TeamIcon />,
+      },
+    ],
   },
   {
-    label: '对话',
-    path: '/chat',
-    icon: <ChatIcon />,
+    title: '工具与知识',
+    items: [
+      {
+        label: '知识库',
+        path: '/knowledge',
+        icon: <BookOpenIcon />,
+      },
+      {
+        label: '模板',
+        path: '/templates',
+        icon: <LayoutIcon />,
+      },
+      {
+        label: '工具目录',
+        path: '/tools',
+        icon: <WrenchIcon />,
+      },
+    ],
   },
   {
-    label: 'Team Executions',
-    path: '/team-executions',
-    icon: <TeamIcon />,
+    title: '分析',
+    items: [
+      {
+        label: '使用洞察',
+        path: '/insights',
+        icon: <BarChartIcon />,
+      },
+      {
+        label: '评估',
+        path: '/evaluation',
+        icon: <ClipboardCheckIcon />,
+      },
+    ],
   },
 ];
 
@@ -66,25 +127,34 @@ export function Sidebar({ isOpen = true, onClose }: SidebarProps) {
         aria-label="主导航"
       >
         <nav className="flex flex-col gap-1 p-3">
-          {navItems.map((item) => {
-            const active = isActive(item.path);
-            return (
-              <Link
-                key={item.path}
-                to={item.path}
-                onClick={onClose}
-                aria-current={active ? 'page' : undefined}
-                className={cn(
-                  'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
-                  'hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500',
-                  active ? 'bg-blue-50 text-blue-700' : 'text-gray-700',
-                )}
-              >
-                {item.icon}
-                {item.label}
-              </Link>
-            );
-          })}
+          {navGroups.map((group) => (
+            <div key={group.title} className="mb-2">
+              {/* 分组标题 */}
+              <h3 className="mb-1 px-3 text-xs font-semibold uppercase tracking-wider text-gray-400">
+                {group.title}
+              </h3>
+              {/* 分组导航项 */}
+              {group.items.map((item) => {
+                const active = isActive(item.path);
+                return (
+                  <Link
+                    key={item.path}
+                    to={item.path}
+                    onClick={onClose}
+                    aria-current={active ? 'page' : undefined}
+                    className={cn(
+                      'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+                      'hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500',
+                      active ? 'bg-blue-50 text-blue-700' : 'text-gray-700',
+                    )}
+                  >
+                    {item.icon}
+                    {item.label}
+                  </Link>
+                );
+              })}
+            </div>
+          ))}
         </nav>
       </aside>
     </>

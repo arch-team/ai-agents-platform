@@ -2,3 +2,8 @@ export { HomeIcon } from './HomeIcon';
 export { AgentIcon } from './AgentIcon';
 export { ChatIcon } from './ChatIcon';
 export { TeamIcon } from './TeamIcon';
+export { BookOpenIcon } from './BookOpenIcon';
+export { LayoutIcon } from './LayoutIcon';
+export { WrenchIcon } from './WrenchIcon';
+export { BarChartIcon } from './BarChartIcon';
+export { ClipboardCheckIcon } from './ClipboardCheckIcon';

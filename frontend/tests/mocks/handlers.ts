@@ -144,4 +144,26 @@ export const handlers = [
       { status: 201 },
     );
   }),
+
+  // Team Executions
+  http.get(`${BASE_URL}/api/v1/team-executions`, () =>
+    HttpResponse.json({
+      items: [
+        {
+          id: 1,
+          name: '测试 Team 执行',
+          goal: '完成测试任务',
+          status: 'completed',
+          agent_ids: [1],
+          created_by: 1,
+          created_at: '2025-01-01T00:00:00Z',
+          updated_at: '2025-01-01T00:00:00Z',
+        },
+      ],
+      total: 1,
+      page: 1,
+      page_size: 10,
+      total_pages: 1,
+    }),
+  ),
 ];

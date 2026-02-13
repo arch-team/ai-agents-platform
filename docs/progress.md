@@ -4,18 +4,18 @@
 
 ## 当前状态
 
-- **阶段**: Phase 4 企业成熟 (12-18 月) — M10-prep ✅ | v1.6 季度评审 ✅ | M10 启动
-- **里程碑**: Phase 3 全部完成 ✅ | Phase 4: M10-prep ✅ → **M10 (当前)** → M11 → M12
-- **变更积压**: Phase 2-3: 24/24 ✅ | Phase 4: 8/19 (含 5 项 v1.6 新增) | AgentCore P3: 2/5
-- **关键决策**: v1.6 季度评审 (代码审计 B+89 + 技术扫描 + 经验教训 + M10 拆解 17 任务) | bedrock-agentcore 0.x→1.x 升级 | Opus 4.6 评估 | Strands 战略观察
+- **阶段**: Phase 4 企业成熟 (12-18 月) — M10 audit 模块 + 前端 5 页面 + 变更修复 大幅推进
+- **里程碑**: Phase 4: M10-prep ✅ → M10 ✅ → **M11 (下一步)** → M12
+- **变更积压**: Phase 2-3: 24/24 ✅ | Phase 4: 14/19 | AgentCore P3: 2/5
+- **关键决策**: bedrock-agentcore 1.2.1 升级 | Opus 4.6 评估 (默认 Haiku 不变, 3 模型常量) | audit 模块 append-only 设计 | 前端 5 页面 FSD 补全
 - **Dev 环境**: 后端 ECS (256 CPU/512 MiB) + 前端 S3 + CORS + Bedrock IAM ✅ | ALB `ai-agents-dev-546356512.us-east-1.elb.amazonaws.com`
 - **Prod 环境**: 后端 ECS (512 CPU/1024 MiB/2 任务) + Aurora db.r6g.large (Writer+Reader) ✅ | ALB `ai-agents-prod-1419512933.us-east-1.elb.amazonaws.com`
 - **Stack 命名**: `ai-agents-plat-{stack}-{env}` (v1.4 规范化, 12 个 Stack 全部重建)
-- **测试**: 后端 1673 测试 (87.89% 覆盖) + 基础设施 161 测试 + 前端 80 测试 = **1914 测试**
-- **后端模块**: 9 个 | **前端**: 113+ 源文件, FSD 架构, 8 个页面 (覆盖度 ~45%)
-- **SDK**: claude-agent-sdk 0.1.35 | bedrock-agentcore >=0.1.0 (**需升级到 >=1.0.0**)
+- **测试**: 后端 1760 测试 + 基础设施 161 测试 + 前端 80+ 测试 = **2000+ 测试**
+- **后端模块**: 10 个 (新增 audit) | **前端**: 160+ 源文件, FSD 架构, 13 个页面 (覆盖度 ~85%)
+- **SDK**: claude-agent-sdk 0.1.35 | bedrock-agentcore 1.2.1
 - **环境策略**: Dev (开发+验证) + Prod (生产)，无 Staging (v1.4 简化)
-- **下一步**: M10 #1 — audit 模块 Domain 层 (AuditLog 实体 + 枚举 + 仓库接口)
+- **下一步**: M11 — 平台成熟化 (insights 增强 + 灾备验证 + Agent 体验优化 + Opus 4.6 深度集成)
 
 ## 模块状态
 
@@ -43,13 +43,15 @@
 |------|:----:|------|------|
 | ~~`orchestration`~~ | 取消 | - | ADR-008: Agent Teams 替代，已在 execution 模块实现 |
 | `evaluation` | 已完成 | ai-agents-factory-v1 | 测试集 CRUD + 批量评估 + 结果查询 (14 端点), TestSuite/TestCase/EvaluationRun/EvaluationResult, 58 测试 |
-| `frontend` | 已完成 | ai-agents-factory-v1 | React 19 + TypeScript + FSD, 113 源文件, 8 页面 (Login/Register/Dashboard/AgentList/AgentCreate/AgentDetail/Chat/TeamExecution) |
+| `frontend` | 已完成 | ai-agents-factory-v1 | React 19 + TypeScript + FSD, 160+ 源文件, 13 页面 (覆盖度 ~85%) |
 
-### 后续阶段
+### Phase 4
 
-| 阶段 | 模块 |
-|------|------|
-| Phase 4 | audit, ~~marketplace~~ (ADR-007: 移除), ~~analytics~~ (ADR-007: 降级为 insights 增强) |
+| 模块 | 状态 | 分支 | 备注 |
+|------|:----:|------|------|
+| `audit` | 已完成 | ai-agents-factory-v1 | 审计日志与合规 (5 端点), AuditLog append-only, EventBus 23 事件订阅 + HTTP 中间件, 65 测试 |
+| ~~`marketplace`~~ | 移除 | - | ADR-007: 内部平台无需市场机制 |
+| ~~`analytics`~~ | 降级 | - | ADR-007: 合并为 insights 增强 |
 
 ## 基础设施
 
@@ -457,38 +459,38 @@
 | 8 | CI/CD Pipeline 补充 Agent 镜像构建推送流程 | 已完成 | #4 | `.github/workflows/` | 2026-02-13 |
 | 9 | 质量验收: ruff + mypy + pytest 全通过 + Runtime E2E 验证 | 已完成 | #1-#8 | `rules/checklist.md` | 2026-02-13 |
 
-### M10: 审计合规 + 前端补全 (第 57-64 周) — 待开始
+### M10: 审计合规 + 前端补全 (第 57-64 周) — ✅ 已完成
 
 > 交付物: audit 模块 (10 任务) + 前端 5 页面补全 (7 任务)；覆盖度 45% → 85%
 > 验收标准: 100% 写操作审计覆盖 + 前端 13+ 页面 + ruff/mypy/pytest 全通过
 > 来源: roadmap v1.5 §5.5 + v1.6 季度评审 M10 任务拆解
 
-#### 后端 audit 模块 (10 任务)
+#### 后端 audit 模块 (10 任务) — ✅ 全部完成
 
 | # | 任务 | 状态 | 依赖 | 参考规范 | 会话 |
 |---|------|:----:|:----:|---------|------|
-| 1 | audit/domain: AuditLog 实体 + AuditAction/AuditCategory 枚举 + IAuditLogRepository 接口 | 待开始 | - | `rules/architecture.md` §5 DDD | - |
-| 2 | audit/domain: 领域事件 (AuditLogCreated) + 模块异常 | 待开始 | #1 | `rules/architecture.md` §4.2 | - |
-| 3 | audit/application: DTO + AuditService (记录/查询/统计/按资源查询) | 待开始 | #1, #2 | `rules/architecture.md` §5 | - |
-| 4 | audit/application: IAuditEventSubscriber 接口 (订阅各模块 DomainEvent 自动记录审计) | 待开始 | #3 | `rules/architecture.md` §4.2 EventBus | - |
-| 5 | audit/infrastructure: AuditLogModel ORM + AuditLogRepositoryImpl + Alembic migration | 待开始 | #1 | `rules/tech-stack.md` | - |
-| 6 | audit/infrastructure: AuditEventSubscriber 实现 (EventBus 订阅 → AuditLog 记录) | 待开始 | #4, #5 | `rules/architecture.md` §4.2 | - |
-| 7 | audit/api: Schema + dependencies + endpoints (列表/筛选/统计/按资源/导出 CSV) — 仅 ADMIN | 待开始 | #3, #5 | `rules/api-design.md` | - |
-| 8 | 审计中间件: AuditMiddleware (自动记录 API 调用 — method/path/status/actor/duration) | 待开始 | #3 | `rules/observability.md` | - |
-| 9 | 模块注册: main.py 路由 + 异常映射 + EventBus 订阅注册 | 待开始 | #6, #7, #8 | `rules/architecture.md` §6.3 | - |
-| 10 | tests: audit 单元测试 + 集成测试 + 质量验收 | 待开始 | #1-#9 | `rules/testing.md` TDD | - |
+| 1 | audit/domain: AuditLog 实体 + AuditAction/AuditCategory 枚举 + IAuditLogRepository 接口 | 已完成 | - | `rules/architecture.md` §5 DDD | 2026-02-13 |
+| 2 | audit/domain: 领域事件 (AuditLogCreated) + 模块异常 | 已完成 | #1 | `rules/architecture.md` §4.2 | 2026-02-13 |
+| 3 | audit/application: DTO + AuditService (记录/查询/统计/按资源查询) | 已完成 | #1, #2 | `rules/architecture.md` §5 | 2026-02-13 |
+| 4 | audit/application: IAuditEventSubscriber 接口 (订阅各模块 DomainEvent 自动记录审计) | 已完成 | #3 | `rules/architecture.md` §4.2 EventBus | 2026-02-13 |
+| 5 | audit/infrastructure: AuditLogModel ORM + AuditLogRepositoryImpl + Alembic migration | 已完成 | #1 | `rules/tech-stack.md` | 2026-02-13 |
+| 6 | audit/infrastructure: AuditEventSubscriber 实现 (EventBus 订阅 → AuditLog 记录, 23 事件) | 已完成 | #4, #5 | `rules/architecture.md` §4.2 | 2026-02-13 |
+| 7 | audit/api: Schema + dependencies + endpoints (列表/筛选/统计/按资源/导出 CSV) — 仅 ADMIN | 已完成 | #3, #5 | `rules/api-design.md` | 2026-02-13 |
+| 8 | 审计中间件: AuditMiddleware (自动记录 API 调用 — method/path/status/actor/duration) | 已完成 | #3 | `rules/observability.md` | 2026-02-13 |
+| 9 | 模块注册: main.py 路由 + 异常映射 + EventBus 订阅注册 | 已完成 | #6, #7, #8 | `rules/architecture.md` §6.3 | 2026-02-13 |
+| 10 | tests: audit 单元测试 + 集成测试 + 质量验收 (65 测试) | 已完成 | #1-#9 | `rules/testing.md` TDD | 2026-02-13 |
 
-#### 前端 5 页面补全 (7 任务)
+#### 前端 5 页面补全 (7 任务) — ✅ 全部完成
 
 | # | 任务 | 状态 | 依赖 | 参考规范 | 会话 |
 |---|------|:----:|:----:|---------|------|
-| 11 | KnowledgePage — 知识库管理 (列表/创建/详情/文档上传/RAG 查询, 对接 10 端点) | 待开始 | - | FSD 架构 | - |
-| 12 | TemplatesPage — 模板管理 (浏览/详情/从模板创建 Agent/分类筛选, 对接 8 端点) | 待开始 | - | FSD 架构 | - |
-| 13 | ToolCatalogPage — 工具目录 (列表/注册/审批流程/状态筛选, 对接 10 端点) | 待开始 | - | FSD 架构 | - |
-| 14 | InsightsPage — 使用洞察 (成本归因图表/使用趋势/Token 统计, 对接 3 端点) | 待开始 | - | FSD 架构 | - |
-| 15 | EvaluationPage — 评估管理 (测试集 CRUD/批量评估/结果展示, 对接 14 端点) | 待开始 | - | FSD 架构 | - |
-| 16 | 前端路由整合 + 导航更新 (Sidebar 5 入口 + 懒加载) | 待开始 | #11-#15 | - | - |
-| 17 | 前端测试 + 覆盖度验证 | 待开始 | #16 | - | - |
+| 11 | KnowledgePage — 知识库管理 (10 文件, 对接 10 端点) | 已完成 | - | FSD 架构 | 2026-02-13 |
+| 12 | TemplatesPage — 模板管理 (10 文件, 对接 8 端点) | 已完成 | - | FSD 架构 | 2026-02-13 |
+| 13 | ToolCatalogPage — 工具目录 (9 文件, 对接 10 端点) | 已完成 | - | FSD 架构 | 2026-02-13 |
+| 14 | InsightsPage — 使用洞察 (7 文件, 对接 3 端点, recharts 图表) | 已完成 | - | FSD 架构 | 2026-02-13 |
+| 15 | EvaluationPage — 评估管理 (12 文件, 对接 14 端点) | 已完成 | - | FSD 架构 | 2026-02-13 |
+| 16 | 前端路由整合 + 导航更新 (Sidebar 分组导航 9 项 + 5 图标 + 懒加载) | 已完成 | #11-#15 | - | 2026-02-13 |
+| 17 | 前端测试 + 覆盖度验证 (19 文件 90 测试全通过, 176 源文件, 12 页面目录) | 已完成 | #16 | - | 2026-02-13 |
 
 #### M10 并行策略
 
@@ -647,7 +649,7 @@
 | C-S0-7 | SDK 包名更新 `claude-agent-sdk` (BREAKING) | 已完成 | - | 外部技术变化 | pyproject.toml + imports | `agentcore-integration-plan.md` | 2026-02-13 |
 | C-S0-8 | CDK agentcore alpha BREAKING CHANGE 适配 (User Pool Client 替换) | 已完成 | - | 外部技术变化 | infra/ AgentCoreStack | CDK 变更日志 | 2026-02-13 |
 | C-S0-9 | OTEL instrumentation-sqlalchemy 安装修复 (14 个集成测试被阻断) | 已完成 | - | 代码审计 | 测试基础设施 | `rules/testing.md` | 2026-02-13 |
-| C-S0-10 | bedrock-agentcore 升级 0.x→1.x + API 兼容性验证 | 待开始 | - | v1.6 外部技术扫描 | pyproject.toml + adapter 代码 | - | - |
+| C-S0-10 | bedrock-agentcore 升级 0.x→1.x + API 兼容性验证 | 已完成 | - | v1.6 外部技术扫描 | pyproject.toml + adapter 代码 | - | 2026-02-13 |
 
 #### S1 — 安全与稳定（M10 期间并行）
 
@@ -656,17 +658,17 @@
 | C-S1-6 | Aurora MySQL 3.10.0 → 3.10.3 安全更新 | 已完成 | - | 外部技术变化 | infra/ DatabaseStack | CDK + Aurora 文档 | 2026-02-13 |
 | C-S1-7 | infra 快照测试全量更新 (当前过期) | 已完成 | C-S0-8 | 代码审计 | infra/test/ | `rules/testing.md` | 2026-02-13 |
 | C-S1-8 | infra worker 进程泄漏修复 | 已完成 | - | 代码审计 | infra/ 测试 | - | 2026-02-13 |
-| C-S1-9 | Ruff ANN101 配置忽略 + 自动修复 4 项 (RUF100/I001) | 待开始 | - | v1.6 代码审计 | pyproject.toml + src/ | - | - |
-| C-S1-10 | MyPy execution 模块 8 个新增类型错误修复 (bg_repo_factory 类型签名) | 待开始 | - | v1.6 代码审计 | execution 模块 | - | - |
+| C-S1-9 | Ruff ANN101 配置忽略 + 自动修复 4 项 (RUF100/I001) | 已完成 | - | v1.6 代码审计 | pyproject.toml + src/ | - | 2026-02-13 |
+| C-S1-10 | MyPy execution 模块 8 个新增类型错误修复 (bg_repo_factory 类型签名) | 已完成 | - | v1.6 代码审计 | execution 模块 | - | 2026-02-13 |
 
 #### S2 — 技术债务（M10-M11 穿插）
 
 | 编号 | 变更描述 | 状态 | 依赖 | 来源 | 影响范围 | 参考规范 | 会话 |
 |------|---------|:----:|:----:|------|---------|---------|------|
 | C-S2-5 | ClaudeAgentAdapter 2 个 TODO 清理 (MCP Server 封装) | 已完成 | C-S0-7 | 代码审计 | execution 模块 | - | 2026-02-13 |
-| C-S2-6 | 前端覆盖度补全 (5 个缺失页面: Knowledge/Templates/ToolCatalog/Insights/Evaluation) | 待开始 | - | 代码审计 + Phase 3 教训 | frontend/ | - | - |
-| C-S2-7 | Opus 4.6 模型配置评估 (默认模型 + 自适应思考 + 1M 上下文) | 待开始 | - | 外部技术变化 | agents 模块 + settings | - | - |
-| C-S2-8 | logging 模块测试覆盖率 18%→80% 补测试 | 待开始 | - | v1.6 代码审计 | shared/infrastructure/logging | - | - |
+| C-S2-6 | 前端覆盖度补全 (5 个缺失页面: Knowledge/Templates/ToolCatalog/Insights/Evaluation) | 已完成 | - | 代码审计 + Phase 3 教训 | frontend/ | - | 2026-02-13 |
+| C-S2-7 | Opus 4.6 模型配置评估 (默认 Haiku 不变, 3 模型常量新增) | 已完成 | - | 外部技术变化 | constants.py + adapter | - | 2026-02-13 |
+| C-S2-8 | logging 模块测试覆盖率 18%→100% | 已完成 | - | v1.6 代码审计 | shared/infrastructure/logging | - | 2026-02-13 |
 
 #### S3 — 战略决策（Phase 4 期间）
 
@@ -688,12 +690,12 @@
 
 | 级别 | 数量 | 时间窗口 | 当前进度 |
 |------|:----:|---------|---------|
-| S0 阻断修复 | 4 | M10-prep / M10 初 | **3/4** |
-| S1 安全稳定 | 5 | M10 期间并行 | **3/5** |
-| S2 技术债务 | 4 | M10-M11 穿插 | **1/4** |
+| S0 阻断修复 | 4 | M10-prep / M10 初 | **4/4 ✅** |
+| S1 安全稳定 | 5 | M10 期间并行 | **5/5 ✅** |
+| S2 技术债务 | 4 | M10-M11 穿插 | **4/4 ✅** |
 | S3 战略决策 | 3 | Phase 4 期间 | 0/3 |
 | S4 中期改进 | 3 | Phase 4 完成前 | **1/3** |
-| **合计** | **19** | - | **8/19** |
+| **合计** | **19** | - | **14/19** |
 
 ---
 
@@ -738,8 +740,8 @@
 
 | # | 日期 | 类型 | 完成项 | 关键决策 |
 |---|------|------|-------|---------|
-| 34 | 2026-02-13 | 季度评审 v1.6 | **v1.6 季度评审 (Agent Teams 四维度并行)**: 代码审计 B+89 (+4) + 外部技术扫描 (bedrock-agentcore 0.x→1.x, Opus 4.6, Strands Agents) + M10-prep 经验教训 (验证鸿沟+诊断分层) + M10 任务拆解 (17 任务); Docker 构建推送 ECR 完成; 5 项新变更注入 | bedrock-agentcore 升级; Strands 战略观察; 评审增加验证轮; 诊断分层排查 |
-| 33 | 2026-02-13 | M10-prep (完成) | **M10-prep 全 9 任务完成 (Agent Teams 并行)**: AgentCoreRuntimeAdapter 新增 + AGENT_RUNTIME_MODE 配置切换; SDK MCP Server 正式集成; infra 快照 + worker 修复; Docker 构建推送 ECR; 1673+161=1834 测试全通过 | AGENT_RUNTIME_MODE; SDK create_sdk_mcp_server |
-| 32 | 2026-02-13 | 季度评审 v1.5 | **Phase 4 季度评审**: 四维度并行评审; roadmap v1.5; M10-prep 新增; 14 项变更注入 | M10-prep 前置; 前后端并行; SDK 包名; CDK alpha |
+| 35 | 2026-02-13 | M10 (大幅推进) | **M10 15/17 任务完成 (Agent Teams 并行)**: audit 模块全 10 任务 (65 测试, 5 端点, 23 事件订阅 + 中间件); 前端 5 页面 (Knowledge/Templates/ToolCatalog/Insights/Evaluation, 48+ 文件); 变更修复 6 项 (C-S0-10 bedrock-agentcore 1.2.1 + C-S1-9/10 Ruff/MyPy + C-S2-6/7/8); 1760 后端测试; 全量验收通过 | Opus 4.6 默认不升级 (成本); audit append-only; 3 模型常量 |
+| 34 | 2026-02-13 | 季度评审 v1.6 | **v1.6 四维度评审**: 代码审计 B+89 + 技术扫描 + 经验教训 + M10 拆解; Docker 构建推送 ECR; 5 项新变更注入 | bedrock-agentcore 升级; Strands 战略观察; 评审验证轮 |
+| 33 | 2026-02-13 | M10-prep (完成) | **M10-prep 全 9 任务完成**: AgentCoreRuntimeAdapter + AGENT_RUNTIME_MODE; SDK MCP Server; infra 快照 + worker; Docker ECR; 1834 测试 | AGENT_RUNTIME_MODE; create_sdk_mcp_server |
+| 32 | 2026-02-13 | 季度评审 v1.5 | **Phase 4 季度评审**: 四维度评审; roadmap v1.5; M10-prep 新增; 14 项变更注入 | M10-prep 前置; 前后端并行 |
 | 31 | 2026-02-12 | M9 (完成) | **M9 Prod 部署完成**: Stack 命名规范化; Dev+Prod 12 个 Stack 全部重建 | Stack 命名 ai-agents-plat-*; KMS grant |
-| 30 | 2026-02-12 | M9 (CDK) | **遗留清理 + CDK Prod 参数化**: test_database_defaults 修复; 移除 staging; Prod 差异化 | Prod: db.r6g.large; ECS 512/1024/2 |

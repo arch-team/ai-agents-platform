@@ -14,6 +14,7 @@ from src.modules.audit.infrastructure.persistence.repositories.audit_log_reposit
     AuditLogRepositoryImpl,
 )
 
+
 if TYPE_CHECKING:
     from collections.abc import Awaitable, Callable
 
@@ -57,7 +58,7 @@ class AuditMiddleware(BaseHTTPMiddleware):
     排除: 健康检查、文档等非业务端点
     """
 
-    async def dispatch(  # type: ignore[override]
+    async def dispatch(
         self,
         request: Request,
         call_next: Callable[[Request], Awaitable[Response]],

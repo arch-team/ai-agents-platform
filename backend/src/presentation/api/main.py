@@ -110,12 +110,16 @@ def _register_audit_event_subscriptions() -> None:
     )
     from src.modules.tool_catalog.domain.events import (
         ToolApprovedEvent as ToolApprovedAudit,
+    )
+    from src.modules.tool_catalog.domain.events import (
         ToolCreatedEvent,
         ToolDeletedEvent,
-        ToolDeprecatedEvent as ToolDeprecatedAudit,
         ToolRejectedEvent,
         ToolSubmittedEvent,
         ToolUpdatedEvent,
+    )
+    from src.modules.tool_catalog.domain.events import (
+        ToolDeprecatedEvent as ToolDeprecatedAudit,
     )
     from src.shared.domain.event_bus import event_bus
     from src.shared.infrastructure.database import get_session_factory

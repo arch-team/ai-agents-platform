@@ -72,6 +72,7 @@ describe('AgentCreateForm', () => {
 
     await user.type(screen.getByLabelText('名称'), '我的新 Agent');
     await user.type(screen.getByLabelText('描述'), '这是一个测试 Agent');
+    await user.type(screen.getByLabelText('系统提示词'), '你是一个智能助手');
     await user.click(screen.getByRole('button', { name: '创建 Agent' }));
 
     await waitFor(() => {
