@@ -86,3 +86,15 @@ class ResourceQuotaExceededError(DomainError):
             message=f"{resource_type} 配额不足: 限额 {quota}, 请求 {requested}",
             code=f"QUOTA_EXCEEDED_{resource_type.upper()}",
         )
+
+
+class TooManySSEConnectionsError(DomainError):
+    """SSE 并发连接数超限异常 (对应 HTTP 429)。"""
+
+    def __init__(self, *, user_id: int, max_connections: int) -> None:
+        self.user_id = user_id
+        self.max_connections = max_connections
+        super().__init__(
+            message=f"SSE 并发连接数超限 (最大 {max_connections})",
+            code="TOO_MANY_SSE_CONNECTIONS",
+        )

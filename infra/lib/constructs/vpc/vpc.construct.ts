@@ -6,7 +6,7 @@ import { getRemovalPolicy, isProd, type EnvironmentName } from '../../config';
 export interface VpcConstructProps {
   /** VPC CIDR 地址块 */
   readonly vpcCidr: string;
-  /** 环境名称 (dev, staging, prod) — 用于日志保留策略 */
+  /** 环境名称 (dev | prod) — 用于日志保留策略 */
   readonly envName: EnvironmentName;
   /** 最大可用区数量 @default 3 */
   readonly maxAzs?: number;
@@ -48,7 +48,6 @@ export class VpcConstruct extends Construct {
       enableDnsSupport: true,
     });
 
-    // VPC Flow Log (安全审计) — 显式创建 LogGroup 控制日志保留期
     if (enableFlowLog) {
       const flowLogGroup = new logs.LogGroup(this, 'FlowLogGroup', {
         logGroupName: `/vpc/ai-agents-platform/${envName}/flow-logs`,
@@ -62,7 +61,6 @@ export class VpcConstruct extends Construct {
       });
     }
 
-    // S3 Gateway Endpoint (免费，减少 NAT 流量)
     this.vpc.addGatewayEndpoint('S3Endpoint', {
       service: ec2.GatewayVpcEndpointAwsService.S3,
     });

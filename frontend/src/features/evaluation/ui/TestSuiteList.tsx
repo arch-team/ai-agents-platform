@@ -7,6 +7,7 @@ import { formatDateTime } from '@/shared/lib/formatDate';
 import { Button, Spinner, ErrorMessage, Pagination } from '@/shared/ui';
 
 import { useTestSuites, useActivateTestSuite, useArchiveTestSuite, useDeleteTestSuite } from '../api/queries';
+
 import type { TestSuiteStatus, TestSuiteFilters } from '../api/types';
 
 import { TestSuiteStatusBadge } from './TestSuiteStatusBadge';
@@ -25,6 +26,7 @@ interface TestSuiteListProps {
 
 export function TestSuiteList({ onSelect, onCreate }: TestSuiteListProps) {
   const [filters, setFilters] = useState<TestSuiteFilters>({ page: 1, page_size: 10 });
+  // 前端过滤状态（后端列表接口不支持 status 参数）
   const [statusFilter, setStatusFilter] = useState<TestSuiteStatus | ''>('');
   const [operatingId, setOperatingId] = useState<number | null>(null);
   const { data, isLoading, error } = useTestSuites(filters);
@@ -58,7 +60,6 @@ export function TestSuiteList({ onSelect, onCreate }: TestSuiteListProps) {
     setFilters((prev) => ({ ...prev, page }));
   };
 
-  // 前端过滤（后端列表接口不支持 status 参数）
   const filteredItems = statusFilter
     ? data?.items.filter((s) => s.status === statusFilter)
     : data?.items;
@@ -120,7 +121,7 @@ export function TestSuiteList({ onSelect, onCreate }: TestSuiteListProps) {
               >
                 <div className="flex items-center gap-3">
                   <span className="text-sm font-medium text-gray-900">{suite.name}</span>
-                  <TestSuiteStatusBadge status={suite.status as TestSuiteStatus} />
+                  <TestSuiteStatusBadge status={suite.status} />
                 </div>
                 {suite.description && (
                   <p className="mt-1 text-sm text-gray-500">{suite.description}</p>

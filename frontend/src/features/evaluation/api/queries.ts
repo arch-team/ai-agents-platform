@@ -166,8 +166,8 @@ export function useCreateTestCase() {
       );
       return data;
     },
-    onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: testSuiteKeys.cases(variables.suiteId) });
+    onSuccess: (_data, { suiteId }) => {
+      queryClient.invalidateQueries({ queryKey: testSuiteKeys.cases(suiteId) });
     },
   });
 }
@@ -187,8 +187,8 @@ export function useUpdateTestCase() {
       );
       return data;
     },
-    onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: testSuiteKeys.cases(variables.suiteId) });
+    onSuccess: (_data, { suiteId }) => {
+      queryClient.invalidateQueries({ queryKey: testSuiteKeys.cases(suiteId) });
     },
   });
 }
@@ -200,8 +200,8 @@ export function useDeleteTestCase() {
     mutationFn: async ({ suiteId, caseId }: { suiteId: number; caseId: number }) => {
       await apiClient.delete(`/api/v1/test-suites/${suiteId}/cases/${caseId}`);
     },
-    onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: testSuiteKeys.cases(variables.suiteId) });
+    onSuccess: (_data, { suiteId }) => {
+      queryClient.invalidateQueries({ queryKey: testSuiteKeys.cases(suiteId) });
     },
   });
 }

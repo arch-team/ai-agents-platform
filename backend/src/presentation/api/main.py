@@ -59,8 +59,10 @@ from src.modules.tool_catalog.api.endpoints import router as tool_catalog_router
 from src.modules.tool_catalog.domain.exceptions import ToolNameDuplicateError, ToolNotFoundError
 from src.presentation.api.middleware.correlation import CorrelationIdMiddleware
 from src.presentation.api.routes.health import router as health_router
+from src.presentation.api.routes.stats import router as stats_router
 from src.shared.api.exception_handlers import register_exception_handlers, register_status_mapping
 from src.shared.api.middleware.rate_limit import setup_rate_limiting
+from src.shared.domain.exceptions import TooManySSEConnectionsError
 from src.shared.infrastructure.database import init_db
 from src.shared.infrastructure.logging import setup_logging
 from src.shared.infrastructure.settings import get_settings
@@ -362,6 +364,8 @@ def create_app() -> FastAPI:
         TestSuiteNotDeletableError: 409,
         # audit
         AuditNotFoundError: 404,
+        # shared — SSE 连接限制
+        TooManySSEConnectionsError: 429,
     }
     for exc_type, status_code in _module_exception_mappings.items():
         register_status_mapping(exc_type, status_code)
@@ -381,6 +385,7 @@ def create_app() -> FastAPI:
     app.include_router(templates_router)
     app.include_router(evaluation_router)
     app.include_router(audit_router)
+    app.include_router(stats_router)
 
     # Rate Limiting
     setup_rate_limiting(app)

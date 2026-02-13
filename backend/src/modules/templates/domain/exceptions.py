@@ -6,6 +6,9 @@ from src.shared.domain.exceptions import DomainError, DuplicateEntityError, Enti
 class TemplateError(DomainError):
     """模板模块基础异常。"""
 
+    def __init__(self, message: str = "模板错误", code: str = "TEMPLATE_ERROR") -> None:
+        super().__init__(message=message, code=code)
+
 
 class TemplateNotFoundError(TemplateError, EntityNotFoundError):
     """模板不存在。"""

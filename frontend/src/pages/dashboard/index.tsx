@@ -2,20 +2,12 @@
 import { Link } from 'react-router-dom';
 
 import { useAuth } from '@/features/auth';
-import { useAgents } from '@/features/agents';
-import { useConversations } from '@/features/execution';
-import { useTeamExecutions } from '@/features/team-executions';
+import { useDashboardSummary } from '@/features/dashboard';
 import { AgentIcon, ChatIcon, TeamIcon, StatCard } from '@/shared/ui';
 
 export default function DashboardPage() {
   const { user } = useAuth();
-  const { data: agentsData, isLoading: agentsLoading } = useAgents();
-  const { data: conversationsData, isLoading: conversationsLoading } = useConversations();
-  const { data: executionsData, isLoading: executionsLoading } = useTeamExecutions();
-
-  const agentCount = agentsData?.total ?? 0;
-  const conversationCount = conversationsData?.total ?? 0;
-  const executionCount = executionsData?.total ?? 0;
+  const { data: summary, isLoading } = useDashboardSummary();
 
   return (
     <div className="p-6">
@@ -33,22 +25,22 @@ export default function DashboardPage() {
           icon={<AgentIcon className="h-6 w-6 text-blue-600" />}
           iconBgClass="bg-blue-100"
           label="Agent 总数"
-          value={agentCount}
-          isLoading={agentsLoading}
+          value={summary?.agents_total ?? 0}
+          isLoading={isLoading}
         />
         <StatCard
           icon={<ChatIcon className="h-6 w-6 text-green-600" />}
           iconBgClass="bg-green-100"
           label="对话总数"
-          value={conversationCount}
-          isLoading={conversationsLoading}
+          value={summary?.conversations_total ?? 0}
+          isLoading={isLoading}
         />
         <StatCard
           icon={<TeamIcon className="h-6 w-6 text-purple-600" />}
           iconBgClass="bg-purple-100"
           label="Team 执行"
-          value={executionCount}
-          isLoading={executionsLoading}
+          value={summary?.team_executions_total ?? 0}
+          isLoading={isLoading}
         />
       </div>
 

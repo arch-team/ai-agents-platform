@@ -5,7 +5,6 @@ import * as ecs from 'aws-cdk-lib/aws-ecs';
 import { createTestVpc } from '../../../test/helpers/test-utils';
 import { EcsServiceConstruct } from './ecs-service.construct';
 
-/** 创建 ECS Construct 测试依赖 */
 function createEcsDependencies(stack: cdk.Stack) {
   const vpc = createTestVpc(stack);
   const albSecurityGroup = new ec2.SecurityGroup(stack, 'AlbSg', { vpc });

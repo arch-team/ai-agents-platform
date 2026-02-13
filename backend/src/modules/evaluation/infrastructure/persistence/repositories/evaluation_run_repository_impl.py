@@ -33,7 +33,6 @@ class EvaluationRunRepositoryImpl(
     )
 
     def _to_entity(self, model: EvaluationRunModel) -> EvaluationRun:
-        """ORM Model -> Entity 转换。"""
         return EvaluationRun(
             id=model.id,
             suite_id=model.suite_id,
@@ -51,8 +50,7 @@ class EvaluationRunRepositoryImpl(
         )
 
     def _get_update_data(self, entity: EvaluationRun) -> dict[str, object]:
-        """提取可更新字段数据。"""
-        data: dict[str, object] = {
+        return {
             "status": entity.status.value,
             "total_cases": entity.total_cases,
             "passed_cases": entity.passed_cases,
@@ -62,40 +60,15 @@ class EvaluationRunRepositoryImpl(
             "completed_at": entity.completed_at,
             "updated_at": entity.updated_at,
         }
-        return {k: v for k, v in data.items() if k in self._updatable_fields}
 
-    async def list_by_suite(
-        self,
-        suite_id: int,
-        *,
-        offset: int = 0,
-        limit: int = 20,
-    ) -> list[EvaluationRun]:
-        """按测试集 ID 查询评估运行列表。"""
-        return await self._list_where(
-            EvaluationRunModel.suite_id == suite_id,
-            offset=offset,
-            limit=limit,
-        )
+    async def list_by_suite(self, suite_id: int, *, offset: int = 0, limit: int = 20) -> list[EvaluationRun]:  # noqa: D102
+        return await self._list_where(EvaluationRunModel.suite_id == suite_id, offset=offset, limit=limit)
 
-    async def list_by_user(
-        self,
-        user_id: int,
-        *,
-        offset: int = 0,
-        limit: int = 20,
-    ) -> list[EvaluationRun]:
-        """按用户 ID 查询评估运行列表。"""
-        return await self._list_where(
-            EvaluationRunModel.user_id == user_id,
-            offset=offset,
-            limit=limit,
-        )
+    async def list_by_user(self, user_id: int, *, offset: int = 0, limit: int = 20) -> list[EvaluationRun]:  # noqa: D102
+        return await self._list_where(EvaluationRunModel.user_id == user_id, offset=offset, limit=limit)
 
-    async def count_by_user(self, user_id: int) -> int:
-        """按用户 ID 统计评估运行数量。"""
+    async def count_by_user(self, user_id: int) -> int:  # noqa: D102
         return await self._count_where(EvaluationRunModel.user_id == user_id)
 
-    async def count_by_suite(self, suite_id: int) -> int:
-        """按测试集 ID 统计评估运行数量。"""
+    async def count_by_suite(self, suite_id: int) -> int:  # noqa: D102
         return await self._count_where(EvaluationRunModel.suite_id == suite_id)

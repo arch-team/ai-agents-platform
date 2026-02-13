@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, type QueryClient } from '@tanstack/react-query';
 
 import { apiClient } from '@/shared/api';
 
@@ -19,6 +19,13 @@ export const templateKeys = {
   details: () => [...templateKeys.all, 'detail'] as const,
   detail: (id: number) => [...templateKeys.details(), id] as const,
 };
+
+// 刷新列表/已发布缓存并更新详情缓存的通用回调
+function invalidateAndUpdateDetail(queryClient: QueryClient, template: Template) {
+  queryClient.invalidateQueries({ queryKey: templateKeys.lists() });
+  queryClient.invalidateQueries({ queryKey: templateKeys.published() });
+  queryClient.setQueryData(templateKeys.detail(template.id), template);
+}
 
 // 查询模板列表
 export function useTemplates(filters?: TemplateFilters) {
@@ -78,10 +85,7 @@ export function useUpdateTemplate() {
       const { data } = await apiClient.put<Template>(`/api/v1/templates/${id}`, dto);
       return data;
     },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: templateKeys.lists() });
-      queryClient.setQueryData(templateKeys.detail(data.id), data);
-    },
+    onSuccess: (data) => invalidateAndUpdateDetail(queryClient, data),
   });
 }
 
@@ -107,11 +111,7 @@ export function usePublishTemplate() {
       const { data } = await apiClient.post<Template>(`/api/v1/templates/${id}/publish`);
       return data;
     },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: templateKeys.lists() });
-      queryClient.invalidateQueries({ queryKey: templateKeys.published() });
-      queryClient.setQueryData(templateKeys.detail(data.id), data);
-    },
+    onSuccess: (data) => invalidateAndUpdateDetail(queryClient, data),
   });
 }
 
@@ -123,10 +123,6 @@ export function useArchiveTemplate() {
       const { data } = await apiClient.post<Template>(`/api/v1/templates/${id}/archive`);
       return data;
     },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: templateKeys.lists() });
-      queryClient.invalidateQueries({ queryKey: templateKeys.published() });
-      queryClient.setQueryData(templateKeys.detail(data.id), data);
-    },
+    onSuccess: (data) => invalidateAndUpdateDetail(queryClient, data),
   });
 }

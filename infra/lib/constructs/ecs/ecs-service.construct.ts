@@ -10,7 +10,7 @@ export interface EcsServiceConstructProps {
   readonly vpc: ec2.IVpc;
   /** ALB 安全组，用于配置 ECS 安全组的入站规则 */
   readonly albSecurityGroup: ec2.ISecurityGroup;
-  /** 环境名称 (dev, staging, prod) */
+  /** 环境名称 (dev | prod) */
   readonly envName: EnvironmentName;
   /** 容器镜像 */
   readonly containerImage: ecs.ContainerImage;
@@ -63,14 +63,12 @@ export class EcsServiceConstruct extends Construct {
 
     this.containerPort = containerPort;
 
-    // ECS 集群
     this.cluster = new ecs.Cluster(this, 'Cluster', {
       vpc,
       clusterName: `ai-agents-${envName}`,
       containerInsightsV2: ecs.ContainerInsights.ENABLED,
     });
 
-    // ECS 服务安全组 — 仅允许来自 ALB 的入站
     this.serviceSecurityGroup = new ec2.SecurityGroup(this, 'ServiceSg', {
       vpc,
       description: 'ECS Fargate service security group - ALB ingress only',
@@ -82,14 +80,12 @@ export class EcsServiceConstruct extends Construct {
       'Allow ALB to access container port',
     );
 
-    // CloudWatch 日志组 — Prod 保留 3 个月，其他保留 1 周
     const logGroup = new logs.LogGroup(this, 'LogGroup', {
       logGroupName: `/ecs/ai-agents-platform/${envName}`,
       retention: isProd(envName) ? logs.RetentionDays.THREE_MONTHS : logs.RetentionDays.ONE_WEEK,
       removalPolicy: getRemovalPolicy(envName),
     });
 
-    // Fargate Task Definition
     const taskDefinition = new ecs.FargateTaskDefinition(this, 'TaskDef', {
       cpu,
       memoryLimitMiB,
@@ -117,7 +113,6 @@ export class EcsServiceConstruct extends Construct {
       },
     });
 
-    // Fargate 服务
     this.service = new ecs.FargateService(this, 'Service', {
       cluster: this.cluster,
       taskDefinition,

@@ -1,14 +1,11 @@
-// Team Execution 状态徽章
+// Team Execution 状态徽章 — 基于共享 StatusBadge 组件
+// 注: running 状态需要脉动动画指示器，因此保留自定义渲染
 
 import { cn } from '@/shared/lib/cn';
 
 import type { TeamExecutionStatus } from '../api/types';
 
-interface TeamExecStatusBadgeProps {
-  status: TeamExecutionStatus;
-}
-
-const statusConfig: Record<TeamExecutionStatus, { label: string; className: string }> = {
+const STATUS_CONFIG: Record<TeamExecutionStatus, { label: string; className: string }> = {
   pending: { label: '等待中', className: 'bg-yellow-100 text-yellow-800' },
   running: { label: '运行中', className: 'bg-blue-100 text-blue-800' },
   completed: { label: '已完成', className: 'bg-green-100 text-green-800' },
@@ -16,13 +13,19 @@ const statusConfig: Record<TeamExecutionStatus, { label: string; className: stri
   cancelled: { label: '已取消', className: 'bg-gray-100 text-gray-800' },
 };
 
-export function TeamExecStatusBadge({ status }: TeamExecStatusBadgeProps) {
-  const config = statusConfig[status];
+interface TeamExecStatusBadgeProps {
+  status: TeamExecutionStatus;
+  className?: string;
+}
+
+export function TeamExecStatusBadge({ status, className }: TeamExecStatusBadgeProps) {
+  const config = STATUS_CONFIG[status];
   return (
     <span
       className={cn(
         'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium',
         config.className,
+        className,
       )}
     >
       {status === 'running' && (

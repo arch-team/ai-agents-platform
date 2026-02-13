@@ -6,16 +6,15 @@ from src.shared.domain.exceptions import DomainError, EntityNotFoundError
 class InsightsError(DomainError):
     """insights 模块基础异常。"""
 
-    def __init__(self, message: str = "Insights 错误") -> None:
-        super().__init__(message=message, code="INSIGHTS_ERROR")
+    def __init__(self, message: str = "Insights 错误", code: str = "INSIGHTS_ERROR") -> None:
+        super().__init__(message=message, code=code)
 
 
 class InvalidDateRangeError(InsightsError):
     """日期范围无效异常。"""
 
     def __init__(self) -> None:
-        DomainError.__init__(
-            self,
+        super().__init__(
             message="日期范围无效: 开始日期不能晚于结束日期",
             code="INVALID_DATE_RANGE",
         )

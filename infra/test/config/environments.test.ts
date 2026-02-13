@@ -5,7 +5,6 @@ describe('getEnvironmentConfig', () => {
   const originalEnv = process.env;
 
   beforeEach(() => {
-    // 每个测试前清除环境变量覆盖
     delete process.env.CDK_DEFAULT_ACCOUNT;
     delete process.env.CDK_DEFAULT_REGION;
   });

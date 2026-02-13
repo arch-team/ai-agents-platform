@@ -5,20 +5,21 @@ import { createVpcDependency } from '../helpers/test-utils';
 
 describe('SecurityStack', () => {
   let template: Template;
+  let stack: SecurityStack;
 
-  describe('基本配置 (dev 环境)', () => {
+  describe('Dev 环境', () => {
     beforeEach(() => {
       const app = new cdk.App();
       const vpc = createVpcDependency(app);
 
-      const stack = new SecurityStack(app, 'TestSecurityStack', {
+      stack = new SecurityStack(app, 'TestSecurityStack', {
         vpc,
         envName: 'dev',
       });
       template = Template.fromStack(stack);
     });
 
-    it('应创建 KMS Key', () => {
+    it('应创建 KMS Key (启用密钥轮换)', () => {
       template.hasResourceProperties('AWS::KMS::Key', {
         EnableKeyRotation: true,
       });
@@ -30,14 +31,8 @@ describe('SecurityStack', () => {
       });
     });
 
-    it('应创建两个安全组', () => {
+    it('应创建两个安全组 (API + DB)', () => {
       template.resourceCountIs('AWS::EC2::SecurityGroup', 2);
-    });
-
-    it('应输出 EncryptionKeyArn', () => {
-      template.hasOutput('EncryptionKeyArn', {
-        Description: 'KMS encryption key ARN',
-      });
     });
 
     it('应创建 JWT Secret (Secrets Manager)', () => {
@@ -52,14 +47,20 @@ describe('SecurityStack', () => {
       });
     });
 
+    it('Dev 环境不应创建 VPC Endpoint', () => {
+      template.resourceCountIs('AWS::EC2::VPCEndpoint', 0);
+    });
+
+    it('应输出 EncryptionKeyArn', () => {
+      template.hasOutput('EncryptionKeyArn', {
+        Description: 'KMS encryption key ARN',
+      });
+    });
+
     it('应输出 JwtSecretArn', () => {
       template.hasOutput('JwtSecretArn', {
         Description: 'JWT signing secret ARN',
       });
-    });
-
-    it('dev 环境不应创建 VPC Endpoint', () => {
-      template.resourceCountIs('AWS::EC2::VPCEndpoint', 0);
     });
   });
 
@@ -68,13 +69,12 @@ describe('SecurityStack', () => {
       const app = new cdk.App();
       const vpc = createVpcDependency(app);
 
-      const stack = new SecurityStack(app, 'TestSecurityStack', {
+      const prodStack = new SecurityStack(app, 'ProdSecurityStack', {
         vpc,
         envName: 'prod',
       });
-      const prodTemplate = Template.fromStack(stack);
+      const prodTemplate = Template.fromStack(prodStack);
 
-      // InterfaceVpcEndpoint 创建在 SecurityStack 中
       prodTemplate.resourceCountIs('AWS::EC2::VPCEndpoint', 1);
     });
   });
@@ -84,15 +84,15 @@ describe('SecurityStack', () => {
       const app = new cdk.App();
       const vpc = createVpcDependency(app);
 
-      const stack = new SecurityStack(app, 'TestSecurityStack', {
+      const attrStack = new SecurityStack(app, 'AttrSecurityStack', {
         vpc,
         envName: 'dev',
       });
 
-      expect(stack.encryptionKey).toBeDefined();
-      expect(stack.apiSecurityGroup).toBeDefined();
-      expect(stack.dbSecurityGroup).toBeDefined();
-      expect(stack.jwtSecret).toBeDefined();
+      expect(attrStack.encryptionKey).toBeDefined();
+      expect(attrStack.apiSecurityGroup).toBeDefined();
+      expect(attrStack.dbSecurityGroup).toBeDefined();
+      expect(attrStack.jwtSecret).toBeDefined();
     });
   });
 });

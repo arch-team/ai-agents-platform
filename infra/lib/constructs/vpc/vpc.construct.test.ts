@@ -31,8 +31,7 @@ describe('VpcConstruct', () => {
     });
   });
 
-  it('应创建 3 种子网类型 (Public, Private, Isolated)', () => {
-    // CDK 测试环境默认 2 AZ，每种子网 2 个 = 6 个子网
+  it('应创建 6 个子网 (3 种类型 x 2 AZ)', () => {
     template.resourceCountIs('AWS::EC2::Subnet', 6);
   });
 

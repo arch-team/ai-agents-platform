@@ -37,7 +37,6 @@ describe('AgentCoreStack', () => {
     });
 
     it('Dev 环境应使用 DESTROY 删除策略', () => {
-      // DESTROY 策略在 CDK 模板中体现为 UpdateReplacePolicy 和 DeletionPolicy
       const resources = template.findResources('AWS::ECR::Repository');
       const repoKey = Object.keys(resources)[0];
       expect(resources[repoKey].UpdateReplacePolicy).toBe('Delete');

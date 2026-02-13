@@ -27,14 +27,12 @@ export class SecurityStack extends cdk.Stack {
     super(scope, id, props);
     const { vpc, envName } = props;
 
-    // KMS 加密密钥
     const kmsConstruct = new KmsConstruct(this, 'Kms', {
       envName,
       alias: `ai-agents-platform-${envName}`,
     });
     this.encryptionKey = kmsConstruct.key;
 
-    // 安全组（ALB 入站由 ComputeStack 中的 AlbConstruct 独立管理）
     const sgConstruct = new SecurityGroupsConstruct(this, 'SecurityGroups', {
       vpc,
       enablePublicIngress: false,
@@ -42,7 +40,7 @@ export class SecurityStack extends cdk.Stack {
     this.apiSecurityGroup = sgConstruct.apiSecurityGroup;
     this.dbSecurityGroup = sgConstruct.dbSecurityGroup;
 
-    // JWT 签名密钥 — 独立管理，不再复用数据库密码
+    // JWT 签名密钥
     this.jwtSecret = new secretsmanager.Secret(this, 'JwtSecret', {
       secretName: `${envName}/ai-platform/jwt-secret`,
       description: 'JWT 签名密钥 — 用于 API 认证 Token 签发和验证',
@@ -55,7 +53,6 @@ export class SecurityStack extends cdk.Stack {
       encryptionKey: this.encryptionKey,
     });
 
-    // CDK Nag 抑制: JWT Secret 不需要自动轮换 (应用重启即可使用新密钥)
     NagSuppressions.addResourceSuppressions(this.jwtSecret, [
       {
         id: 'AwsSolutions-SMG4',
@@ -64,7 +61,6 @@ export class SecurityStack extends cdk.Stack {
       },
     ]);
 
-    // VPC Endpoints (Secrets Manager - Prod 环境)
     if (isProd(envName)) {
       new ec2.InterfaceVpcEndpoint(this, 'SecretsManagerEndpoint', {
         vpc,
@@ -72,7 +68,6 @@ export class SecurityStack extends cdk.Stack {
       });
     }
 
-    // Outputs
     new cdk.CfnOutput(this, 'EncryptionKeyArn', {
       value: this.encryptionKey.keyArn,
       description: 'KMS encryption key ARN',

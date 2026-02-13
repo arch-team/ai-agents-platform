@@ -13,7 +13,7 @@ import {
   useActivateTestSuite,
   useArchiveTestSuite,
 } from '../api/queries';
-import type { TestSuiteStatus, TestCase } from '../api/types';
+import type { TestCase } from '../api/types';
 
 import { TestCaseForm } from './TestCaseForm';
 import { TestSuiteStatusBadge } from './TestSuiteStatusBadge';
@@ -67,7 +67,7 @@ export function TestSuiteDetail({ suiteId, onBack, onRunEvaluation }: TestSuiteD
         <div>
           <div className="flex items-center gap-3">
             <h1 className="text-2xl font-bold text-gray-900">{suite.name}</h1>
-            <TestSuiteStatusBadge status={suite.status as TestSuiteStatus} />
+            <TestSuiteStatusBadge status={suite.status} />
           </div>
           {suite.description && <p className="mt-2 text-gray-600">{suite.description}</p>}
           <p className="mt-1 text-sm text-gray-400">

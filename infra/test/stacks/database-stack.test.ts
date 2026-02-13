@@ -20,27 +20,29 @@ describe('DatabaseStack', () => {
     template = Template.fromStack(stack);
   });
 
-  it('应创建 Aurora 集群', () => {
+  it('应创建 Aurora MySQL 集群', () => {
     template.hasResourceProperties('AWS::RDS::DBCluster', {
       Engine: 'aurora-mysql',
-    });
-  });
-
-  it('应输出 ClusterEndpoint', () => {
-    template.hasOutput('ClusterEndpoint', {
-      Description: 'Aurora cluster endpoint',
-    });
-  });
-
-  it('应输出 SecretArn', () => {
-    template.hasOutput('SecretArn', {
-      Description: 'Database credentials Secret ARN',
     });
   });
 
   it('凭证 Secret 名称应正确', () => {
     template.hasResourceProperties('AWS::SecretsManager::Secret', {
       Name: 'dev/ai-agents-platform/db-credentials',
+    });
+  });
+
+  describe('Outputs', () => {
+    it('应输出 ClusterEndpoint', () => {
+      template.hasOutput('ClusterEndpoint', {
+        Description: 'Aurora cluster endpoint',
+      });
+    });
+
+    it('应输出 SecretArn', () => {
+      template.hasOutput('SecretArn', {
+        Description: 'Database credentials Secret ARN',
+      });
     });
   });
 

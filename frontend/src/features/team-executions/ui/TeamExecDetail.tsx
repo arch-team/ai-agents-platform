@@ -139,15 +139,13 @@ export function TeamExecDetail({ executionId, onStartStream }: TeamExecDetailPro
 }
 
 // 日志条目子组件
-function LogEntry({
-  sequence,
-  agentName,
-  content,
-}: {
+interface LogEntryProps {
   sequence: number;
   agentName: string;
   content: string;
-}) {
+}
+
+function LogEntry({ sequence, agentName, content }: LogEntryProps) {
   return (
     <Card className="!p-3">
       <div className="mb-1 flex items-center gap-2">

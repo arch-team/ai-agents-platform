@@ -34,7 +34,6 @@ describe('CDK Nag 合规测试', () => {
 
     Aspects.of(stack).add(new AwsSolutionsChecks({ verbose: true }));
 
-    // VPC Flow Log 相关的抑制
     NagSuppressions.addStackSuppressions(stack, [
       {
         id: 'AwsSolutions-IAM5',
@@ -74,8 +73,6 @@ describe('CDK Nag 合规测试', () => {
 
     Aspects.of(stack).add(new AwsSolutionsChecks({ verbose: true }));
 
-    // 注意: RDS10, RDS11, RDS14, RDS16, SMG4 的抑制已在 DatabaseStack 内的资源级别定义
-    // 此处仅保留 Stack 内未覆盖的 Nag 规则抑制
     NagSuppressions.addStackSuppressions(stack, [
       {
         id: 'AwsSolutions-RDS6',
@@ -98,7 +95,6 @@ describe('CDK Nag 合规测试', () => {
 
     Aspects.of(stack).add(new AwsSolutionsChecks({ verbose: true }));
 
-    // 注意: IAM4, IAM5, COG1, COG2, COG3 的抑制已在 AgentCoreStack 内定义
     expectNoNagErrors(app, stack);
   });
 
@@ -120,7 +116,6 @@ describe('CDK Nag 合规测试', () => {
 
     Aspects.of(stack).add(new AwsSolutionsChecks({ verbose: true }));
 
-    // 注意: ELB1, ELB2, EC23, IAM4, IAM5, ECS2 的抑制已在 ComputeStack 内定义
     expectNoNagErrors(app, stack);
   });
 });

@@ -106,6 +106,9 @@ class Settings(BaseSettings):
     TEAM_EXECUTION_TIMEOUT_SECONDS: int = 1800
     TEAM_EXECUTION_MAX_CONCURRENT: int = 3
 
+    # SSE 连接限制
+    SSE_MAX_CONNECTIONS_PER_USER: int = 5
+
     # OpenTelemetry 可观测性
     OTEL_EXPORTER_OTLP_ENDPOINT: str = ""  # OTLP 导出端点 (如 http://localhost:4317)
 

@@ -94,7 +94,7 @@ describe('ComputeStack', () => {
       });
     });
 
-    it('容器应注入数据库 Secrets (独立字段)', () => {
+    it('容器应注入 Secrets Manager 凭证', () => {
       template.hasResourceProperties('AWS::ECS::TaskDefinition', {
         ContainerDefinitions: Match.arrayWith([
           Match.objectLike({

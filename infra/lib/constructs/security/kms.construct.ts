@@ -3,7 +3,7 @@ import { Construct } from 'constructs';
 import { getRemovalPolicy, type EnvironmentName } from '../../config';
 
 export interface KmsConstructProps {
-  /** 环境名称 (dev, staging, prod) */
+  /** 环境名称 (dev | prod) */
   readonly envName: EnvironmentName;
   /** KMS 密钥别名 @default 'ai-agents-platform' */
   readonly alias?: string;

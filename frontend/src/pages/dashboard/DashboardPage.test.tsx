@@ -17,15 +17,16 @@ describe('DashboardPage', () => {
     expect(screen.getByText('查看 Agent 列表')).toBeInTheDocument();
   });
 
-  it('should display statistics', async () => {
+  it('should display statistics from summary API', async () => {
     renderWithProviders(<DashboardPage />);
     expect(screen.getByText('Agent 总数')).toBeInTheDocument();
     expect(screen.getByText('对话总数')).toBeInTheDocument();
+    expect(screen.getByText('Team 执行')).toBeInTheDocument();
 
-    // 等待数据加载完成 — 两个统计卡片都显示数字
+    // 等待 stats/summary API 返回数据 — mock 返回每项 total=1
     await waitFor(() => {
       const statValues = screen.getAllByText('1');
-      expect(statValues.length).toBeGreaterThanOrEqual(2);
+      expect(statValues.length).toBeGreaterThanOrEqual(3);
     });
   });
 });

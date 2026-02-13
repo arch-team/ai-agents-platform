@@ -28,20 +28,8 @@ class EvaluationResultRepositoryImpl(
         },
     )
 
-    async def list_by_run(
-        self,
-        run_id: int,
-        *,
-        offset: int = 0,
-        limit: int = 20,
-    ) -> list[EvaluationResult]:
-        """按评估运行 ID 查询评估结果列表。"""
-        return await self._list_where(
-            EvaluationResultModel.run_id == run_id,
-            offset=offset,
-            limit=limit,
-        )
+    async def list_by_run(self, run_id: int, *, offset: int = 0, limit: int = 20) -> list[EvaluationResult]:  # noqa: D102
+        return await self._list_where(EvaluationResultModel.run_id == run_id, offset=offset, limit=limit)
 
-    async def count_by_run(self, run_id: int) -> int:
-        """按评估运行 ID 统计评估结果数量。"""
+    async def count_by_run(self, run_id: int) -> int:  # noqa: D102
         return await self._count_where(EvaluationResultModel.run_id == run_id)

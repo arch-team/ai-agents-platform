@@ -128,7 +128,38 @@ def get_user(user_id: int) -> User | None:
 
 ---
 
-## 5. 导入规范
+## 5. 函数签名格式
+
+> **单行优先**: 函数定义（含参数和返回类型）尽量写在一行内，不要将每个参数单独换行。
+
+```python
+# ✅ 正确 - 单行签名
+async def get_summary(current_user: CurrentUserDep, db: SessionDep) -> DashboardSummaryResponse:
+
+def create_agent(dto: CreateAgentDTO, user_id: int) -> Agent:
+
+async def send_message(conversation_id: int, dto: SendMessageDTO, user_id: int) -> Message:
+
+# ❌ 错误 - 不必要的多行拆分
+async def get_summary(
+    current_user: CurrentUserDep,
+    db: SessionDep,
+) -> DashboardSummaryResponse:
+
+# ⚠️ 例外 - 超过 120 字符行宽限制时允许换行，但优先缩短参数名或使用类型别名
+async def execute_with_context(
+    agent_id: int, conversation_id: int, request: AgentRequest, tools: list[ApprovedToolInfo], gateway_url: str,
+) -> AgentResponseChunk:
+```
+
+**规则**:
+1. 参数 ≤ 120 字符时，**必须**单行
+2. 超过 120 字符时，允许换行但尽量紧凑（多参数放同一行直到行宽上限）
+3. 禁止"每个参数独占一行"的风格
+
+---
+
+## 6. 导入规范
 
 > 导入分组排序由 Ruff (isort) 自动处理，以下为人工需关注的规则。
 
@@ -138,6 +169,6 @@ def get_user(user_id: int) -> User | None:
 
 ---
 
-## 检查清单
+## 7. 检查清单
 
 完整检查清单见 [checklist.md](checklist.md) §代码风格

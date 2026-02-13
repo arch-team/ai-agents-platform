@@ -6,6 +6,9 @@ from src.shared.domain.exceptions import DomainError, EntityNotFoundError
 class EvaluationError(DomainError):
     """评估模块基础异常。"""
 
+    def __init__(self, message: str = "评估错误", code: str = "EVALUATION_ERROR") -> None:
+        super().__init__(message=message, code=code)
+
 
 class TestSuiteNotFoundError(EvaluationError, EntityNotFoundError):
     """测试集不存在。"""

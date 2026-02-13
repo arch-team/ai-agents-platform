@@ -7,6 +7,7 @@ import { Input, Textarea } from '@/shared/ui';
 import { MODEL_OPTIONS } from '../model/constants';
 
 import type { FieldErrors, UseFormRegister } from 'react-hook-form';
+
 import type { CreateAgentFormData } from '../lib/validation';
 
 interface AgentFormFieldsProps {

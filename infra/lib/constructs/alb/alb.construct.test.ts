@@ -85,7 +85,6 @@ describe('AlbConstruct', () => {
       });
       const template = Template.fromStack(stack);
 
-      // 验证出站规则指向 ECS 安全组
       template.hasResourceProperties('AWS::EC2::SecurityGroupEgress', {
         IpProtocol: 'tcp',
         FromPort: 8000,

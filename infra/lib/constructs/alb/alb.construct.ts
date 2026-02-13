@@ -7,7 +7,7 @@ import type { EnvironmentName } from '../../config';
 export interface AlbConstructProps {
   /** ALB 所在的 VPC */
   readonly vpc: ec2.IVpc;
-  /** 环境名称 (dev, staging, prod) */
+  /** 环境名称 (dev | prod) */
   readonly envName: EnvironmentName;
   /** ECS 服务安全组 — 用于添加 ALB → ECS 的显式出站规则 */
   readonly ecsSecurityGroup?: ec2.ISecurityGroup;
@@ -42,7 +42,6 @@ export class AlbConstruct extends Construct {
 
     const { vpc, envName, ecsSecurityGroup, containerPort = 8000, certificateArn } = props;
 
-    // ALB 安全组 — 出站规则收窄，不允许全部出站
     this.albSecurityGroup = new ec2.SecurityGroup(this, 'AlbSg', {
       vpc,
       description: 'ALB security group - public HTTP ingress',
@@ -54,7 +53,6 @@ export class AlbConstruct extends Construct {
       'Allow public HTTP ingress',
     );
 
-    // 显式出站规则: ALB → ECS 安全组 (健康检查 + 转发流量)
     if (ecsSecurityGroup) {
       this.albSecurityGroup.addEgressRule(
         ecsSecurityGroup,
@@ -63,7 +61,6 @@ export class AlbConstruct extends Construct {
       );
     }
 
-    // 提供证书时，允许 HTTPS 入站
     if (certificateArn) {
       this.albSecurityGroup.addIngressRule(
         ec2.Peer.anyIpv4(),
@@ -72,7 +69,6 @@ export class AlbConstruct extends Construct {
       );
     }
 
-    // Application Load Balancer — 使用手动创建的安全组，避免 ALB 自动创建默认 SG
     this.alb = new elbv2.ApplicationLoadBalancer(this, 'Alb', {
       vpc,
       vpcSubnets: { subnetType: ec2.SubnetType.PUBLIC },
@@ -81,7 +77,6 @@ export class AlbConstruct extends Construct {
       securityGroup: this.albSecurityGroup,
     });
 
-    // Target Group
     this.targetGroup = new elbv2.ApplicationTargetGroup(this, 'TargetGroup', {
       vpc,
       port: containerPort,
@@ -98,7 +93,6 @@ export class AlbConstruct extends Construct {
     });
 
     if (certificateArn) {
-      // HTTPS 模式: HTTPS Listener (443) + HTTP 重定向到 HTTPS
       this.httpsListener = this.alb.addListener('HttpsListener', {
         port: 443,
         protocol: elbv2.ApplicationProtocol.HTTPS,
@@ -116,7 +110,6 @@ export class AlbConstruct extends Construct {
         }),
       });
     } else {
-      // HTTP-only 模式 (Dev 环境无域名/证书)
       this.httpListener = this.alb.addListener('HttpListener', {
         port: 80,
         defaultTargetGroups: [this.targetGroup],

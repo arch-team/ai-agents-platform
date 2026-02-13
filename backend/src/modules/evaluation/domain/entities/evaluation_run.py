@@ -5,7 +5,7 @@ from datetime import datetime
 from pydantic import Field
 
 from src.modules.evaluation.domain.value_objects.evaluation_run_status import EvaluationRunStatus
-from src.shared.domain.base_entity import PydanticEntity
+from src.shared.domain.base_entity import PydanticEntity, utc_now
 
 
 class EvaluationRun(PydanticEntity):
@@ -26,8 +26,6 @@ class EvaluationRun(PydanticEntity):
         """开始评估运行。PENDING -> RUNNING。"""
         self._require_status(self.status, EvaluationRunStatus.PENDING, EvaluationRunStatus.RUNNING.value)
         self.status = EvaluationRunStatus.RUNNING
-        from src.shared.domain.base_entity import utc_now
-
         self.started_at = utc_now()
         self.touch()
 
@@ -38,8 +36,6 @@ class EvaluationRun(PydanticEntity):
         self.passed_cases = passed
         self.failed_cases = failed
         self.score = score
-        from src.shared.domain.base_entity import utc_now
-
         self.completed_at = utc_now()
         self.touch()
 
@@ -47,7 +43,5 @@ class EvaluationRun(PydanticEntity):
         """标记评估运行失败。RUNNING -> FAILED。"""
         self._require_status(self.status, EvaluationRunStatus.RUNNING, EvaluationRunStatus.FAILED.value)
         self.status = EvaluationRunStatus.FAILED
-        from src.shared.domain.base_entity import utc_now
-
         self.completed_at = utc_now()
         self.touch()

@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, type QueryClient } from '@tanstack/react-query';
 
 import { apiClient } from '@/shared/api';
 
@@ -23,6 +23,18 @@ export const knowledgeKeys = {
   detail: (id: number) => [...knowledgeKeys.details(), id] as const,
   documents: (kbId: number) => [...knowledgeKeys.all, 'documents', kbId] as const,
 };
+
+// 刷新列表缓存并更新详情缓存的通用回调
+function invalidateAndUpdateDetail(queryClient: QueryClient, kb: KnowledgeBase) {
+  queryClient.invalidateQueries({ queryKey: knowledgeKeys.lists() });
+  queryClient.setQueryData(knowledgeKeys.detail(kb.id), kb);
+}
+
+// 文档变更后刷新文档列表和知识库详情（文档数量变化）
+function invalidateDocumentsAndDetail(queryClient: QueryClient, kbId: number) {
+  queryClient.invalidateQueries({ queryKey: knowledgeKeys.documents(kbId) });
+  queryClient.invalidateQueries({ queryKey: knowledgeKeys.detail(kbId) });
+}
 
 // 查询知识库列表
 export function useKnowledgeBases(filters?: KnowledgeBaseFilters) {
@@ -85,10 +97,7 @@ export function useUpdateKnowledgeBase() {
       const { data } = await apiClient.put<KnowledgeBase>(`/api/v1/knowledge-bases/${id}`, dto);
       return data;
     },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: knowledgeKeys.lists() });
-      queryClient.setQueryData(knowledgeKeys.detail(data.id), data);
-    },
+    onSuccess: (data) => invalidateAndUpdateDetail(queryClient, data),
   });
 }
 
@@ -120,10 +129,7 @@ export function useUploadDocument() {
       );
       return data;
     },
-    onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: knowledgeKeys.documents(variables.kbId) });
-      queryClient.invalidateQueries({ queryKey: knowledgeKeys.detail(variables.kbId) });
-    },
+    onSuccess: (_data, variables) => invalidateDocumentsAndDetail(queryClient, variables.kbId),
   });
 }
 
@@ -134,10 +140,7 @@ export function useDeleteDocument() {
     mutationFn: async ({ kbId, docId }: { kbId: number; docId: number }) => {
       await apiClient.delete(`/api/v1/knowledge-bases/${kbId}/documents/${docId}`);
     },
-    onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: knowledgeKeys.documents(variables.kbId) });
-      queryClient.invalidateQueries({ queryKey: knowledgeKeys.detail(variables.kbId) });
-    },
+    onSuccess: (_data, variables) => invalidateDocumentsAndDetail(queryClient, variables.kbId),
   });
 }
 
@@ -149,10 +152,7 @@ export function useSyncKnowledgeBase() {
       const { data } = await apiClient.post<KnowledgeBase>(`/api/v1/knowledge-bases/${id}/sync`);
       return data;
     },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: knowledgeKeys.lists() });
-      queryClient.setQueryData(knowledgeKeys.detail(data.id), data);
-    },
+    onSuccess: (data) => invalidateAndUpdateDetail(queryClient, data),
   });
 }
 

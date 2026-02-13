@@ -22,8 +22,6 @@ export class NetworkStack extends cdk.Stack {
     super(scope, id, props);
     const { vpcCidr, envName, natGateways = 1 } = props;
 
-    // NAT Gateway 数量: Prod 初期使用 1 个 (与 Dev 一致，降低成本)
-    // 后续用户量增长后可通过 natGateways 参数提升到每 AZ 一个
     const vpcConstruct = new VpcConstruct(this, 'VpcConstruct', {
       vpcCidr,
       envName,
@@ -32,7 +30,6 @@ export class NetworkStack extends cdk.Stack {
 
     this.vpc = vpcConstruct.vpc;
 
-    // 输出 VPC ID
     new cdk.CfnOutput(this, 'VpcId', {
       value: this.vpc.vpcId,
       description: 'VPC ID',

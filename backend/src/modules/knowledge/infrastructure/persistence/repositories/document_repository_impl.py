@@ -31,14 +31,9 @@ class DocumentRepositoryImpl(
         },
     )
 
-    async def list_by_knowledge_base(
-        self,
-        knowledge_base_id: int,
-        *,
-        offset: int = 0,
-        limit: int = 20,
+    async def list_by_knowledge_base(  # noqa: D102
+        self, knowledge_base_id: int, *, offset: int = 0, limit: int = 20,
     ) -> list[Document]:
-        """按知识库查询文档列表（按 ID 降序）。"""
         stmt = (
             select(DocumentModel)
             .where(DocumentModel.knowledge_base_id == knowledge_base_id)
@@ -49,6 +44,5 @@ class DocumentRepositoryImpl(
         result = await self._session.execute(stmt)
         return [self._to_entity(m) for m in result.scalars().all()]
 
-    async def count_by_knowledge_base(self, knowledge_base_id: int) -> int:
-        """按知识库统计文档数量。"""
+    async def count_by_knowledge_base(self, knowledge_base_id: int) -> int:  # noqa: D102
         return await self._count_where(DocumentModel.knowledge_base_id == knowledge_base_id)

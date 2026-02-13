@@ -13,7 +13,7 @@ export interface AuroraConstructProps {
   readonly securityGroup: ec2.ISecurityGroup;
   /** KMS 加密密钥 */
   readonly encryptionKey?: kms.IKey;
-  /** 环境名称 (dev, staging, prod) */
+  /** 环境名称 (dev | prod) */
   readonly envName: EnvironmentName;
   /** 数据库名称 @default 'ai_agents_platform' */
   readonly databaseName?: string;
@@ -48,10 +48,8 @@ export class AuroraConstruct extends Construct {
       deletionProtection = !isDev(envName),
     } = props;
 
-    // Aurora MySQL 3.x 集群
     this.cluster = new rds.DatabaseCluster(this, 'Cluster', {
       engine: rds.DatabaseClusterEngine.auroraMysql({
-        // VER_3_10_3 尚未内置于 CDK 2.238.0，使用 of() 自定义版本
         version: rds.AuroraMysqlEngineVersion.of('8.0.mysql_aurora.3.10.3', '8.0'),
       }),
       credentials: rds.Credentials.fromGeneratedSecret('admin', {

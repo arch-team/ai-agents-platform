@@ -1,6 +1,6 @@
 // Team Execution 页面 — 左侧创建+列表，右侧详情+日志
 
-import { useState, useCallback } from 'react';
+import { useState } from 'react';
 
 import { useAuthToken } from '@/features/auth';
 import { useAgents } from '@/features/agents';
@@ -11,9 +11,10 @@ import {
   useCreateTeamExecution,
   useTeamExecutionStream,
 } from '@/features/team-executions';
-import type { TeamExecution } from '@/features/team-executions';
 import { extractApiError } from '@/shared/lib/extractApiError';
 import { ErrorMessage } from '@/shared/ui';
+
+import type { TeamExecution } from '@/features/team-executions';
 
 export default function TeamExecutionPage() {
   const token = useAuthToken();
@@ -34,23 +35,11 @@ export default function TeamExecutionPage() {
         prompt,
       });
       setSelectedExecution(execution);
-      // 创建后自动开始流式监听
       startStream(execution.id);
     } catch (err) {
       setSubmitError(extractApiError(err, '创建执行失败'));
     }
   };
-
-  const handleSelectExecution = (execution: TeamExecution) => {
-    setSelectedExecution(execution);
-  };
-
-  const handleStartStream = useCallback(
-    (id: number) => {
-      startStream(id);
-    },
-    [startStream],
-  );
 
   return (
     <div className="flex h-full">
@@ -76,7 +65,7 @@ export default function TeamExecutionPage() {
           </div>
           <TeamExecList
             selectedId={selectedExecution?.id ?? null}
-            onSelect={handleSelectExecution}
+            onSelect={setSelectedExecution}
           />
         </div>
       </div>
@@ -86,7 +75,7 @@ export default function TeamExecutionPage() {
         {selectedExecution ? (
           <TeamExecDetail
             executionId={selectedExecution.id}
-            onStartStream={handleStartStream}
+            onStartStream={startStream}
           />
         ) : (
           <div className="flex h-full items-center justify-center">

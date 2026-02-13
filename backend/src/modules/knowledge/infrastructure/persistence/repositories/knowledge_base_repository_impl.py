@@ -31,24 +31,15 @@ class KnowledgeBaseRepositoryImpl(
         },
     )
 
-    async def get_by_name_and_owner(self, name: str, owner_id: int) -> KnowledgeBase | None:
-        """按名称和所有者查询知识库。"""
+    async def get_by_name_and_owner(self, name: str, owner_id: int) -> KnowledgeBase | None:  # noqa: D102
         stmt = select(KnowledgeBaseModel).where(
-            KnowledgeBaseModel.name == name,
-            KnowledgeBaseModel.owner_id == owner_id,
+            KnowledgeBaseModel.name == name, KnowledgeBaseModel.owner_id == owner_id,
         )
         result = await self._session.execute(stmt)
         model = result.scalar_one_or_none()
         return self._to_entity(model) if model else None
 
-    async def list_by_owner(
-        self,
-        owner_id: int,
-        *,
-        offset: int = 0,
-        limit: int = 20,
-    ) -> list[KnowledgeBase]:
-        """按所有者查询知识库列表（按 ID 降序）。"""
+    async def list_by_owner(self, owner_id: int, *, offset: int = 0, limit: int = 20) -> list[KnowledgeBase]:  # noqa: D102
         stmt = (
             select(KnowledgeBaseModel)
             .where(KnowledgeBaseModel.owner_id == owner_id)
@@ -59,6 +50,5 @@ class KnowledgeBaseRepositoryImpl(
         result = await self._session.execute(stmt)
         return [self._to_entity(m) for m in result.scalars().all()]
 
-    async def count_by_owner(self, owner_id: int) -> int:
-        """按所有者统计知识库数量。"""
+    async def count_by_owner(self, owner_id: int) -> int:  # noqa: D102
         return await self._count_where(KnowledgeBaseModel.owner_id == owner_id)

@@ -145,6 +145,15 @@ export const handlers = [
     );
   }),
 
+  // Dashboard Stats
+  http.get(`${BASE_URL}/api/v1/stats/summary`, () =>
+    HttpResponse.json({
+      agents_total: 1,
+      conversations_total: 1,
+      team_executions_total: 1,
+    }),
+  ),
+
   // Team Executions
   http.get(`${BASE_URL}/api/v1/team-executions`, () =>
     HttpResponse.json({
