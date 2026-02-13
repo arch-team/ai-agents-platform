@@ -311,10 +311,11 @@ class TestSendMessageStreamEndpoint:
 
     def test_stream_success(self, client: TestClient, mock_service: AsyncMock) -> None:
         """200 SSE 流式响应。"""
+        from src.modules.execution.application.dto.execution_dto import StreamChunk
 
         async def mock_stream(*_args, **_kwargs):  # type: ignore[no-untyped-def]
-            yield 'data: {"content": "你好", "done": false}\n\n'
-            yield 'data: {"content": "", "done": true, "message_id": 1, "token_count": 10}\n\n'
+            yield StreamChunk(content="你好")
+            yield StreamChunk(done=True, message_id=1, token_count=10)
 
         mock_service.send_message_stream.return_value = mock_stream()
 

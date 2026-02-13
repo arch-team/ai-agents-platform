@@ -48,6 +48,7 @@ dependencies = [
     # 缓存
     "cachetools>=5.3.0",
     "slowapi>=0.1.9",
+    "sse-starlette>=2.0.0",
     # 可观测性 (OpenTelemetry)
     "opentelemetry-api>=1.20.0",
     "opentelemetry-sdk>=1.20.0",
@@ -350,6 +351,7 @@ module = [
     "opentelemetry.*",
     "google.*",
     "grpc.*",
+    "sse_starlette.*",
 ]
 ignore_missing_imports = true
 
@@ -387,6 +389,7 @@ filterwarnings = [
     "ignore::DeprecationWarning",
     "ignore::PendingDeprecationWarning",
     "ignore::pytest.PytestCollectionWarning",
+    "ignore::pytest.PytestUnraisableExceptionWarning",
 ]
 
 # ============================================================

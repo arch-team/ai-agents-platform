@@ -7,7 +7,7 @@ from typing import Annotated
 
 import structlog
 from fastapi import APIRouter, Depends, Query, status
-from fastapi.responses import StreamingResponse
+from sse_starlette import EventSourceResponse, ServerSentEvent
 
 from src.modules.auth.api.dependencies import get_current_user
 from src.modules.auth.application.dto.user_dto import UserDTO
@@ -24,6 +24,7 @@ from src.modules.execution.application.dto.execution_dto import (
     CreateConversationDTO,
     MessageDTO,
     SendMessageDTO,
+    StreamChunk,
 )
 from src.modules.execution.application.services.execution_service import ExecutionService
 from src.shared.api.schemas import calc_total_pages
@@ -38,6 +39,18 @@ router = APIRouter(prefix="/api/v1/conversations", tags=["conversations"])
 ServiceDep = Annotated[ExecutionService, Depends(get_execution_service)]
 CurrentUserDep = Annotated[UserDTO, Depends(get_current_user)]
 SSEManagerDep = Annotated[SSEConnectionManager, Depends(get_sse_manager)]
+
+
+def _stream_chunk_to_dict(chunk: StreamChunk) -> dict[str, object]:
+    """StreamChunk DTO 转换为 SSE data 字典，保持与前端约定的 JSON 格式。"""
+    result: dict[str, object] = {"content": chunk.content, "done": chunk.done}
+    if chunk.message_id is not None:
+        result["message_id"] = chunk.message_id
+    if chunk.token_count:
+        result["token_count"] = chunk.token_count
+    if chunk.error:
+        result["error"] = chunk.error
+    return result
 
 
 def _to_conversation_response(dto: ConversationDTO) -> ConversationResponse:
@@ -98,28 +111,22 @@ async def send_message(
 async def send_message_stream(
     conversation_id: int, request: SendMessageRequest, service: ServiceDep,
     current_user: CurrentUserDep, sse_manager: SSEManagerDep,
-) -> StreamingResponse:
+) -> EventSourceResponse:
     """SSE 流式发送消息。"""
 
-    async def event_generator() -> AsyncIterator[str]:
+    async def event_generator() -> AsyncIterator[ServerSentEvent]:
         async with sse_manager.connect(current_user.id):
             try:
                 dto = SendMessageDTO(content=request.content)
                 async for chunk in await service.send_message_stream(conversation_id, dto, current_user.id):
-                    yield chunk
+                    yield ServerSentEvent(data=json.dumps(_stream_chunk_to_dict(chunk)))
             except DomainError as e:
-                error_data = json.dumps({"error": e.message, "done": True})
-                yield f"data: {error_data}\n\n"
+                yield ServerSentEvent(data=json.dumps({"error": e.message, "done": True}))
             except Exception:
                 logger.exception("sse_stream_error", conversation_id=conversation_id)
-                error_data = json.dumps({"error": "服务内部错误", "done": True})
-                yield f"data: {error_data}\n\n"
+                yield ServerSentEvent(data=json.dumps({"error": "服务内部错误", "done": True}))
 
-    return StreamingResponse(
-        event_generator(),
-        media_type="text/event-stream",
-        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
-    )
+    return EventSourceResponse(event_generator())
 
 
 @router.post("/{conversation_id}/complete")

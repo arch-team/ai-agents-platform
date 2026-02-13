@@ -1,13 +1,12 @@
 """ExecutionService 测试。"""
 
-import json
-
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from src.modules.execution.application.dto.execution_dto import (
     CreateConversationDTO,
     SendMessageDTO,
+    StreamChunk,
 )
 from src.modules.execution.application.interfaces.agent_runtime import (
     AgentResponseChunk,
@@ -332,19 +331,17 @@ class TestSendMessageStream:
                 1, SendMessageDTO(content="你好"), user_id=100,
             )
 
-            events: list[str] = []
-            async for event in stream:
-                events.append(event)
+            chunks: list[StreamChunk] = []
+            async for chunk in stream:
+                chunks.append(chunk)
 
-        # 验证 SSE 事件
-        assert len(events) == 3  # 2 content + 1 done
-        first_data = json.loads(events[0].replace("data: ", "").strip())
-        assert first_data["content"] == "你好"
-        assert first_data["done"] is False
+        # 验证 StreamChunk 序列
+        assert len(chunks) == 3  # 2 content + 1 done
+        assert chunks[0].content == "你好"
+        assert chunks[0].done is False
 
-        last_data = json.loads(events[-1].replace("data: ", "").strip())
-        assert last_data["done"] is True
-        assert last_data["token_count"] == 30
+        assert chunks[-1].done is True
+        assert chunks[-1].token_count == 30
 
         # 验证更新调用
         msg_repo.update.assert_called_once()
@@ -405,9 +402,9 @@ class TestSendMessageStream:
                 1, SendMessageDTO(content="你好"), user_id=100,
             )
 
-            events: list[str] = []
-            async for event in stream:
-                events.append(event)
+            chunks: list[StreamChunk] = []
+            async for chunk in stream:
+                chunks.append(chunk)
 
         # 验证: stream repos 执行了写操作
         stream_msg_repo.update.assert_called_once()
@@ -947,19 +944,17 @@ class TestAgentRuntimeRouting:
                 1, SendMessageDTO(content="你好"), user_id=100,
             )
 
-            events: list[str] = []
-            async for event in stream:
-                events.append(event)
+            chunks: list[StreamChunk] = []
+            async for chunk in stream:
+                chunks.append(chunk)
 
-        # 验证 SSE 事件: 2 content + 1 done
-        assert len(events) == 3
-        first_data = json.loads(events[0].replace("data: ", "").strip())
-        assert first_data["content"] == "Agent 流式"
-        assert first_data["done"] is False
+        # 验证 StreamChunk 序列: 2 content + 1 done
+        assert len(chunks) == 3
+        assert chunks[0].content == "Agent 流式"
+        assert chunks[0].done is False
 
-        last_data = json.loads(events[-1].replace("data: ", "").strip())
-        assert last_data["done"] is True
-        assert last_data["token_count"] == 30
+        assert chunks[-1].done is True
+        assert chunks[-1].token_count == 30
 
         # Agent runtime 被调用, LLM 不应被调用
         agent_runtime.execute_stream.assert_called_once()
@@ -998,18 +993,16 @@ class TestAgentRuntimeRouting:
                 1, SendMessageDTO(content="你好"), user_id=100,
             )
 
-            events: list[str] = []
-            async for event in stream:
-                events.append(event)
+            chunks: list[StreamChunk] = []
+            async for chunk in stream:
+                chunks.append(chunk)
 
-        # 验证 SSE 事件
-        assert len(events) == 2  # 1 content + 1 done
-        first_data = json.loads(events[0].replace("data: ", "").strip())
-        assert first_data["content"] == "LLM 流式"
+        # 验证 StreamChunk 序列
+        assert len(chunks) == 2  # 1 content + 1 done
+        assert chunks[0].content == "LLM 流式"
 
-        last_data = json.loads(events[-1].replace("data: ", "").strip())
-        assert last_data["done"] is True
-        assert last_data["token_count"] == 20
+        assert chunks[-1].done is True
+        assert chunks[-1].token_count == 20
 
         # LLM 被调用, Agent runtime 不应被调用
         llm_client.invoke_stream.assert_called_once()

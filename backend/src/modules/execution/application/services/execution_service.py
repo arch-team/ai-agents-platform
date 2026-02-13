@@ -1,7 +1,6 @@
 """Execution 应用服务。"""
 
 import asyncio
-import json
 from collections.abc import AsyncIterator, Callable, Coroutine
 from dataclasses import dataclass
 from typing import Any
@@ -16,6 +15,7 @@ from src.modules.execution.application.dto.execution_dto import (
     CreateConversationDTO,
     MessageDTO,
     SendMessageDTO,
+    StreamChunk,
 )
 from src.modules.execution.application.interfaces.agent_runtime import (
     AgentRequest,
@@ -215,8 +215,8 @@ class ExecutionService:
         conversation_id: int,
         dto: SendMessageDTO,
         user_id: int,
-    ) -> AsyncIterator[str]:
-        """发送消息（SSE 流式）。
+    ) -> AsyncIterator[StreamChunk]:
+        """发送消息（流式），yield 结构化 StreamChunk 由 API 层转换为 SSE 事件。
 
         根据 runtime_type 路由:
         - "agent" 且 agent_runtime 可用 → IAgentRuntime.execute_stream()
@@ -238,7 +238,7 @@ class ExecutionService:
 
         use_agent = self._should_use_agent_runtime(ctx.agent_info)
 
-        async def _generate() -> AsyncIterator[str]:
+        async def _generate() -> AsyncIterator[StreamChunk]:
             collected_content = ""
             total_input_tokens = 0
             total_output_tokens = 0
@@ -248,7 +248,7 @@ class ExecutionService:
             async for chunk in source:
                 if chunk.content:
                     collected_content += chunk.content
-                    yield f"data: {json.dumps({'content': chunk.content, 'done': False})}\n\n"
+                    yield StreamChunk(content=chunk.content)
                 if chunk.done:
                     total_input_tokens = chunk.input_tokens
                     total_output_tokens = chunk.output_tokens
@@ -266,15 +266,11 @@ class ExecutionService:
                 user_id=user_id,
             )
 
-            done_data = json.dumps(
-                {
-                    "content": "",
-                    "done": True,
-                    "message_id": created_assistant_msg.id,
-                    "token_count": total_tokens,
-                },
+            yield StreamChunk(
+                done=True,
+                message_id=created_assistant_msg.id,
+                token_count=total_tokens,
             )
-            yield f"data: {done_data}\n\n"
 
         return _generate()
 

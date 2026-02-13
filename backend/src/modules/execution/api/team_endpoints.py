@@ -8,7 +8,7 @@ from typing import Annotated
 
 import structlog
 from fastapi import APIRouter, Depends, Query, status
-from fastapi.responses import StreamingResponse
+from sse_starlette import EventSourceResponse, ServerSentEvent
 
 from src.modules.auth.api.dependencies import get_current_user
 from src.modules.auth.application.dto.user_dto import UserDTO
@@ -90,10 +90,10 @@ async def get_team_execution_logs(
 @router.get("/{execution_id}/stream")
 async def stream_team_execution_logs(
     execution_id: int, service: ServiceDep, current_user: CurrentUserDep, sse_manager: SSEManagerDep,
-) -> StreamingResponse:
+) -> EventSourceResponse:
     """SSE 进度推送。"""
 
-    async def _event_generator() -> AsyncIterator[str]:
+    async def _event_generator() -> AsyncIterator[ServerSentEvent]:
         async with sse_manager.connect(current_user.id):
             try:
                 async for log_dto in service.stream_logs(execution_id, current_user.id):
@@ -102,20 +102,16 @@ async def stream_team_execution_logs(
                          "log_type": log_dto.log_type, "content": log_dto.content},
                         ensure_ascii=False,
                     )
-                    yield f"data: {data}\n\n"
-                yield "data: [DONE]\n\n"
+                    yield ServerSentEvent(data=data)
+                yield ServerSentEvent(data="[DONE]")
             except asyncio.CancelledError:
                 return
             except Exception:
                 logger.exception("sse_stream_error", execution_id=execution_id)
                 error_data = json.dumps({"error": "服务内部错误", "done": True}, ensure_ascii=False)
-                yield f"data: {error_data}\n\n"
+                yield ServerSentEvent(data=error_data)
 
-    return StreamingResponse(
-        _event_generator(),
-        media_type="text/event-stream",
-        headers={"Cache-Control": "no-cache", "Connection": "keep-alive", "X-Accel-Buffering": "no"},
-    )
+    return EventSourceResponse(_event_generator())
 
 
 @router.post("/{execution_id}/cancel")

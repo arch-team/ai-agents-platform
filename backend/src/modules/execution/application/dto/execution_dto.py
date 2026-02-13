@@ -54,6 +54,17 @@ class ConversationDetailDTO:
     messages: list[MessageDTO]
 
 
+@dataclass
+class StreamChunk:
+    """SSE 流式响应片段 (Application 层结构化数据，由 API 层转换为 SSE 事件)。"""
+
+    content: str = ""
+    done: bool = False
+    message_id: int | None = None
+    token_count: int = 0
+    error: str | None = None
+
+
 @dataclass(frozen=True)
 class ContextWindowConfig:
     """上下文窗口配置，控制 LLM 调用的 token 预算分配。"""
