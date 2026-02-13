@@ -47,29 +47,20 @@ export default function DashboardPage() {
       {/* 快速操作 */}
       <h2 className="mb-4 text-lg font-semibold text-gray-900">快速操作</h2>
       <div className="grid gap-4 sm:grid-cols-3">
-        <Link
-          to="/agents/create"
-          className="group rounded-lg border border-gray-200 bg-white p-5 shadow-sm transition-shadow hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-        >
-          <h3 className="font-medium text-gray-900 group-hover:text-blue-600">创建 Agent</h3>
-          <p className="mt-1 text-sm text-gray-500">配置新的 AI Agent，定义行为和角色</p>
-        </Link>
-
-        <Link
-          to="/agents"
-          className="group rounded-lg border border-gray-200 bg-white p-5 shadow-sm transition-shadow hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-        >
-          <h3 className="font-medium text-gray-900 group-hover:text-blue-600">查看 Agent 列表</h3>
-          <p className="mt-1 text-sm text-gray-500">管理和浏览所有已创建的 Agent</p>
-        </Link>
-
-        <Link
-          to="/team-executions"
-          className="group rounded-lg border border-gray-200 bg-white p-5 shadow-sm transition-shadow hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-        >
-          <h3 className="font-medium text-gray-900 group-hover:text-purple-600">Team Execution</h3>
-          <p className="mt-1 text-sm text-gray-500">协调多个 Agent 执行复杂任务</p>
-        </Link>
+        {[
+          { to: '/agents/create', title: '创建 Agent', desc: '配置新的 AI Agent，定义行为和角色', hoverColor: 'group-hover:text-blue-600' },
+          { to: '/agents', title: '查看 Agent 列表', desc: '管理和浏览所有已创建的 Agent', hoverColor: 'group-hover:text-blue-600' },
+          { to: '/team-executions', title: 'Team Execution', desc: '协调多个 Agent 执行复杂任务', hoverColor: 'group-hover:text-purple-600' },
+        ].map(({ to, title, desc, hoverColor }) => (
+          <Link
+            key={to}
+            to={to}
+            className="group rounded-lg border border-gray-200 bg-white p-5 shadow-sm transition-shadow hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+          >
+            <h3 className={`font-medium text-gray-900 ${hoverColor}`}>{title}</h3>
+            <p className="mt-1 text-sm text-gray-500">{desc}</p>
+          </Link>
+        ))}
       </div>
     </div>
   );

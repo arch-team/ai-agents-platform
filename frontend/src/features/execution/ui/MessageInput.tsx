@@ -2,9 +2,8 @@
 
 import { useCallback, useRef, useState } from 'react';
 
-import { Button } from '@/shared/ui';
-
 import { cn } from '@/shared/lib/cn';
+import { Button } from '@/shared/ui';
 
 interface MessageInputProps {
   onSend: (content: string) => void;

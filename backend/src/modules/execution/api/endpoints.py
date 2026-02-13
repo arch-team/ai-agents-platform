@@ -5,6 +5,7 @@ from collections.abc import AsyncIterator
 from dataclasses import asdict
 from typing import Annotated
 
+import structlog
 from fastapi import APIRouter, Depends, Query, status
 from fastapi.responses import StreamingResponse
 
@@ -29,6 +30,8 @@ from src.shared.api.schemas import calc_total_pages
 from src.shared.domain.exceptions import DomainError
 from src.shared.infrastructure.sse_connection_manager import SSEConnectionManager, get_sse_manager
 
+
+logger = structlog.get_logger(__name__)
 
 router = APIRouter(prefix="/api/v1/conversations", tags=["conversations"])
 
@@ -108,6 +111,7 @@ async def send_message_stream(
                 error_data = json.dumps({"error": e.message, "done": True})
                 yield f"data: {error_data}\n\n"
             except Exception:
+                logger.exception("sse_stream_error", conversation_id=conversation_id)
                 error_data = json.dumps({"error": "服务内部错误", "done": True})
                 yield f"data: {error_data}\n\n"
 

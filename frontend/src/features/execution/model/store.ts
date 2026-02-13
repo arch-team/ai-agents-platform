@@ -11,8 +11,14 @@ export const useChatStore = create<ChatState>()((set) => ({
   isStreaming: false,
   error: null,
   setCurrentConversation: (id) => set({ currentConversationId: id }),
-  appendStreamContent: (content) =>
-    set((state) => ({ streamingContent: state.streamingContent + content })),
+  appendStreamContent: (conversationId, content) =>
+    set((state) => {
+      // 忽略非当前对话的流式内容，防止多对话切换时的竞态
+      if (state.currentConversationId !== null && state.currentConversationId !== conversationId) {
+        return state;
+      }
+      return { streamingContent: state.streamingContent + content };
+    }),
   clearStream: () => set({ streamingContent: '', isStreaming: false }),
   setStreaming: (streaming) => set({ isStreaming: streaming }),
   setError: (error) => set({ error }),

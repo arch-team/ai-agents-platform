@@ -64,7 +64,13 @@ async def get_current_user(
         msg = "无效的认证令牌"
         raise AuthenticationError(msg)
 
-    user = await service.get_user(int(str(user_id_str)))
+    try:
+        user_id = int(str(user_id_str))
+    except (ValueError, TypeError) as e:
+        msg = "无效的认证令牌: sub 字段格式错误"
+        raise AuthenticationError(msg) from e
+
+    user = await service.get_user(user_id)
     if user is None:
         msg = "用户不存在"
         raise AuthenticationError(msg)

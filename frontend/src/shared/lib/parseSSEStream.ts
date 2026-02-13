@@ -39,13 +39,10 @@ export async function* parseSSEStream<T>(config: SSERequestConfig): AsyncGenerat
 
   const headers: Record<string, string> = {
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    ...(method === 'POST'
+      ? { 'Content-Type': 'application/json' }
+      : { Accept: 'text/event-stream' }),
   };
-
-  if (method === 'POST') {
-    headers['Content-Type'] = 'application/json';
-  } else {
-    headers['Accept'] = 'text/event-stream';
-  }
 
   let response: Response;
   try {
@@ -89,8 +86,10 @@ export async function* parseSSEStream<T>(config: SSERequestConfig): AsyncGenerat
           if (data) {
             try {
               yield JSON.parse(data) as T;
-            } catch {
-              // 忽略解析失败的行
+            } catch (e) {
+              if (import.meta.env.DEV) {
+                console.warn('[SSE] JSON 解析失败:', data, e);
+              }
             }
           }
         }

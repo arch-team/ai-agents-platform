@@ -6,9 +6,20 @@ import { formatDateTime } from '@/shared/lib/formatDate';
 import { Button, Card, Spinner, ErrorMessage } from '@/shared/ui';
 
 import { useTeamExecution, useTeamExecutionLogs, useCancelTeamExecution } from '../api/queries';
+import type { TeamExecutionLog } from '../api/types';
 import { useStreamLogs, useIsTeamStreaming, useTeamExecError } from '../model/store';
+import type { StreamLogEntry } from '../model/types';
 
 import { TeamExecStatusBadge } from './TeamExecStatusBadge';
+
+/** 将 API 日志格式转换为组件统一的显示格式 */
+function toDisplayLogs(logs: TeamExecutionLog[]): StreamLogEntry[] {
+  return logs.map((log) => ({
+    sequence: log.sequence,
+    content: log.content,
+    agentName: log.agent_name,
+  }));
+}
 
 interface TeamExecDetailProps {
   executionId: number;
@@ -49,11 +60,7 @@ export function TeamExecDetail({ executionId, onStartStream }: TeamExecDetailPro
   }
 
   // 优先显示 SSE 流式日志，其次显示 API 拉取的日志
-  const displayLogs = streamLogs.length > 0 ? streamLogs : (logs ?? []).map((log) => ({
-    sequence: log.sequence,
-    content: log.content,
-    agentName: log.agent_name,
-  }));
+  const displayLogs = streamLogs.length > 0 ? streamLogs : toDisplayLogs(logs ?? []);
 
   return (
     <div className="flex h-full flex-col">

@@ -2,12 +2,13 @@
 import { useNavigate, useParams } from 'react-router-dom';
 
 import { KnowledgeDetail } from '@/features/knowledge';
+import { parseNumericParam } from '@/shared/lib/parseNumericParam';
 import { Spinner } from '@/shared/ui';
 
 export default function KnowledgeDetailPage() {
   const { knowledgeBaseId } = useParams<{ knowledgeBaseId: string }>();
   const navigate = useNavigate();
-  const id = knowledgeBaseId ? Number(knowledgeBaseId) : undefined;
+  const id = parseNumericParam(knowledgeBaseId);
 
   if (!id) {
     return (

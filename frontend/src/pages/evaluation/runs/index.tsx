@@ -4,11 +4,12 @@ import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
 import { EvaluationRunList, EvaluationResults } from '@/features/evaluation';
+import { parseNumericParam } from '@/shared/lib/parseNumericParam';
 import { Button } from '@/shared/ui';
 
 export default function EvaluationRunsPage() {
   const [searchParams] = useSearchParams();
-  const initialRunId = searchParams.get('runId') ? Number(searchParams.get('runId')) : null;
+  const initialRunId = parseNumericParam(searchParams.get('runId') ?? undefined) ?? null;
   const [selectedRunId, setSelectedRunId] = useState<number | null>(initialRunId);
 
   return (

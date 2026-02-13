@@ -30,13 +30,7 @@ class ApprovedToolInfo:
 
 
 class IToolQuerier(ABC):
-    """跨模块工具查询接口。
-
-    接口定义在 shared/domain/interfaces/，
-    实现由 tool_catalog 模块在 infrastructure 层提供。
-    execution 模块的 Application 层依赖此接口获取 Agent 可用工具。
-    """
+    """跨模块工具查询接口。"""
 
     @abstractmethod
-    async def list_approved_tools(self) -> list[ApprovedToolInfo]:
-        """获取所有已审批工具列表。"""
+    async def list_approved_tools(self) -> list[ApprovedToolInfo]: ...  # noqa: D102

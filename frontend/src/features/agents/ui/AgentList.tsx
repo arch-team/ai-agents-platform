@@ -26,26 +26,22 @@ export function AgentList({ onSelect, onEdit, onCreate }: AgentListProps) {
   const [operatingAgentId, setOperatingAgentId] = useState<number | null>(null);
   const { data, isLoading, error } = useAgents(filters);
 
-  const mutationCallbacks = {
-    onSettled: () => setOperatingAgentId(null),
-  };
   const activateMutation = useActivateAgent();
   const archiveMutation = useArchiveAgent();
   const deleteMutation = useDeleteAgent();
 
-  const handleActivate = (agentId: number) => {
+  // 通用 mutation 执行：统一管理 operatingAgentId 状态
+  const execute = (
+    mutation: { mutate: (id: number, opts: { onSettled: () => void }) => void },
+    agentId: number,
+  ) => {
     setOperatingAgentId(agentId);
-    activateMutation.mutate(agentId, mutationCallbacks);
-  };
-
-  const handleArchive = (agentId: number) => {
-    setOperatingAgentId(agentId);
-    archiveMutation.mutate(agentId, mutationCallbacks);
+    mutation.mutate(agentId, { onSettled: () => setOperatingAgentId(null) });
   };
 
   const handleDelete = (agentId: number) => {
-    setOperatingAgentId(agentId);
-    deleteMutation.mutate(agentId, mutationCallbacks);
+    if (!window.confirm('确定要删除这个 Agent 吗？此操作不可撤销。')) return;
+    execute(deleteMutation, agentId);
   };
 
   const handleStatusFilter = (status: AgentStatus | '') => {
@@ -127,7 +123,7 @@ export function AgentList({ onSelect, onEdit, onCreate }: AgentListProps) {
                       variant="primary"
                       size="sm"
                       loading={activateMutation.isPending && operatingAgentId === agent.id}
-                      onClick={() => handleActivate(agent.id)}
+                      onClick={() => execute(activateMutation, agent.id)}
                       aria-label={`激活 ${agent.name}`}
                     >
                       激活
@@ -139,7 +135,7 @@ export function AgentList({ onSelect, onEdit, onCreate }: AgentListProps) {
                     variant="outline"
                     size="sm"
                     loading={archiveMutation.isPending && operatingAgentId === agent.id}
-                    onClick={() => handleArchive(agent.id)}
+                    onClick={() => execute(archiveMutation, agent.id)}
                     aria-label={`归档 ${agent.name}`}
                   >
                     归档

@@ -6,6 +6,7 @@ from collections.abc import AsyncIterator
 from dataclasses import asdict
 from typing import Annotated
 
+import structlog
 from fastapi import APIRouter, Depends, Query, status
 from fastapi.responses import StreamingResponse
 
@@ -23,6 +24,8 @@ from src.modules.execution.application.services.team_execution_service import Te
 from src.shared.api.schemas import calc_total_pages
 from src.shared.infrastructure.sse_connection_manager import SSEConnectionManager, get_sse_manager
 
+
+logger = structlog.get_logger(__name__)
 
 router = APIRouter(prefix="/api/v1/team-executions", tags=["team-executions"])
 
@@ -103,6 +106,10 @@ async def stream_team_execution_logs(
                 yield "data: [DONE]\n\n"
             except asyncio.CancelledError:
                 return
+            except Exception:
+                logger.exception("sse_stream_error", execution_id=execution_id)
+                error_data = json.dumps({"error": "服务内部错误", "done": True}, ensure_ascii=False)
+                yield f"data: {error_data}\n\n"
 
     return StreamingResponse(
         _event_generator(),

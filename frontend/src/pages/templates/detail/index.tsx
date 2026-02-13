@@ -2,12 +2,13 @@
 import { useNavigate, useParams } from 'react-router-dom';
 
 import { TemplateDetail } from '@/features/templates';
+import { parseNumericParam } from '@/shared/lib/parseNumericParam';
 import { Spinner } from '@/shared/ui';
 
 export default function TemplateDetailPage() {
   const { templateId } = useParams<{ templateId: string }>();
   const navigate = useNavigate();
-  const id = templateId ? Number(templateId) : undefined;
+  const id = parseNumericParam(templateId);
 
   if (!id) {
     return (

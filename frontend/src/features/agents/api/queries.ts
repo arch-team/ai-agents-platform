@@ -38,7 +38,7 @@ export function useAgents(filters?: AgentFilters) {
 // 查询单个 Agent 详情
 export function useAgent(id: number | undefined) {
   return useQuery({
-    queryKey: agentKeys.detail(id!),
+    queryKey: agentKeys.detail(id ?? 0),
     queryFn: async () => {
       const { data } = await apiClient.get<Agent>(`/api/v1/agents/${id}`);
       return data;

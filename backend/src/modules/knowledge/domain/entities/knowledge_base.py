@@ -22,6 +22,7 @@ class KnowledgeBase(PydanticEntity):
     agent_id: int | None = None
     bedrock_kb_id: str = ""
     s3_prefix: str = ""
+    error_message: str = ""
 
     def activate(self) -> None:
         """激活知识库。CREATING -> ACTIVE。"""
@@ -41,10 +42,11 @@ class KnowledgeBase(PydanticEntity):
         self.status = KnowledgeBaseStatus.ACTIVE
         self.touch()
 
-    def fail(self, reason: str = "") -> None:  # noqa: ARG002
+    def fail(self, reason: str = "") -> None:
         """标记失败。CREATING/SYNCING -> FAILED。"""
         self._require_status(self.status, _FAILABLE, KnowledgeBaseStatus.FAILED.value)
         self.status = KnowledgeBaseStatus.FAILED
+        self.error_message = reason
         self.touch()
 
     def mark_deleted(self) -> None:

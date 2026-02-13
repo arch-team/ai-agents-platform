@@ -24,8 +24,7 @@ class PageRequest(BaseModel):
     page_size: int = Field(default=20, ge=1, le=100)
 
     @property
-    def offset(self) -> int:
-        """计算分页偏移量。"""
+    def offset(self) -> int:  # noqa: D102
         return (self.page - 1) * self.page_size
 
 

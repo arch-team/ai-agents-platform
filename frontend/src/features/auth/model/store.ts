@@ -3,7 +3,7 @@
 import { create } from 'zustand';
 import { useShallow } from 'zustand/shallow';
 
-import type { User } from '@/entities/user';
+import type { UserSummary } from '@/entities/user';
 
 import type { AuthState } from './types';
 
@@ -11,7 +11,7 @@ const useAuthStore = create<AuthState>()((set) => ({
   user: null,
   token: null,
   isAuthenticated: false,
-  setAuth: (user: User, token: string) => set({ user, token, isAuthenticated: true }),
+  setAuth: (user: UserSummary, token: string) => set({ user, token, isAuthenticated: true }),
   logout: () => set({ user: null, token: null, isAuthenticated: false }),
 }));
 

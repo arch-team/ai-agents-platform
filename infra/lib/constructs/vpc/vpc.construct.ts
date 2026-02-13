@@ -48,6 +48,7 @@ export class VpcConstruct extends Construct {
       enableDnsSupport: true,
     });
 
+    // VPC Flow Log (安全审计) — 显式创建 LogGroup 控制日志保留期
     if (enableFlowLog) {
       const flowLogGroup = new logs.LogGroup(this, 'FlowLogGroup', {
         logGroupName: `/vpc/ai-agents-platform/${envName}/flow-logs`,
@@ -61,6 +62,7 @@ export class VpcConstruct extends Construct {
       });
     }
 
+    // S3 Gateway Endpoint (免费，减少 NAT 流量)
     this.vpc.addGatewayEndpoint('S3Endpoint', {
       service: ec2.GatewayVpcEndpointAwsService.S3,
     });

@@ -10,6 +10,4 @@ class IUserRepository(IRepository[User, int]):
     """用户仓库接口。"""
 
     @abstractmethod
-    async def get_by_email(self, email: str) -> User | None:
-        """根据邮箱查找用户。"""
-        ...
+    async def get_by_email(self, email: str) -> User | None: ...  # noqa: D102

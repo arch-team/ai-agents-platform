@@ -42,6 +42,24 @@ export function ChatInterface({ conversationId, token }: ChatInterfaceProps) {
   const chatError = useChatError();
   const { clearStream, clearError } = useChatActions();
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  // aria-live 通知区域 DOM ref + 上次消息数量追踪
+  const liveRegionRef = useRef<HTMLDivElement>(null);
+  const prevMessageCountRef = useRef(0);
+
+  // 新消息到达时更新无障碍通知
+  // 通过直接操作 DOM textContent，避免 setState-in-effect lint 报错
+  useEffect(() => {
+    const currentCount = data?.messages?.length ?? 0;
+    if (currentCount > prevMessageCountRef.current && currentCount > 0) {
+      const lastMessage = data!.messages[currentCount - 1];
+      if (liveRegionRef.current) {
+        liveRegionRef.current.textContent = `收到新消息: ${lastMessage.content}`;
+      }
+    } else if (currentCount === 0 && liveRegionRef.current) {
+      liveRegionRef.current.textContent = '';
+    }
+    prevMessageCountRef.current = currentCount;
+  }, [data]);
 
   // 切换对话时清理流式状态
   useEffect(() => {
@@ -107,10 +125,8 @@ export function ChatInterface({ conversationId, token }: ChatInterfaceProps) {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* 新消息完成通知 — 仅在消息列表变化时通知屏幕阅读器 */}
-      <div aria-live="polite" aria-relevant="additions" className="sr-only">
-        {messages.length > 0 && `收到新消息: ${messages[messages.length - 1].content}`}
-      </div>
+      {/* 新消息通知 — 通过 effect + DOM ref 更新，仅在新消息到达时触发朗读 */}
+      <div ref={liveRegionRef} aria-live="polite" aria-atomic="true" className="sr-only" />
 
       {/* 流式错误提示 */}
       {chatError && (

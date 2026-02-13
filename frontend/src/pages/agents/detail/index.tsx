@@ -5,12 +5,13 @@ import { useAgent, useActivateAgent, useArchiveAgent, AgentStatusBadge } from '@
 import { useConversations, useCreateConversation } from '@/features/execution';
 import { extractApiError } from '@/shared/lib/extractApiError';
 import { formatDate, formatDateTime } from '@/shared/lib/formatDate';
+import { parseNumericParam } from '@/shared/lib/parseNumericParam';
 import { Button, Card, Spinner, ErrorMessage } from '@/shared/ui';
 
 export default function AgentDetailPage() {
   const { agentId } = useParams<{ agentId: string }>();
   const navigate = useNavigate();
-  const id = agentId ? Number(agentId) : undefined;
+  const id = parseNumericParam(agentId);
 
   const { data: agent, isLoading, error } = useAgent(id);
   const { data: conversationsData } = useConversations(id);
@@ -50,15 +51,16 @@ export default function AgentDetailPage() {
   return (
     <div className="mx-auto max-w-3xl p-6">
       {/* 操作错误提示 */}
-      {activateMutation.isError && (
-        <div className="mb-4">
-          <ErrorMessage error={extractApiError(activateMutation.error, '激活 Agent 失败')} />
-        </div>
-      )}
-      {archiveMutation.isError && (
-        <div className="mb-4">
-          <ErrorMessage error={extractApiError(archiveMutation.error, '归档 Agent 失败')} />
-        </div>
+      {[
+        { mutation: activateMutation, message: '激活 Agent 失败' },
+        { mutation: archiveMutation, message: '归档 Agent 失败' },
+      ].map(
+        ({ mutation, message }) =>
+          mutation.isError && (
+            <div key={message} className="mb-4">
+              <ErrorMessage error={extractApiError(mutation.error, message)} />
+            </div>
+          ),
       )}
 
       {/* 标题和操作 */}
@@ -114,22 +116,17 @@ export default function AgentDetailPage() {
       <Card className="mb-6">
         <h2 className="mb-4 text-lg font-semibold text-gray-900">配置信息</h2>
         <dl className="grid gap-4 sm:grid-cols-2">
-          <div>
-            <dt className="text-sm font-medium text-gray-500">模型</dt>
-            <dd className="mt-1 text-sm text-gray-900">{agent.config.model_id}</dd>
-          </div>
-          <div>
-            <dt className="text-sm font-medium text-gray-500">温度</dt>
-            <dd className="mt-1 text-sm text-gray-900">{agent.config.temperature}</dd>
-          </div>
-          <div>
-            <dt className="text-sm font-medium text-gray-500">最大 Token 数</dt>
-            <dd className="mt-1 text-sm text-gray-900">{agent.config.max_tokens}</dd>
-          </div>
-          <div>
-            <dt className="text-sm font-medium text-gray-500">创建时间</dt>
-            <dd className="mt-1 text-sm text-gray-900">{formatDateTime(agent.created_at)}</dd>
-          </div>
+          {[
+            { label: '模型', value: agent.config.model_id },
+            { label: '温度', value: agent.config.temperature },
+            { label: '最大 Token 数', value: agent.config.max_tokens },
+            { label: '创建时间', value: formatDateTime(agent.created_at) },
+          ].map(({ label, value }) => (
+            <div key={label}>
+              <dt className="text-sm font-medium text-gray-500">{label}</dt>
+              <dd className="mt-1 text-sm text-gray-900">{value}</dd>
+            </div>
+          ))}
         </dl>
 
         {agent.system_prompt && (

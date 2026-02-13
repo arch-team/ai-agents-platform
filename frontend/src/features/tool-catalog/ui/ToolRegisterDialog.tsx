@@ -1,6 +1,6 @@
 // 工具注册对话框组件
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -39,6 +39,9 @@ interface ToolRegisterDialogProps {
 export function ToolRegisterDialog({ open, onClose, onSuccess }: ToolRegisterDialogProps) {
   const [apiError, setApiError] = useState<string | null>(null);
   const createMutation = useCreateTool();
+  const dialogRef = useRef<HTMLDivElement>(null);
+  // 记录打开对话框前的焦点元素，关闭时恢复
+  const triggerRef = useRef<HTMLElement | null>(null);
 
   const {
     register,
@@ -57,6 +60,58 @@ export function ToolRegisterDialog({ open, onClose, onSuccess }: ToolRegisterDia
     setApiError(null);
     onClose();
   };
+
+  // 打开时：保存触发元素 + 自动聚焦到对话框
+  // 关闭时：恢复焦点到触发元素
+  useEffect(() => {
+    if (open) {
+      triggerRef.current = document.activeElement as HTMLElement;
+      // 等待 DOM 渲染后聚焦对话框内首个可交互元素
+      requestAnimationFrame(() => {
+        const firstInput = dialogRef.current?.querySelector<HTMLElement>(
+          'input, select, textarea, button',
+        );
+        firstInput?.focus();
+      });
+    } else if (triggerRef.current) {
+      triggerRef.current.focus();
+      triggerRef.current = null;
+    }
+  }, [open]);
+
+  // Escape 键关闭 + 焦点陷阱
+  useEffect(() => {
+    if (!open) return;
+
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') {
+        handleClose();
+        return;
+      }
+
+      // 焦点陷阱：Tab 键在对话框内循环
+      if (e.key === 'Tab' && dialogRef.current) {
+        const focusableElements = dialogRef.current.querySelectorAll<HTMLElement>(
+          'input, select, textarea, button, [tabindex]:not([tabindex="-1"])',
+        );
+        if (focusableElements.length === 0) return;
+
+        const firstElement = focusableElements[0];
+        const lastElement = focusableElements[focusableElements.length - 1];
+
+        if (e.shiftKey && document.activeElement === firstElement) {
+          e.preventDefault();
+          lastElement.focus();
+        } else if (!e.shiftKey && document.activeElement === lastElement) {
+          e.preventDefault();
+          firstElement.focus();
+        }
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [open]); // eslint-disable-line react-hooks/exhaustive-deps -- handleClose 依赖稳定
 
   const onSubmit = async (data: CreateToolFormData) => {
     setApiError(null);
@@ -82,6 +137,7 @@ export function ToolRegisterDialog({ open, onClose, onSuccess }: ToolRegisterDia
 
       {/* 对话框 */}
       <div
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="register-tool-title"

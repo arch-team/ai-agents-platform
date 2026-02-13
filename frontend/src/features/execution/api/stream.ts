@@ -52,7 +52,7 @@ export function useSendMessageStream(token: string | null) {
           }
 
           if (chunk.content) {
-            appendStreamContent(chunk.content);
+            appendStreamContent(conversationId, chunk.content);
           }
 
           if (chunk.done) {

@@ -14,6 +14,7 @@ ECS 容器通常已通过 ecs.Secret.fromSecretsManager 注入凭证为环境变
 import logging
 from functools import lru_cache
 from typing import Self
+from urllib.parse import quote_plus
 
 from pydantic import SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -171,11 +172,13 @@ class Settings(BaseSettings):
 
     @property
     def database_url(self) -> str:
-        """构建 asyncmy 数据库连接字符串。"""
-        pwd = self.DATABASE_PASSWORD.get_secret_value()
-        return (
-            f"mysql+asyncmy://{self.DATABASE_USER}:{pwd}@{self.DATABASE_HOST}:{self.DATABASE_PORT}/{self.DATABASE_NAME}"
-        )
+        """构建 asyncmy 数据库连接字符串。
+
+        对用户名和密码进行 URL 编码，防止特殊字符 (@, /, :) 导致连接字符串解析错误。
+        """
+        user = quote_plus(self.DATABASE_USER)
+        pwd = quote_plus(self.DATABASE_PASSWORD.get_secret_value())
+        return f"mysql+asyncmy://{user}:{pwd}@{self.DATABASE_HOST}:{self.DATABASE_PORT}/{self.DATABASE_NAME}"
 
 
 @lru_cache

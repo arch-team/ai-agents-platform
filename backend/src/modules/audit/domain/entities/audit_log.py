@@ -3,7 +3,7 @@
 from datetime import datetime
 from enum import StrEnum
 
-from pydantic import ConfigDict, Field
+from pydantic import Field
 
 from src.shared.domain.base_entity import PydanticEntity, utc_now
 
@@ -43,8 +43,6 @@ class AuditCategory(StrEnum):
 
 class AuditLog(PydanticEntity):
     """审计日志实体（append-only，只写不改不删）。"""
-
-    model_config = ConfigDict(validate_assignment=True)
 
     # 操作者信息
     actor_id: int

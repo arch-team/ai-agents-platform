@@ -22,6 +22,7 @@ export class SecurityGroupsConstruct extends Construct {
     super(scope, id);
     const { vpc, enablePublicIngress = false } = props;
 
+    // API 服务安全组 — 出站允许全部（需访问 AWS 服务端点、外部 API 等）
     this.apiSecurityGroup = new ec2.SecurityGroup(this, 'ApiSg', {
       vpc,
       description: 'API service security group',

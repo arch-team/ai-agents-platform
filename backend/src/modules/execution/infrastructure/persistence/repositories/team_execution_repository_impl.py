@@ -8,9 +8,6 @@ from src.modules.execution.domain.repositories.team_execution_repository import 
     ITeamExecutionLogRepository,
     ITeamExecutionRepository,
 )
-from src.modules.execution.domain.value_objects.team_execution_status import (
-    TeamExecutionStatus,
-)
 from src.modules.execution.infrastructure.persistence.models.team_execution_log_model import (
     TeamExecutionLogModel,
 )
@@ -39,15 +36,6 @@ class TeamExecutionRepositoryImpl(
             "completed_at",
         },
     )
-
-    def _to_entity(self, model: TeamExecutionModel) -> TeamExecution:
-        """ORM Model -> Entity 转换，处理 status 枚举映射。"""
-        data = {c.key: getattr(model, c.key) for c in model.__table__.columns}
-        data["status"] = TeamExecutionStatus(data["status"])
-        # MySQL TEXT 列 nullable=True, Entity 中 result/error_message 默认空字符串
-        data["result"] = data["result"] or ""
-        data["error_message"] = data["error_message"] or ""
-        return TeamExecution.model_validate(data)
 
     async def list_by_user(  # noqa: D102
         self,
@@ -96,12 +84,6 @@ class TeamExecutionLogRepositoryImpl(
     entity_class = TeamExecutionLog
     model_class = TeamExecutionLogModel
     _updatable_fields: frozenset[str] = frozenset({"content"})
-
-    def _to_entity(self, model: TeamExecutionLogModel) -> TeamExecutionLog:
-        """ORM Model -> Entity 转换，处理 TEXT nullable 映射。"""
-        data = {c.key: getattr(model, c.key) for c in model.__table__.columns}
-        data["content"] = data["content"] or ""
-        return TeamExecutionLog.model_validate(data)
 
     async def list_by_execution(  # noqa: D102
         self,

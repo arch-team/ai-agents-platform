@@ -1,9 +1,10 @@
 """使用量聚合统计值对象。"""
 
-from typing import NamedTuple
+from dataclasses import dataclass
 
 
-class AggregatedStats(NamedTuple):
+@dataclass(frozen=True)
+class AggregatedStats:
     """使用量聚合统计 — 不可变值对象。"""
 
     total_tokens: int

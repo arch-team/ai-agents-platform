@@ -4,11 +4,12 @@ import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
 import { TestSuiteDetail, RunEvaluationDialog, useTestSuite } from '@/features/evaluation';
+import { parseNumericParam } from '@/shared/lib/parseNumericParam';
 
 export default function EvaluationDetailPage() {
   const { suiteId } = useParams<{ suiteId: string }>();
   const navigate = useNavigate();
-  const id = suiteId ? Number(suiteId) : undefined;
+  const id = parseNumericParam(suiteId);
   const { data: suite } = useTestSuite(id);
   const [showRunDialog, setShowRunDialog] = useState(false);
 

@@ -3,13 +3,14 @@ import { useNavigate, useParams } from 'react-router-dom';
 
 import { useAuthToken } from '@/features/auth';
 import { ChatInterface, ConversationList } from '@/features/execution';
+import { parseNumericParam } from '@/shared/lib/parseNumericParam';
 
 export default function ChatPage() {
   const { conversationId } = useParams<{ conversationId: string }>();
   const navigate = useNavigate();
   const token = useAuthToken();
 
-  const currentId = conversationId ? Number(conversationId) : null;
+  const currentId = parseNumericParam(conversationId) ?? null;
 
   const handleSelectConversation = (id: number) => {
     navigate(`/chat/${id}`);

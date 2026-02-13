@@ -28,6 +28,7 @@ class KnowledgeBaseRepositoryImpl(
             "agent_id",
             "bedrock_kb_id",
             "s3_prefix",
+            "error_message",
         },
     )
 

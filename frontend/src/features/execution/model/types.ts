@@ -6,7 +6,7 @@ export interface ChatState {
   isStreaming: boolean;
   error: string | null;
   setCurrentConversation: (id: number | null) => void;
-  appendStreamContent: (content: string) => void;
+  appendStreamContent: (conversationId: number, content: string) => void;
   clearStream: () => void;
   setStreaming: (streaming: boolean) => void;
   setError: (error: string) => void;
