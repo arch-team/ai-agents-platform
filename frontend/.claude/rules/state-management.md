@@ -112,13 +112,23 @@ export function useCreateAgent() {
 }
 
 // 详情查询同理，关键点: enabled: !!id 防止空请求
-// 更新/删除 mutation 关键点:
-// - onSuccess: invalidateQueries 使列表失效
-// - onSuccess: setQueryData 更新详情缓存
-// - onSuccess: removeQueries 删除缓存
 ```
 
-### 1.4 乐观更新模式
+### 1.4 Mutation 缓存失效策略
+
+create/update/delete 三种操作对列表和详情缓存的处理**必须不同**:
+
+| 操作 | 列表缓存 | 详情缓存 | 原因 |
+|------|---------|---------|------|
+| **Create** | `invalidateQueries(lists)` | 不处理 | 新实体无详情缓存 |
+| **Update / 状态变更** | `invalidateQueries(lists)` | `setQueryData(detail, newData)` | 后端已返回最新数据，免额外请求 |
+| **Delete** | `invalidateQueries(lists)` | `removeQueries(detail)` | 实体已删除，避免触发 404 请求 |
+
+项目中提取了 `invalidateAndUpdateDetail` 辅助函数统一处理 Update 场景（参考 `features/agents/api/queries.ts:19-23`），各模块复用。
+
+涉及多个 key 子类型时（如 tool 有 `lists()` 和 `approved()`），需同时失效所有相关 key。
+
+### 1.5 乐观更新模式
 
 > 模式: `onMutate`(cancelQueries → 保存旧数据 → setQueryData) → `onError`(回滚) → `onSettled`(invalidateQueries)
 

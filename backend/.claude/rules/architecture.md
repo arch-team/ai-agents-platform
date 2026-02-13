@@ -191,8 +191,30 @@ class {Entity}CompletedEvent(DomainEvent):
 
 ### 4.3 接口位置区分
 
-- `shared/domain/interfaces/`: **跨模块能力接口**（如 `IQuotaChecker`）
+- `shared/domain/interfaces/`: **跨模块能力接口**（如 `IAgentQuerier`）
 - `modules/{module}/application/interfaces/`: **模块内外部服务抽象**（如 `IS3Client`）
+
+### 4.4 Querier 跨模块同步查询模式
+
+**适用场景**: 模块 A 需要同步查询模块 B 的数据（如 execution 查询 Agent 是否 ACTIVE）。EventBus 仅解决"通知"，Querier 解决"查询"。
+
+**三个角色**:
+
+| 角色 | 位置 | 职责 |
+|------|------|------|
+| 接口 | `shared/domain/interfaces/` | 方法签名 + 最小 DTO（如 `ActiveAgentInfo`） |
+| 实现 | 提供方 `infrastructure/services/` | 实现接口 + 可选 TTLCache 缓存 |
+| 组装 | `presentation/api/providers.py` | Composition Root — 创建实例，通过 DI 注入消费方 |
+
+**当前项目 Querier 实例**:
+
+| 接口 | 消费方 | 提供方 | 参考文件 |
+|------|--------|--------|---------|
+| `IAgentQuerier` | execution | agents | `shared/domain/interfaces/agent_querier.py` |
+| `IToolQuerier` | execution | tool_catalog | `shared/domain/interfaces/tool_querier.py` |
+| `IKnowledgeQuerier` | execution | knowledge | `shared/domain/interfaces/knowledge_querier.py` |
+
+**新增跨模块查询时**: 遵循此三步流程，禁止绕过接口直接导入其他模块代码。
 
 ---
 

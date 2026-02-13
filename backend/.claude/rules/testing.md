@@ -103,20 +103,30 @@ def test_create_user_returns_user(self) -> None:
 
 | 作用域 | 场景 | 位置 |
 |--------|------|------|
-| `session` | 数据库引擎 | `tests/conftest.py` |
-| `module` | 模块 Factory | `tests/modules/{m}/conftest.py` |
+| `session` | 数据库引擎 (SQLite + MySQL 双引擎) | `tests/conftest.py` |
+| `module` | 模块 Factory + Mock Repo + Service | `tests/modules/{m}/conftest.py` |
 | `function` | 测试数据 | 默认 |
 
 **模式**: `yield` + 清理（yield 前为 setup，yield 后为 teardown）
 
-```python
-@pytest.fixture
-def db_session(engine) -> Session:
-    session = sessionmaker(bind=engine)()
-    yield session
-    session.rollback()
-    session.close()
+### 标准 Fixture 三件套
+
+每个模块的 `conftest.py` 统一提供三个 fixture（参考 `tests/modules/agents/conftest.py`）:
+
+1. `mock_{entity}_repo`: `AsyncMock(spec=I{Entity}Repository)`
+2. `{entity}_service`: 注入 mock repo 的 Service 实例
+3. `mock_event_bus`: `patch` event_bus 为 AsyncMock，避免事件副作用
+
+### 双引擎测试策略
+
+默认使用 SQLite 内存数据库（快速），通过 `--mysql` 启用 MySQL（参考 `tests/conftest.py`）:
+
+```bash
+uv run pytest                 # SQLite (默认，毫秒级)
+uv run pytest --mysql         # MySQL (需 docker-compose 启动 mysql-test)
 ```
+
+`@pytest.mark.mysql` 标记的测试在未启用 `--mysql` 时自动跳过。
 
 ---
 
@@ -158,14 +168,16 @@ def test_s3_upload(): pass
 
 ## 6. Factory 模式
 
+使用 `make_{entity}(**kwargs)` 纯函数工厂（参考 `tests/modules/agents/conftest.py`）:
+
 ```python
-# tests/factories.py
-class UserFactory(factory.Factory):
-    class Meta:
-        model = User
-    name = factory.Sequence(lambda n: f"用户{n}")
-    email = factory.LazyAttribute(lambda o: f"{o.name}@example.com")
+def make_agent(*, agent_id: int = 1, name: str = "测试 Agent", ...) -> Agent:
+    return Agent(id=agent_id, name=name, ...)
 ```
+
+**约定**: 所有参数使用 keyword-only (`*`)，提供合理默认值，调用方只覆盖需要的字段。
+
+> 当实体关系复杂到 `make_` 函数难以维护时，可引入 `factory_boy`。
 
 ---
 

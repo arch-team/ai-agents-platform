@@ -26,9 +26,11 @@ pnpm cdk diff && pnpm cdk deploy
 
 | 环境 | 用途 | 部署方式 | 审批 |
 |------|------|---------|------|
-| dev | 开发测试 | 手动 | 无 |
+| dev | 开发测试 | 手动 / CI | 无 |
 | staging | 预发布 | CI/CD | 自动 |
 | prod | 生产 | CI/CD | 手动审批 |
+
+> **注意**: staging 环境暂不实现（v1.4 简化），当前仅 dev + prod 两套。待业务规模需要时再启用。
 
 ---
 
@@ -41,16 +43,10 @@ pnpm cdk diff && pnpm cdk deploy
 | 环境 | S3/Logs | RDS |
 |------|---------|-----|
 | Dev | DESTROY | DESTROY |
-| Staging | DESTROY | SNAPSHOT |
+| Staging (暂不实现) | DESTROY | SNAPSHOT |
 | Prod | RETAIN | SNAPSHOT |
 
-```typescript
-export function getRemovalPolicy(envName: string): cdk.RemovalPolicy {
-  return envName === 'dev' ? cdk.RemovalPolicy.DESTROY
-       : envName === 'staging' ? cdk.RemovalPolicy.SNAPSHOT
-       : cdk.RemovalPolicy.RETAIN;
-}
-```
+> 当前实现仅区分 dev/prod，参考 `lib/config/constants.ts` 的 `getRemovalPolicy()`
 
 ---
 
@@ -70,7 +66,7 @@ on:
     inputs:
       environment:
         type: choice
-        options: [dev, staging, prod]
+        options: [dev, prod]  # staging 暂不实现
 
 jobs:
   test:
@@ -88,7 +84,7 @@ jobs:
       - run: pnpm cdk deploy --all --context env=dev --require-approval never
 
   deploy-prod:
-    needs: deploy-staging
+    needs: deploy-dev  # staging 暂不实现，prod 直接依赖 dev
     environment:
       name: prod  # 需要手动审批
     steps:

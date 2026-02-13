@@ -10,10 +10,10 @@
 
 ### 环境资源矩阵
 
-| 资源 | Dev | Staging | Prod |
-|------|-----|---------|------|
+| 资源 | Dev | Staging (暂不实现) | Prod |
+|------|-----|-------------------|------|
 | EC2/ECS | t3.small, 按需 | t3.medium, 按需 | t3.large, Reserved |
-| RDS | db.t3.small, 单AZ | db.t3.medium, 多AZ | db.r6g.large, 多AZ, Reserved |
+| RDS | db.t3.medium, 单AZ | db.t3.medium, 多AZ | db.r6g.large, 多AZ, Reserved |
 | NAT Gateway | 1 | 2 | 3 (每AZ) |
 | Lambda | 默认 | 默认 | ARM + 优化内存 |
 
@@ -24,8 +24,8 @@
 const requiredTags = { Project: 'ai-agents-platform', Environment: envName, CostCenter: 'ai-platform', ManagedBy: 'cdk' };
 Object.entries(requiredTags).forEach(([k, v]) => cdk.Tags.of(app).add(k, v));
 
-// Prod 额外标签
-if (envName === 'prod') cdk.Tags.of(app).add('Criticality', 'high');
+// Prod 额外标签 (暂不实现，待业务上线后启用)
+// if (envName === 'prod') cdk.Tags.of(app).add('Criticality', 'high');
 ```
 
 ---

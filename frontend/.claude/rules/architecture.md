@@ -110,4 +110,18 @@ export { useInternalState } from './model/internal';
 | 全局状态 | Zustand store | [state-management.md](state-management.md) §2 |
 | 服务端数据 | React Query | [state-management.md](state-management.md) §1 |
 | 事件通信 | Custom Events / Zustand | - |
+| SSE 流式通信 | 三层架构（见 §2.2） | - |
+
+### 2.2 SSE 流式通信三层架构
+
+| 层级 | 位置 | 职责 | 参考文件 |
+|------|------|------|---------|
+| **shared 解析器** | `shared/lib/parseSSEStream.ts` | 泛型 `async function*` 生成器，处理 buffer/line splitting/AbortSignal/错误区分 | 全项目唯一 SSE 解析入口 |
+| **feature 适配器** | `features/*/lib/sse.ts` | 指定 chunk 类型和 HTTP 方法（POST 发消息 / GET 订阅日志），`yield*` 委托 shared 层 | `execution/lib/sse.ts`, `team-executions/lib/sse.ts` |
+| **feature Stream Hook** | `features/*/api/stream.ts` | `useRef<AbortController>` 生命周期管理，通过 Zustand store 管理流式状态，`finally` 块 invalidateQueries 刷新缓存 | `execution/api/stream.ts` |
+
+**关键约定**:
+- SSE 不使用 React Query mutation（流式状态由 Zustand 管理）
+- token 由调用方传入（避免跨 feature 依赖 auth store）
+- 组件卸载时通过 AbortController.abort() 取消连接
 
