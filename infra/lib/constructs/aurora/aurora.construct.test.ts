@@ -85,6 +85,12 @@ describe('AuroraConstruct', () => {
         BackupRetentionPeriod: 7,
       });
     });
+
+    it('默认不启用 Performance Insights', () => {
+      template.hasResourceProperties('AWS::RDS::DBInstance', {
+        EnablePerformanceInsights: false,
+      });
+    });
   });
 
   describe('Prod 环境', () => {
@@ -118,6 +124,44 @@ describe('AuroraConstruct', () => {
       template.hasResourceProperties('AWS::RDS::DBCluster', {
         BackupRetentionPeriod: 30,
       });
+    });
+  });
+
+  describe('Performance Insights 启用', () => {
+    let template: Template;
+
+    beforeEach(() => {
+      const app = new cdk.App();
+      const stack = new cdk.Stack(app, 'TestStack');
+      const { vpc, securityGroup, encryptionKey } = createTestDependencies(stack);
+
+      new AuroraConstruct(stack, 'TestAurora', {
+        vpc,
+        securityGroup,
+        encryptionKey,
+        envName: 'prod',
+        enablePerformanceInsights: true,
+      });
+      template = Template.fromStack(stack);
+    });
+
+    it('应在所有实例上启用 Performance Insights', () => {
+      const instances = template.findResources('AWS::RDS::DBInstance');
+      const instanceIds = Object.keys(instances);
+      expect(instanceIds.length).toBeGreaterThanOrEqual(1);
+
+      for (const id of instanceIds) {
+        expect(instances[id].Properties.EnablePerformanceInsights).toBe(true);
+      }
+    });
+
+    it('应设置 Performance Insights 保留期为 7 天 (免费层)', () => {
+      const instances = template.findResources('AWS::RDS::DBInstance');
+      const instanceIds = Object.keys(instances);
+
+      for (const id of instanceIds) {
+        expect(instances[id].Properties.PerformanceInsightsRetentionPeriod).toBe(7);
+      }
     });
   });
 

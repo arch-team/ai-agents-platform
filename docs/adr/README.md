@@ -11,6 +11,10 @@
 | [003](003-agentcore-infrastructure.md) | AgentCore 作为运行时基础设施 | 2026-02-08 | 已采纳 |
 | [005](005-database-engine-selection.md) | 数据库引擎选型: MySQL + Bedrock Knowledge Bases | 2026-02-10 | 已采纳 |
 | [006](006-agent-framework-selection.md) | Agent 框架选型: Claude Agent SDK + Claude Code CLI | 2026-02-10 | 已采纳 |
+| [007](007-phase3-adjustment.md) | Phase 3 路线图调整 | 2026-02-12 | 已采纳 |
+| [008](008-agent-teams-over-dag-engine.md) | Agent Teams 替代 DAG 引擎 | 2026-02-12 | 已采纳 |
+| [009](009-phase3-quarterly-review.md) | Phase 3 季度回顾 | 2026-02-12 | 已采纳 |
+| [010](010-opus-46-model-evaluation.md) | Opus 4.6 模型集成评估: 模型选择策略与成本分析 | 2026-02-13 | 已采纳 |
 
 ## ADR 模板
 

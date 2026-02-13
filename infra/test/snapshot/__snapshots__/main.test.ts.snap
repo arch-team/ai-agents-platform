@@ -1194,7 +1194,7 @@ exports[`Snapshot Tests ComputeStack 快照匹配 1`] = `
               "Timeout": 5,
             },
             "Image": {
-              "Fn::Sub": "000000000000.dkr.ecr.us-east-1.\${AWS::URLSuffix}/cdk-hnb659fds-container-assets-000000000000-us-east-1:4f05871d67789316afeae81a1a355416320d77a4f3b9248f2ce12e5dbcf88fa3",
+              "Fn::Sub": "000000000000.dkr.ecr.us-east-1.\${AWS::URLSuffix}/cdk-hnb659fds-container-assets-000000000000-us-east-1:83e007124cf97a8de81b920824283a8eb1d9e8b6f350f5a46b36c431192cf760",
             },
             "LogConfiguration": {
               "LogDriver": "awslogs",
@@ -1607,6 +1607,12 @@ exports[`Snapshot Tests DatabaseStack 快照匹配 1`] = `
         ],
       },
     },
+    "KnowledgeBucketName": {
+      "Description": "Knowledge documents S3 bucket name",
+      "Value": {
+        "Ref": "KnowledgeDocsBucketABB39BC4",
+      },
+    },
     "SecretArn": {
       "Description": "Database credentials Secret ARN",
       "Value": {
@@ -1641,7 +1647,7 @@ exports[`Snapshot Tests DatabaseStack 快照匹配 1`] = `
             },
             {
               "id": "AwsSolutions-RDS16",
-              "reason": "Dev uses db.t3.medium which supports Performance Insights but incurs extra cost; will enable in Prod with db.r6g.large instances",
+              "reason": "Performance Insights disabled in Dev to reduce cost; enabled in Prod with db.r6g.large instances",
             },
             {
               "id": "AwsSolutions-SMG4",
@@ -1710,7 +1716,7 @@ exports[`Snapshot Tests DatabaseStack 快照匹配 1`] = `
             },
             {
               "id": "AwsSolutions-RDS16",
-              "reason": "Dev uses db.t3.medium which supports Performance Insights but incurs extra cost; will enable in Prod with db.r6g.large instances",
+              "reason": "Performance Insights disabled in Dev to reduce cost; enabled in Prod with db.r6g.large instances",
             },
             {
               "id": "AwsSolutions-SMG4",
@@ -1748,7 +1754,7 @@ exports[`Snapshot Tests DatabaseStack 快照匹配 1`] = `
             },
             {
               "id": "AwsSolutions-RDS16",
-              "reason": "Dev uses db.t3.medium which supports Performance Insights but incurs extra cost; will enable in Prod with db.r6g.large instances",
+              "reason": "Performance Insights disabled in Dev to reduce cost; enabled in Prod with db.r6g.large instances",
             },
             {
               "id": "AwsSolutions-SMG4",
@@ -1792,7 +1798,7 @@ exports[`Snapshot Tests DatabaseStack 快照匹配 1`] = `
             },
             {
               "id": "AwsSolutions-RDS16",
-              "reason": "Dev uses db.t3.medium which supports Performance Insights but incurs extra cost; will enable in Prod with db.r6g.large instances",
+              "reason": "Performance Insights disabled in Dev to reduce cost; enabled in Prod with db.r6g.large instances",
             },
             {
               "id": "AwsSolutions-SMG4",
@@ -1806,12 +1812,235 @@ exports[`Snapshot Tests DatabaseStack 快照匹配 1`] = `
           "Ref": "AuroraClusterD4EFE71C",
         },
         "DBInstanceClass": "db.t3.medium",
+        "EnablePerformanceInsights": false,
         "Engine": "aurora-mysql",
         "PromotionTier": 0,
         "PubliclyAccessible": false,
       },
       "Type": "AWS::RDS::DBInstance",
       "UpdateReplacePolicy": "Delete",
+    },
+    "CustomS3AutoDeleteObjectsCustomResourceProviderHandler9D90184F": {
+      "DependsOn": [
+        "CustomS3AutoDeleteObjectsCustomResourceProviderRole3B1BD092",
+      ],
+      "Properties": {
+        "Code": {
+          "S3Bucket": "cdk-hnb659fds-assets-000000000000-us-east-1",
+          "S3Key": "faa95a81ae7d7373f3e1f242268f904eb748d8d0fdd306e8a6fe515a1905a7d6.zip",
+        },
+        "Description": {
+          "Fn::Join": [
+            "",
+            [
+              "Lambda function for auto-deleting objects in ",
+              {
+                "Ref": "KnowledgeDocsBucketABB39BC4",
+              },
+              " S3 bucket.",
+            ],
+          ],
+        },
+        "Handler": "index.handler",
+        "MemorySize": 128,
+        "Role": {
+          "Fn::GetAtt": [
+            "CustomS3AutoDeleteObjectsCustomResourceProviderRole3B1BD092",
+            "Arn",
+          ],
+        },
+        "Runtime": "nodejs22.x",
+        "Timeout": 900,
+      },
+      "Type": "AWS::Lambda::Function",
+    },
+    "CustomS3AutoDeleteObjectsCustomResourceProviderRole3B1BD092": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Sub": "arn:\${AWS::Partition}:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Role",
+    },
+    "KnowledgeDocsBucketABB39BC4": {
+      "DeletionPolicy": "Delete",
+      "Metadata": {
+        "cdk_nag": {
+          "rules_to_suppress": [
+            {
+              "id": "AwsSolutions-S1",
+              "reason": "Knowledge docs bucket does not require access logging; access is audited via CloudTrail",
+            },
+          ],
+        },
+      },
+      "Properties": {
+        "BucketEncryption": {
+          "ServerSideEncryptionConfiguration": [
+            {
+              "ServerSideEncryptionByDefault": {
+                "KMSMasterKeyID": {
+                  "Fn::ImportValue": "VpcStack:ExportsOutputFnGetAttTestKey4CACAF33ArnC56F7F92",
+                },
+                "SSEAlgorithm": "aws:kms",
+              },
+            },
+          ],
+        },
+        "BucketName": "ai-agents-platform-knowledge-dev",
+        "LifecycleConfiguration": {
+          "Rules": [
+            {
+              "NoncurrentVersionExpiration": {
+                "NoncurrentDays": 30,
+              },
+              "Status": "Enabled",
+            },
+            {
+              "AbortIncompleteMultipartUpload": {
+                "DaysAfterInitiation": 7,
+              },
+              "Status": "Enabled",
+            },
+          ],
+        },
+        "PublicAccessBlockConfiguration": {
+          "BlockPublicAcls": true,
+          "BlockPublicPolicy": true,
+          "IgnorePublicAcls": true,
+          "RestrictPublicBuckets": true,
+        },
+        "Tags": [
+          {
+            "Key": "aws-cdk:auto-delete-objects",
+            "Value": "true",
+          },
+        ],
+        "VersioningConfiguration": {
+          "Status": "Enabled",
+        },
+      },
+      "Type": "AWS::S3::Bucket",
+      "UpdateReplacePolicy": "Delete",
+    },
+    "KnowledgeDocsBucketAutoDeleteObjectsCustomResource0B426AD7": {
+      "DeletionPolicy": "Delete",
+      "DependsOn": [
+        "KnowledgeDocsBucketPolicyA6141924",
+      ],
+      "Properties": {
+        "BucketName": {
+          "Ref": "KnowledgeDocsBucketABB39BC4",
+        },
+        "ServiceToken": {
+          "Fn::GetAtt": [
+            "CustomS3AutoDeleteObjectsCustomResourceProviderHandler9D90184F",
+            "Arn",
+          ],
+        },
+      },
+      "Type": "Custom::S3AutoDeleteObjects",
+      "UpdateReplacePolicy": "Delete",
+    },
+    "KnowledgeDocsBucketPolicyA6141924": {
+      "Properties": {
+        "Bucket": {
+          "Ref": "KnowledgeDocsBucketABB39BC4",
+        },
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": "s3:*",
+              "Condition": {
+                "Bool": {
+                  "aws:SecureTransport": "false",
+                },
+              },
+              "Effect": "Deny",
+              "Principal": {
+                "AWS": "*",
+              },
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "KnowledgeDocsBucketABB39BC4",
+                    "Arn",
+                  ],
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      {
+                        "Fn::GetAtt": [
+                          "KnowledgeDocsBucketABB39BC4",
+                          "Arn",
+                        ],
+                      },
+                      "/*",
+                    ],
+                  ],
+                },
+              ],
+            },
+            {
+              "Action": [
+                "s3:PutBucketPolicy",
+                "s3:GetBucket*",
+                "s3:List*",
+                "s3:DeleteObject*",
+              ],
+              "Effect": "Allow",
+              "Principal": {
+                "AWS": {
+                  "Fn::GetAtt": [
+                    "CustomS3AutoDeleteObjectsCustomResourceProviderRole3B1BD092",
+                    "Arn",
+                  ],
+                },
+              },
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "KnowledgeDocsBucketABB39BC4",
+                    "Arn",
+                  ],
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      {
+                        "Fn::GetAtt": [
+                          "KnowledgeDocsBucketABB39BC4",
+                          "Arn",
+                        ],
+                      },
+                      "/*",
+                    ],
+                  ],
+                },
+              ],
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+      },
+      "Type": "AWS::S3::BucketPolicy",
     },
     "TestDatabaseStackAuroraClusterSecret4F48A0193fdaad7efa858a3daf9490cf0a702aeb": {
       "DeletionPolicy": "Delete",
@@ -1832,7 +2061,7 @@ exports[`Snapshot Tests DatabaseStack 快照匹配 1`] = `
             },
             {
               "id": "AwsSolutions-RDS16",
-              "reason": "Dev uses db.t3.medium which supports Performance Insights but incurs extra cost; will enable in Prod with db.r6g.large instances",
+              "reason": "Performance Insights disabled in Dev to reduce cost; enabled in Prod with db.r6g.large instances",
             },
             {
               "id": "AwsSolutions-SMG4",

@@ -23,6 +23,8 @@ export interface AuroraConstructProps {
   readonly instances?: number;
   /** 是否启用删除保护 @default envName !== 'dev' */
   readonly deletionProtection?: boolean;
+  /** 是否启用 Performance Insights @default false */
+  readonly enablePerformanceInsights?: boolean;
 }
 
 /**
@@ -46,6 +48,7 @@ export class AuroraConstruct extends Construct {
       instanceType = ec2.InstanceType.of(ec2.InstanceClass.T3, ec2.InstanceSize.MEDIUM),
       instances = isProd(envName) ? 2 : 1,
       deletionProtection = !isDev(envName),
+      enablePerformanceInsights = false,
     } = props;
 
     this.cluster = new rds.DatabaseCluster(this, 'Cluster', {
@@ -62,6 +65,10 @@ export class AuroraConstruct extends Construct {
       writer: rds.ClusterInstance.provisioned('Writer', {
         instanceType,
         publiclyAccessible: false,
+        enablePerformanceInsights,
+        ...(enablePerformanceInsights && {
+          performanceInsightRetention: rds.PerformanceInsightRetention.DEFAULT,
+        }),
       }),
       readers:
         instances > 1
@@ -69,6 +76,10 @@ export class AuroraConstruct extends Construct {
               rds.ClusterInstance.provisioned('Reader', {
                 instanceType,
                 publiclyAccessible: false,
+                enablePerformanceInsights,
+                ...(enablePerformanceInsights && {
+                  performanceInsightRetention: rds.PerformanceInsightRetention.DEFAULT,
+                }),
               }),
             ]
           : [],
