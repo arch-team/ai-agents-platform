@@ -66,6 +66,7 @@ class Settings(BaseSettings):
     AGENTCORE_GATEWAY_ID: str = ""  # AgentCore Gateway 资源 ID (用于 Tool 注册/注销)
     AGENTCORE_GATEWAY_URL: str = ""  # AgentCore Gateway MCP 端点 (SSE URL)
     AGENTCORE_MEMORY_ID: str = ""  # AgentCore Memory 资源 ID (可选)
+    AGENTCORE_IDENTITY_POOL_ID: str = ""  # AgentCore Identity Pool ID (可选)
 
     # Agent 运行时模式: in_process (本地 Claude Agent SDK) / agentcore_runtime (远程 AgentCore API)
     AGENT_RUNTIME_MODE: str = "in_process"
@@ -109,6 +110,10 @@ class Settings(BaseSettings):
 
     # SSE 连接限制
     SSE_MAX_CONNECTIONS_PER_USER: int = 5
+
+    # AgentCore Memory 长期记忆策略
+    MEMORY_EXTRACTION_ENABLED: bool = False  # 是否启用对话完成后自动记忆提取
+    MEMORY_STRATEGIES: str = "summary,semantic"  # 记忆提取策略 (逗号分隔)
 
     # OpenTelemetry 可观测性
     OTEL_EXPORTER_OTLP_ENDPOINT: str = ""  # OTLP 导出端点 (如 http://localhost:4317)

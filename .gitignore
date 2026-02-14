@@ -111,6 +111,10 @@ site/
 # Plan docs (临时计划文档)
 plan-docs/
 
+# Load testing results
+scripts/loadtest/results/*.csv
+scripts/loadtest/results/*.html
+
 # Secrets (never commit)
 secrets/
 *.pem

@@ -1,0 +1,3 @@
+# AI Agents Platform 性能压测依赖
+# 安装: pip install -r requirements.txt
+locust>=2.20

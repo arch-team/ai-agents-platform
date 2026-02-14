@@ -59,6 +59,12 @@ from src.shared.domain.interfaces.agent_querier import ActiveAgentInfo, IAgentQu
 from src.shared.domain.interfaces.knowledge_querier import IKnowledgeQuerier
 from src.shared.domain.interfaces.tool_querier import ApprovedToolInfo, IToolQuerier
 
+# 长期记忆接口 (可选依赖)
+try:
+    from src.modules.execution.application.interfaces import MemoryItem
+except ImportError:
+    MemoryItem = None  # type: ignore[assignment, misc]
+
 
 @dataclass
 class _SendContext:
@@ -98,6 +104,7 @@ class ExecutionService:
         context_window: ContextWindowConfig | None = None,
         stream_session_commit: AsyncCallback | None = None,
         stream_session_close: AsyncCallback | None = None,
+        memory_adapter: Any | None = None,
     ) -> None:
         self._conversation_repo = conversation_repo
         self._message_repo = message_repo
@@ -107,6 +114,7 @@ class ExecutionService:
         self._agent_runtime = agent_runtime
         self._tool_querier = tool_querier
         self._gateway_url = gateway_url
+        self._memory_adapter = memory_adapter
         self._context_window = context_window or ContextWindowConfig()
         self._stream_session_commit = stream_session_commit
         self._stream_session_close = stream_session_close
@@ -579,6 +587,32 @@ class ExecutionService:
             if rag_results:
                 rag_context = "\n\n".join(f"[参考文档] {r.content}" for r in rag_results)
                 system_prompt = f"{system_prompt}\n\n## 知识库参考资料\n\n{rag_context}"
+
+        # 长期记忆注入: 从 AgentCore Memory 检索相关记忆作为上下文补充
+        if agent_info.enable_memory and self._memory_adapter is not None:
+            with tracer.start_as_current_span(
+                "memory.recall",
+                attributes={
+                    "memory.agent_id": str(agent_info.id),
+                    "memory.top_k": 5,
+                },
+            ):
+                try:
+                    memories = await self._memory_adapter.recall_memory(
+                        agent_info.id, content, max_results=5,
+                    )
+                    if memories:
+                        memory_context = "\n\n".join(
+                            f"[长期记忆 - {m.topic}] {m.content}" for m in memories
+                        )
+                        system_prompt = f"{system_prompt}\n\n## 长期记忆\n\n{memory_context}"
+                        logger.info(
+                            "memory_injected",
+                            agent_id=agent_info.id,
+                            memory_count=len(memories),
+                        )
+                except Exception:
+                    logger.exception("memory_recall_failed", agent_id=agent_info.id)
 
         return _SendContext(
             conversation=conversation,

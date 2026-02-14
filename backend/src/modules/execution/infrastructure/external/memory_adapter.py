@@ -91,3 +91,53 @@ class MemoryAdapter:
             )
             for record in response.get("memoryRecords", [])
         ]
+
+    async def configure_strategy(self, *, strategies: list[str] | None = None) -> bool:
+        """配置 AgentCore Memory 提取策略。
+
+        strategies: ["summary", "user_preference", "semantic"]
+        未配置 memory_id 时返回 False。
+        """
+        if not self._memory_id:
+            logger.debug("memory_strategy_skip", reason="memory_id 未配置")
+            return False
+
+        try:
+            client = self._get_client()
+            await asyncio.to_thread(
+                client.update_memory,
+                memoryId=self._memory_id,
+                memoryStrategies=[
+                    {"strategyType": s} for s in (strategies or ["summary", "semantic"])
+                ],
+            )
+        except Exception:
+            logger.exception("memory_strategy_config_failed")
+            return False
+
+        logger.info("memory_strategy_configured", strategies=strategies)
+        return True
+
+    async def extract_memories(self, agent_id: int, conversation_content: str, *, session_id: str = "") -> int:
+        """从对话内容中异步提取记忆。
+
+        返回提取的记忆条数。未配置时返回 0。
+        """
+        if not self._memory_id:
+            return 0
+
+        try:
+            client = self._get_client()
+            response = await asyncio.to_thread(
+                client.create_memory_extraction,
+                memoryId=self._memory_id,
+                content=conversation_content,
+                metadata={"agent_id": str(agent_id), "session_id": session_id},
+            )
+        except Exception:
+            logger.exception("memory_extraction_failed", agent_id=agent_id)
+            return 0
+
+        count: int = response.get("extractedCount", 0)
+        logger.info("memory_extracted", agent_id=agent_id, count=count)
+        return count

@@ -272,6 +272,34 @@ def _register_team_execution_event_subscriptions() -> None:
     event_bus.subscribe(TeamExecutionCompletedEvent, _on_team_execution_completed)
 
 
+def _register_memory_extraction_event_subscriptions() -> None:
+    """注册对话完成后记忆提取事件订阅。
+
+    当 MEMORY_EXTRACTION_ENABLED=True 时，对话完成后自动从对话历史中
+    提取长期记忆存储到 AgentCore Memory。
+    """
+    from src.modules.execution.domain.events import ConversationCompletedEvent
+    from src.modules.execution.infrastructure.external.memory_adapter import MemoryAdapter
+    from src.modules.execution.infrastructure.external.memory_extraction_handler import MemoryExtractionHandler
+    from src.shared.domain.event_bus import event_bus
+    from src.shared.infrastructure.database import get_session_factory
+
+    settings = get_settings()
+    if not settings.MEMORY_EXTRACTION_ENABLED:
+        return
+
+    session_factory = get_session_factory()
+    memory_adapter = MemoryAdapter(
+        memory_id=settings.AGENTCORE_MEMORY_ID,
+        region=settings.AWS_REGION,
+    )
+    handler = MemoryExtractionHandler(
+        memory_adapter=memory_adapter,
+        session_factory=session_factory,
+    )
+    event_bus.subscribe(ConversationCompletedEvent, handler.handle_conversation_completed)
+
+
 def _register_message_received_event_subscriptions() -> None:
     """注册普通对话消息接收事件订阅 -> insights 成本归因。
 
@@ -362,6 +390,7 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
     _register_gateway_event_subscriptions()
     _register_team_execution_event_subscriptions()
     _register_message_received_event_subscriptions()
+    _register_memory_extraction_event_subscriptions()
     _register_audit_event_subscriptions()
     yield
 

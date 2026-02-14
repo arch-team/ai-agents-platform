@@ -15,6 +15,8 @@
 | [008](008-agent-teams-over-dag-engine.md) | Agent Teams 替代 DAG 引擎 | 2026-02-12 | 已采纳 |
 | [009](009-phase3-quarterly-review.md) | Phase 3 季度回顾 | 2026-02-12 | 已采纳 |
 | [010](010-opus-46-model-evaluation.md) | Opus 4.6 模型集成评估: 模型选择策略与成本分析 | 2026-02-13 | 已采纳 |
+| [012](012-blue-green-deployment.md) | 蓝绿部署引入时机评估: 50 并发规模下滚动更新增强 | 2026-02-14 | 已采纳 |
+| [013](013-strands-evaluation.md) | Strands Agents SDK 战略评估: 不迁移，保持观察 | 2026-02-14 | 已采纳 |
 
 ## ADR 模板
 

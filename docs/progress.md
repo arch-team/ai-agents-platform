@@ -6,7 +6,7 @@
 
 - **阶段**: Phase 4 企业成熟 (12-18 月) — **M11 ✅ 已完成**, 准备进入 M12
 - **里程碑**: Phase 4: M10-prep ✅ → M10 ✅ → **M11 ✅** → M12
-- **变更积压**: Phase 2-3: 24/24 ✅ | Phase 4: 15/19 | AgentCore P3: 2/5
+- **变更积压**: Phase 2-3: 24/24 ✅ | Phase 4: 19/19 ✅ | AgentCore P3: 5/5 ✅
 - **关键发现**: 无当前阻断项
 - **Dev 环境**: 后端 ECS (256 CPU/512 MiB) + 前端 S3 + CORS + Bedrock IAM ✅ | ALB `ai-agents-dev-546356512.us-east-1.elb.amazonaws.com`
 - **Prod 环境**: 后端 ECS (512 CPU/1024 MiB/2 任务) + Aurora db.r6g.large (Writer+Reader) ✅ | ALB `ai-agents-prod-1419512933.us-east-1.elb.amazonaws.com`
@@ -15,7 +15,7 @@
 - **后端模块**: 10 个 (9 业务 + shared) | **前端**: 190 源文件, FSD 架构, 12 页面 + 20 测试文件
 - **SDK**: claude-agent-sdk 0.1.35 | bedrock-agentcore 1.3.0
 - **环境策略**: Dev (开发+验证) + Prod (生产)，无 Staging (v1.4 简化)
-- **下一步**: M12 规划拆解 — 全公司推广 + AgentCore Identity/Memory 深度集成
+- **下一步**: M12 #13 遗留清理 (Sonnet+Docker) + #14 质量验收
 
 ## 模块状态
 
@@ -557,6 +557,61 @@
 并行: F Opus 评估 (#12)          依赖 #2 (定价表)，可与 B/D/E 并行
 ```
 
+### M12: 全公司推广 + AgentCore 深度集成 (第 71-76 周)
+
+> 交付物: AgentCore Identity/Memory/A2A 深度集成 + API 文档+用户手册 + 性能压测 + 梯度推广 50+ 用户
+> 验收标准: roadmap §5.6 全部达标; >= 50 活跃用户; >= 40% 非技术自助创建; P95 < 300ms (非 LLM); 积压清零
+> 来源: M12 规划拆解 (2026-02-14)
+
+#### 阶段一：ADR 战略决策 (Week 1) — 3 任务并行
+
+| # | 任务 | 状态 | 依赖 | 参考规范 | 会话 |
+|---|------|:----:|:----:|---------|------|
+| 1 | C-S3-4: A2A 协议采纳评估 → `docs/adr/011-a2a-protocol-evaluation.md` | 已完成 | - | ADR 流程 | 2026-02-14 |
+| 2 | C-S3-5: 蓝绿部署评估 → `docs/adr/012-blue-green-deployment.md` | 已完成 | - | ADR 流程 | 2026-02-14 |
+| 3 | C-S3-6: Strands vs claude-agent-sdk 评估 → `docs/adr/013-strands-evaluation.md` | 已完成 | - | ADR 流程 + ADR-006 | 2026-02-14 |
+
+#### 阶段二：AgentCore 深度集成 (Week 1-4) — 3 工作流
+
+| # | 任务 | 状态 | 依赖 | 参考规范 | 会话 |
+|---|------|:----:|:----:|---------|------|
+| 4 | C-P3-3: Identity OAuth 2.0 Provider + Gateway 入站认证 | 已完成 | - | `agentcore-integration-plan.md` §5 P3-3 | 2026-02-14 |
+| 5 | C-P3-3: Token Vault 第三方 API Key 管理 | 已完成 | #4 | `agentcore-integration-plan.md` §5 P3-3 | 2026-02-14 |
+| 6 | C-P3-1: Memory Strategy 配置 + 异步记忆提取 | 已完成 | - | `agentcore-integration-plan.md` §5 P3-1 | 2026-02-14 |
+| 7 | C-P3-1: Agent 执行自动上下文注入 (长期记忆) | 已完成 | #6 | `agentcore-integration-plan.md` §5 P3-1 | 2026-02-14 |
+| 8 | C-P3-2: A2A 跨 Runtime Agent 通信 | 已完成 | #1 | `agentcore-integration-plan.md` §5 P3-2 | 2026-02-14 |
+
+#### 阶段三：文档 + 压测 (Week 2-5) — 与代码 100% 并行
+
+| # | 任务 | 状态 | 依赖 | 参考规范 | 会话 |
+|---|------|:----:|:----:|---------|------|
+| 9 | C-S4-9: API 文档 + 用户手册 + 快速入门 | 已完成 | - | `rules/api-design.md` | 2026-02-14 |
+| 10 | 性能压测 (locust) + 50 并发验证 | 已完成 | - | roadmap §5.6 P95 < 300ms | 2026-02-14 |
+| 11 | 培训材料 + Onboarding 流程 | 已完成 | #9 | - | 2026-02-14 |
+
+#### 阶段四：梯度推广 (Week 4-6)
+
+| # | 任务 | 状态 | 依赖 | 参考规范 | 会话 |
+|---|------|:----:|:----:|---------|------|
+| 12 | 梯度推广 10→30→50 + 反馈模板 | 已完成 | #9, #10, #11 | roadmap §5.6 | 2026-02-14 |
+
+#### 阶段五：收尾 (Week 5-6)
+
+| # | 任务 | 状态 | 依赖 | 参考规范 | 会话 |
+|---|------|:----:|:----:|---------|------|
+| 13 | 遗留事项清理 (#6 Sonnet + #14 Docker) | 进行中 | - | - | 2026-02-14 |
+| 14 | M12 + Phase 4 质量验收 | 待开始 | #1-#13 | `rules/checklist.md` + roadmap §5.6 | - |
+
+#### M12 并行策略
+
+```
+Session 1:  #1 + #2 + #3 (3 ADR 并行)
+Session 2:  #4 + #6 + #9 + #10 (Identity + Memory + 文档 + 压测，4 路并行)
+Session 3:  #5 + #7 + #8 + #11 (Token Vault + 记忆注入 + A2A + 培训)
+Session 4:  #12 (推广) + #13 (遗留清理)
+Session 5:  #14 (质量验收) + progress.md 更新
+```
+
 ---
 
 ## 变更积压 (Change Backlog)
@@ -682,9 +737,9 @@
 
 | 编号 | 行动项 | 状态 | 依赖 | 影响范围 | 参考规范 | 会话 |
 |------|--------|:----:|:----:|---------|---------|------|
-| C-P3-1 | AgentCore Memory 长期记忆策略 | 待开始 | C-P2-2 | execution 模块 | `agentcore-integration-plan.md` §5 P3-1 | - |
-| C-P3-2 | 多 Agent 编排 (AgentCore Runtime A2A) | 待开始 | C-P1-1, C-P1-2 | execution 模块 | `agentcore-integration-plan.md` §5 P3-2 | - |
-| C-P3-3 | AgentCore Identity 集成 | 待开始 | C-P2-1 | auth + gateway | `agentcore-integration-plan.md` §5 P3-3 | - |
+| C-P3-1 | AgentCore Memory 长期记忆策略 | 已完成 | C-P2-2 | execution 模块 | `agentcore-integration-plan.md` §5 P3-1 | 2026-02-14 |
+| C-P3-2 | 多 Agent 编排 (AgentCore Runtime A2A) | 已完成 | C-P1-1, C-P1-2 | execution 模块 | `agentcore-integration-plan.md` §5 P3-2 | 2026-02-14 |
+| C-P3-3 | AgentCore Identity 集成 | 已完成 | C-P2-1 | auth + gateway | `agentcore-integration-plan.md` §5 P3-3 | 2026-02-14 |
 | C-P3-4 | Agent 容器镜像构建 + ECR 推送 + AgentCore Runtime 部署验证 | 已完成 | C-P1-3, C-P1-4 | Dockerfile.agent + CI/CD + infra | `agentcore-integration-plan.md` §5 P3-4 | 2026-02-13 |
 | C-P3-5 | Platform API → AgentCore Runtime 调用路径切换 | 已完成 | C-P3-4 | execution 模块 (AgentCoreRuntimeAdapter 新增) | `agentcore-integration-plan.md` §5 P3-5 | 2026-02-13 |
 
@@ -693,8 +748,8 @@
 | P0 基础就绪 | 6 | M6 之前 | **6/6 ✅** |
 | P1 核心集成 | 4 | M6 期间 | **4/4 ✅** |
 | P2 平台能力 | 3 | M7-prep | **3/3 ✅** |
-| P3 深度集成 | 5 | M10-prep + M12 | **2/5** |
-| **合计** | **18** | - | **15/18** |
+| P3 深度集成 | 5 | M10-prep + M12 | **5/5 ✅** |
+| **合计** | **18** | - | **18/18 ✅** |
 
 ### Phase 4 变更积压 (来源: Phase 4 季度评审 v1.5)
 
@@ -732,9 +787,9 @@
 
 | 编号 | 变更描述 | 状态 | 依赖 | 来源 | 影响范围 | 参考规范 | 会话 |
 |------|---------|:----:|:----:|------|---------|---------|------|
-| C-S3-4 | A2A 协议采纳评估 (ADR) | 待开始 | M12 | 外部技术变化 | execution + 架构 | ADR 流程 | - |
-| C-S3-5 | 蓝绿部署引入时机评估 | 待开始 | M12 | Phase 3 教训 (v1.4 推迟) | infra/ | - | - |
-| C-S3-6 | Strands Agents vs claude-agent-sdk 战略评估 (ADR) | 待开始 | M12 | v1.6 外部技术扫描 | execution + 架构 | ADR 流程 | - |
+| C-S3-4 | A2A 协议采纳评估 (ADR) | 已完成 | M12 | 外部技术变化 | execution + 架构 | ADR 流程 | 2026-02-14 |
+| C-S3-5 | 蓝绿部署引入时机评估 | 已完成 | M12 | Phase 3 教训 (v1.4 推迟) | infra/ | - | 2026-02-14 |
+| C-S3-6 | Strands Agents vs claude-agent-sdk 战略评估 (ADR) | 已完成 | M12 | v1.6 外部技术扫描 | execution + 架构 | ADR 流程 | 2026-02-14 |
 
 #### S4 — 中期改进（Phase 4 完成前）
 
@@ -742,7 +797,7 @@
 |------|---------|:----:|:----:|------|---------|---------|------|
 | C-S4-7 | Agent 镜像 CI/CD Pipeline 自动化 | 已完成 | P3-4 完成 | 代码审计 | .github/workflows/ | - | 2026-02-13 |
 | C-S4-8 | Dev 环境定时缩减 (ECS Scheduled Scaling, UTC 12:00→0, UTC 00:00→1) | 已完成 | M11 | 成本优化 | infra/ | - | 2026-02-13 |
-| C-S4-9 | 全项目文档更新 (API 文档 + 用户手册) | 待开始 | M12 | 推广需要 | docs/ | - | - |
+| C-S4-9 | 全项目文档更新 (API 文档 + 用户手册) | 已完成 | M12 | 推广需要 | docs/ | - | 2026-02-14 |
 
 #### Phase 4 变更统计
 
@@ -751,9 +806,9 @@
 | S0 阻断修复 | 4 | M10-prep / M10 初 | **4/4 ✅** |
 | S1 安全稳定 | 5 | M10 期间并行 | **5/5 ✅** |
 | S2 技术债务 | 4 | M10-M11 穿插 | **4/4 ✅** |
-| S3 战略决策 | 3 | Phase 4 期间 | 0/3 |
-| S4 中期改进 | 3 | Phase 4 完成前 | **2/3** |
-| **合计** | **19** | - | **15/19** |
+| S3 战略决策 | 3 | Phase 4 期间 | **3/3 ✅** |
+| S4 中期改进 | 3 | Phase 4 完成前 | **3/3 ✅** |
+| **合计** | **19** | - | **19/19 ✅** |
 
 ---
 
@@ -800,8 +855,8 @@
 
 | # | 日期 | 类型 | 完成项 | 关键决策 |
 |---|------|------|-------|---------|
+| 40 | 2026-02-14 | **M12 大幅推进** | **M12 #1-#12 完成 (Agent Teams 并行)**: 3 ADR (011 A2A 有限采纳 + 012 蓝绿暂缓 + 013 Strands 不迁移) + Identity OAuth/Token Vault + Memory Strategy/记忆注入 + A2A 适配器 + API 文档 9 文件 + locust 压测 + Onboarding 4 文件 + 推广计划; 变更积压清零 (Phase 4 19/19 ✅, P3 5/5 ✅) | ADR-011: A2A 有限采纳; ADR-012: 滚动增强; ADR-013: 不迁移 |
 | 39 | 2026-02-14 | **M11 关闭** | **M11 全 13 任务完成**: #7 CDK 增强 (Performance Insights + S3 KnowledgeDocsBucket) + #8 灾备演练方案 (文档+2脚本) + #12 ADR-010 Opus 4.6 评估 + #13 质量验收; 2085+ 测试全通过; M11 关闭, 进入 M12 | ADR-010: 维持 Haiku 默认; 灾备 RPO<5min/RTO<15min |
 | 38 | 2026-02-13 | M11 (D-E 完成) | **M11 #9/#10/#11 完成 (Agent Teams 并行)**: ECS Scheduled Scaling (Dev 成本降 50%) + Agent 预览端点 (execution 模块, §4.4 架构修正) + 前端测试面板/Prompt Editor 增强; SDK 升级 0.1.35+1.3.0; audit 导入修复; 1826 后端 + 167 infra 测试全通过 | preview 归 execution (职责域); AgentNotAvailableError (409) |
 | 37 | 2026-02-13 | M11 (A-C 完成) | **M11 #1-#6 全部完成 (Agent Teams 并行)**: CostExplorerAdapter + model_id 修复 + MessageReceivedEvent 订阅 + 3 新端点 + 22 新测试 (96 总) + 前端 4 组件对齐; 1817 后端测试全通过 | 弃用 BedrockCostCalculator; estimated_cost=0.0; Cost Explorer 真实账单 |
 | 36 | 2026-02-13 | M11 任务拆解 | **M11 13 任务拆解完成**: 深度探索 insights/execution/infra 现状; 发现前后端 API 不匹配; 砍掉 ROI 虚荣指标 + avg_response_time_ms 虚字段; 6 个工作流 A-F 并行策略 | insights 聚焦成本归因和使用量 (砍 ROI); 灾备/体验/评估并行 |
-| 35 | 2026-02-13 | M10 (大幅推进) | **M10 15/17 任务完成 (Agent Teams 并行)**: audit 模块全 10 任务 (65 测试, 5 端点, 23 事件订阅 + 中间件); 前端 5 页面 (Knowledge/Templates/ToolCatalog/Insights/Evaluation, 48+ 文件); 变更修复 6 项 (C-S0-10 bedrock-agentcore 1.2.1 + C-S1-9/10 Ruff/MyPy + C-S2-6/7/8); 1760 后端测试; 全量验收通过 | Opus 4.6 默认不升级 (成本); audit append-only; 3 模型常量 |

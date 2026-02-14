@@ -26,6 +26,16 @@ class TestMemoryAdapterNoOp:
         result = await adapter.recall_memory(agent_id=1, query="查询")
         assert result == []
 
+    async def test_configure_strategy_returns_false(self) -> None:
+        adapter = MemoryAdapter(memory_id="", region="us-east-1")
+        result = await adapter.configure_strategy()
+        assert result is False
+
+    async def test_extract_memories_returns_zero(self) -> None:
+        adapter = MemoryAdapter(memory_id="", region="us-east-1")
+        result = await adapter.extract_memories(agent_id=1, conversation_content="内容")
+        assert result == 0
+
 
 # -- save_memory 正常路径 --
 
@@ -146,3 +156,115 @@ class TestMemoryAdapterRecall:
             maxResults=10,
             filter={"agent_id": "42"},
         )
+
+
+# -- configure_strategy 正常路径 --
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio(loop_scope="class")
+class TestMemoryAdapterConfigureStrategy:
+    """configure_strategy 正常路径测试。"""
+
+    @patch("src.modules.execution.infrastructure.external.memory_adapter.boto3")
+    async def test_configure_strategy_success(self, mock_boto3: MagicMock) -> None:
+        mock_client = MagicMock()
+        mock_client.update_memory.return_value = {}
+        mock_boto3.client.return_value = mock_client
+
+        adapter = MemoryAdapter(memory_id="memory-abc", region="us-east-1")
+        adapter._get_client.cache_clear()
+
+        result = await adapter.configure_strategy(strategies=["summary", "semantic"])
+        assert result is True
+        mock_client.update_memory.assert_called_once_with(
+            memoryId="memory-abc",
+            memoryStrategies=[
+                {"strategyType": "summary"},
+                {"strategyType": "semantic"},
+            ],
+        )
+
+    @patch("src.modules.execution.infrastructure.external.memory_adapter.boto3")
+    async def test_configure_strategy_default_strategies(self, mock_boto3: MagicMock) -> None:
+        mock_client = MagicMock()
+        mock_client.update_memory.return_value = {}
+        mock_boto3.client.return_value = mock_client
+
+        adapter = MemoryAdapter(memory_id="memory-abc", region="us-east-1")
+        adapter._get_client.cache_clear()
+
+        result = await adapter.configure_strategy()
+        assert result is True
+        mock_client.update_memory.assert_called_once_with(
+            memoryId="memory-abc",
+            memoryStrategies=[
+                {"strategyType": "summary"},
+                {"strategyType": "semantic"},
+            ],
+        )
+
+    @patch("src.modules.execution.infrastructure.external.memory_adapter.boto3")
+    async def test_configure_strategy_client_error_returns_false(self, mock_boto3: MagicMock) -> None:
+        mock_client = MagicMock()
+        mock_client.update_memory.side_effect = Exception("配置失败")
+        mock_boto3.client.return_value = mock_client
+
+        adapter = MemoryAdapter(memory_id="memory-abc", region="us-east-1")
+        adapter._get_client.cache_clear()
+
+        result = await adapter.configure_strategy()
+        assert result is False
+
+
+# -- extract_memories 正常路径 --
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio(loop_scope="class")
+class TestMemoryAdapterExtractMemories:
+    """extract_memories 正常路径测试。"""
+
+    @patch("src.modules.execution.infrastructure.external.memory_adapter.boto3")
+    async def test_extract_memories_success(self, mock_boto3: MagicMock) -> None:
+        mock_client = MagicMock()
+        mock_client.create_memory_extraction.return_value = {"extractedCount": 3}
+        mock_boto3.client.return_value = mock_client
+
+        adapter = MemoryAdapter(memory_id="memory-abc", region="us-east-1")
+        adapter._get_client.cache_clear()
+
+        content = "user: hello\nassistant: Hi there"
+        result = await adapter.extract_memories(
+            agent_id=42, conversation_content=content, session_id="conv-1",
+        )
+        assert result == 3
+        mock_client.create_memory_extraction.assert_called_once_with(
+            memoryId="memory-abc",
+            content=content,
+            metadata={"agent_id": "42", "session_id": "conv-1"},
+        )
+
+    @patch("src.modules.execution.infrastructure.external.memory_adapter.boto3")
+    async def test_extract_memories_client_error_returns_zero(self, mock_boto3: MagicMock) -> None:
+        mock_client = MagicMock()
+        mock_client.create_memory_extraction.side_effect = Exception("提取失败")
+        mock_boto3.client.return_value = mock_client
+
+        adapter = MemoryAdapter(memory_id="memory-abc", region="us-east-1")
+        adapter._get_client.cache_clear()
+
+        result = await adapter.extract_memories(agent_id=42, conversation_content="内容")
+        assert result == 0
+
+    @patch("src.modules.execution.infrastructure.external.memory_adapter.boto3")
+    async def test_extract_memories_empty_response(self, mock_boto3: MagicMock) -> None:
+        mock_client = MagicMock()
+        mock_client.create_memory_extraction.return_value = {}
+        mock_boto3.client.return_value = mock_client
+
+        adapter = MemoryAdapter(memory_id="memory-abc", region="us-east-1")
+        adapter._get_client.cache_clear()
+
+        result = await adapter.extract_memories(agent_id=42, conversation_content="内容")
+        assert result == 0
