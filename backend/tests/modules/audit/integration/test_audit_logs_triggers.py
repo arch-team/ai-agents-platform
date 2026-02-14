@@ -1,8 +1,8 @@
 """audit_logs 表 append-only 触发器集成测试。
 
 这些测试验证数据库层的 append-only 约束（MySQL 触发器）。
-由于 SQLite 不支持 SIGNAL 语法，测试标记为 integration，
-仅在 MySQL 集成测试环境中运行。
+由于 SQLite 不支持 SIGNAL 语法，测试标记为 mysql，
+仅在 --mysql 选项启用时运行。
 """
 
 from datetime import UTC, datetime
@@ -14,18 +14,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.shared.infrastructure.database import get_session_factory
 
 
-def _is_mysql(session: AsyncSession) -> bool:
-    """检查当前数据库是否为 MySQL。"""
-    dialect = session.bind.dialect.name if session.bind else ""  # type: ignore[union-attr]
-    return dialect == "mysql"
-
-
 @pytest.fixture
-async def db_session() -> AsyncSession:  # type: ignore[misc]
+async def db_session():  # type: ignore[misc]
     """获取异步数据库会话。"""
     factory = get_session_factory()
     async with factory() as session:
-        yield session  # type: ignore[misc]
+        yield session
         await session.rollback()
 
 
@@ -59,24 +53,20 @@ async def _insert_audit_log(session: AsyncSession) -> int:
     return result.lastrowid  # type: ignore[return-value]
 
 
+@pytest.mark.mysql
 @pytest.mark.integration
+@pytest.mark.asyncio
 class TestAuditLogsAppendOnlyTriggers:
     """验证 audit_logs 表的 append-only 数据库触发器。"""
 
     async def test_insert_succeeds(self, db_session: AsyncSession) -> None:
         """INSERT 操作应正常执行。"""
-        if not _is_mysql(db_session):
-            pytest.skip("触发器测试仅在 MySQL 环境中运行")
-
         row_id = await _insert_audit_log(db_session)
         assert row_id is not None
         assert row_id > 0
 
     async def test_update_blocked_by_trigger(self, db_session: AsyncSession) -> None:
         """UPDATE 操作应被触发器拒绝。"""
-        if not _is_mysql(db_session):
-            pytest.skip("触发器测试仅在 MySQL 环境中运行")
-
         row_id = await _insert_audit_log(db_session)
 
         with pytest.raises(Exception, match="append-only.*UPDATE not allowed"):
@@ -87,9 +77,6 @@ class TestAuditLogsAppendOnlyTriggers:
 
     async def test_delete_blocked_by_trigger(self, db_session: AsyncSession) -> None:
         """DELETE 操作应被触发器拒绝。"""
-        if not _is_mysql(db_session):
-            pytest.skip("触发器测试仅在 MySQL 环境中运行")
-
         row_id = await _insert_audit_log(db_session)
 
         with pytest.raises(Exception, match="append-only.*DELETE not allowed"):

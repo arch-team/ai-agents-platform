@@ -29,6 +29,7 @@ from src.modules.execution.application.interfaces.llm_client import (
     LLMMessage,
     LLMStreamChunk,
 )
+from src.modules.execution.application.interfaces.memory_service import IMemoryService
 from src.modules.execution.domain.entities.conversation import Conversation
 from src.modules.execution.domain.entities.message import Message
 from src.modules.execution.domain.events import (
@@ -58,12 +59,6 @@ from src.shared.domain.event_bus import event_bus
 from src.shared.domain.interfaces.agent_querier import ActiveAgentInfo, IAgentQuerier
 from src.shared.domain.interfaces.knowledge_querier import IKnowledgeQuerier
 from src.shared.domain.interfaces.tool_querier import ApprovedToolInfo, IToolQuerier
-
-# 长期记忆接口 (可选依赖)
-try:
-    from src.modules.execution.application.interfaces import MemoryItem
-except ImportError:
-    MemoryItem = None  # type: ignore[assignment, misc]
 
 
 @dataclass
@@ -104,7 +99,7 @@ class ExecutionService:
         context_window: ContextWindowConfig | None = None,
         stream_session_commit: AsyncCallback | None = None,
         stream_session_close: AsyncCallback | None = None,
-        memory_adapter: Any | None = None,
+        memory_adapter: IMemoryService | None = None,
     ) -> None:
         self._conversation_repo = conversation_repo
         self._message_repo = message_repo

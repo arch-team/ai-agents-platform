@@ -9,7 +9,6 @@ Agent 消息传递。遵循 ADR-011 "有限采纳" 决策。
 """
 
 import asyncio
-from collections.abc import AsyncIterator
 from dataclasses import dataclass
 from functools import lru_cache
 from typing import Any
