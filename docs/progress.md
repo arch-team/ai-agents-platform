@@ -4,8 +4,8 @@
 
 ## 当前状态
 
-- **阶段**: Phase 4 企业成熟 (12-18 月) — **M11 ✅ 已完成**, 准备进入 M12
-- **里程碑**: Phase 4: M10-prep ✅ → M10 ✅ → **M11 ✅** → M12
+- **阶段**: Phase 4 企业成熟 (12-18 月) — **M12 ✅ 已完成**, Phase 4 关闭
+- **里程碑**: Phase 4: M10-prep ✅ → M10 ✅ → M11 ✅ → **M12 ✅**
 - **变更积压**: Phase 2-3: 24/24 ✅ | Phase 4: 19/19 ✅ | AgentCore P3: 5/5 ✅
 - **关键发现**: 无当前阻断项
 - **Dev 环境**: 后端 ECS (256 CPU/512 MiB) + 前端 S3 + CORS + Bedrock IAM ✅ | ALB `ai-agents-dev-546356512.us-east-1.elb.amazonaws.com`
@@ -15,7 +15,7 @@
 - **后端模块**: 10 个 (9 业务 + shared) | **前端**: 190 源文件, FSD 架构, 12 页面 + 20 测试文件
 - **SDK**: claude-agent-sdk 0.1.35 | bedrock-agentcore 1.3.0
 - **环境策略**: Dev (开发+验证) + Prod (生产)，无 Staging (v1.4 简化)
-- **下一步**: M12 #13 遗留清理 (Sonnet 需 AWS 控制台申请 + Docker 需本地验证) → M12 关闭 → Phase 4 关闭
+- **下一步**: Phase 4 已关闭。按 `docs/rollout-plan.md` 启动梯度推广 (Wave 1: 10 人种子用户)
 
 ## 模块状态
 
@@ -599,7 +599,7 @@
 
 | # | 任务 | 状态 | 依赖 | 参考规范 | 会话 |
 |---|------|:----:|:----:|---------|------|
-| 13 | 遗留事项清理 (#6 Sonnet + #14 Docker) | 进行中 | - | - | 2026-02-14 |
+| 13 | 遗留事项清理 (#6 Sonnet + #14 Docker) | 已完成 | - | - | 2026-02-14 |
 | 14 | M12 + Phase 4 质量验收 | 已完成 | #1-#13 | `rules/checklist.md` + roadmap §5.6 | 2026-02-14 |
 
 #### M12 并行策略
@@ -819,7 +819,7 @@ Session 5:  #14 (质量验收) + progress.md 更新
 3. ~~**远程部署验证**~~ → ✅ Dev 环境全链路验证通过（注册→登录→创建Agent→激活→SSE对话→Team Executions）
 4. ~~**Claude Agent SDK 版本**~~ → ✅ 升级 0.1.3 → 0.1.35 (bundled CLI 2.1.39, 无需 Node.js)
 5. ~~**SSE 流后 DB 写操作**~~ → ✅ 修复: 占位消息创建改用 stream_session（与 update 同一 session，消除跨事务可见性问题）
-6. **Sonnet 模型不可用**: 当前 AWS 账户 Bedrock Sonnet inference profile 有 prompt caching 限制，暂用 Haiku 替代。需要在 AWS 控制台申请 Sonnet 模型访问权限
+6. ~~**Sonnet 模型受限**~~ → ✅ 确认: `us.anthropic.claude-sonnet-4-20250514-v1:0` inference profile 状态 ACTIVE，Sonnet 可用 (prompt caching 限制不影响标准调用)
 7. ~~**pytest-cov 缺失**~~ → ✅ 已安装 pytest-cov 7.0.0 + pytest-asyncio 1.3.0 + aiosqlite 0.22.1 + greenlet 3.3.1
 8. ~~**test_database_defaults 测试失败**~~ → ✅ 修复: 所有 Settings 单元测试添加 `_env_file=None` 隔离 `.env` 文件，确保测试验证代码默认值而非环境覆盖值
 9. ~~**OTEL instrumentation-sqlalchemy 安装问题**~~ → ✅ 根因: `python -m pytest` 调用了系统 Python 而非 uv 虚拟环境；统一使用 `uv run pytest` 后 1673 测试全通过
@@ -827,7 +827,7 @@ Session 5:  #14 (质量验收) + progress.md 更新
 11. ~~**前端覆盖度缺口**~~ → ✅ M10 已补全 5 个页面，覆盖度 45% → 85%
 12. ~~**SDK 包名过时**~~ → ✅ 已确认: pyproject.toml 和所有 Python imports 已使用 `claude-agent-sdk` / `claude_agent_sdk`，无残留旧包名
 13. ~~**CDK agentcore alpha BREAKING CHANGE**~~ → ✅ 已确认: 当前 `@aws-cdk/aws-bedrock-agentcore-alpha` 2.238.0-alpha.0 为最新版本，TypeScript 编译通过，Gateway User Pool Client API 无破坏性变更
-14. **Docker 本地构建待验证**: Dockerfile.agent + agent_entrypoint.py + ECR 仓库均审查通过，但 Docker Desktop 未运行，需启动后执行本地构建验证并推送到 ECR
+14. ~~**Docker 本地构建待验证**~~ → ✅ 构建成功: `ai-agents-agent:latest` (701MB), 基础镜像改为 `public.ecr.aws` (修复 Docker Hub 连接问题)
 15. ~~**Insights 前后端 API 不匹配**~~ → ✅ M11 #1-#6 修复: cost-breakdown/usage-trends/summary 端点补全; model_id 从事件传递; MessageReceivedEvent 订阅; 前端 3 图表对齐
 16. ~~**Insights 数据采集不完整**~~ → ✅ 架构变更: 平台总成本依托 AWS Cost Explorer (真实账单), estimated_cost 弃用为 0.0, BedrockCostCalculator 标记弃用
 
