@@ -22,9 +22,7 @@ const TOOL_TYPE_OPTIONS: Array<{ value: ToolType; label: string; description: st
 const createToolSchema = z.object({
   name: z.string().min(1, '请输入工具名称').max(100, '名称不超过 100 个字符'),
   description: z.string().min(1, '请输入工具描述').max(500, '描述不超过 500 个字符'),
-  tool_type: z.enum(['MCP_SERVER', 'API', 'FUNCTION'] as const, {
-    required_error: '请选择工具类型',
-  }),
+  tool_type: z.enum(['MCP_SERVER', 'API', 'FUNCTION'] as const),
   version: z.string().optional(),
 });
 

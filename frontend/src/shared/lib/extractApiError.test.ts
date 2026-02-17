@@ -1,4 +1,4 @@
-import axios, { AxiosError, AxiosHeaders } from 'axios';
+import { AxiosError, AxiosHeaders } from 'axios';
 import { describe, it, expect } from 'vitest';
 
 import { extractApiError } from './extractApiError';

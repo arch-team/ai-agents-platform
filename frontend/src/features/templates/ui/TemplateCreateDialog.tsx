@@ -17,7 +17,7 @@ const CATEGORY_OPTIONS = Object.entries(CATEGORY_CONFIG) as Array<
 
 const createTemplateSchema = z.object({
   name: z.string().min(1, '名称不能为空').max(100, '名称不能超过 100 个字符'),
-  description: z.string().max(500, '描述不能超过 500 个字符').default(''),
+  description: z.string().max(500, '描述不能超过 500 个字符'),
   category: z.enum([
     'customer_service',
     'data_analysis',
@@ -26,7 +26,7 @@ const createTemplateSchema = z.object({
     'research',
     'automation',
     'other',
-  ] as const, { required_error: '请选择分类' }),
+  ] as const),
   system_prompt: z
     .string()
     .min(1, '系统提示词不能为空')

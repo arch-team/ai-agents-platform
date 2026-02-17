@@ -44,7 +44,7 @@ describe('Header', () => {
     vi.mocked(useAuth).mockReturnValue({
       user: null,
       isAuthenticated: false,
-    } as any);
+    } as unknown as ReturnType<typeof useAuth>);
 
     renderHeader();
     expect(screen.queryByText('登出')).not.toBeInTheDocument();
@@ -54,7 +54,7 @@ describe('Header', () => {
     vi.mocked(useAuth).mockReturnValue({
       user: { id: 1, name: '测试用户', role: 'admin' as const },
       isAuthenticated: true,
-    } as any);
+    } as unknown as ReturnType<typeof useAuth>);
 
     renderHeader();
     expect(screen.getByRole('button', { name: '登出' })).toBeInTheDocument();
@@ -65,7 +65,7 @@ describe('Header', () => {
     vi.mocked(useAuth).mockReturnValue({
       user: { id: 1, name: '测试用户', role: 'admin' as const },
       isAuthenticated: true,
-    } as any);
+    } as unknown as ReturnType<typeof useAuth>);
     vi.mocked(useLogout).mockReturnValue(mockLogout);
 
     const user = userEvent.setup();

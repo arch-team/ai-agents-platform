@@ -10,7 +10,7 @@ import { useCreateKnowledgeBase } from '../api/queries';
 
 const createKnowledgeBaseSchema = z.object({
   name: z.string().min(1, '名称不能为空').max(100, '名称不能超过 100 个字符'),
-  description: z.string().max(500, '描述不能超过 500 个字符').default(''),
+  description: z.string().max(500, '描述不能超过 500 个字符'),
 });
 
 type CreateKnowledgeBaseFormData = z.infer<typeof createKnowledgeBaseSchema>;

@@ -85,10 +85,10 @@ export function CostBreakdownChart({ dateRange }: CostBreakdownChartProps) {
             />
             <YAxis tick={{ fontSize: 12 }} tickFormatter={(v: number) => formatTokens(v)} />
             <Tooltip
-              formatter={(value: number) => [`${value.toLocaleString()} Token`, 'Token 消耗']}
-              labelFormatter={(label: string, payload) => {
+              formatter={(value) => [`${Number(value).toLocaleString()} Token`, 'Token 消耗']}
+              labelFormatter={(_label, payload) => {
                 const item = payload?.[0]?.payload as { fullName?: string } | undefined;
-                return item?.fullName ?? label;
+                return item?.fullName ?? String(_label);
               }}
             />
             <Bar dataKey="tokens" fill="#3b82f6" radius={[4, 4, 0, 0]} />

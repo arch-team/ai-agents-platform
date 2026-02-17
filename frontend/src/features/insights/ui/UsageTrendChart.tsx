@@ -71,17 +71,17 @@ export function UsageTrendChart({ dateRange }: UsageTrendChartProps) {
             <XAxis dataKey="date" tick={{ fontSize: 12 }} />
             <YAxis yAxisId="left" tick={{ fontSize: 12 }} />
             <Tooltip
-              labelFormatter={(_label: string, payload) => {
+              labelFormatter={(_label, payload) => {
                 const item = payload?.[0]?.payload as { fullDate?: string } | undefined;
-                return item?.fullDate ?? _label;
+                return item?.fullDate ?? String(_label);
               }}
-              formatter={(value: number, name: string) => {
+              formatter={(value, name) => {
                 const labels: Record<string, string> = {
                   invocations: '调用次数',
                   tokens: 'Token 消耗',
                   users: '独立用户',
                 };
-                return [value.toLocaleString('zh-CN'), labels[name] ?? name];
+                return [Number(value).toLocaleString('zh-CN'), labels[String(name)] ?? String(name)];
               }}
             />
             <Legend

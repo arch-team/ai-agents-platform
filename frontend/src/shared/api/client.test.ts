@@ -19,9 +19,10 @@ describe('setTokenGetter', () => {
     setTokenGetter(() => 'test-token');
 
     // 通过请求拦截器验证
-    const config = await apiClient.interceptors.request.handlers[0].fulfilled!({
-      headers: apiClient.defaults.headers as any,
-    } as any);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- 访问 axios 内部拦截器 handlers 无公开类型
+    const config = await (apiClient.interceptors.request as any).handlers[0].fulfilled!({
+      headers: { ...apiClient.defaults.headers },
+    });
 
     expect(config.headers.Authorization).toBe('Bearer test-token');
   });
@@ -31,9 +32,10 @@ describe('setTokenGetter', () => {
 
     // 创建全新的 headers 对象，避免前一个测试的污染
     const freshHeaders: Record<string, string> = { 'Content-Type': 'application/json' };
-    const config = await apiClient.interceptors.request.handlers[0].fulfilled!({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- 访问 axios 内部拦截器 handlers 无公开类型
+    const config = await (apiClient.interceptors.request as any).handlers[0].fulfilled!({
       headers: freshHeaders,
-    } as any);
+    });
 
     expect(config.headers.Authorization).toBeUndefined();
   });
