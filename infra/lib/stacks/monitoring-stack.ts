@@ -251,7 +251,14 @@ export class MonitoringStack extends cdk.Stack {
 
   /** CDK Nag 合规规则抑制 */
   private suppressNagRules(hasEncryptionKey: boolean): void {
-    const suppressions: Array<{ id: string; reason: string }> = [];
+    const suppressions: Array<{ id: string; reason: string }> = [
+      // SNS Topic: HTTPS 发布强制策略 — 告警通知为内部 CloudWatch Alarm 使用
+      {
+        id: 'AwsSolutions-SNS3',
+        reason:
+          'Alert topic is for internal CloudWatch alarm notifications only; SSL enforcement for publishing will be added when external subscribers are introduced',
+      },
+    ];
 
     // SNS Topic: 未提供 encryptionKey 时抑制 KMS 加密规则
     if (!hasEncryptionKey) {
@@ -262,15 +269,6 @@ export class MonitoringStack extends cdk.Stack {
       });
     }
 
-    // SNS Topic: HTTPS 发布强制策略 — 告警通知为内部 CloudWatch Alarm 使用
-    suppressions.push({
-      id: 'AwsSolutions-SNS3',
-      reason:
-        'Alert topic is for internal CloudWatch alarm notifications only; SSL enforcement for publishing will be added when external subscribers are introduced',
-    });
-
-    if (suppressions.length > 0) {
-      NagSuppressions.addResourceSuppressions(this.alertTopic, suppressions);
-    }
+    NagSuppressions.addResourceSuppressions(this.alertTopic, suppressions);
   }
 }

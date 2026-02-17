@@ -2,11 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 
 import { apiClient } from '@/shared/api';
 
-export interface DashboardSummary {
-  agents_total: number;
-  conversations_total: number;
-  team_executions_total: number;
-}
+import type { DashboardSummary } from './types';
 
 export const dashboardKeys = {
   all: ['dashboard'] as const,

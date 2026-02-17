@@ -1,8 +1,10 @@
 import * as cdk from 'aws-cdk-lib';
+import * as logs from 'aws-cdk-lib/aws-logs';
 import {
   PROJECT_NAME,
   getRequiredTags,
   getRemovalPolicy,
+  getLogRetention,
   isDev,
   isProd,
 } from '../../lib/config/constants';
@@ -58,6 +60,16 @@ describe('constants', () => {
       ['dev', false],
     ])('环境 "%s" 应返回 %s', (envName, expected) => {
       expect(isProd(envName)).toBe(expected);
+    });
+  });
+
+  describe('getLogRetention', () => {
+    it('Dev 环境应返回 ONE_WEEK', () => {
+      expect(getLogRetention('dev')).toBe(logs.RetentionDays.ONE_WEEK);
+    });
+
+    it('Prod 环境应返回 THREE_MONTHS', () => {
+      expect(getLogRetention('prod')).toBe(logs.RetentionDays.THREE_MONTHS);
     });
   });
 });

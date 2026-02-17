@@ -12,7 +12,6 @@ from src.modules.execution.application.dto.team_execution_dto import (
 )
 from src.modules.execution.application.interfaces.agent_runtime import (
     AgentRequest,
-    AgentResponseChunk,
     IAgentRuntime,
     resolve_stream,
 )
@@ -35,7 +34,7 @@ from src.modules.execution.domain.value_objects.team_execution_status import (
     TeamExecutionStatus,
 )
 from src.shared.application.dtos import PagedResult
-from src.shared.application.ownership import check_ownership
+from src.shared.application.ownership import check_ownership, get_or_raise
 from src.shared.domain.event_bus import event_bus
 from src.shared.domain.exceptions import DomainError
 from src.shared.domain.interfaces.agent_querier import ActiveAgentInfo, IAgentQuerier
@@ -45,6 +44,13 @@ logger = structlog.get_logger(__name__)
 
 _SEMAPHORE_MAX_CONCURRENT = 3  # 最多同时运行的团队执行数量
 _team_execution_semaphore = asyncio.Semaphore(_SEMAPHORE_MAX_CONCURRENT)
+
+# 团队执行终态集合 (stream_logs / cancel 判断用)
+_TERMINAL_STATUSES = frozenset({
+    TeamExecutionStatus.COMPLETED,
+    TeamExecutionStatus.FAILED,
+    TeamExecutionStatus.CANCELLED,
+})
 
 
 class TeamExecutionService:
@@ -169,10 +175,7 @@ class TeamExecutionService:
         execution = await self._get_execution_or_raise(execution_id)
         self._check_ownership(execution, user_id)
 
-        if execution.status not in (
-            TeamExecutionStatus.PENDING,
-            TeamExecutionStatus.RUNNING,
-        ):
+        if execution.status in _TERMINAL_STATUSES:
             raise TeamExecutionNotCancellableError(execution_id)
 
         execution.cancel()
@@ -223,11 +226,7 @@ class TeamExecutionService:
             refreshed = await self._execution_repo.get_by_id(execution_id)
             if refreshed is None:
                 break
-            if refreshed.status in (
-                TeamExecutionStatus.COMPLETED,
-                TeamExecutionStatus.FAILED,
-                TeamExecutionStatus.CANCELLED,
-            ):
+            if refreshed.status in _TERMINAL_STATUSES:
                 # 最后一次读取确保不丢失日志
                 final_logs = await self._log_repo.list_by_execution(
                     execution_id=execution_id,
@@ -333,8 +332,9 @@ class TeamExecutionService:
                     )
 
                     # 带超时的流式执行
+                    stream = await resolve_stream(self._agent_runtime, request)
                     async with asyncio.timeout(self._timeout_seconds):
-                        async for chunk in self._consume_stream(request):
+                        async for chunk in stream:
                             if chunk.content:
                                 content_parts.append(chunk.content)
                                 sequence += 1
@@ -439,13 +439,7 @@ class TeamExecutionService:
 
             # 重试耗尽或不可重试错误 - 标记为 FAILED
             if last_error is not None:
-                if isinstance(last_error, TimeoutError):
-                    error_msg = f"执行超时 (超过 {self._timeout_seconds}s 限制)"
-                elif isinstance(last_error, DomainError):
-                    error_msg = f"Agent SDK 调用失败: {last_error.message}"
-                else:
-                    error_msg = "执行过程中发生内部错误"
-
+                error_msg = self._format_execution_error(last_error)
                 execution = await exec_repo.get_by_id(execution_id)
                 if execution is not None and execution.status == TeamExecutionStatus.RUNNING:
                     execution.fail(error_msg)
@@ -462,22 +456,20 @@ class TeamExecutionService:
                             ),
                         )
 
-    async def _consume_stream(
-        self,
-        request: AgentRequest,
-    ) -> AsyncIterator[AgentResponseChunk]:
-        """消费 agent_runtime 流式响应。"""
-        stream = await resolve_stream(self._agent_runtime, request)
-        async for chunk in stream:
-            yield chunk
-
     # ── 辅助方法 ──
 
+    def _format_execution_error(self, error: Exception) -> str:
+        """根据异常类型生成用户可见的错误消息。"""
+        if isinstance(error, TimeoutError):
+            return f"执行超时 (超过 {self._timeout_seconds}s 限制)"
+        if isinstance(error, DomainError):
+            return f"Agent SDK 调用失败: {error.message}"
+        return "执行过程中发生内部错误"
+
     async def _get_execution_or_raise(self, execution_id: int) -> TeamExecution:
-        execution = await self._execution_repo.get_by_id(execution_id)
-        if execution is None:
-            raise TeamExecutionNotFoundError(execution_id)
-        return execution
+        return await get_or_raise(
+            self._execution_repo, execution_id, TeamExecutionNotFoundError, execution_id,
+        )
 
     @staticmethod
     def _check_ownership(execution: TeamExecution, user_id: int) -> None:

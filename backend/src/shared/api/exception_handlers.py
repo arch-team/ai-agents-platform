@@ -29,7 +29,10 @@ _EXCEPTION_STATUS_MAP: dict[type[DomainError], int] = {
 
 
 def _resolve_status_code(exc: DomainError) -> int:
-    """通过 isinstance 解析 HTTP 状态码，支持子类匹配。"""
+    """解析 HTTP 状态码, 先精确匹配类型再 isinstance 匹配子类。"""
+    exact = _EXCEPTION_STATUS_MAP.get(type(exc))
+    if exact is not None:
+        return exact
     for exc_type, status_code in _EXCEPTION_STATUS_MAP.items():
         if isinstance(exc, exc_type):
             return status_code

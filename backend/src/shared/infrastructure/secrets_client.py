@@ -49,8 +49,8 @@ def _get_secrets_client(region: str) -> Any:  # noqa: ANN401
     return boto3.client("secretsmanager", region_name=region)
 
 
-def fetch_database_credentials(secret_arn: str, region: str) -> DatabaseCredentials:
-    """从 Secrets Manager 获取数据库凭证。
+def _fetch_secret(secret_arn: str, region: str, *, client_label: str, format_label: str) -> dict[str, Any]:
+    """从 Secrets Manager 获取并解析 JSON Secret。
 
     Raises:
         RuntimeError: Secret 不存在或格式不正确时抛出。
@@ -58,7 +58,25 @@ def fetch_database_credentials(secret_arn: str, region: str) -> DatabaseCredenti
     try:
         client = _get_secrets_client(region)
         response = client.get_secret_value(SecretId=secret_arn)
-        secret_dict = json.loads(response["SecretString"])
+        return dict(json.loads(response["SecretString"]))
+    except ClientError as e:
+        msg = f"无法从 Secrets Manager 获取{client_label}: {e}"
+        raise RuntimeError(msg) from e
+    except (KeyError, json.JSONDecodeError) as e:
+        msg = f"{format_label} Secret 格式不正确: {e}"
+        raise RuntimeError(msg) from e
+
+
+def fetch_database_credentials(secret_arn: str, region: str) -> DatabaseCredentials:
+    """从 Secrets Manager 获取数据库凭证。
+
+    Raises:
+        RuntimeError: Secret 不存在或格式不正确时抛出。
+    """
+    try:
+        secret_dict = _fetch_secret(
+            secret_arn, region, client_label="数据库凭证", format_label="数据库",
+        )
         return DatabaseCredentials(
             username=secret_dict["username"],
             password=secret_dict["password"],
@@ -66,10 +84,7 @@ def fetch_database_credentials(secret_arn: str, region: str) -> DatabaseCredenti
             host=secret_dict.get("host", ""),
             port=int(secret_dict.get("port", 3306)),
         )
-    except ClientError as e:
-        msg = f"无法从 Secrets Manager 获取数据库凭证: {e}"
-        raise RuntimeError(msg) from e
-    except (KeyError, json.JSONDecodeError) as e:
+    except KeyError as e:
         msg = f"数据库 Secret 格式不正确: {e}"
         raise RuntimeError(msg) from e
 
@@ -81,13 +96,10 @@ def fetch_jwt_credentials(secret_arn: str, region: str) -> JwtCredentials:
         RuntimeError: Secret 不存在或格式不正确时抛出。
     """
     try:
-        client = _get_secrets_client(region)
-        response = client.get_secret_value(SecretId=secret_arn)
-        secret_dict = json.loads(response["SecretString"])
+        secret_dict = _fetch_secret(
+            secret_arn, region, client_label=" JWT 密钥", format_label="JWT",
+        )
         return JwtCredentials(secret_key=secret_dict["secret_key"])
-    except ClientError as e:
-        msg = f"无法从 Secrets Manager 获取 JWT 密钥: {e}"
-        raise RuntimeError(msg) from e
-    except (KeyError, json.JSONDecodeError) as e:
+    except KeyError as e:
         msg = f"JWT Secret 格式不正确: {e}"
         raise RuntimeError(msg) from e

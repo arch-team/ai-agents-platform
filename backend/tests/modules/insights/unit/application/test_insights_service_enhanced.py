@@ -1,12 +1,11 @@
 """InsightsService 增强方法单元测试 — get_cost_breakdown / get_usage_trends / get_insights_summary。"""
 
 from datetime import UTC, datetime
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock
 
 import pytest
 
 from src.modules.insights.application.dto.insights_dto import InsightsSummaryDTO
-from src.modules.insights.application.interfaces.cost_calculator import ICostCalculator
 from src.modules.insights.application.interfaces.cost_explorer import (
     ICostExplorer,
     PlatformCostSummary,
@@ -29,21 +28,15 @@ def mock_repo() -> AsyncMock:
 
 
 @pytest.fixture
-def mock_calc() -> MagicMock:
-    return MagicMock(spec=ICostCalculator)
-
-
-@pytest.fixture
 def mock_explorer() -> AsyncMock:
     return AsyncMock(spec=ICostExplorer)
 
 
 def _make_service(
     repo: AsyncMock,
-    calc: MagicMock,
     explorer: AsyncMock | None = None,
 ) -> InsightsService:
-    return InsightsService(usage_repo=repo, cost_calculator=calc, cost_explorer=explorer)
+    return InsightsService(usage_repo=repo, cost_explorer=explorer)
 
 
 # ── get_cost_breakdown ──
@@ -54,7 +47,7 @@ class TestGetCostBreakdown:
     """get_cost_breakdown 测试。"""
 
     @pytest.mark.asyncio
-    async def test_returns_agent_token_breakdowns(self, mock_repo: AsyncMock, mock_calc: MagicMock) -> None:
+    async def test_returns_agent_token_breakdowns(self, mock_repo: AsyncMock) -> None:
         """正常返回: 代理 Repository 聚合结果。"""
         # Arrange
         expected = [
@@ -70,7 +63,7 @@ class TestGetCostBreakdown:
             ),
         ]
         mock_repo.get_cost_breakdown_by_agent.return_value = expected
-        service = _make_service(mock_repo, mock_calc)
+        service = _make_service(mock_repo)
 
         start = datetime(2025, 6, 1, tzinfo=UTC)
         end = datetime(2025, 6, 30, tzinfo=UTC)
@@ -83,9 +76,9 @@ class TestGetCostBreakdown:
         mock_repo.get_cost_breakdown_by_agent.assert_called_once_with(start=start, end=end)
 
     @pytest.mark.asyncio
-    async def test_invalid_date_range_raises(self, mock_repo: AsyncMock, mock_calc: MagicMock) -> None:
+    async def test_invalid_date_range_raises(self, mock_repo: AsyncMock) -> None:
         """日期范围无效时抛出 InvalidDateRangeError。"""
-        service = _make_service(mock_repo, mock_calc)
+        service = _make_service(mock_repo)
         start = datetime(2025, 7, 1, tzinfo=UTC)
         end = datetime(2025, 6, 1, tzinfo=UTC)
 
@@ -101,7 +94,7 @@ class TestGetUsageTrends:
     """get_usage_trends 测试。"""
 
     @pytest.mark.asyncio
-    async def test_returns_daily_trends(self, mock_repo: AsyncMock, mock_calc: MagicMock) -> None:
+    async def test_returns_daily_trends(self, mock_repo: AsyncMock) -> None:
         """正常返回: 代理 Repository 日维度聚合结果。"""
         # Arrange
         expected = [
@@ -109,7 +102,7 @@ class TestGetUsageTrends:
             DailyUsageTrend(date="2025-06-02", invocation_count=30, total_tokens=6000, unique_users=3),
         ]
         mock_repo.get_daily_usage_trends.return_value = expected
-        service = _make_service(mock_repo, mock_calc)
+        service = _make_service(mock_repo)
 
         start = datetime(2025, 6, 1, tzinfo=UTC)
         end = datetime(2025, 6, 3, tzinfo=UTC)
@@ -122,9 +115,9 @@ class TestGetUsageTrends:
         mock_repo.get_daily_usage_trends.assert_called_once_with(start=start, end=end)
 
     @pytest.mark.asyncio
-    async def test_invalid_date_range_raises(self, mock_repo: AsyncMock, mock_calc: MagicMock) -> None:
+    async def test_invalid_date_range_raises(self, mock_repo: AsyncMock) -> None:
         """日期范围无效时抛出 InvalidDateRangeError。"""
-        service = _make_service(mock_repo, mock_calc)
+        service = _make_service(mock_repo)
         start = datetime(2025, 7, 1, tzinfo=UTC)
         end = datetime(2025, 6, 1, tzinfo=UTC)
 
@@ -141,7 +134,7 @@ class TestGetInsightsSummary:
 
     @pytest.mark.asyncio
     async def test_returns_summary_with_cost_explorer(
-        self, mock_repo: AsyncMock, mock_calc: MagicMock, mock_explorer: AsyncMock,
+        self, mock_repo: AsyncMock, mock_explorer: AsyncMock,
     ) -> None:
         """正常返回: 含 CostExplorer 真实成本。"""
         # Arrange
@@ -152,7 +145,7 @@ class TestGetInsightsSummary:
         mock_explorer.get_bedrock_cost.return_value = PlatformCostSummary(
             total_cost=45.67, currency="USD", daily_costs=(), start_date="2025-06-01", end_date="2025-06-30",
         )
-        service = _make_service(mock_repo, mock_calc, mock_explorer)
+        service = _make_service(mock_repo, mock_explorer)
 
         start = datetime(2025, 6, 1, tzinfo=UTC)
         end = datetime(2025, 6, 30, tzinfo=UTC)
@@ -170,7 +163,7 @@ class TestGetInsightsSummary:
 
     @pytest.mark.asyncio
     async def test_returns_summary_without_cost_explorer(
-        self, mock_repo: AsyncMock, mock_calc: MagicMock,
+        self, mock_repo: AsyncMock,
     ) -> None:
         """无 CostExplorer 时降级: total_cost 为 0.0。"""
         # Arrange
@@ -178,7 +171,7 @@ class TestGetInsightsSummary:
             total_tokens=10000, total_cost=0.0, conversation_count=5, record_count=20,
         )
         mock_repo.count_distinct_agents.return_value = 2
-        service = _make_service(mock_repo, mock_calc, explorer=None)
+        service = _make_service(mock_repo, explorer=None)
 
         start = datetime(2025, 6, 1, tzinfo=UTC)
         end = datetime(2025, 6, 30, tzinfo=UTC)
@@ -194,10 +187,10 @@ class TestGetInsightsSummary:
 
     @pytest.mark.asyncio
     async def test_invalid_date_range_raises(
-        self, mock_repo: AsyncMock, mock_calc: MagicMock,
+        self, mock_repo: AsyncMock,
     ) -> None:
         """日期范围无效时抛出 InvalidDateRangeError。"""
-        service = _make_service(mock_repo, mock_calc)
+        service = _make_service(mock_repo)
         start = datetime(2025, 7, 1, tzinfo=UTC)
         end = datetime(2025, 6, 1, tzinfo=UTC)
 

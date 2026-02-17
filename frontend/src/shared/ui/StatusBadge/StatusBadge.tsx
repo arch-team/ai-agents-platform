@@ -10,9 +10,11 @@ interface StatusBadgeProps<T extends string> {
   status: T;
   config: Record<T, StatusBadgeConfig>;
   className?: string;
+  /** 标签前的自定义内容（如脉动指示器） */
+  prefix?: React.ReactNode;
 }
 
-export function StatusBadge<T extends string>({ status, config, className }: StatusBadgeProps<T>) {
+export function StatusBadge<T extends string>({ status, config, className, prefix }: StatusBadgeProps<T>) {
   const statusConfig = config[status];
 
   return (
@@ -23,6 +25,7 @@ export function StatusBadge<T extends string>({ status, config, className }: Sta
         className,
       )}
     >
+      {prefix}
       {statusConfig.label}
     </span>
   );

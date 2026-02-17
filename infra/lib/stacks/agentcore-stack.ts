@@ -137,6 +137,11 @@ export class AgentCoreStack extends cdk.Stack {
       this.runtime,
       [
         {
+          id: 'AwsSolutions-IAM4',
+          reason:
+            'AgentCore Runtime L2 Construct internally creates IAM roles with AWS managed policies as best practice for this service',
+        },
+        {
           id: 'AwsSolutions-IAM5',
           reason:
             'Bedrock InvokeModel uses scoped wildcards (foundation-model/*, inference-profile/*); Runtime execution role is auto-created by L2 Construct',
@@ -148,6 +153,11 @@ export class AgentCoreStack extends cdk.Stack {
     NagSuppressions.addResourceSuppressions(
       this.gateway,
       [
+        {
+          id: 'AwsSolutions-IAM4',
+          reason:
+            'AgentCore Gateway L2 Construct internally creates IAM roles with AWS managed policies as best practice for this service',
+        },
         {
           id: 'AwsSolutions-IAM5',
           reason:
@@ -165,30 +175,6 @@ export class AgentCoreStack extends cdk.Stack {
         {
           id: 'AwsSolutions-COG3',
           reason: 'Gateway default Cognito User Pool is for M2M auth; no user interaction involved',
-        },
-      ],
-      true,
-    );
-
-    // AgentCore Runtime 和 Gateway 的 L2 Construct 内部使用 AWS 托管策略
-    NagSuppressions.addResourceSuppressions(
-      this.runtime,
-      [
-        {
-          id: 'AwsSolutions-IAM4',
-          reason:
-            'AgentCore Runtime L2 Construct internally creates IAM roles with AWS managed policies as best practice for this service',
-        },
-      ],
-      true,
-    );
-    NagSuppressions.addResourceSuppressions(
-      this.gateway,
-      [
-        {
-          id: 'AwsSolutions-IAM4',
-          reason:
-            'AgentCore Gateway L2 Construct internally creates IAM roles with AWS managed policies as best practice for this service',
         },
       ],
       true,

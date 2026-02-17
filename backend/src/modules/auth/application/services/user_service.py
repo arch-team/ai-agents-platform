@@ -147,13 +147,7 @@ class UserService:
             user.reset_failed_logins()
             await self._repository.update(user)
 
-        access_token = create_access_token(
-            subject=str(user.id),
-            secret_key=self._jwt_secret_key,
-            algorithm=self._jwt_algorithm,
-            expire_minutes=self._jwt_expire_minutes,
-            extra_claims={"role": user.role.value},
-        )
+        access_token = self._create_access_token_for(user)
 
         # 签发 Refresh Token
         refresh_token_str = ""
@@ -209,18 +203,10 @@ class UserService:
         rt.revoke()
         await self._refresh_token_repository.update(rt)
 
-        new_rt = RefreshToken(
-            user_id=user.id or 0,
-        )
+        new_rt = RefreshToken(user_id=user.id or 0)
         created_rt = await self._refresh_token_repository.create(new_rt)
 
-        access_token = create_access_token(
-            subject=str(user.id),
-            secret_key=self._jwt_secret_key,
-            algorithm=self._jwt_algorithm,
-            expire_minutes=self._jwt_expire_minutes,
-            extra_claims={"role": user.role.value},
-        )
+        access_token = self._create_access_token_for(user)
         logger.info(
             "security_event",
             event_type="token_refreshed",
@@ -259,6 +245,16 @@ class UserService:
         if user is None:
             return None
         return self._to_dto(user)
+
+    def _create_access_token_for(self, user: User) -> str:
+        """为指定用户创建 JWT access token。"""
+        return create_access_token(
+            subject=str(user.id),
+            secret_key=self._jwt_secret_key,
+            algorithm=self._jwt_algorithm,
+            expire_minutes=self._jwt_expire_minutes,
+            extra_claims={"role": user.role.value},
+        )
 
     @staticmethod
     def _to_dto(user: User) -> UserDTO:

@@ -36,12 +36,10 @@ class LoginRequest(BaseModel):
 
 
 class RefreshTokenRequest(BaseModel):
-    """Refresh Token 请求。"""
+    """Refresh Token 请求（登出复用同一结构）。"""
 
     refresh_token: str
 
 
-class LogoutRequest(BaseModel):
-    """登出请求。"""
-
-    refresh_token: str
+# 登出请求与 Refresh Token 请求结构完全一致, 复用同一 Schema
+LogoutRequest = RefreshTokenRequest

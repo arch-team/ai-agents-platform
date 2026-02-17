@@ -12,6 +12,7 @@ from src.modules.execution.application.interfaces.agent_runtime import (
     AgentRequest,
     IAgentRuntime,
 )
+from src.modules.execution.domain.exceptions import AgentNotAvailableError
 from src.presentation.api.providers import get_agent_querier
 from src.shared.domain.interfaces.agent_querier import ActiveAgentInfo, IAgentQuerier
 
@@ -45,8 +46,6 @@ async def preview_agent(
     agent_querier: Annotated[IAgentQuerier, Depends(get_agent_querier)],
 ) -> AgentPreviewResponse:
     """预览 Agent — 单轮测试，不创建 Conversation，不持久化消息。"""
-    from src.modules.execution.domain.exceptions import AgentNotAvailableError
-
     agent_info: ActiveAgentInfo | None = await agent_querier.get_active_agent(agent_id)
     if agent_info is None:
         raise AgentNotAvailableError(agent_id)

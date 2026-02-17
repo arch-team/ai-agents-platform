@@ -1,7 +1,7 @@
 // Team Execution 状态徽章 — 基于共享 StatusBadge 组件
-// 注: running 状态需要脉动动画指示器，因此保留自定义渲染
+// running 状态带脉动动画指示器
 
-import { cn } from '@/shared/lib/cn';
+import { StatusBadge } from '@/shared/ui';
 
 import type { TeamExecutionStatus } from '../api/types';
 
@@ -19,19 +19,16 @@ interface TeamExecStatusBadgeProps {
 }
 
 export function TeamExecStatusBadge({ status, className }: TeamExecStatusBadgeProps) {
-  const config = STATUS_CONFIG[status];
   return (
-    <span
-      className={cn(
-        'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium',
-        config.className,
-        className,
-      )}
-    >
-      {status === 'running' && (
-        <span className="mr-1.5 h-2 w-2 animate-pulse rounded-full bg-blue-500" aria-hidden="true" />
-      )}
-      {config.label}
-    </span>
+    <StatusBadge
+      status={status}
+      config={STATUS_CONFIG}
+      className={className}
+      prefix={
+        status === 'running' ? (
+          <span className="mr-1.5 h-2 w-2 animate-pulse rounded-full bg-blue-500" aria-hidden="true" />
+        ) : undefined
+      }
+    />
   );
 }

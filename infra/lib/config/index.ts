@@ -3,6 +3,7 @@ export {
   PROJECT_NAME,
   getRequiredTags,
   getRemovalPolicy,
+  getLogRetention,
   isDev,
   isProd,
   getCorsAllowedOrigins,

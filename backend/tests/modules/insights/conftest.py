@@ -1,16 +1,14 @@
 """Insights 模块测试配置和 Fixture。"""
 
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock
 
 import pytest
 
-from src.modules.insights.application.interfaces.cost_calculator import ICostCalculator
 from src.modules.insights.application.services.insights_service import InsightsService
 from src.modules.insights.domain.entities.usage_record import UsageRecord
 from src.modules.insights.domain.repositories.usage_record_repository import (
     IUsageRecordRepository,
 )
-from src.modules.insights.domain.value_objects.cost_breakdown import CostBreakdown
 
 
 def make_usage_record(
@@ -45,27 +43,10 @@ def mock_usage_repo() -> AsyncMock:
 
 
 @pytest.fixture
-def mock_cost_calculator() -> MagicMock:
-    """ICostCalculator Mock。"""
-    calc = MagicMock(spec=ICostCalculator)
-    calc.calculate_cost.return_value = CostBreakdown(
-        tokens_input=1000,
-        tokens_output=500,
-        input_cost=0.003,
-        output_cost=0.0075,
-        total_cost=0.0105,
-        model_id="anthropic.claude-sonnet-4-20250514",
-    )
-    return calc
-
-
-@pytest.fixture
 def insights_service(
     mock_usage_repo: AsyncMock,
-    mock_cost_calculator: MagicMock,
 ) -> InsightsService:
     """InsightsService 实例（注入所有 mock 依赖）。"""
     return InsightsService(
         usage_repo=mock_usage_repo,
-        cost_calculator=mock_cost_calculator,
     )

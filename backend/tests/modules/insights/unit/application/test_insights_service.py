@@ -1,7 +1,7 @@
 """InsightsService 应用服务单元测试。"""
 
 from datetime import UTC, datetime
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
@@ -28,9 +28,8 @@ class TestRecordUsage:
         self,
         insights_service: InsightsService,
         mock_usage_repo: AsyncMock,
-        mock_cost_calculator: MagicMock,
     ) -> None:
-        # record_usage 不再调用 calculate_cost, estimated_cost 固定为 0.0
+        # estimated_cost 固定为 0.0 (成本由 Cost Explorer 提供)
         mock_usage_repo.create.return_value = make_usage_record(estimated_cost=0.0)
 
         dto = CreateUsageRecordDTO(
@@ -50,8 +49,6 @@ class TestRecordUsage:
         assert result.id == 1
         assert result.user_id == 10
         assert result.estimated_cost == 0.0
-        # record_usage 不再调用 cost_calculator
-        mock_cost_calculator.calculate_cost.assert_not_called()
         mock_usage_repo.create.assert_called_once()
 
     @pytest.mark.asyncio

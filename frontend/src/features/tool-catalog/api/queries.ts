@@ -1,6 +1,6 @@
 // 工具目录 API 查询 hooks
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, type QueryClient } from '@tanstack/react-query';
 
 import { apiClient } from '@/shared/api';
 
@@ -22,6 +22,12 @@ export const toolKeys = {
   details: () => [...toolKeys.all, 'detail'] as const,
   detail: (id: string) => [...toolKeys.details(), id] as const,
 };
+
+// 刷新列表缓存并更新详情缓存的通用回调
+function invalidateAndUpdateDetail(queryClient: QueryClient, tool: Tool) {
+  queryClient.invalidateQueries({ queryKey: toolKeys.lists() });
+  queryClient.setQueryData(toolKeys.detail(tool.id), tool);
+}
 
 // 查询工具列表
 export function useTools(filters?: ToolFilters) {
@@ -81,10 +87,7 @@ export function useUpdateTool() {
       const { data } = await apiClient.put<Tool>(`/api/v1/tools/${id}`, dto);
       return data;
     },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: toolKeys.lists() });
-      queryClient.setQueryData(toolKeys.detail(data.id), data);
-    },
+    onSuccess: (data) => invalidateAndUpdateDetail(queryClient, data),
   });
 }
 
@@ -110,10 +113,7 @@ export function useSubmitTool() {
       const { data } = await apiClient.post<Tool>(`/api/v1/tools/${id}/submit`);
       return data;
     },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: toolKeys.lists() });
-      queryClient.setQueryData(toolKeys.detail(data.id), data);
-    },
+    onSuccess: (data) => invalidateAndUpdateDetail(queryClient, data),
   });
 }
 
@@ -126,9 +126,8 @@ export function useApproveTool() {
       return data;
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: toolKeys.lists() });
+      invalidateAndUpdateDetail(queryClient, data);
       queryClient.invalidateQueries({ queryKey: toolKeys.approved() });
-      queryClient.setQueryData(toolKeys.detail(data.id), data);
     },
   });
 }
@@ -141,10 +140,7 @@ export function useRejectTool() {
       const { data } = await apiClient.post<Tool>(`/api/v1/tools/${id}/reject`, { reason });
       return data;
     },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: toolKeys.lists() });
-      queryClient.setQueryData(toolKeys.detail(data.id), data);
-    },
+    onSuccess: (data) => invalidateAndUpdateDetail(queryClient, data),
   });
 }
 
@@ -157,9 +153,8 @@ export function useDeprecateTool() {
       return data;
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: toolKeys.lists() });
+      invalidateAndUpdateDetail(queryClient, data);
       queryClient.invalidateQueries({ queryKey: toolKeys.approved() });
-      queryClient.setQueryData(toolKeys.detail(data.id), data);
     },
   });
 }

@@ -192,23 +192,10 @@ class ExecutionService:
         if ctx.created_user_msg.id is None or created_assistant_msg.id is None:
             msg = "消息 ID 不能为空"
             raise ValueError(msg)
-        # 并行发布独立事件
-        await asyncio.gather(
-            event_bus.publish_async(
-                MessageSentEvent(
-                    conversation_id=conversation_id,
-                    message_id=ctx.created_user_msg.id,
-                    user_id=user_id,
-                ),
-            ),
-            event_bus.publish_async(
-                MessageReceivedEvent(
-                    conversation_id=conversation_id,
-                    message_id=created_assistant_msg.id,
-                    token_count=total_tokens,
-                    model_id=ctx.agent_info.model_id,
-                ),
-            ),
+        await self._publish_message_events(
+            conversation_id=conversation_id, user_msg_id=ctx.created_user_msg.id,
+            assistant_msg_id=created_assistant_msg.id, total_tokens=total_tokens,
+            model_id=ctx.agent_info.model_id, user_id=user_id,
         )
 
         return self._to_message_dto(created_assistant_msg)
@@ -246,8 +233,8 @@ class ExecutionService:
             total_input_tokens = 0
             total_output_tokens = 0
 
-            # 根据 runtime_type 路由到对应的流式生成器
-            source = self._generate_agent_stream(ctx) if use_agent else self._generate_llm_stream(ctx)
+            # 根据 runtime_type 路由到对应的流式迭代器 (需 await 协程获取迭代器)
+            source = await self._create_agent_stream(ctx) if use_agent else await self._create_llm_stream(ctx)
             async for chunk in source:
                 if chunk.content:
                     collected_content += chunk.content
@@ -312,22 +299,10 @@ class ExecutionService:
                 await self._stream_session_commit()
 
             # 发布事件 (不依赖 DB session, 独立事件并行发布)
-            await asyncio.gather(
-                event_bus.publish_async(
-                    MessageSentEvent(
-                        conversation_id=conversation_id,
-                        message_id=user_msg.id,
-                        user_id=user_id,
-                    ),
-                ),
-                event_bus.publish_async(
-                    MessageReceivedEvent(
-                        conversation_id=conversation_id,
-                        message_id=assistant_msg.id,
-                        token_count=total_tokens,
-                        model_id=model_id,
-                    ),
-                ),
+            await self._publish_message_events(
+                conversation_id=conversation_id, user_msg_id=user_msg.id,
+                assistant_msg_id=assistant_msg.id, total_tokens=total_tokens,
+                model_id=model_id, user_id=user_id,
             )
         except Exception:
             logger.exception("stream_finalize_failed", conversation_id=conversation_id)
@@ -414,6 +389,24 @@ class ExecutionService:
 
     # ── 内部辅助方法 ──
 
+    @staticmethod
+    async def _publish_message_events(
+        *, conversation_id: int, user_msg_id: int, assistant_msg_id: int,
+        total_tokens: int, model_id: str, user_id: int,
+    ) -> None:
+        """并行发布消息发送和接收事件 (send_message 和 _finalize_stream 共用)。"""
+        await asyncio.gather(
+            event_bus.publish_async(
+                MessageSentEvent(conversation_id=conversation_id, message_id=user_msg_id, user_id=user_id),
+            ),
+            event_bus.publish_async(
+                MessageReceivedEvent(
+                    conversation_id=conversation_id, message_id=assistant_msg_id,
+                    token_count=total_tokens, model_id=model_id,
+                ),
+            ),
+        )
+
     def _should_use_agent_runtime(self, agent_info: ActiveAgentInfo) -> bool:
         """判断是否使用 Agent 运行时路径。"""
         return agent_info.runtime_type == "agent" and self._agent_runtime is not None
@@ -458,20 +451,18 @@ class ExecutionService:
             total_tokens = response.input_tokens + response.output_tokens
             return response.content, total_tokens
 
-    async def _generate_agent_stream(self, ctx: _SendContext) -> AsyncIterator[AgentResponseChunk]:
-        """Agent 路径的流式生成器。"""
+    async def _create_agent_stream(self, ctx: _SendContext) -> AsyncIterator[AgentResponseChunk]:
+        """创建 Agent 路径的流式迭代器。"""
         if self._agent_runtime is None:
             msg = "Agent runtime 未配置"
             raise ValueError(msg)
         tools = await self._get_agent_tools()
         request = self._build_agent_request(ctx, tools)
-        stream = await resolve_stream(self._agent_runtime, request)
-        async for chunk in stream:
-            yield chunk
+        return await resolve_stream(self._agent_runtime, request)
 
-    async def _generate_llm_stream(self, ctx: _SendContext) -> AsyncIterator[LLMStreamChunk]:
-        """LLM 降级路径的流式生成器。"""
-        stream = await self._llm_client.invoke_stream(
+    async def _create_llm_stream(self, ctx: _SendContext) -> AsyncIterator[LLMStreamChunk]:
+        """创建 LLM 降级路径的流式迭代器。"""
+        return await self._llm_client.invoke_stream(
             model_id=ctx.agent_info.model_id,
             messages=ctx.llm_messages,
             system_prompt=ctx.system_prompt,
@@ -480,8 +471,6 @@ class ExecutionService:
             top_p=ctx.agent_info.top_p,
             stop_sequences=ctx.agent_info.stop_sequences,
         )
-        async for chunk in stream:
-            yield chunk
 
     async def _get_agent_tools(self) -> list[AgentTool]:
         """通过 IToolQuerier 获取已审批工具并转换为 AgentTool。"""

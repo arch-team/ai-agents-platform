@@ -224,7 +224,6 @@ def _register_team_execution_event_subscriptions() -> None:
     )
     from src.modules.insights.application.dto.insights_dto import CreateUsageRecordDTO
     from src.modules.insights.application.services.insights_service import InsightsService
-    from src.modules.insights.infrastructure.external.bedrock_cost_calculator import BedrockCostCalculator
     from src.modules.insights.infrastructure.persistence.repositories.usage_record_repository_impl import (
         UsageRecordRepositoryImpl,
     )
@@ -232,7 +231,6 @@ def _register_team_execution_event_subscriptions() -> None:
     from src.shared.infrastructure.database import get_session_factory
 
     session_factory = get_session_factory()
-    cost_calculator = BedrockCostCalculator()
 
     async def _on_team_execution_completed(event: TeamExecutionCompletedEvent) -> None:
         """团队执行完成后记录 Token 消耗到 insights 模块。"""
@@ -248,7 +246,7 @@ def _register_team_execution_event_subscriptions() -> None:
                     return
 
                 repo = UsageRecordRepositoryImpl(session=session)
-                service = InsightsService(usage_repo=repo, cost_calculator=cost_calculator)
+                service = InsightsService(usage_repo=repo)
 
                 dto = CreateUsageRecordDTO(
                     user_id=event.user_id,
@@ -312,7 +310,6 @@ def _register_message_received_event_subscriptions() -> None:
     )
     from src.modules.insights.application.dto.insights_dto import CreateUsageRecordDTO
     from src.modules.insights.application.services.insights_service import InsightsService
-    from src.modules.insights.infrastructure.external.bedrock_cost_calculator import BedrockCostCalculator
     from src.modules.insights.infrastructure.persistence.repositories.usage_record_repository_impl import (
         UsageRecordRepositoryImpl,
     )
@@ -320,7 +317,6 @@ def _register_message_received_event_subscriptions() -> None:
     from src.shared.infrastructure.database import get_session_factory
 
     session_factory = get_session_factory()
-    cost_calculator = BedrockCostCalculator()
 
     async def _on_message_received(event: MessageReceivedEvent) -> None:
         """助手消息接收后记录 Token 消耗到 insights 模块。"""
@@ -336,7 +332,7 @@ def _register_message_received_event_subscriptions() -> None:
                     return
 
                 repo = UsageRecordRepositoryImpl(session=session)
-                service = InsightsService(usage_repo=repo, cost_calculator=cost_calculator)
+                service = InsightsService(usage_repo=repo)
 
                 # MessageReceivedEvent.token_count 未拆分 input/output,
                 # 记为 tokens_input=token_count, tokens_output=0 (总量准确,

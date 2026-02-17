@@ -101,6 +101,10 @@ exports[`Snapshot Tests AgentCoreStack 快照匹配 1`] = `
         "cdk_nag": {
           "rules_to_suppress": [
             {
+              "id": "AwsSolutions-IAM4",
+              "reason": "AgentCore Gateway L2 Construct internally creates IAM roles with AWS managed policies as best practice for this service",
+            },
+            {
               "id": "AwsSolutions-IAM5",
               "reason": "Gateway service role is auto-created by L2 Construct; wildcard permissions are required by AgentCore service",
             },
@@ -115,10 +119,6 @@ exports[`Snapshot Tests AgentCoreStack 快照匹配 1`] = `
             {
               "id": "AwsSolutions-COG3",
               "reason": "Gateway default Cognito User Pool is for M2M auth; no user interaction involved",
-            },
-            {
-              "id": "AwsSolutions-IAM4",
-              "reason": "AgentCore Gateway L2 Construct internally creates IAM roles with AWS managed policies as best practice for this service",
             },
           ],
         },
@@ -172,6 +172,10 @@ exports[`Snapshot Tests AgentCoreStack 快照匹配 1`] = `
         "cdk_nag": {
           "rules_to_suppress": [
             {
+              "id": "AwsSolutions-IAM4",
+              "reason": "AgentCore Gateway L2 Construct internally creates IAM roles with AWS managed policies as best practice for this service",
+            },
+            {
               "id": "AwsSolutions-IAM5",
               "reason": "Gateway service role is auto-created by L2 Construct; wildcard permissions are required by AgentCore service",
             },
@@ -186,10 +190,6 @@ exports[`Snapshot Tests AgentCoreStack 快照匹配 1`] = `
             {
               "id": "AwsSolutions-COG3",
               "reason": "Gateway default Cognito User Pool is for M2M auth; no user interaction involved",
-            },
-            {
-              "id": "AwsSolutions-IAM4",
-              "reason": "AgentCore Gateway L2 Construct internally creates IAM roles with AWS managed policies as best practice for this service",
             },
           ],
         },
@@ -243,6 +243,10 @@ exports[`Snapshot Tests AgentCoreStack 快照匹配 1`] = `
         "cdk_nag": {
           "rules_to_suppress": [
             {
+              "id": "AwsSolutions-IAM4",
+              "reason": "AgentCore Gateway L2 Construct internally creates IAM roles with AWS managed policies as best practice for this service",
+            },
+            {
               "id": "AwsSolutions-IAM5",
               "reason": "Gateway service role is auto-created by L2 Construct; wildcard permissions are required by AgentCore service",
             },
@@ -257,10 +261,6 @@ exports[`Snapshot Tests AgentCoreStack 快照匹配 1`] = `
             {
               "id": "AwsSolutions-COG3",
               "reason": "Gateway default Cognito User Pool is for M2M auth; no user interaction involved",
-            },
-            {
-              "id": "AwsSolutions-IAM4",
-              "reason": "AgentCore Gateway L2 Construct internally creates IAM roles with AWS managed policies as best practice for this service",
             },
           ],
         },
@@ -302,6 +302,10 @@ exports[`Snapshot Tests AgentCoreStack 快照匹配 1`] = `
         "cdk_nag": {
           "rules_to_suppress": [
             {
+              "id": "AwsSolutions-IAM4",
+              "reason": "AgentCore Gateway L2 Construct internally creates IAM roles with AWS managed policies as best practice for this service",
+            },
+            {
               "id": "AwsSolutions-IAM5",
               "reason": "Gateway service role is auto-created by L2 Construct; wildcard permissions are required by AgentCore service",
             },
@@ -316,10 +320,6 @@ exports[`Snapshot Tests AgentCoreStack 快照匹配 1`] = `
             {
               "id": "AwsSolutions-COG3",
               "reason": "Gateway default Cognito User Pool is for M2M auth; no user interaction involved",
-            },
-            {
-              "id": "AwsSolutions-IAM4",
-              "reason": "AgentCore Gateway L2 Construct internally creates IAM roles with AWS managed policies as best practice for this service",
             },
           ],
         },
@@ -368,6 +368,10 @@ exports[`Snapshot Tests AgentCoreStack 快照匹配 1`] = `
         "cdk_nag": {
           "rules_to_suppress": [
             {
+              "id": "AwsSolutions-IAM4",
+              "reason": "AgentCore Gateway L2 Construct internally creates IAM roles with AWS managed policies as best practice for this service",
+            },
+            {
               "id": "AwsSolutions-IAM5",
               "reason": "Gateway service role is auto-created by L2 Construct; wildcard permissions are required by AgentCore service",
             },
@@ -382,10 +386,6 @@ exports[`Snapshot Tests AgentCoreStack 快照匹配 1`] = `
             {
               "id": "AwsSolutions-COG3",
               "reason": "Gateway default Cognito User Pool is for M2M auth; no user interaction involved",
-            },
-            {
-              "id": "AwsSolutions-IAM4",
-              "reason": "AgentCore Gateway L2 Construct internally creates IAM roles with AWS managed policies as best practice for this service",
             },
           ],
         },
@@ -403,6 +403,10 @@ exports[`Snapshot Tests AgentCoreStack 快照匹配 1`] = `
         "cdk_nag": {
           "rules_to_suppress": [
             {
+              "id": "AwsSolutions-IAM4",
+              "reason": "AgentCore Gateway L2 Construct internally creates IAM roles with AWS managed policies as best practice for this service",
+            },
+            {
               "id": "AwsSolutions-IAM5",
               "reason": "Gateway service role is auto-created by L2 Construct; wildcard permissions are required by AgentCore service",
             },
@@ -417,10 +421,6 @@ exports[`Snapshot Tests AgentCoreStack 快照匹配 1`] = `
             {
               "id": "AwsSolutions-COG3",
               "reason": "Gateway default Cognito User Pool is for M2M auth; no user interaction involved",
-            },
-            {
-              "id": "AwsSolutions-IAM4",
-              "reason": "AgentCore Gateway L2 Construct internally creates IAM roles with AWS managed policies as best practice for this service",
             },
           ],
         },
@@ -453,12 +453,12 @@ exports[`Snapshot Tests AgentCoreStack 快照匹配 1`] = `
         "cdk_nag": {
           "rules_to_suppress": [
             {
-              "id": "AwsSolutions-IAM5",
-              "reason": "Bedrock InvokeModel uses scoped wildcards (foundation-model/*, inference-profile/*); Runtime execution role is auto-created by L2 Construct",
-            },
-            {
               "id": "AwsSolutions-IAM4",
               "reason": "AgentCore Runtime L2 Construct internally creates IAM roles with AWS managed policies as best practice for this service",
+            },
+            {
+              "id": "AwsSolutions-IAM5",
+              "reason": "Bedrock InvokeModel uses scoped wildcards (foundation-model/*, inference-profile/*); Runtime execution role is auto-created by L2 Construct",
             },
           ],
         },
@@ -560,12 +560,12 @@ exports[`Snapshot Tests AgentCoreStack 快照匹配 1`] = `
         "cdk_nag": {
           "rules_to_suppress": [
             {
-              "id": "AwsSolutions-IAM5",
-              "reason": "Bedrock InvokeModel uses scoped wildcards (foundation-model/*, inference-profile/*); Runtime execution role is auto-created by L2 Construct",
-            },
-            {
               "id": "AwsSolutions-IAM4",
               "reason": "AgentCore Runtime L2 Construct internally creates IAM roles with AWS managed policies as best practice for this service",
+            },
+            {
+              "id": "AwsSolutions-IAM5",
+              "reason": "Bedrock InvokeModel uses scoped wildcards (foundation-model/*, inference-profile/*); Runtime execution role is auto-created by L2 Construct",
             },
           ],
         },
@@ -593,12 +593,12 @@ exports[`Snapshot Tests AgentCoreStack 快照匹配 1`] = `
         "cdk_nag": {
           "rules_to_suppress": [
             {
-              "id": "AwsSolutions-IAM5",
-              "reason": "Bedrock InvokeModel uses scoped wildcards (foundation-model/*, inference-profile/*); Runtime execution role is auto-created by L2 Construct",
-            },
-            {
               "id": "AwsSolutions-IAM4",
               "reason": "AgentCore Runtime L2 Construct internally creates IAM roles with AWS managed policies as best practice for this service",
+            },
+            {
+              "id": "AwsSolutions-IAM5",
+              "reason": "Bedrock InvokeModel uses scoped wildcards (foundation-model/*, inference-profile/*); Runtime execution role is auto-created by L2 Construct",
             },
           ],
         },
@@ -1194,7 +1194,7 @@ exports[`Snapshot Tests ComputeStack 快照匹配 1`] = `
               "Timeout": 5,
             },
             "Image": {
-              "Fn::Sub": "000000000000.dkr.ecr.us-east-1.\${AWS::URLSuffix}/cdk-hnb659fds-container-assets-000000000000-us-east-1:1b9020127a77eeb9678bddf789d9a15f94ebdc3a7e062876130ddf9b0fdee507",
+              "Fn::Sub": "000000000000.dkr.ecr.us-east-1.\${AWS::URLSuffix}/cdk-hnb659fds-container-assets-000000000000-us-east-1:ff02bd6f2881a7f470e552862eec982dd7e252877ea66b0ae01116342c57929c",
             },
             "LogConfiguration": {
               "LogDriver": "awslogs",

@@ -9,9 +9,6 @@ from src.modules.insights.application.dto.insights_dto import (
     UsageRecordDTO,
     UsageSummaryDTO,
 )
-from src.modules.insights.application.interfaces.cost_calculator import (
-    ICostCalculator,
-)
 from src.modules.insights.application.interfaces.cost_explorer import (
     ICostExplorer,
 )
@@ -40,11 +37,9 @@ class InsightsService:
     def __init__(
         self,
         usage_repo: IUsageRecordRepository,
-        cost_calculator: ICostCalculator,
         cost_explorer: ICostExplorer | None = None,
     ) -> None:
         self._usage_repo = usage_repo
-        self._cost_calculator = cost_calculator
         self._cost_explorer = cost_explorer
 
     async def record_usage(self, dto: CreateUsageRecordDTO) -> UsageRecordDTO:

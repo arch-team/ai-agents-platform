@@ -1,7 +1,7 @@
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as logs from 'aws-cdk-lib/aws-logs';
 import { Construct } from 'constructs';
-import { getRemovalPolicy, isProd, type EnvironmentName } from '../../config';
+import { getLogRetention, getRemovalPolicy, type EnvironmentName } from '../../config';
 
 export interface VpcConstructProps {
   /** VPC CIDR 地址块 */
@@ -52,7 +52,7 @@ export class VpcConstruct extends Construct {
     if (enableFlowLog) {
       const flowLogGroup = new logs.LogGroup(this, 'FlowLogGroup', {
         logGroupName: `/vpc/ai-agents-platform/${envName}/flow-logs`,
-        retention: isProd(envName) ? logs.RetentionDays.THREE_MONTHS : logs.RetentionDays.ONE_WEEK,
+        retention: getLogRetention(envName),
         removalPolicy: getRemovalPolicy(envName),
       });
 

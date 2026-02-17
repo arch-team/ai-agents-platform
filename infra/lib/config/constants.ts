@@ -1,4 +1,5 @@
 import * as cdk from 'aws-cdk-lib';
+import * as logs from 'aws-cdk-lib/aws-logs';
 import type { EnvironmentName } from './types';
 
 /** 项目名称 */
@@ -53,6 +54,14 @@ export function getCorsAllowedOrigins(envName: EnvironmentName): string[] {
     'http://localhost:3000',
     'http://ai-agents-platform-frontend-dev-897473.s3-website-us-east-1.amazonaws.com',
   ];
+}
+
+/**
+ * 获取 CloudWatch Logs 保留天数。
+ * @remarks Prod: 3 个月; Dev: 1 周 (VPC Flow Log、ECS 日志等统一使用)
+ */
+export function getLogRetention(envName: EnvironmentName): logs.RetentionDays {
+  return isProd(envName) ? logs.RetentionDays.THREE_MONTHS : logs.RetentionDays.ONE_WEEK;
 }
 
 /** Bedrock 调用模型所需的 IAM actions (ComputeStack + AgentCoreStack 共享) */
