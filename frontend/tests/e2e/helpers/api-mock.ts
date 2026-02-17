@@ -7,6 +7,10 @@ import {
   DASHBOARD_STATS,
   MOCK_CONVERSATIONS,
   MOCK_TEAM_EXECUTIONS,
+  MOCK_KNOWLEDGE_BASES,
+  MOCK_TEMPLATES,
+  MOCK_TOOLS,
+  MOCK_TEST_SUITES,
   paginatedResponse,
 } from '../fixtures/mock-data';
 
@@ -89,7 +93,7 @@ export async function mockAgents(page: Page) {
  * - GET /api/v1/stats/summary → 返回统计摘要
  */
 export async function mockDashboard(page: Page) {
-  await page.route(`${API_BASE}/insights/summary`, async (route) => {
+  await page.route(/\/api\/v1\/insights\/summary(\?.*)?$/, async (route) => {
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
@@ -97,7 +101,7 @@ export async function mockDashboard(page: Page) {
     });
   });
 
-  await page.route(`${API_BASE}/stats/summary`, async (route) => {
+  await page.route(/\/api\/v1\/stats\/summary(\?.*)?$/, async (route) => {
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
@@ -105,7 +109,7 @@ export async function mockDashboard(page: Page) {
     });
   });
 
-  await page.route(`${API_BASE}/insights/cost-breakdown*`, async (route) => {
+  await page.route(/\/api\/v1\/insights\/cost-breakdown(\?.*)?$/, async (route) => {
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
@@ -126,7 +130,7 @@ export async function mockDashboard(page: Page) {
     });
   });
 
-  await page.route(`${API_BASE}/insights/usage-trends*`, async (route) => {
+  await page.route(/\/api\/v1\/insights\/usage-trends(\?.*)?$/, async (route) => {
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
@@ -145,7 +149,7 @@ export async function mockDashboard(page: Page) {
  * Mock 对话相关 API
  */
 export async function mockConversations(page: Page) {
-  await page.route(`${API_BASE}/conversations`, async (route) => {
+  await page.route(/\/api\/v1\/conversations(\?.*)?$/, async (route) => {
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
@@ -158,7 +162,7 @@ export async function mockConversations(page: Page) {
  * Mock 团队执行相关 API
  */
 export async function mockTeamExecutions(page: Page) {
-  await page.route(`${API_BASE}/team-executions`, async (route) => {
+  await page.route(/\/api\/v1\/team-executions(\?.*)?$/, async (route) => {
     if (route.request().method() === 'GET') {
       await route.fulfill({
         status: 200,
@@ -166,6 +170,100 @@ export async function mockTeamExecutions(page: Page) {
         body: JSON.stringify(paginatedResponse(MOCK_TEAM_EXECUTIONS, 1, 20)),
       });
     }
+  });
+}
+
+/**
+ * Mock 知识库相关 API
+ */
+export async function mockKnowledgeBases(page: Page) {
+  await page.route(/\/api\/v1\/knowledge-bases(\?.*)?$/, async (route) => {
+    if (route.request().method() === 'GET') {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(paginatedResponse(MOCK_KNOWLEDGE_BASES)),
+      });
+    } else if (route.request().method() === 'POST') {
+      const body = route.request().postDataJSON();
+      await route.fulfill({
+        status: 201,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          id: 3,
+          ...body,
+          status: 'CREATING',
+          document_count: 0,
+          owner_id: 1,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        }),
+      });
+    }
+  });
+
+  await page.route(/\/api\/v1\/knowledge-bases\/\d+$/, async (route) => {
+    if (route.request().method() === 'GET') {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(MOCK_KNOWLEDGE_BASES[0]),
+      });
+    }
+  });
+}
+
+/**
+ * Mock 模板相关 API
+ */
+export async function mockTemplates(page: Page) {
+  await page.route(/\/api\/v1\/templates(\?.*)?$/, async (route) => {
+    if (route.request().method() === 'GET') {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(paginatedResponse(MOCK_TEMPLATES)),
+      });
+    }
+  });
+}
+
+/**
+ * Mock 工具相关 API
+ */
+export async function mockTools(page: Page) {
+  await page.route(/\/api\/v1\/tools(\?.*)?$/, async (route) => {
+    if (route.request().method() === 'GET') {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(paginatedResponse(MOCK_TOOLS)),
+      });
+    }
+  });
+}
+
+/**
+ * Mock 评估相关 API
+ */
+export async function mockEvaluation(page: Page) {
+  await page.route(/\/api\/v1\/test-suites(\?.*)?$/, async (route) => {
+    if (route.request().method() === 'GET') {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(paginatedResponse(MOCK_TEST_SUITES)),
+      });
+    }
+  });
+
+  // 评估运行列表
+  await page.route(/\/api\/v1\/evaluation-runs(\?.*)?$/, async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(paginatedResponse([])),
+    });
   });
 }
 
@@ -178,4 +276,8 @@ export async function mockAll(page: Page) {
   await mockDashboard(page);
   await mockConversations(page);
   await mockTeamExecutions(page);
+  await mockKnowledgeBases(page);
+  await mockTemplates(page);
+  await mockTools(page);
+  await mockEvaluation(page);
 }
