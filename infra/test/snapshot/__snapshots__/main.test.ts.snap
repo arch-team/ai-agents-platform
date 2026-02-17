@@ -1194,7 +1194,7 @@ exports[`Snapshot Tests ComputeStack 快照匹配 1`] = `
               "Timeout": 5,
             },
             "Image": {
-              "Fn::Sub": "000000000000.dkr.ecr.us-east-1.\${AWS::URLSuffix}/cdk-hnb659fds-container-assets-000000000000-us-east-1:83e007124cf97a8de81b920824283a8eb1d9e8b6f350f5a46b36c431192cf760",
+              "Fn::Sub": "000000000000.dkr.ecr.us-east-1.\${AWS::URLSuffix}/cdk-hnb659fds-container-assets-000000000000-us-east-1:1b9020127a77eeb9678bddf789d9a15f94ebdc3a7e062876130ddf9b0fdee507",
             },
             "LogConfiguration": {
               "LogDriver": "awslogs",
@@ -2092,6 +2092,454 @@ exports[`Snapshot Tests DatabaseStack 快照匹配 1`] = `
       },
       "Type": "AWS::SecretsManager::Secret",
       "UpdateReplacePolicy": "Delete",
+    },
+  },
+  "Rules": {
+    "CheckBootstrapVersion": {
+      "Assertions": [
+        {
+          "Assert": {
+            "Fn::Not": [
+              {
+                "Fn::Contains": [
+                  [
+                    "1",
+                    "2",
+                    "3",
+                    "4",
+                    "5",
+                  ],
+                  {
+                    "Ref": "BootstrapVersion",
+                  },
+                ],
+              },
+            ],
+          },
+          "AssertDescription": "CDK bootstrap stack version 6 required. Please run 'cdk bootstrap' with a recent version of the CDK CLI.",
+        },
+      ],
+    },
+  },
+}
+`;
+
+exports[`Snapshot Tests MonitoringStack 快照匹配 1`] = `
+{
+  "Parameters": {
+    "BootstrapVersion": {
+      "Default": "/cdk-bootstrap/hnb659fds/version",
+      "Description": "Version of the CDK Bootstrap resources in this environment, automatically retrieved from SSM Parameter Store. [cdk:skip]",
+      "Type": "AWS::SSM::Parameter::Value<String>",
+    },
+  },
+  "Resources": {
+    "Alb5xxAlarm99BFF946": {
+      "Properties": {
+        "AlarmActions": [
+          {
+            "Ref": "AlertTopic2720D535",
+          },
+        ],
+        "AlarmDescription": "ALB 5XX error count exceeds 10 per 5 minutes",
+        "AlarmName": "ai-agents-platform-dev-alb-5xx-high",
+        "ComparisonOperator": "GreaterThanThreshold",
+        "Dimensions": [
+          {
+            "Name": "LoadBalancer",
+            "Value": {
+              "Fn::ImportValue": "TestCompStack:ExportsOutputFnGetAttAlb6F14D334LoadBalancerFullNameA3921A6E",
+            },
+          },
+        ],
+        "EvaluationPeriods": 1,
+        "MetricName": "HTTPCode_ELB_5XX_Count",
+        "Namespace": "AWS/ApplicationELB",
+        "Period": 300,
+        "Statistic": "Sum",
+        "Threshold": 10,
+        "TreatMissingData": "notBreaching",
+      },
+      "Type": "AWS::CloudWatch::Alarm",
+    },
+    "AlertTopic2720D535": {
+      "Metadata": {
+        "cdk_nag": {
+          "rules_to_suppress": [
+            {
+              "id": "AwsSolutions-SNS3",
+              "reason": "Alert topic is for internal CloudWatch alarm notifications only; SSL enforcement for publishing will be added when external subscribers are introduced",
+            },
+          ],
+        },
+      },
+      "Properties": {
+        "DisplayName": "ai-agents-platform dev Alerts",
+        "KmsMasterKeyId": {
+          "Fn::ImportValue": "DepsStack:ExportsOutputFnGetAttTestKey4CACAF33ArnC56F7F92",
+        },
+        "TopicName": "ai-agents-platform-alerts-dev",
+      },
+      "Type": "AWS::SNS::Topic",
+    },
+    "AuroraConnectionsAlarm320D1F2B": {
+      "Properties": {
+        "AlarmActions": [
+          {
+            "Ref": "AlertTopic2720D535",
+          },
+        ],
+        "AlarmDescription": "Aurora database connections exceed 80% of max",
+        "AlarmName": "ai-agents-platform-dev-aurora-connections-high",
+        "ComparisonOperator": "GreaterThanThreshold",
+        "Dimensions": [
+          {
+            "Name": "DBClusterIdentifier",
+            "Value": {
+              "Fn::ImportValue": "TestDbStack:ExportsOutputRefAuroraClusterD4EFE71C76EDACA0",
+            },
+          },
+        ],
+        "EvaluationPeriods": 3,
+        "MetricName": "DatabaseConnections",
+        "Namespace": "AWS/RDS",
+        "Period": 300,
+        "Statistic": "Average",
+        "Threshold": 72,
+        "TreatMissingData": "notBreaching",
+      },
+      "Type": "AWS::CloudWatch::Alarm",
+    },
+    "AuroraCpuAlarm999C031F": {
+      "Properties": {
+        "AlarmActions": [
+          {
+            "Ref": "AlertTopic2720D535",
+          },
+        ],
+        "AlarmDescription": "Aurora CPU utilization exceeds 80%",
+        "AlarmName": "ai-agents-platform-dev-aurora-cpu-high",
+        "ComparisonOperator": "GreaterThanThreshold",
+        "Dimensions": [
+          {
+            "Name": "DBClusterIdentifier",
+            "Value": {
+              "Fn::ImportValue": "TestDbStack:ExportsOutputRefAuroraClusterD4EFE71C76EDACA0",
+            },
+          },
+        ],
+        "EvaluationPeriods": 3,
+        "MetricName": "CPUUtilization",
+        "Namespace": "AWS/RDS",
+        "Period": 300,
+        "Statistic": "Average",
+        "Threshold": 80,
+        "TreatMissingData": "notBreaching",
+      },
+      "Type": "AWS::CloudWatch::Alarm",
+    },
+    "AuroraMemoryAlarm03A9D09C": {
+      "Properties": {
+        "AlarmActions": [
+          {
+            "Ref": "AlertTopic2720D535",
+          },
+        ],
+        "AlarmDescription": "Aurora freeable memory below 500MB",
+        "AlarmName": "ai-agents-platform-dev-aurora-memory-low",
+        "ComparisonOperator": "LessThanThreshold",
+        "Dimensions": [
+          {
+            "Name": "DBClusterIdentifier",
+            "Value": {
+              "Fn::ImportValue": "TestDbStack:ExportsOutputRefAuroraClusterD4EFE71C76EDACA0",
+            },
+          },
+        ],
+        "EvaluationPeriods": 3,
+        "MetricName": "FreeableMemory",
+        "Namespace": "AWS/RDS",
+        "Period": 300,
+        "Statistic": "Average",
+        "Threshold": 524288000,
+        "TreatMissingData": "notBreaching",
+      },
+      "Type": "AWS::CloudWatch::Alarm",
+    },
+    "Dashboard9E4231ED": {
+      "Properties": {
+        "DashboardBody": {
+          "Fn::Join": [
+            "",
+            [
+              "{"widgets":[{"type":"metric","width":8,"height":6,"x":0,"y":0,"properties":{"view":"timeSeries","title":"Aurora CPU Utilization","region":"",
+              {
+                "Ref": "AWS::Region",
+              },
+              "","metrics":[["AWS/RDS","CPUUtilization","DBClusterIdentifier","",
+              {
+                "Fn::ImportValue": "TestDbStack:ExportsOutputRefAuroraClusterD4EFE71C76EDACA0",
+              },
+              ""]],"yAxis":{}}},{"type":"metric","width":8,"height":6,"x":8,"y":0,"properties":{"view":"timeSeries","title":"Aurora Freeable Memory","region":"",
+              {
+                "Ref": "AWS::Region",
+              },
+              "","metrics":[["AWS/RDS","FreeableMemory","DBClusterIdentifier","",
+              {
+                "Fn::ImportValue": "TestDbStack:ExportsOutputRefAuroraClusterD4EFE71C76EDACA0",
+              },
+              ""]],"yAxis":{}}},{"type":"metric","width":8,"height":6,"x":16,"y":0,"properties":{"view":"timeSeries","title":"Aurora Database Connections","region":"",
+              {
+                "Ref": "AWS::Region",
+              },
+              "","metrics":[["AWS/RDS","DatabaseConnections","DBClusterIdentifier","",
+              {
+                "Fn::ImportValue": "TestDbStack:ExportsOutputRefAuroraClusterD4EFE71C76EDACA0",
+              },
+              ""]],"yAxis":{}}},{"type":"metric","width":12,"height":6,"x":0,"y":6,"properties":{"view":"timeSeries","title":"ECS CPU Utilization","region":"",
+              {
+                "Ref": "AWS::Region",
+              },
+              "","metrics":[["AWS/ECS","CPUUtilization","ClusterName","",
+              {
+                "Fn::ImportValue": "TestCompStack:ExportsOutputRefEcsClusterEAC0C105E232FD8C",
+              },
+              "","ServiceName","",
+              {
+                "Fn::ImportValue": "TestCompStack:ExportsOutputFnGetAttEcsService5196398AName37BB8143",
+              },
+              ""]],"yAxis":{}}},{"type":"metric","width":12,"height":6,"x":12,"y":6,"properties":{"view":"timeSeries","title":"ECS Memory Utilization","region":"",
+              {
+                "Ref": "AWS::Region",
+              },
+              "","metrics":[["AWS/ECS","MemoryUtilization","ClusterName","",
+              {
+                "Fn::ImportValue": "TestCompStack:ExportsOutputRefEcsClusterEAC0C105E232FD8C",
+              },
+              "","ServiceName","",
+              {
+                "Fn::ImportValue": "TestCompStack:ExportsOutputFnGetAttEcsService5196398AName37BB8143",
+              },
+              ""]],"yAxis":{}}},{"type":"metric","width":8,"height":6,"x":0,"y":12,"properties":{"view":"timeSeries","title":"ALB Request Count","region":"",
+              {
+                "Ref": "AWS::Region",
+              },
+              "","metrics":[["AWS/ApplicationELB","RequestCount","LoadBalancer","",
+              {
+                "Fn::ImportValue": "TestCompStack:ExportsOutputFnGetAttAlb6F14D334LoadBalancerFullNameA3921A6E",
+              },
+              "",{"stat":"Sum"}]],"yAxis":{}}},{"type":"metric","width":8,"height":6,"x":8,"y":12,"properties":{"view":"timeSeries","title":"ALB 5XX Errors","region":"",
+              {
+                "Ref": "AWS::Region",
+              },
+              "","metrics":[["AWS/ApplicationELB","HTTPCode_ELB_5XX_Count","LoadBalancer","",
+              {
+                "Fn::ImportValue": "TestCompStack:ExportsOutputFnGetAttAlb6F14D334LoadBalancerFullNameA3921A6E",
+              },
+              "",{"stat":"Sum"}]],"yAxis":{}}},{"type":"metric","width":8,"height":6,"x":16,"y":12,"properties":{"view":"timeSeries","title":"ALB Unhealthy Hosts","region":"",
+              {
+                "Ref": "AWS::Region",
+              },
+              "","metrics":[["AWS/ApplicationELB","UnHealthyHostCount","LoadBalancer","",
+              {
+                "Fn::Select": [
+                  1,
+                  {
+                    "Fn::Split": [
+                      "/",
+                      {
+                        "Fn::ImportValue": "TestCompStack:ExportsOutputRefAlbHttpListenerC9825CF44524FA3B",
+                      },
+                    ],
+                  },
+                ],
+              },
+              "/",
+              {
+                "Fn::Select": [
+                  2,
+                  {
+                    "Fn::Split": [
+                      "/",
+                      {
+                        "Fn::ImportValue": "TestCompStack:ExportsOutputRefAlbHttpListenerC9825CF44524FA3B",
+                      },
+                    ],
+                  },
+                ],
+              },
+              "/",
+              {
+                "Fn::Select": [
+                  3,
+                  {
+                    "Fn::Split": [
+                      "/",
+                      {
+                        "Fn::ImportValue": "TestCompStack:ExportsOutputRefAlbHttpListenerC9825CF44524FA3B",
+                      },
+                    ],
+                  },
+                ],
+              },
+              "","TargetGroup","",
+              {
+                "Fn::ImportValue": "TestCompStack:ExportsOutputFnGetAttAlbTargetGroup3E290A92TargetGroupFullNameC43F1128",
+              },
+              ""]],"yAxis":{}}}]}",
+            ],
+          ],
+        },
+        "DashboardName": "ai-agents-platform-dev",
+      },
+      "Type": "AWS::CloudWatch::Dashboard",
+    },
+    "EcsCpuAlarm1D439C07": {
+      "Properties": {
+        "AlarmActions": [
+          {
+            "Ref": "AlertTopic2720D535",
+          },
+        ],
+        "AlarmDescription": "ECS service CPU utilization exceeds 80%",
+        "AlarmName": "ai-agents-platform-dev-ecs-cpu-high",
+        "ComparisonOperator": "GreaterThanThreshold",
+        "Dimensions": [
+          {
+            "Name": "ClusterName",
+            "Value": {
+              "Fn::ImportValue": "TestCompStack:ExportsOutputRefEcsClusterEAC0C105E232FD8C",
+            },
+          },
+          {
+            "Name": "ServiceName",
+            "Value": {
+              "Fn::ImportValue": "TestCompStack:ExportsOutputFnGetAttEcsService5196398AName37BB8143",
+            },
+          },
+        ],
+        "EvaluationPeriods": 3,
+        "MetricName": "CPUUtilization",
+        "Namespace": "AWS/ECS",
+        "Period": 300,
+        "Statistic": "Average",
+        "Threshold": 80,
+        "TreatMissingData": "notBreaching",
+      },
+      "Type": "AWS::CloudWatch::Alarm",
+    },
+    "EcsMemoryAlarmB50C6B61": {
+      "Properties": {
+        "AlarmActions": [
+          {
+            "Ref": "AlertTopic2720D535",
+          },
+        ],
+        "AlarmDescription": "ECS service memory utilization exceeds 80%",
+        "AlarmName": "ai-agents-platform-dev-ecs-memory-high",
+        "ComparisonOperator": "GreaterThanThreshold",
+        "Dimensions": [
+          {
+            "Name": "ClusterName",
+            "Value": {
+              "Fn::ImportValue": "TestCompStack:ExportsOutputRefEcsClusterEAC0C105E232FD8C",
+            },
+          },
+          {
+            "Name": "ServiceName",
+            "Value": {
+              "Fn::ImportValue": "TestCompStack:ExportsOutputFnGetAttEcsService5196398AName37BB8143",
+            },
+          },
+        ],
+        "EvaluationPeriods": 3,
+        "MetricName": "MemoryUtilization",
+        "Namespace": "AWS/ECS",
+        "Period": 300,
+        "Statistic": "Average",
+        "Threshold": 80,
+        "TreatMissingData": "notBreaching",
+      },
+      "Type": "AWS::CloudWatch::Alarm",
+    },
+    "UnhealthyHostAlarmA5C0898D": {
+      "Properties": {
+        "AlarmActions": [
+          {
+            "Ref": "AlertTopic2720D535",
+          },
+        ],
+        "AlarmDescription": "ALB target group has unhealthy hosts",
+        "AlarmName": "ai-agents-platform-dev-alb-unhealthy-hosts",
+        "ComparisonOperator": "GreaterThanOrEqualToThreshold",
+        "Dimensions": [
+          {
+            "Name": "LoadBalancer",
+            "Value": {
+              "Fn::Join": [
+                "",
+                [
+                  {
+                    "Fn::Select": [
+                      1,
+                      {
+                        "Fn::Split": [
+                          "/",
+                          {
+                            "Fn::ImportValue": "TestCompStack:ExportsOutputRefAlbHttpListenerC9825CF44524FA3B",
+                          },
+                        ],
+                      },
+                    ],
+                  },
+                  "/",
+                  {
+                    "Fn::Select": [
+                      2,
+                      {
+                        "Fn::Split": [
+                          "/",
+                          {
+                            "Fn::ImportValue": "TestCompStack:ExportsOutputRefAlbHttpListenerC9825CF44524FA3B",
+                          },
+                        ],
+                      },
+                    ],
+                  },
+                  "/",
+                  {
+                    "Fn::Select": [
+                      3,
+                      {
+                        "Fn::Split": [
+                          "/",
+                          {
+                            "Fn::ImportValue": "TestCompStack:ExportsOutputRefAlbHttpListenerC9825CF44524FA3B",
+                          },
+                        ],
+                      },
+                    ],
+                  },
+                ],
+              ],
+            },
+          },
+          {
+            "Name": "TargetGroup",
+            "Value": {
+              "Fn::ImportValue": "TestCompStack:ExportsOutputFnGetAttAlbTargetGroup3E290A92TargetGroupFullNameC43F1128",
+            },
+          },
+        ],
+        "EvaluationPeriods": 1,
+        "MetricName": "UnHealthyHostCount",
+        "Namespace": "AWS/ApplicationELB",
+        "Period": 300,
+        "Statistic": "Maximum",
+        "Threshold": 1,
+        "TreatMissingData": "notBreaching",
+      },
+      "Type": "AWS::CloudWatch::Alarm",
     },
   },
   "Rules": {

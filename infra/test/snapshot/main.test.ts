@@ -6,6 +6,7 @@ import {
   DatabaseStack,
   ComputeStack,
   AgentCoreStack,
+  MonitoringStack,
 } from '../../lib/stacks';
 import {
   createCrossStackComputeDependencies,
@@ -81,6 +82,43 @@ describe('Snapshot Tests', () => {
     const stack = new AgentCoreStack(app, 'TestAgentCoreStack', {
       env: TEST_ENV,
       vpc,
+      envName: 'dev',
+    });
+
+    expect(Template.fromStack(stack).toJSON()).toMatchSnapshot();
+  });
+
+  it('MonitoringStack 快照匹配', () => {
+    const app = new cdk.App();
+    const { vpc, dbSecurityGroup, encryptionKey, encryptionKeyArn, databaseSecret, jwtSecretArn, databaseEndpoint } =
+      createCrossStackComputeDependencies(app, TEST_ENV);
+
+    const databaseStack = new DatabaseStack(app, 'TestDbStack', {
+      env: TEST_ENV,
+      vpc,
+      dbSecurityGroup,
+      encryptionKey,
+      envName: 'dev',
+    });
+
+    const computeStack = new ComputeStack(app, 'TestCompStack', {
+      env: TEST_ENV,
+      vpc,
+      dbSecurityGroup,
+      databaseSecret,
+      databaseEndpoint,
+      encryptionKeyArn,
+      jwtSecretArn,
+      envName: 'dev',
+    });
+
+    const stack = new MonitoringStack(app, 'TestMonitoringStack', {
+      env: TEST_ENV,
+      cluster: databaseStack.cluster,
+      service: computeStack.service,
+      loadBalancer: computeStack.loadBalancer,
+      targetGroup: computeStack.targetGroup,
+      encryptionKey,
       envName: 'dev',
     });
 

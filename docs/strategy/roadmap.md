@@ -381,7 +381,7 @@ Phase 3 核心依赖项 **全部就绪**：
 | R3 | 前端 5 页面并行与后端 audit 资源竞争 | 中 | 中 | 前后端明确分工，前端使用已有后端 API 不阻塞 | M10 |
 | R4 | 50+ 用户并发性能瓶颈 | 中 | 高 | M12 压力测试；Runtime 分离后 Platform API 压力降低 | M12 |
 | R5 | Agent Teams 实验特性 SDK 变更 | 低 | 高 | 锁定 SDK 版本；IAgentRuntime 接口隔离变更 | 全 Phase |
-| R6 | Sonnet 模型权限未获批 | 中 | 中 | 持续跟进 AWS 申请；Opus 4.6 备选；Haiku 保底 | M11 |
+| R6 | Sonnet inference profile prompt caching 限制 | 中 | 低 | 确认 inference profile 的 prompt caching 支持情况，必要时改用标准调用；Sonnet 4 为 GA 模型无需申请；Haiku 保底 | M12 |
 | R7 | AgentCore Identity 集成复杂度 | 中 | 中 | 渐进式集成：Gateway 认证 → Token Vault → 全量切换 | M12 |
 | R8 | 全公司推广用户增长不达预期 | 中 | 中 | 梯度推广 10 → 30 → 50；培训+文档+onboarding 配套 | M12 |
 
