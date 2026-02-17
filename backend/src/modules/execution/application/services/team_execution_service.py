@@ -46,11 +46,13 @@ _SEMAPHORE_MAX_CONCURRENT = 3  # 最多同时运行的团队执行数量
 _team_execution_semaphore = asyncio.Semaphore(_SEMAPHORE_MAX_CONCURRENT)
 
 # 团队执行终态集合 (stream_logs / cancel 判断用)
-_TERMINAL_STATUSES = frozenset({
-    TeamExecutionStatus.COMPLETED,
-    TeamExecutionStatus.FAILED,
-    TeamExecutionStatus.CANCELLED,
-})
+_TERMINAL_STATUSES = frozenset(
+    {
+        TeamExecutionStatus.COMPLETED,
+        TeamExecutionStatus.FAILED,
+        TeamExecutionStatus.CANCELLED,
+    },
+)
 
 
 class TeamExecutionService:
@@ -151,14 +153,12 @@ class TeamExecutionService:
     ) -> PagedResult[TeamExecutionDTO]:
         """分页列出用户的团队执行。"""
         offset = (page - 1) * page_size
-        executions, total = await asyncio.gather(
-            self._execution_repo.list_by_user(
-                user_id=user_id,
-                offset=offset,
-                limit=page_size,
-            ),
-            self._execution_repo.count_by_user(user_id),
+        executions = await self._execution_repo.list_by_user(
+            user_id=user_id,
+            offset=offset,
+            limit=page_size,
         )
+        total = await self._execution_repo.count_by_user(user_id)
         return PagedResult(
             items=[self._to_dto(e) for e in executions],
             total=total,
@@ -468,7 +468,10 @@ class TeamExecutionService:
 
     async def _get_execution_or_raise(self, execution_id: int) -> TeamExecution:
         return await get_or_raise(
-            self._execution_repo, execution_id, TeamExecutionNotFoundError, execution_id,
+            self._execution_repo,
+            execution_id,
+            TeamExecutionNotFoundError,
+            execution_id,
         )
 
     @staticmethod

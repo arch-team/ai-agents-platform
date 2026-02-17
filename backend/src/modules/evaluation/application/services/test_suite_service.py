@@ -1,6 +1,5 @@
 """TestSuite 应用服务。"""
 
-import asyncio
 
 from src.modules.evaluation.application.dto.evaluation_dto import (
     CreateTestCaseDTO,
@@ -108,10 +107,8 @@ class TestSuiteService:
     ) -> PagedResult[TestSuiteDTO]:
         """获取当前用户的测试集列表（分页）。"""
         offset = (page - 1) * page_size
-        suites, total = await asyncio.gather(
-            self._suite_repo.list_by_owner(current_user_id, offset=offset, limit=page_size),
-            self._suite_repo.count_by_owner(current_user_id),
-        )
+        suites = await self._suite_repo.list_by_owner(current_user_id, offset=offset, limit=page_size)
+        total = await self._suite_repo.count_by_owner(current_user_id)
         return PagedResult(
             items=[self._to_suite_dto(s) for s in suites],
             total=total,
@@ -200,10 +197,8 @@ class TestSuiteService:
         suite = await get_or_raise(self._suite_repo, suite_id, TestSuiteNotFoundError, suite_id)
         check_ownership(suite, current_user_id)
         offset = (page - 1) * page_size
-        cases, total = await asyncio.gather(
-            self._case_repo.list_by_suite(suite_id, offset=offset, limit=page_size),
-            self._case_repo.count_by_suite(suite_id),
-        )
+        cases = await self._case_repo.list_by_suite(suite_id, offset=offset, limit=page_size)
+        total = await self._case_repo.count_by_suite(suite_id)
         return PagedResult(
             items=[self._to_case_dto(c) for c in cases],
             total=total,

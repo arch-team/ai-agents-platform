@@ -1,6 +1,5 @@
 """Tool Catalog 应用服务。"""
 
-import asyncio
 from dataclasses import replace
 
 import structlog
@@ -228,21 +227,19 @@ class ToolCatalogService:
         """获取 Tool 列表，支持多维筛选和分页。"""
         offset = (page - 1) * page_size
 
-        tools, total = await asyncio.gather(
-            self._repository.list_filtered(
-                creator_id=creator_id,
-                status=status,
-                tool_type=tool_type,
-                keyword=keyword,
-                offset=offset,
-                limit=page_size,
-            ),
-            self._repository.count_filtered(
-                creator_id=creator_id,
-                status=status,
-                tool_type=tool_type,
-                keyword=keyword,
-            ),
+        tools = await self._repository.list_filtered(
+            creator_id=creator_id,
+            status=status,
+            tool_type=tool_type,
+            keyword=keyword,
+            offset=offset,
+            limit=page_size,
+        )
+        total = await self._repository.count_filtered(
+            creator_id=creator_id,
+            status=status,
+            tool_type=tool_type,
+            keyword=keyword,
         )
 
         return PagedResult(
@@ -261,10 +258,8 @@ class ToolCatalogService:
         """获取已批准的 Tool 列表（任意认证用户可访问）。"""
         offset = (page - 1) * page_size
 
-        tools, total = await asyncio.gather(
-            self._repository.list_approved(offset=offset, limit=page_size),
-            self._repository.count_approved(),
-        )
+        tools = await self._repository.list_approved(offset=offset, limit=page_size)
+        total = await self._repository.count_approved()
 
         return PagedResult(
             items=[self._to_dto(t) for t in tools],

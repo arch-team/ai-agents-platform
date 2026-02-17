@@ -1,6 +1,5 @@
 """Evaluation 应用服务。"""
 
-import asyncio
 
 from src.modules.evaluation.application.dto.evaluation_dto import (
     CreateEvaluationRunDTO,
@@ -96,7 +95,10 @@ class EvaluationService:
         MVP 实现: 同步执行所有用例，记录结果。
         """
         suite = await get_or_raise(
-            self._suite_repo, dto.suite_id, TestSuiteNotFoundError, dto.suite_id,
+            self._suite_repo,
+            dto.suite_id,
+            TestSuiteNotFoundError,
+            dto.suite_id,
         )
         if suite.status != TestSuiteStatus.ACTIVE:
             raise TestSuiteNotActiveError(dto.suite_id)
@@ -172,15 +174,11 @@ class EvaluationService:
         """列出评估运行。"""
         offset = (page - 1) * page_size
         if suite_id is not None:
-            runs, total = await asyncio.gather(
-                self._run_repo.list_by_suite(suite_id, offset=offset, limit=page_size),
-                self._run_repo.count_by_suite(suite_id),
-            )
+            runs = await self._run_repo.list_by_suite(suite_id, offset=offset, limit=page_size)
+            total = await self._run_repo.count_by_suite(suite_id)
         else:
-            runs, total = await asyncio.gather(
-                self._run_repo.list_by_user(current_user_id, offset=offset, limit=page_size),
-                self._run_repo.count_by_user(current_user_id),
-            )
+            runs = await self._run_repo.list_by_user(current_user_id, offset=offset, limit=page_size)
+            total = await self._run_repo.count_by_user(current_user_id)
         return PagedResult(
             items=[self._to_run_dto(r) for r in runs],
             total=total,
@@ -198,10 +196,8 @@ class EvaluationService:
         """获取评估运行的结果列表。"""
         await get_or_raise(self._run_repo, run_id, EvaluationRunNotFoundError, run_id)
         offset = (page - 1) * page_size
-        results, total = await asyncio.gather(
-            self._result_repo.list_by_run(run_id, offset=offset, limit=page_size),
-            self._result_repo.count_by_run(run_id),
-        )
+        results = await self._result_repo.list_by_run(run_id, offset=offset, limit=page_size)
+        total = await self._result_repo.count_by_run(run_id)
         return PagedResult(
             items=[self._to_result_dto(r) for r in results],
             total=total,

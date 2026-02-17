@@ -1,6 +1,5 @@
 """Insights 应用服务。"""
 
-import asyncio
 from datetime import datetime
 
 from src.modules.insights.application.dto.insights_dto import (
@@ -97,20 +96,14 @@ class InsightsService:
         offset = (page - 1) * page_size
 
         if user_id is not None:
-            items, total = await asyncio.gather(
-                self._usage_repo.list_by_user(user_id, offset=offset, limit=page_size),
-                self._usage_repo.count_by_user(user_id),
-            )
+            items = await self._usage_repo.list_by_user(user_id, offset=offset, limit=page_size)
+            total = await self._usage_repo.count_by_user(user_id)
         elif agent_id is not None:
-            items, total = await asyncio.gather(
-                self._usage_repo.list_by_agent(agent_id, offset=offset, limit=page_size),
-                self._usage_repo.count_by_agent(agent_id),
-            )
+            items = await self._usage_repo.list_by_agent(agent_id, offset=offset, limit=page_size)
+            total = await self._usage_repo.count_by_agent(agent_id)
         else:
-            items, total = await asyncio.gather(
-                self._usage_repo.list(offset=offset, limit=page_size),
-                self._usage_repo.count(),
-            )
+            items = await self._usage_repo.list(offset=offset, limit=page_size)
+            total = await self._usage_repo.count()
 
         return PagedResult(
             items=[self._to_dto(r) for r in items],
@@ -152,7 +145,9 @@ class InsightsService:
         )
 
     async def get_cost_breakdown(
-        self, start: datetime, end: datetime,
+        self,
+        start: datetime,
+        end: datetime,
     ) -> list[AgentTokenBreakdown]:
         """获取按 Agent 维度的 Token 消耗归因。"""
         if start > end:
@@ -160,7 +155,9 @@ class InsightsService:
         return await self._usage_repo.get_cost_breakdown_by_agent(start=start, end=end)
 
     async def get_usage_trends(
-        self, start: datetime, end: datetime,
+        self,
+        start: datetime,
+        end: datetime,
     ) -> list[DailyUsageTrend]:
         """获取按日维度的使用趋势。"""
         if start > end:
@@ -168,7 +165,9 @@ class InsightsService:
         return await self._usage_repo.get_daily_usage_trends(start=start, end=end)
 
     async def get_insights_summary(
-        self, start: datetime, end: datetime,
+        self,
+        start: datetime,
+        end: datetime,
     ) -> InsightsSummaryDTO:
         """获取 Insights 概览 — 组合 Cost Explorer + Repository 聚合。"""
         if start > end:

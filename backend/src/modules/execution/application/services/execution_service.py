@@ -193,9 +193,12 @@ class ExecutionService:
             msg = "消息 ID 不能为空"
             raise ValueError(msg)
         await self._publish_message_events(
-            conversation_id=conversation_id, user_msg_id=ctx.created_user_msg.id,
-            assistant_msg_id=created_assistant_msg.id, total_tokens=total_tokens,
-            model_id=ctx.agent_info.model_id, user_id=user_id,
+            conversation_id=conversation_id,
+            user_msg_id=ctx.created_user_msg.id,
+            assistant_msg_id=created_assistant_msg.id,
+            total_tokens=total_tokens,
+            model_id=ctx.agent_info.model_id,
+            user_id=user_id,
         )
 
         return self._to_message_dto(created_assistant_msg)
@@ -300,9 +303,12 @@ class ExecutionService:
 
             # 发布事件 (不依赖 DB session, 独立事件并行发布)
             await self._publish_message_events(
-                conversation_id=conversation_id, user_msg_id=user_msg.id,
-                assistant_msg_id=assistant_msg.id, total_tokens=total_tokens,
-                model_id=model_id, user_id=user_id,
+                conversation_id=conversation_id,
+                user_msg_id=user_msg.id,
+                assistant_msg_id=assistant_msg.id,
+                total_tokens=total_tokens,
+                model_id=model_id,
+                user_id=user_id,
             )
         except Exception:
             logger.exception("stream_finalize_failed", conversation_id=conversation_id)
@@ -342,17 +348,15 @@ class ExecutionService:
         """获取对话列表。"""
         offset = (page - 1) * page_size
 
-        conversations, total = await asyncio.gather(
-            self._conversation_repo.list_by_user(
-                user_id,
-                agent_id=agent_id,
-                offset=offset,
-                limit=page_size,
-            ),
-            self._conversation_repo.count_by_user(
-                user_id,
-                agent_id=agent_id,
-            ),
+        conversations = await self._conversation_repo.list_by_user(
+            user_id,
+            agent_id=agent_id,
+            offset=offset,
+            limit=page_size,
+        )
+        total = await self._conversation_repo.count_by_user(
+            user_id,
+            agent_id=agent_id,
         )
 
         return PagedResult(
@@ -391,8 +395,13 @@ class ExecutionService:
 
     @staticmethod
     async def _publish_message_events(
-        *, conversation_id: int, user_msg_id: int, assistant_msg_id: int,
-        total_tokens: int, model_id: str, user_id: int,
+        *,
+        conversation_id: int,
+        user_msg_id: int,
+        assistant_msg_id: int,
+        total_tokens: int,
+        model_id: str,
+        user_id: int,
     ) -> None:
         """并行发布消息发送和接收事件 (send_message 和 _finalize_stream 共用)。"""
         await asyncio.gather(
@@ -401,8 +410,10 @@ class ExecutionService:
             ),
             event_bus.publish_async(
                 MessageReceivedEvent(
-                    conversation_id=conversation_id, message_id=assistant_msg_id,
-                    token_count=total_tokens, model_id=model_id,
+                    conversation_id=conversation_id,
+                    message_id=assistant_msg_id,
+                    token_count=total_tokens,
+                    model_id=model_id,
                 ),
             ),
         )
@@ -583,12 +594,12 @@ class ExecutionService:
             ):
                 try:
                     memories = await self._memory_adapter.recall_memory(
-                        agent_info.id, content, max_results=5,
+                        agent_info.id,
+                        content,
+                        max_results=5,
                     )
                     if memories:
-                        memory_context = "\n\n".join(
-                            f"[长期记忆 - {m.topic}] {m.content}" for m in memories
-                        )
+                        memory_context = "\n\n".join(f"[长期记忆 - {m.topic}] {m.content}" for m in memories)
                         system_prompt = f"{system_prompt}\n\n## 长期记忆\n\n{memory_context}"
                         logger.info(
                             "memory_injected",
