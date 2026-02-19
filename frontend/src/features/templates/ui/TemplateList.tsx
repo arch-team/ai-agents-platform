@@ -131,7 +131,8 @@ export function TemplateList({ onSelect, onCreate }: TemplateListProps) {
                 <div className="mb-2 flex items-center gap-2">
                   <TemplateStatusBadge status={template.status} />
                   <span className="rounded-full bg-blue-50 px-2 py-0.5 text-xs text-blue-700">
-                    {CATEGORY_CONFIG[template.category]?.label ?? template.category}
+                    {CATEGORY_CONFIG[template.category as TemplateCategory]?.label ??
+                      template.category}
                   </span>
                 </div>
                 <h3 className="text-base font-semibold text-gray-900">{template.name}</h3>

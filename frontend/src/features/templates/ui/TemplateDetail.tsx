@@ -5,6 +5,7 @@ import { formatDateTime } from '@/shared/lib/formatDate';
 
 import { useTemplate, usePublishTemplate, useArchiveTemplate } from '../api/queries';
 
+import type { TemplateCategory } from '../api/types';
 import { TemplateStatusBadge } from './TemplateStatusBadge';
 import { CATEGORY_CONFIG } from './CategoryFilter';
 
@@ -92,7 +93,7 @@ export function TemplateDetail({ templateId, onBack }: TemplateDetailProps) {
           <div>
             <dt className="text-sm font-medium text-gray-500">分类</dt>
             <dd className="mt-1 text-sm text-gray-900">
-              {CATEGORY_CONFIG[template.category]?.label ?? template.category}
+              {CATEGORY_CONFIG[template.category as TemplateCategory]?.label ?? template.category}
             </dd>
           </div>
           <div>

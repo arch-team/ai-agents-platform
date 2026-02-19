@@ -18,10 +18,16 @@ const mockTemplate: Template = {
   description: '测试用模板',
   category: 'customer_service',
   status: 'published',
+  creator_id: 1,
   system_prompt: '你是助手',
-  config: { model_id: 'claude-3-5-sonnet', temperature: 0.7, max_tokens: 4096 },
-  author: '管理员',
-  use_count: 10,
+  model_id: 'claude-3-5-sonnet',
+  temperature: 0.7,
+  max_tokens: 4096,
+  tool_ids: [],
+  knowledge_base_ids: [],
+  tags: [],
+  usage_count: 10,
+  is_featured: false,
   created_at: '2025-01-01T00:00:00Z',
   updated_at: '2025-01-01T00:00:00Z',
 };
@@ -46,15 +52,9 @@ function createWrapper() {
 describe('templates API hooks', () => {
   beforeEach(() => {
     server.use(
-      http.get(`${API_BASE}/api/v1/templates`, () =>
-        HttpResponse.json(mockListResponse),
-      ),
-      http.get(`${API_BASE}/api/v1/templates/published`, () =>
-        HttpResponse.json(mockListResponse),
-      ),
-      http.get(`${API_BASE}/api/v1/templates/:id`, () =>
-        HttpResponse.json(mockTemplate),
-      ),
+      http.get(`${API_BASE}/api/v1/templates`, () => HttpResponse.json(mockListResponse)),
+      http.get(`${API_BASE}/api/v1/templates/published`, () => HttpResponse.json(mockListResponse)),
+      http.get(`${API_BASE}/api/v1/templates/:id`, () => HttpResponse.json(mockTemplate)),
     );
   });
 

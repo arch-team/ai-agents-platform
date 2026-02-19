@@ -22,10 +22,16 @@ const mockTemplates: Template[] = [
     description: '适用于客服场景的 Agent 模板',
     category: 'customer_service',
     status: 'draft',
+    creator_id: 1,
     system_prompt: '你是客服助手',
-    config: { model_id: 'claude-3-5-sonnet', temperature: 0.7, max_tokens: 4096 },
-    author: '管理员',
-    use_count: 10,
+    model_id: 'claude-3-5-sonnet',
+    temperature: 0.7,
+    max_tokens: 4096,
+    tool_ids: [],
+    knowledge_base_ids: [],
+    tags: [],
+    usage_count: 10,
+    is_featured: false,
     created_at: '2025-01-01T00:00:00Z',
     updated_at: '2025-01-01T00:00:00Z',
   },
@@ -35,10 +41,16 @@ const mockTemplates: Template[] = [
     description: '数据分析专用模板',
     category: 'data_analysis',
     status: 'published',
+    creator_id: 1,
     system_prompt: '你是数据分析师',
-    config: { model_id: 'claude-3-5-sonnet', temperature: 0.3, max_tokens: 8192 },
-    author: '管理员',
-    use_count: 25,
+    model_id: 'claude-3-5-sonnet',
+    temperature: 0.3,
+    max_tokens: 8192,
+    tool_ids: [],
+    knowledge_base_ids: [],
+    tags: [],
+    usage_count: 25,
+    is_featured: false,
     created_at: '2025-01-02T00:00:00Z',
     updated_at: '2025-01-02T00:00:00Z',
   },
@@ -63,9 +75,7 @@ function createWrapper() {
 
 describe('TemplateList', () => {
   beforeEach(() => {
-    server.use(
-      http.get(`${API_BASE}/api/v1/templates`, () => HttpResponse.json(mockResponse)),
-    );
+    server.use(http.get(`${API_BASE}/api/v1/templates`, () => HttpResponse.json(mockResponse)));
   });
 
   it('应显示加载状态', () => {

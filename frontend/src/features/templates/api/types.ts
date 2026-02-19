@@ -40,7 +40,7 @@ export interface CreateTemplateRequest {
   description?: string;
   category: string;
   system_prompt: string;
-  model_id: string;
+  model_id?: string;
   temperature?: number;
   max_tokens?: number;
   tool_ids?: number[];
