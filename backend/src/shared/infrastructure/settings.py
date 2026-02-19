@@ -115,6 +115,11 @@ class Settings(BaseSettings):
     MEMORY_EXTRACTION_ENABLED: bool = False  # 是否启用对话完成后自动记忆提取
     MEMORY_STRATEGIES: str = "summary,semantic"  # 记忆提取策略 (逗号分隔)
 
+    # 默认管理员: 应用启动时自动创建, 幂等, 已存在则跳过
+    DEFAULT_ADMIN_EMAIL: str = "admin@ai-agents.local"
+    DEFAULT_ADMIN_PASSWORD: SecretStr = SecretStr("Admin@2026!")
+    DEFAULT_ADMIN_NAME: str = "系统管理员"
+
     # OpenTelemetry 可观测性
     OTEL_EXPORTER_OTLP_ENDPOINT: str = ""  # OTLP 导出端点 (如 http://localhost:4317)
 

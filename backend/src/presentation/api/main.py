@@ -376,6 +376,48 @@ def _register_message_received_event_subscriptions() -> None:
     event_bus.subscribe(MessageReceivedEvent, _on_message_received)
 
 
+async def _seed_default_admin() -> None:
+    """启动时创建默认管理员账户（幂等：已存在则跳过）。"""
+    import structlog
+
+    from src.modules.auth.application.services.password_service import hash_password
+    from src.modules.auth.domain.entities.user import User
+    from src.modules.auth.domain.value_objects.role import Role
+    from src.modules.auth.infrastructure.persistence.repositories.user_repository_impl import UserRepositoryImpl
+    from src.shared.infrastructure.database import get_session_factory
+
+    log = structlog.get_logger(__name__)
+    settings = get_settings()
+    session_factory = get_session_factory()
+
+    async with session_factory() as session:
+        try:
+            repo = UserRepositoryImpl(session=session)
+            existing = await repo.get_by_email(settings.DEFAULT_ADMIN_EMAIL)
+            if existing is not None:
+                log.info("default_admin_exists", email=settings.DEFAULT_ADMIN_EMAIL)
+                return
+
+            admin = User(
+                email=settings.DEFAULT_ADMIN_EMAIL,
+                hashed_password=hash_password(
+                    settings.DEFAULT_ADMIN_PASSWORD.get_secret_value(),
+                ),
+                name=settings.DEFAULT_ADMIN_NAME,
+                role=Role.ADMIN,
+            )
+            created = await repo.create(admin)
+            await session.commit()
+            log.info(
+                "default_admin_created",
+                user_id=created.id,
+                email=settings.DEFAULT_ADMIN_EMAIL,
+            )
+        except Exception:
+            await session.rollback()
+            log.exception("default_admin_seed_failed")
+
+
 @asynccontextmanager
 async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
     """应用生命周期: 启动时初始化数据库、日志、追踪和事件订阅。"""
@@ -404,6 +446,7 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
     _register_message_received_event_subscriptions()
     _register_memory_extraction_event_subscriptions()
     _register_audit_event_subscriptions()
+    await _seed_default_admin()
     yield
 
 

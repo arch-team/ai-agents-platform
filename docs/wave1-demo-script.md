@@ -1,729 +1,247 @@
-# Wave 1 Demo 演示脚本
+# Wave 1 种子用户 Demo 脚本
 
-> AI Agents Platform — 种子用户 1-on-1 Demo 流程 (10 人)
-
----
-
-## 1. Demo 目标
-
-| 目标 | 说明 |
-|------|------|
-| 核心验证 | 让种子用户完成从注册到对话的完整闭环 |
-| 收集反馈 | 发现平台可用性问题和功能缺陷 |
-| 用户入职 | 每位用户至少自主创建 1 个 Agent |
-| 价值展示 | 演示 AI Agent 在实际工作场景中的价值 |
-
-**目标用户画像**: 5 名技术人员 (DEVELOPER) + 3 名产品/运营 (VIEWER->DEVELOPER) + 2 名管理者 (ADMIN)
+> 适用场景：1-on-1 演示，时长约 30 分钟
+> 适用对象：Wave 1 种子用户（10 人），涵盖技术、产品/运营、管理者角色
 
 ---
 
-## 2. 准备工作
+## 演示目标
 
-### 2.1 环境信息
+**30 分钟后，用户能够独立完成以下操作：**
 
-| 项目 | 值 |
-|------|-----|
-| **Prod API 基地址** | `http://ai-agents-prod-1419512933.us-east-1.elb.amazonaws.com` |
-| **前端地址** | 同上 (前端通过同一 ALB 访问) |
-| **API 文档** | `{基地址}/docs` (仅开发环境可用) |
-
-> 以下示例中 `$BASE` 代表 Prod API 基地址。
-
-### 2.2 Demo 前检查清单
-
-- [ ] 确认 Prod 环境正常运行 (`GET $BASE/health`)
-- [ ] 确认 3 个预置模板已 seed 并发布为 PUBLISHED 状态（见下方注意事项）
-- [ ] 准备好 Demo 用的测试账号
-- [ ] 准备好分角色话术（见第 6 节）
-- [ ] 确认网络可访问 ALB 地址
-
-### 2.3 预置模板状态确认
-
-**重要**: 种子脚本 `backend/scripts/seed_templates.py` 仅定义了模板数据，**没有自动执行和发布逻辑**。模板创建后默认为 DRAFT 状态，需要手动发布。
-
-**手动发布步骤**:
-
-1. 使用管理员账号登录获取 Token
-2. 通过 API 创建模板（POST 请求）
-3. 调用发布接口将模板从 DRAFT 转为 PUBLISHED
-
-```bash
-# 步骤 1: 管理员登录
-TOKEN=$(curl -s -X POST "$BASE/api/v1/auth/login" \
-  -H "Content-Type: application/json" \
-  -d '{"email": "admin@example.com", "password": "AdminPass123"}' \
-  | jq -r '.access_token')
-
-# 步骤 2: 创建"代码审查助手"模板
-TEMPLATE_ID=$(curl -s -X POST "$BASE/api/v1/templates" \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "代码审查助手",
-    "description": "审查代码质量、安全性和最佳实践，提供改进建议",
-    "category": "code_assistant",
-    "tags": ["代码审查", "安全", "最佳实践"],
-    "system_prompt": "你是一位资深的代码审查专家。请按以下维度审查代码:\n1. **正确性**: 逻辑是否正确，边界条件是否处理\n2. **安全性**: 是否存在 SQL 注入、XSS、敏感信息泄露等问题\n3. **性能**: 算法复杂度、数据库查询优化、内存使用\n4. **可读性**: 命名规范、注释质量、代码结构\n5. **可维护性**: SOLID 原则、DRY 原则、适当抽象\n6. **测试**: 测试覆盖率、测试质量\n\n对每个问题给出严重等级 (Critical/Major/Minor) 和具体修改建议。",
-    "model_id": "anthropic.claude-sonnet-4-20250514",
-    "temperature": 0.2,
-    "max_tokens": 4096
-  }' | jq -r '.id')
-
-# 步骤 3: 发布模板
-curl -s -X POST "$BASE/api/v1/templates/$TEMPLATE_ID/publish" \
-  -H "Authorization: Bearer $TOKEN"
-```
-
-对"会议纪要助手"和"技术文档写手"重复步骤 2-3（参数见附录 A）。
+1. 理解 AI Agent 是什么以及它能为自己的工作带来什么价值
+2. 从模板创建一个可用的 Agent
+3. 通过对话与 Agent 交互，解决一个真实工作场景中的问题
+4. 修改 system_prompt，让 Agent 更贴合自己的具体需求
+5. 知道遇到问题时去哪里获取帮助
 
 ---
 
-## 3. 完整演示流程
+## 演示前准备
 
-### 流程概览
+在开始 Demo 之前，确认以下事项已就绪：
 
-```
-注册账号 → 登录 → 浏览模板市场 → 从模板创建 Agent → 激活 Agent → 发起对话 → 查看 Insights
-```
+### 技术环境
 
----
+- [ ] 演示用账号已创建，且能正常登录平台
+- [ ] 平台网络连通正常（可提前访问一次主界面确认）
+- [ ] 浏览器使用 Chrome 或 Edge 最新版本，避免兼容性问题
+- [ ] 若进行屏幕共享，确认分享的是正确窗口/屏幕
 
-### 步骤 1: 注册账号
+### 内容准备
 
-**操作说明**: 为演示用户创建账号。
+- [ ] "文档助手"模板已在平台中可用（状态为 PUBLISHED）
+- [ ] 准备好一段真实的文档内容（200~500 字，可用用户自己的业务文档）
+- [ ] 按用户角色准备好 2~3 个示例问题，供第 3 步亲自输入使用
+- [ ] 反馈表单链接已确认可正常访问
+- [ ] 支持群二维码图片已准备好（截图或打印件）
 
-**前端操作**:
-1. 打开浏览器访问平台地址
-2. 点击登录页面下方的"注册"链接，跳转到 `/register`
-3. 填写邮箱、姓名和密码（密码要求: 8-128 位，含大小写字母和数字）
-4. 点击"注册"按钮
+### 用户信息
 
-**curl 命令**:
-
-```bash
-curl -X POST "$BASE/api/v1/auth/register" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "email": "user@example.com",
-    "password": "SecurePass123",
-    "name": "张三"
-  }'
-```
-
-**预期结果**:
-
-```json
-{
-  "id": 1,
-  "email": "user@example.com",
-  "name": "张三",
-  "role": "viewer",
-  "is_active": true
-}
-```
-
-> **注意**: 新注册用户默认为 `viewer` 角色。如需 DEVELOPER 或 ADMIN 权限，需管理员通过 Admin API 调整。注册接口限流为每小时 3 次。
+- [ ] 了解用户角色（技术/产品运营/管理者），按角色调整重点环节
+- [ ] 了解用户所在团队的主要工作场景，便于在演示中结合实际举例
 
 ---
 
-### 步骤 2: 登录
+## 演示流程
 
-**操作说明**: 使用注册的邮箱和密码登录平台。
+### 第 1 步：平台介绍（5 分钟）
 
-**前端操作**:
-1. 在登录页面 (`/login`) 输入邮箱和密码
-2. 点击"登录"按钮
-3. 登录成功后自动跳转到控制台首页 (`/`)
+**目标**：让用户建立对 AI Agent 的基本认知，激发使用兴趣。
 
-**curl 命令**:
+#### 话术要点
 
-```bash
-curl -X POST "$BASE/api/v1/auth/login" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "email": "user@example.com",
-    "password": "SecurePass123"
-  }'
-```
+> "简单说，AI Agent 就是一个能理解你的工作背景、记住你的偏好、并持续帮你处理重复性任务的 AI 助手。它不是一个通用的聊天工具，而是你为自己的工作场景量身定制的专属助手。"
 
-**预期结果**:
+> "我们这个平台做的事情，就是让你不需要写代码，也能在 10 分钟内创建并用上自己的 Agent。"
 
-```json
-{
-  "access_token": "eyJhbGciOiJIUzI1NiIs...",
-  "refresh_token": "eyJhbGciOiJIUzI1NiIs...",
-  "token_type": "bearer"
-}
-```
+> "今天我们会用 30 分钟走完整个流程，结束的时候你会有一个真正能用的 Agent。"
 
-> **后续请求**: 将 `access_token` 放入 HTTP Header `Authorization: Bearer <token>`。Access Token 有效期 30 分钟，过期后用 Refresh Token 续期。登录接口限流为每分钟 5 次。
+#### 演示要点
 
-```bash
-# 保存 Token 供后续使用
-export TOKEN="<access_token 值>"
-```
+- 展示平台主界面，简要介绍页面布局（Agent 列表、模板市场、使用统计）
+- 展示已有的 1~2 个 Agent 示例（如已有种子用户创建的），说明"这就是你今天会创建的"
+- 避免深入介绍技术架构，聚焦在"能做什么"而非"怎么实现的"
 
 ---
 
-### 步骤 3: 查看控制台首页
+### 第 2 步：从模板创建 Agent（10 分钟）
 
-**操作说明**: 登录后首先看到 Dashboard 概览。
+**目标**：用户亲眼看到从零到可用 Agent 的完整过程，建立信心。
 
-**前端操作**:
-1. 登录后自动进入首页 (`/`)
-2. 查看统计卡片: Agent 总数、对话总数、团队执行总数
+#### 话术要点
 
-**curl 命令**:
+> "我们提供了一批经过验证的模板，覆盖文档处理、代码辅助、会议纪要等常见场景。今天我们用'文档助手'来演示，因为它对所有角色都很直观。"
 
-```bash
-# 获取当前用户信息
-curl -X GET "$BASE/api/v1/auth/me" \
-  -H "Authorization: Bearer $TOKEN"
+> "你看，整个过程只有三步：选模板、填基本信息、点创建。不需要写任何代码。"
 
-# 获取 Dashboard 统计
-curl -X GET "$BASE/api/v1/stats/summary" \
-  -H "Authorization: Bearer $TOKEN"
-```
+> "创建完成之后，这个 Agent 就是你自己的了，可以随时修改、随时使用。"
 
-**预期结果** (新用户):
+#### 演示步骤
 
-```json
-{
-  "agents_total": 0,
-  "conversations_total": 0,
-  "team_executions_total": 0
-}
-```
+1. 进入"模板市场"，找到"文档助手"模板，点击预览，简要介绍模板用途
+2. 点击"使用此模板"，进入创建页面
+3. 填写 Agent 名称（建议用用户自己的名字，如"[用户姓名]的文档助手"，增强归属感）
+4. 保持其他配置默认，点击"创建"
+5. 等待创建完成（通常在 10 秒内），展示 Agent 详情页
+
+#### 注意事项
+
+- 创建过程中如遇到加载稍慢，可说明"正在初始化模型连接，通常几秒内完成"，不要沉默等待
+- 如果用户对某个配置项好奇，简短解释后说"我们待会在第 4 步会专门讲自定义配置"，避免在此分散注意力
 
 ---
 
-### 步骤 4: 浏览模板市场
+### 第 3 步：对话体验（10 分钟）
 
-**操作说明**: 查看预置的 Agent 模板，了解平台提供的开箱即用能力。
+**目标**：用户亲自体验与 Agent 对话，感受真实效果，产生"这确实有用"的认知。
 
-**前端操作**:
-1. 点击左侧导航栏的"模板"菜单，进入模板列表页 (`/templates`)
-2. 浏览已发布的模板卡片（代码审查助手、会议纪要助手、技术文档写手）
-3. 点击任意模板查看详情 (`/templates/:templateId`)
+#### 话术要点
 
-**curl 命令**:
+> "现在最重要的一步——你来试。把你工作中真实会遇到的问题发给它，看看它怎么回答。"
 
-```bash
-# 获取已发布模板列表
-curl -X GET "$BASE/api/v1/templates?page=1&page_size=20" \
-  -H "Authorization: Bearer $TOKEN"
+> "不用想太多，就像发消息给同事一样说话就行，不需要特别的格式。"
 
-# 查看模板详情（假设 ID=1）
-curl -X GET "$BASE/api/v1/templates/1" \
-  -H "Authorization: Bearer $TOKEN"
-```
+> "你可以先把你们团队最近的一份文档或需求说明粘贴进来，然后问它你想知道的事情。"
 
-**预期结果**:
+#### 演示步骤
 
-```json
-{
-  "items": [
-    {
-      "id": 1,
-      "name": "代码审查助手",
-      "description": "审查代码质量、安全性和最佳实践，提供改进建议",
-      "category": "code_assistant",
-      "status": "published",
-      "tags": ["代码审查", "安全", "最佳实践"],
-      "is_featured": true,
-      "usage_count": 0
-    }
-  ],
-  "total": 3,
-  "page": 1,
-  "page_size": 20,
-  "total_pages": 1
-}
-```
+1. 打开刚创建的 Agent 的对话界面
+2. **先由演示者发送一条示例消息**，展示正常的交互效果（例如：粘贴一段文档，问"这份文档的核心诉求是什么？"）
+3. 等待回答，过程中说明回答的质量和结构
+4. **邀请用户亲自输入**：提供准备好的示例场景，或鼓励用户输入自己的问题
+5. 用户输入后，一起观察回答，讨论效果
 
-**Demo 话术**: "这里是模板市场，我们预置了几个常用的 Agent 模板，你可以基于模板快速创建自己的 Agent，无需从零编写 System Prompt。"
+#### 引导提示（如用户不知道输入什么）
+
+| 用户角色 | 建议的示例输入 |
+|---------|--------------|
+| 技术用户 | "帮我梳理这段需求文档中的接口依赖关系" |
+| 产品/运营 | "帮我总结这份用户反馈的主要问题，并按优先级排列" |
+| 管理者 | "帮我把这份周报提炼成一段适合向上汇报的摘要" |
+
+#### 注意事项
+
+- 这一步是整个 Demo 情感体验的峰值，给用户足够的时间思考和体验，不要催促
+- 如果回答质量不够理想，说"这和我们给它的背景信息有关，接下来我们就来做这件事"，自然过渡到第 4 步
 
 ---
 
-### 步骤 5: 从模板创建 Agent
+### 第 4 步：自定义配置（5 分钟）
 
-**操作说明**: 参考模板的 System Prompt 和参数配置，创建一个自己的 Agent。
+**目标**：用户理解如何让 Agent 更贴合自己的需求，产生"我可以让它更好"的掌控感。
 
-**前端操作**:
-1. 在模板详情页查看 System Prompt 和配置参数
-2. 点击左侧导航栏的"Agent 管理"(`/agents`)
-3. 点击右上角"创建 Agent"按钮，进入创建页面 (`/agents/create`)
-4. 填写 Agent 名称、描述、System Prompt（可复制模板中的 Prompt）
-5. 设置模型参数 (model_id, temperature, max_tokens)
-6. 点击"创建"按钮
+#### 话术要点
 
-**curl 命令**:
+> "Agent 的核心行为是由 system_prompt 控制的，你可以把它理解为给 Agent 的'工作说明书'。"
 
-```bash
-# 创建 Agent（使用代码审查助手的 System Prompt）
-curl -X POST "$BASE/api/v1/agents" \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "我的代码审查助手",
-    "description": "帮我审查 Python 代码质量",
-    "system_prompt": "你是一位资深的代码审查专家。请按以下维度审查代码:\n1. 正确性: 逻辑是否正确\n2. 安全性: 是否存在安全问题\n3. 性能: 算法复杂度和优化\n4. 可读性: 命名和结构\n5. 可维护性: 设计原则\n\n对每个问题给出严重等级和修改建议。",
-    "model_id": "anthropic.claude-sonnet-4-20250514",
-    "temperature": 0.2,
-    "max_tokens": 4096
-  }'
-```
+> "模板里的默认说明书已经够用，但如果你想让它更了解你的业务背景，改几句话就能做到。"
 
-**预期结果**:
+> "比如，你可以告诉它：你在什么公司、负责什么产品、回答时需要注意什么风格。"
 
-```json
-{
-  "id": 1,
-  "name": "我的代码审查助手",
-  "description": "帮我审查 Python 代码质量",
-  "status": "draft",
-  "owner_id": 1,
-  "config": {
-    "model_id": "anthropic.claude-sonnet-4-20250514",
-    "temperature": 0.2,
-    "max_tokens": 4096,
-    "top_p": 0.999,
-    "runtime_type": "agent",
-    "enable_teams": false
-  },
-  "created_at": "2026-02-18T...",
-  "updated_at": "2026-02-18T..."
-}
-```
+#### 演示步骤
 
-> **说明**: Agent 创建后为 DRAFT 状态，需要激活才能用于对话。
+1. 进入 Agent 的"配置"页面，找到 system_prompt 编辑框
+2. 展示现有的默认 system_prompt 内容，指出哪些部分是关键的
+3. 在 system_prompt 末尾追加一句针对用户场景的说明，例如：
+   - `你服务的团队是 XX 公司的产品团队，回答时请关注用户体验和商业价值。`
+4. 保存配置，回到对话界面，发送同一个问题，对比前后回答的差异
+5. 如果有时间，邀请用户自己修改一处内容并测试
+
+#### 注意事项
+
+- 强调"不需要写代码，只需要用自然语言描述"，降低技术门槛感知
+- 不要在这个环节深入讲解其他配置项（如 temperature、max_tokens 等），避免认知过载
 
 ---
 
-### 步骤 6: 激活 Agent
+### 第 5 步：介绍资源（结尾）
 
-**操作说明**: 将 Agent 从 DRAFT 激活为 ACTIVE 状态。
+**目标**：用户知道如何自助解决问题，降低依赖演示者的心理门槛。
 
-**前端操作**:
-1. 在 Agent 列表 (`/agents`) 点击刚创建的 Agent 进入详情页 (`/agents/:agentId`)
-2. 点击"激活"按钮
-3. Agent 状态变为 ACTIVE
+#### 话术要点
 
-**curl 命令**:
+> "平台的使用文档涵盖了你今天见到的所有功能，还有进阶的配置技巧，遇到问题可以先查一查。"
 
-```bash
-# 激活 Agent（假设 ID=1）
-curl -X POST "$BASE/api/v1/agents/1/activate" \
-  -H "Authorization: Bearer $TOKEN"
-```
+> "我们有个专属的支持群，里面有产品团队的人，你有任何反馈或者卡住的地方，直接在群里说就行，响应会很快。"
 
-**预期结果**:
+> "最后，我有一个小小的请求——填一下这个简短的反馈表，5 分钟以内，你的意见对我们改进平台非常重要。"
 
-```json
-{
-  "id": 1,
-  "name": "我的代码审查助手",
-  "status": "active"
-}
-```
+#### 演示步骤
 
-> **状态流转**: DRAFT -> ACTIVE -> ARCHIVED（归档不可逆）
+1. 展示文档链接，简要说明文档结构（快速上手 / 功能手册 / 常见问题）
+2. 展示支持群二维码，邀请用户扫码加入
+3. 分享反馈表单链接，说明填写内容（使用感受、期望功能、遇到的问题）
+4. 留出 2~3 分钟让用户提问
 
 ---
 
-### 步骤 7: (可选) Agent 预览测试
+## 常见问题 Q&A
 
-**操作说明**: 在正式对话前，快速测试 Agent 的回复效果。预览为单轮测试，不创建对话记录。
+**Q1：我的数据会不会被存储或用于训练模型？**
 
-**前端操作**:
-1. 在 Agent 详情页的测试面板中输入测试消息
-2. 查看 Agent 回复
+> 平台处理的对话内容不会用于模型训练，数据存储在企业内部的云环境中，遵循公司的数据安全策略。如有更详细的安全合规需求，可以联系我们提供完整的数据处理说明。
 
-**curl 命令**:
+**Q2：Agent 回答错了怎么办，我能纠正它吗？**
 
-```bash
-# 预览测试（单轮，不持久化）
-curl -X POST "$BASE/api/v1/agents/1/preview" \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "prompt": "请帮我审查这段代码:\ndef add(a, b):\n    return a + b"
-  }'
-```
+> 可以。有两种方式：一是在对话中直接告诉它"这个回答不对，正确的是……"，它会在当次对话中修正；二是更新 system_prompt，加入更明确的约束或背景信息，从根本上改善回答质量。
 
-**预期结果**:
+**Q3：一个 Agent 只能做一件事吗？**
 
-```json
-{
-  "content": "这段代码整体简单，但我有以下审查意见:\n\n**Minor - 类型提示缺失**\n建议添加类型提示...",
-  "model_id": "anthropic.claude-sonnet-4-20250514",
-  "tokens_input": 45,
-  "tokens_output": 120
-}
-```
+> 不是。你可以通过 system_prompt 让它具备多项能力，比如"既能总结文档，也能帮我起草回复邮件"。但我们建议保持职责相对专注，一个 Agent 做 1~3 件相关的事效果会更好，职责过于分散会影响回答质量。
+
+**Q4：平台支持多少个 Agent，会按数量收费吗？**
+
+> Wave 1 阶段是免费试用，不限 Agent 数量。正式商业化后的计费方式我们会提前通知，目前重点是帮助大家把用法跑通、产生真实价值。
+
+**Q5：能不能和我们现有的工具集成，比如飞书、Confluence？**
+
+> 这是我们正在规划的能力。目前支持通过 API 调用的方式集成到内部系统，如果你有具体的集成场景，欢迎在反馈表单或支持群里告诉我们，我们会优先考虑高频需求。
 
 ---
 
-### 步骤 8: 发起对话
+## 针对不同角色的调整建议
 
-**操作说明**: 创建正式对话并与 Agent 交互。
+### 技术用户
 
-**前端操作**:
-1. 点击左侧导航栏的"对话" (`/chat`)
-2. 创建新对话，选择已激活的 Agent
-3. 在消息输入框输入问题，按回车或点击发送
-4. 观看 Agent 以流式方式逐字回复
+**调整重点**：
 
-**curl 命令**:
+- 第 2 步创建 Agent 时，额外展示"代码审查 Agent"模板，说明其对 PR Review、代码规范检查的应用场景
+- 第 4 步重点深入：展示 system_prompt 的结构化写法（角色定义、输出格式、约束条件），以及如何通过参数调整控制回答风格
+- 可额外介绍 API 调用方式，说明 Agent 可以集成进 CI/CD 流程或内部工具
 
-```bash
-# 步骤 1: 创建对话
-CONV_ID=$(curl -s -X POST "$BASE/api/v1/conversations" \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "agent_id": 1,
-    "title": "代码审查会话"
-  }' | jq -r '.id')
+**话术调整**：
 
-echo "对话 ID: $CONV_ID"
-
-# 步骤 2: 发送消息（同步模式）
-curl -X POST "$BASE/api/v1/conversations/$CONV_ID/messages" \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "content": "请帮我审查以下 Python 代码:\n\ndef get_user(id):\n    conn = sqlite3.connect(\"db.sqlite\")\n    cursor = conn.execute(f\"SELECT * FROM users WHERE id = {id}\")\n    return cursor.fetchone()"
-  }'
-
-# 步骤 2 (替代): 发送消息（流式模式，SSE）
-curl -N -X POST "$BASE/api/v1/conversations/$CONV_ID/messages/stream" \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "content": "请帮我审查以下 Python 代码:\n\ndef get_user(id):\n    conn = sqlite3.connect(\"db.sqlite\")\n    cursor = conn.execute(f\"SELECT * FROM users WHERE id = {id}\")\n    return cursor.fetchone()"
-  }'
-```
-
-**预期结果** (同步模式):
-
-```json
-{
-  "id": 1,
-  "conversation_id": 1,
-  "role": "assistant",
-  "content": "## 代码审查报告\n\n### Critical - SQL 注入漏洞\n...",
-  "token_count": 256,
-  "created_at": "2026-02-18T..."
-}
-```
-
-**预期结果** (流式模式，SSE 事件):
-
-```
-data: {"content": "## 代码", "done": false}
-data: {"content": "审查报告", "done": false}
-data: {"content": "\n\n### Critical", "done": false}
-...
-data: {"content": "", "done": true, "message_id": 1, "token_count": 256}
-```
-
-**Demo 话术**: "看，Agent 已经发现了 SQL 注入漏洞，并给出了具体的修改建议。你可以把日常工作中的代码片段发给它审查。"
+> "如果你想在代码提交的时候自动触发一次 Agent 审查，我们有 API 接口可以直接对接，今天先把使用逻辑跑通，下次可以专门看接入方案。"
 
 ---
 
-### 步骤 9: 查看对话历史
+### 产品/运营用户
 
-**操作说明**: 查看之前的对话记录。
+**调整重点**：
 
-**前端操作**:
-1. 在对话页面 (`/chat`) 左侧对话列表中选择历史对话
-2. 查看完整的消息历史
+- 第 2 步额外展示"会议纪要 Agent"模板，演示将会议录音文字稿粘贴进去生成结构化纪要的场景
+- 第 3 步选择与用户日常工作最相关的场景（如用户反馈分析、需求文档整理、竞品信息提炼）
+- 第 4 步强调"不需要技术背景，用日常语言描述需求即可"
 
-**curl 命令**:
+**话术调整**：
 
-```bash
-# 获取对话列表
-curl -X GET "$BASE/api/v1/conversations?page=1&page_size=20" \
-  -H "Authorization: Bearer $TOKEN"
-
-# 获取对话详情（含消息历史）
-curl -X GET "$BASE/api/v1/conversations/$CONV_ID" \
-  -H "Authorization: Bearer $TOKEN"
-```
+> "你平时做需求评审或者整理用户反馈，这些工作其实非常适合 Agent 来辅助。它不会替代你的判断，但可以帮你快速把信息结构化，让你把时间花在真正需要决策的地方。"
 
 ---
 
-### 步骤 10: 结束对话
+### 管理者
 
-**操作说明**: 结束当前对话。
+**调整重点**：
 
-**前端操作**:
-1. 点击对话区域右上角的"结束"按钮
+- 第 1 步重点介绍平台的使用洞察页面，展示团队 Agent 使用情况的统计数据（使用频次、活跃用户、节省时间估算）
+- 第 3 步选择"向上汇报摘要"或"跨团队进展整合"等管理场景
+- 第 4 步可简化，重点说明"平台有管理员权限，可以看到团队的使用情况，也可以控制 Agent 的可见范围"
 
-**curl 命令**:
+**话术调整**：
 
-```bash
-curl -X POST "$BASE/api/v1/conversations/$CONV_ID/complete" \
-  -H "Authorization: Bearer $TOKEN"
-```
-
-**预期结果**: 对话状态变为 `completed`，不再接受新消息。
+> "从管理角度，这个平台让你能看到团队在用 AI 做什么、效率提升在哪里，同时也能统一管理 Agent 的质量和安全边界。这是我们和普通 AI 工具最大的区别——它是一个可管理、可审计的平台，而不只是一个个人工具。"
 
 ---
 
-### 步骤 11: 查看使用洞察 (Insights)
-
-**操作说明**: 查看 Token 消耗和使用统计数据。
-
-**前端操作**:
-1. 点击左侧导航栏的"使用洞察" (`/insights`)
-2. 查看概览统计（Agent 数量、调用次数、Token 消耗、成本）
-3. 查看按 Agent 维度的成本归因
-4. 查看使用趋势图
-
-**curl 命令**:
-
-```bash
-# 获取 Insights 概览
-curl -X GET "$BASE/api/v1/insights/summary" \
-  -H "Authorization: Bearer $TOKEN"
-
-# 获取按 Agent 的成本归因
-curl -X GET "$BASE/api/v1/insights/cost-breakdown" \
-  -H "Authorization: Bearer $TOKEN"
-
-# 获取使用趋势
-curl -X GET "$BASE/api/v1/insights/usage-trends" \
-  -H "Authorization: Bearer $TOKEN"
-```
-
-**预期结果**:
-
-```json
-{
-  "total_agents": 1,
-  "active_agents": 1,
-  "total_invocations": 2,
-  "total_cost": 0.0015,
-  "total_tokens": 512,
-  "period": {
-    "start_date": "2026-01-19",
-    "end_date": "2026-02-18"
-  }
-}
-```
-
-**Demo 话术**: "这是使用洞察页面，你可以看到每个 Agent 消耗了多少 Token、产生了多少成本。管理者可以看到全部数据，普通用户只看到自己的。"
-
----
-
-## 4. 前端页面路径汇总
-
-| 页面 | 路径 | 说明 |
-|------|------|------|
-| 登录 | `/login` | 公开页面 |
-| 注册 | `/register` | 公开页面 |
-| 控制台首页 | `/` | Dashboard 统计概览 |
-| Agent 列表 | `/agents` | 我的 Agent 管理 |
-| 创建 Agent | `/agents/create` | 新建 Agent 表单 |
-| Agent 详情 | `/agents/:agentId` | Agent 配置和预览 |
-| 对话 | `/chat` | 对话列表和消息 |
-| 对话详情 | `/chat/:conversationId` | 指定对话 |
-| 团队执行 | `/team-executions` | Agent Teams 执行记录 |
-| 模板列表 | `/templates` | 模板市场浏览 |
-| 模板详情 | `/templates/:templateId` | 模板配置查看 |
-| 工具列表 | `/tools` | 工具目录 |
-| 工具详情 | `/tools/:toolId` | 工具配置 |
-| 知识库 | `/knowledge` | 知识库管理 |
-| 知识库详情 | `/knowledge/:knowledgeBaseId` | 知识库文档管理 |
-| 使用洞察 | `/insights` | Token 消耗和成本分析 |
-| 评测 | `/evaluation` | Agent 质量评测 |
-| 评测详情 | `/evaluation/:suiteId` | 测试套件管理 |
-| 评测运行 | `/evaluation/runs` | 评测执行记录 |
-
----
-
-## 5. FAQ 和常见问题
-
-### Q1: 注册时提示"注册功能已关闭"？
-
-平台可通过 `REGISTRATION_ENABLED` 环境变量控制注册开关。如遇此问题，联系管理员开启注册，或由管理员通过 Admin API 直接创建账号。
-
-### Q2: 登录后页面显示空白或报错？
-
-- 检查浏览器控制台是否有网络错误
-- 确认 API 地址可正常访问: `curl $BASE/health`
-- 确认使用的是 Chrome 90+ 等现代浏览器
-
-### Q3: 创建 Agent 提示"名称已存在"？
-
-同一用户下 Agent 名称不可重复。请使用不同名称，或删除已有的同名草稿 Agent。
-
-### Q4: 激活 Agent 失败？
-
-激活需满足以下条件:
-- Agent 名称不能为空
-- System Prompt 不能为空
-- Agent 当前状态必须为 DRAFT
-
-### Q5: 对话没有回复或回复很慢？
-
-可能原因:
-1. **模型负载**: 高峰期模型响应可能较慢，稍等片刻
-2. **网络问题**: 检查与平台的网络连接
-3. **Token 超限**: 对话历史过长时，尝试结束当前对话开始新对话
-4. **Agent 未激活**: 确认 Agent 状态为 ACTIVE
-
-### Q6: 如何删除 Agent？
-
-仅 DRAFT 状态的 Agent 可删除。已激活 (ACTIVE) 的 Agent 只能归档 (ARCHIVED)，归档后不可恢复。
-
-### Q7: Token 是什么？费用如何计算？
-
-Token 是 AI 模型处理文本的基本单位，约 3-4 个中文字符对应 1 个 Token。每次对话会消耗 input Token（你的提问）和 output Token（Agent 的回复）。在使用洞察页面可查看详细消耗。
-
-### Q8: 模板列表为空？
-
-预置模板需要管理员手动创建并发布。请联系管理员确认已执行种子数据导入。
-
-### Q9: Access Token 过期后怎么办？
-
-前端会自动使用 Refresh Token 续期。如果 Refresh Token 也过期，需要重新登录。通过 API 使用时:
-
-```bash
-curl -X POST "$BASE/api/v1/auth/refresh" \
-  -H "Content-Type: application/json" \
-  -d '{"refresh_token": "<你的 refresh_token>"}'
-```
-
-### Q10: 如何修改已激活的 Agent 配置？
-
-激活后仍可编辑 Agent 的名称、描述、System Prompt 和模型参数。在 Agent 详情页直接修改并保存。
-
----
-
-## 6. 话术建议
-
-### 6.1 面向技术人员 (DEVELOPER)
-
-**开场白**: "这是我们基于 Amazon Bedrock 构建的内部 AI Agent 平台。和直接用 ChatGPT 不同，你可以创建定制化的 Agent，配置专属的 System Prompt，让 Agent 专注于特定任务场景。"
-
-**核心卖点**:
-- "你可以把代码审查、文档编写等重复性工作交给 Agent"
-- "System Prompt 可以精细定制，比通用 AI 更准确"
-- "所有对话数据和 Token 消耗都可追踪，成本透明"
-- "未来会支持 Agent Teams（多 Agent 协作）和自定义工具调用"
-- "API 完备，可以集成到你的工作流中"
-
-**演示重点**: 展示创建 Agent -> 配置 System Prompt -> 对话的完整流程，强调 API 的灵活性。
-
-### 6.2 面向产品/运营
-
-**开场白**: "这是一个 AI 助手平台，你不需要写代码就能创建自己的 AI 助手。我们已经准备了一些模板，你可以直接使用或者在此基础上调整。"
-
-**核心卖点**:
-- "有现成的模板，一键就能创建会议纪要助手、文档写作助手"
-- "不需要技术背景，在网页上操作就行"
-- "你创建的 Agent 只有你自己能用，数据安全"
-- "可以看到使用了多少 AI 资源，帮助评估价值"
-
-**演示重点**: 从模板创建 Agent 的简便流程，强调"零代码"和"模板"。
-
-### 6.3 面向管理者 (ADMIN)
-
-**开场白**: "这是我们自建的 AI Agent 平台，核心目标是让每个团队都能快速接入 AI 能力，同时保证安全可控和成本透明。"
-
-**核心卖点**:
-- "集中管理所有 AI Agent，统一安全策略和权限控制"
-- "使用洞察页面可以看到全公司的 Token 消耗和成本分析"
-- "审计日志记录所有操作，满足合规要求"
-- "RBAC 权限控制: Admin 管理全局，Developer 创建 Agent，Viewer 浏览"
-- "相比直接采购 SaaS AI 产品，自建平台更灵活、数据更安全"
-
-**演示重点**: Dashboard 概览 -> Insights 成本分析 -> 审计日志，强调"管控"和"可视化"。
-
----
-
-## 附录 A: 预置模板完整参数
-
-### 代码审查助手
-
-```json
-{
-  "name": "代码审查助手",
-  "description": "审查代码质量、安全性和最佳实践，提供改进建议",
-  "category": "code_assistant",
-  "tags": ["代码审查", "安全", "最佳实践"],
-  "system_prompt": "你是一位资深的代码审查专家。请按以下维度审查代码:\n1. **正确性**: 逻辑是否正确，边界条件是否处理\n2. **安全性**: 是否存在 SQL 注入、XSS、敏感信息泄露等问题\n3. **性能**: 算法复杂度、数据库查询优化、内存使用\n4. **可读性**: 命名规范、注释质量、代码结构\n5. **可维护性**: SOLID 原则、DRY 原则、适当抽象\n6. **测试**: 测试覆盖率、测试质量\n\n对每个问题给出严重等级 (Critical/Major/Minor) 和具体修改建议。",
-  "model_id": "anthropic.claude-sonnet-4-20250514",
-  "temperature": 0.2,
-  "max_tokens": 4096
-}
-```
-
-### 会议纪要助手
-
-```json
-{
-  "name": "会议纪要助手",
-  "description": "整理会议记录、提取关键决策和行动项",
-  "category": "workflow_automation",
-  "tags": ["会议", "纪要", "行动项"],
-  "system_prompt": "你是一位会议纪要整理专家。请按以下格式整理会议内容:\n\n## 会议基本信息\n- 日期/时间/参会人\n\n## 议题摘要\n- 每个议题的讨论要点 (简洁)\n\n## 关键决策\n- 列出所有达成共识的决策\n\n## 行动项 (Action Items)\n- 任务 | 负责人 | 截止日期\n\n## 待跟进事项\n- 未解决的问题和下次讨论计划\n\n保持客观准确，不添加未讨论的内容。",
-  "model_id": "anthropic.claude-sonnet-4-20250514",
-  "temperature": 0.2,
-  "max_tokens": 2048
-}
-```
-
-### 技术文档写手
-
-```json
-{
-  "name": "技术文档写手",
-  "description": "撰写 API 文档、用户手册、技术博客等技术内容",
-  "category": "content_creation",
-  "tags": ["文档", "API", "技术写作"],
-  "system_prompt": "你是一位技术文档专家。请遵循以下原则:\n1. 使用清晰、准确的语言，避免歧义\n2. 按照受众水平调整技术深度\n3. 使用结构化格式: 标题、列表、代码块、表格\n4. API 文档包含: 端点、参数、响应示例、错误码\n5. 提供实际可运行的代码示例\n6. 包含使用场景和最佳实践\n7. 使用 Markdown 格式输出",
-  "model_id": "anthropic.claude-sonnet-4-20250514",
-  "temperature": 0.5,
-  "max_tokens": 4096
-}
-```
-
----
-
-## 附录 B: API 端点速查
-
-| 模块 | 方法 | 端点 | 说明 |
-|------|------|------|------|
-| **Auth** | POST | `/api/v1/auth/register` | 注册 |
-| | POST | `/api/v1/auth/login` | 登录 |
-| | POST | `/api/v1/auth/refresh` | 刷新 Token |
-| | POST | `/api/v1/auth/logout` | 登出 |
-| | GET | `/api/v1/auth/me` | 当前用户信息 |
-| **Agents** | POST | `/api/v1/agents` | 创建 Agent |
-| | GET | `/api/v1/agents` | Agent 列表 |
-| | GET | `/api/v1/agents/:id` | Agent 详情 |
-| | PUT | `/api/v1/agents/:id` | 更新 Agent |
-| | DELETE | `/api/v1/agents/:id` | 删除 Agent |
-| | POST | `/api/v1/agents/:id/activate` | 激活 |
-| | POST | `/api/v1/agents/:id/archive` | 归档 |
-| | POST | `/api/v1/agents/:id/preview` | 预览测试 |
-| **Conversations** | POST | `/api/v1/conversations` | 创建对话 |
-| | GET | `/api/v1/conversations` | 对话列表 |
-| | GET | `/api/v1/conversations/:id` | 对话详情 |
-| | POST | `/api/v1/conversations/:id/messages` | 发送消息 |
-| | POST | `/api/v1/conversations/:id/messages/stream` | 流式消息 (SSE) |
-| | POST | `/api/v1/conversations/:id/complete` | 结束对话 |
-| **Templates** | GET | `/api/v1/templates` | 模板列表 |
-| | GET | `/api/v1/templates/:id` | 模板详情 |
-| | POST | `/api/v1/templates` | 创建模板 |
-| | POST | `/api/v1/templates/:id/publish` | 发布模板 |
-| **Insights** | GET | `/api/v1/insights/summary` | 使用概览 |
-| | GET | `/api/v1/insights/cost-breakdown` | 成本归因 |
-| | GET | `/api/v1/insights/usage-trends` | 使用趋势 |
-| | GET | `/api/v1/insights/usage-records` | 使用记录 |
-| **Stats** | GET | `/api/v1/stats/summary` | Dashboard 统计 |
-| **Health** | GET | `/health` | 存活检查 |
+*文档版本：Wave 1 初稿 | 创建日期：2026-02-19*

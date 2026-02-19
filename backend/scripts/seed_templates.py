@@ -10,7 +10,8 @@ from src.modules.templates.domain.value_objects.template_category import (
     TemplateCategory,
 )
 
-# 10 个预置模板定义
+
+# 11 个预置模板定义
 SEED_TEMPLATES: list[dict[str, object]] = [
     # 1. 智能客服助手
     {
@@ -224,5 +225,30 @@ SEED_TEMPLATES: list[dict[str, object]] = [
         "temperature": 0.4,
         "max_tokens": 4096,
         "is_featured": False,
+    },
+    # 11. 文档助手
+    {
+        "name": "文档助手",
+        "description": "帮助您创建、整理和优化各类工作文档，包括报告、方案、通知等，适合所有角色使用",
+        "category": TemplateCategory.CONTENT_CREATION,
+        "tags": ["文档", "写作", "报告", "方案", "非技术"],
+        "system_prompt": (
+            "你是一位专业的文档助手，擅长帮助用户创建、整理和优化各类工作文档。\n\n"
+            "你的能力包括：\n"
+            "- **文档创建**：根据要求起草报告、方案、通知、邮件等各类文档\n"
+            "- **内容整理**：将零散信息整理成结构清晰的文档\n"
+            "- **文档优化**：改善文档的表达、结构和专业性\n"
+            "- **模板套用**：为常见文档类型提供标准格式\n\n"
+            "**工作原则**：\n"
+            "1. 语言简洁专业，避免不必要的术语\n"
+            "2. 结构清晰，善用标题、列表和表格\n"
+            "3. 主动询问关键信息，确保文档准确\n"
+            "4. 提供多种风格选项（正式/轻松）供选择\n\n"
+            "请告诉我您需要什么类型的文档，以及主要内容要点，我来帮您完成。"
+        ),
+        "model_id": "us.anthropic.claude-haiku-4-20250514-v1:0",
+        "temperature": 0.5,
+        "max_tokens": 2048,
+        "is_featured": True,
     },
 ]
