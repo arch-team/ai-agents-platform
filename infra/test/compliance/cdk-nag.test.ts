@@ -1,5 +1,4 @@
 import * as cdk from 'aws-cdk-lib';
-import { Aspects } from 'aws-cdk-lib';
 import { AwsSolutionsChecks, NagSuppressions } from 'cdk-nag';
 import {
   NetworkStack,
@@ -33,7 +32,7 @@ describe('CDK Nag 合规测试', () => {
       envName: 'dev',
     });
 
-    Aspects.of(stack).add(new AwsSolutionsChecks({ verbose: true }));
+    cdk.Aspects.of(stack).add(new AwsSolutionsChecks({ verbose: true }));
 
     NagSuppressions.addStackSuppressions(stack, [
       {
@@ -55,7 +54,7 @@ describe('CDK Nag 合规测试', () => {
       envName: 'dev',
     });
 
-    Aspects.of(stack).add(new AwsSolutionsChecks({ verbose: true }));
+    cdk.Aspects.of(stack).add(new AwsSolutionsChecks({ verbose: true }));
 
     expectNoNagErrors(app, stack);
   });
@@ -72,7 +71,7 @@ describe('CDK Nag 合规测试', () => {
       envName: 'dev',
     });
 
-    Aspects.of(stack).add(new AwsSolutionsChecks({ verbose: true }));
+    cdk.Aspects.of(stack).add(new AwsSolutionsChecks({ verbose: true }));
 
     NagSuppressions.addStackSuppressions(stack, [
       {
@@ -94,15 +93,21 @@ describe('CDK Nag 合规测试', () => {
       envName: 'dev',
     });
 
-    Aspects.of(stack).add(new AwsSolutionsChecks({ verbose: true }));
+    cdk.Aspects.of(stack).add(new AwsSolutionsChecks({ verbose: true }));
 
     expectNoNagErrors(app, stack);
   });
 
   it('ComputeStack 应通过 AWS Solutions checks', () => {
     const app = new cdk.App();
-    const { vpc, dbSecurityGroup, encryptionKeyArn, databaseSecret, jwtSecretArn, databaseEndpoint } =
-      createCrossStackComputeDependencies(app, TEST_ENV);
+    const {
+      vpc,
+      dbSecurityGroup,
+      encryptionKeyArn,
+      databaseSecret,
+      jwtSecretArn,
+      databaseEndpoint,
+    } = createCrossStackComputeDependencies(app, TEST_ENV);
 
     const stack = new ComputeStack(app, 'TestComputeStack', {
       env: TEST_ENV,
@@ -115,15 +120,22 @@ describe('CDK Nag 合规测试', () => {
       envName: 'dev',
     });
 
-    Aspects.of(stack).add(new AwsSolutionsChecks({ verbose: true }));
+    cdk.Aspects.of(stack).add(new AwsSolutionsChecks({ verbose: true }));
 
     expectNoNagErrors(app, stack);
   });
 
   it('MonitoringStack 应通过 AWS Solutions checks', () => {
     const app = new cdk.App();
-    const { vpc, dbSecurityGroup, encryptionKey, encryptionKeyArn, databaseSecret, jwtSecretArn, databaseEndpoint } =
-      createCrossStackComputeDependencies(app, TEST_ENV);
+    const {
+      vpc,
+      dbSecurityGroup,
+      encryptionKey,
+      encryptionKeyArn,
+      databaseSecret,
+      jwtSecretArn,
+      databaseEndpoint,
+    } = createCrossStackComputeDependencies(app, TEST_ENV);
 
     const databaseStack = new DatabaseStack(app, 'TestDbStack', {
       env: TEST_ENV,
@@ -154,7 +166,7 @@ describe('CDK Nag 合规测试', () => {
       envName: 'dev',
     });
 
-    Aspects.of(stack).add(new AwsSolutionsChecks({ verbose: true }));
+    cdk.Aspects.of(stack).add(new AwsSolutionsChecks({ verbose: true }));
 
     expectNoNagErrors(app, stack);
   });

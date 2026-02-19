@@ -24,7 +24,8 @@ class SSEConnectionManager:
         async with self._lock:
             if self._connections[user_id] >= self._max:
                 raise TooManySSEConnectionsError(
-                    user_id=user_id, max_connections=self._max,
+                    user_id=user_id,
+                    max_connections=self._max,
                 )
             self._connections[user_id] += 1
         try:

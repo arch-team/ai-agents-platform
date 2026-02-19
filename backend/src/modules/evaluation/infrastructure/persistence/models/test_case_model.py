@@ -33,6 +33,4 @@ class TestCaseModel(Base):
         onupdate=utc_now,
     )
 
-    __table_args__ = (
-        Index("idx_test_cases_suite_id", "suite_id"),
-    )
+    __table_args__ = (Index("idx_test_cases_suite_id", "suite_id"),)

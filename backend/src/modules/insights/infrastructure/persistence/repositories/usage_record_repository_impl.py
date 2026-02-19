@@ -152,7 +152,10 @@ class UsageRecordRepositoryImpl(
         )
 
     async def get_cost_breakdown_by_agent(
-        self, *, start: datetime, end: datetime,
+        self,
+        *,
+        start: datetime,
+        end: datetime,
     ) -> list[AgentTokenBreakdown]:
         """按 Agent 维度聚合 Token 消耗 (LEFT JOIN agents 获取名称)。"""
         # 使用 text() 构建 LEFT JOIN 获取 agent_name
@@ -199,7 +202,10 @@ class UsageRecordRepositoryImpl(
         ]
 
     async def get_daily_usage_trends(
-        self, *, start: datetime, end: datetime,
+        self,
+        *,
+        start: datetime,
+        end: datetime,
     ) -> list[DailyUsageTrend]:
         """按日维度聚合使用趋势。"""
         date_expr = func.date(UsageRecordModel.recorded_at)
@@ -232,15 +238,15 @@ class UsageRecordRepositoryImpl(
         ]
 
     async def count_distinct_agents(
-        self, *, start: datetime, end: datetime,
+        self,
+        *,
+        start: datetime,
+        end: datetime,
     ) -> int:
         """统计日期范围内的不重复 Agent 数。"""
-        stmt = (
-            select(func.count(distinct(UsageRecordModel.agent_id)))
-            .where(
-                UsageRecordModel.recorded_at >= start,
-                UsageRecordModel.recorded_at <= end,
-            )
+        stmt = select(func.count(distinct(UsageRecordModel.agent_id))).where(
+            UsageRecordModel.recorded_at >= start,
+            UsageRecordModel.recorded_at <= end,
         )
         result = await self._session.execute(stmt)
         return int(result.scalar() or 0)

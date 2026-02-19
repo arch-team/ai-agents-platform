@@ -1181,6 +1181,10 @@ exports[`Snapshot Tests ComputeStack 快照匹配 1`] = `
                   "Fn::ImportValue": "DepsStack:ExportsOutputRefTestJwtSecretEA58522FC30156D5",
                 },
               },
+              {
+                "Name": "CLAUDE_CODE_USE_BEDROCK",
+                "Value": "1",
+              },
             ],
             "Essential": true,
             "HealthCheck": {
@@ -1194,7 +1198,7 @@ exports[`Snapshot Tests ComputeStack 快照匹配 1`] = `
               "Timeout": 5,
             },
             "Image": {
-              "Fn::Sub": "000000000000.dkr.ecr.us-east-1.\${AWS::URLSuffix}/cdk-hnb659fds-container-assets-000000000000-us-east-1:ff02bd6f2881a7f470e552862eec982dd7e252877ea66b0ae01116342c57929c",
+              "Fn::Sub": "000000000000.dkr.ecr.us-east-1.\${AWS::URLSuffix}/cdk-hnb659fds-container-assets-000000000000-us-east-1:daf6627a9bfbe8be3e2dfcc828d2cbdf41167d2b77b1991961d436f473df6f02",
             },
             "LogConfiguration": {
               "LogDriver": "awslogs",

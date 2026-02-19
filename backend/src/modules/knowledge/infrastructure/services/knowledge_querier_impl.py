@@ -49,7 +49,4 @@ class KnowledgeQuerierImpl(IKnowledgeQuerier):
             query,
             top_k=top_k,
         )
-        return [
-            RetrievalResult(content=chunk.content, score=chunk.score)
-            for chunk in chunks
-        ]
+        return [RetrievalResult(content=chunk.content, score=chunk.score) for chunk in chunks]

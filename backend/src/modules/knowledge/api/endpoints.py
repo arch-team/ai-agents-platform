@@ -49,7 +49,9 @@ def _to_doc_response(dto: DocumentDTO) -> DocumentResponse:
 
 @router.post("", status_code=status.HTTP_201_CREATED)
 async def create_knowledge_base(
-    request: CreateKnowledgeBaseRequest, service: ServiceDep, current_user: CurrentUserDep,
+    request: CreateKnowledgeBaseRequest,
+    service: ServiceDep,
+    current_user: CurrentUserDep,
 ) -> KnowledgeBaseResponse:
     """创建知识库。"""
     dto = CreateKnowledgeBaseDTO(**request.model_dump())
@@ -59,14 +61,18 @@ async def create_knowledge_base(
 
 @router.get("")
 async def list_knowledge_bases(
-    service: ServiceDep, current_user: CurrentUserDep,
-    page: Annotated[int, Query(ge=1)] = 1, page_size: Annotated[int, Query(ge=1, le=100)] = 20,
+    service: ServiceDep,
+    current_user: CurrentUserDep,
+    page: Annotated[int, Query(ge=1)] = 1,
+    page_size: Annotated[int, Query(ge=1, le=100)] = 20,
 ) -> KnowledgeBaseListResponse:
     """获取知识库列表。"""
     paged = await service.list_knowledge_bases(current_user.id, page=page, page_size=page_size)
     return KnowledgeBaseListResponse(
         items=[_to_kb_response(kb) for kb in paged.items],
-        total=paged.total, page=paged.page, page_size=paged.page_size,
+        total=paged.total,
+        page=paged.page,
+        page_size=paged.page_size,
         total_pages=calc_total_pages(paged.total, page_size),
     )
 
@@ -80,7 +86,10 @@ async def get_knowledge_base(kb_id: int, service: ServiceDep, current_user: Curr
 
 @router.put("/{kb_id}")
 async def update_knowledge_base(
-    kb_id: int, request: UpdateKnowledgeBaseRequest, service: ServiceDep, current_user: CurrentUserDep,
+    kb_id: int,
+    request: UpdateKnowledgeBaseRequest,
+    service: ServiceDep,
+    current_user: CurrentUserDep,
 ) -> KnowledgeBaseResponse:
     """更新知识库。"""
     dto = UpdateKnowledgeBaseDTO(**request.model_dump())
@@ -96,12 +105,16 @@ async def delete_knowledge_base(kb_id: int, service: ServiceDep, current_user: C
 
 @router.post("/{kb_id}/documents", status_code=status.HTTP_201_CREATED)
 async def upload_document(
-    kb_id: int, file: UploadFile, service: ServiceDep, current_user: CurrentUserDep,
+    kb_id: int,
+    file: UploadFile,
+    service: ServiceDep,
+    current_user: CurrentUserDep,
 ) -> DocumentResponse:
     """上传文档。"""
     content = await file.read()
     dto = UploadDocumentDTO(
-        filename=file.filename or "unnamed", content=content,
+        filename=file.filename or "unnamed",
+        content=content,
         content_type=file.content_type or "application/octet-stream",
     )
     doc = await service.upload_document(kb_id, dto, current_user.id)
@@ -110,14 +123,19 @@ async def upload_document(
 
 @router.get("/{kb_id}/documents")
 async def list_documents(
-    kb_id: int, service: ServiceDep, current_user: CurrentUserDep,
-    page: Annotated[int, Query(ge=1)] = 1, page_size: Annotated[int, Query(ge=1, le=100)] = 20,
+    kb_id: int,
+    service: ServiceDep,
+    current_user: CurrentUserDep,
+    page: Annotated[int, Query(ge=1)] = 1,
+    page_size: Annotated[int, Query(ge=1, le=100)] = 20,
 ) -> DocumentListResponse:
     """获取文档列表。"""
     docs, total = await service.list_documents(kb_id, current_user.id, page=page, page_size=page_size)
     return DocumentListResponse(
         items=[_to_doc_response(d) for d in docs],
-        total=total, page=page, page_size=page_size,
+        total=total,
+        page=page,
+        page_size=page_size,
         total_pages=calc_total_pages(total, page_size),
     )
 
@@ -137,7 +155,10 @@ async def sync_knowledge_base(kb_id: int, service: ServiceDep, current_user: Cur
 
 @router.post("/{kb_id}/query")
 async def query_knowledge_base(
-    kb_id: int, request: QueryRequest, service: ServiceDep, current_user: CurrentUserDep,
+    kb_id: int,
+    request: QueryRequest,
+    service: ServiceDep,
+    current_user: CurrentUserDep,
 ) -> QueryResponse:
     """RAG 检索。"""
     dto = QueryRequestDTO(query=request.query, top_k=request.top_k)
@@ -147,5 +168,6 @@ async def query_knowledge_base(
             QueryResultResponse(content=r.content, score=r.score, document_id=r.document_id, metadata=r.metadata)
             for r in result.results
         ],
-        query=result.query, knowledge_base_id=result.knowledge_base_id,
+        query=result.query,
+        knowledge_base_id=result.knowledge_base_id,
     )

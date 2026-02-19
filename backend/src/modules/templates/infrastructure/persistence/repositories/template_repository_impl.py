@@ -143,8 +143,13 @@ class TemplateRepositoryImpl(PydanticRepository[Template, TemplateModel, int], I
         return [self._to_entity(m) for m in result.scalars().all()]
 
     async def search(  # noqa: D102
-        self, keyword: str, *, category: TemplateCategory | None = None,
-        tags: list[str] | None = None, offset: int = 0, limit: int = 20,  # noqa: ARG002
+        self,
+        keyword: str,
+        *,
+        category: TemplateCategory | None = None,
+        tags: list[str] | None = None,  # noqa: ARG002
+        offset: int = 0,
+        limit: int = 20,
     ) -> list[Template]:
         conditions = self._build_search_conditions(keyword, category)
         stmt = select(TemplateModel)
@@ -155,7 +160,10 @@ class TemplateRepositoryImpl(PydanticRepository[Template, TemplateModel, int], I
         return [self._to_entity(m) for m in result.scalars().all()]
 
     async def count_by_search(  # noqa: D102
-        self, keyword: str, *, category: TemplateCategory | None = None,
+        self,
+        keyword: str,
+        *,
+        category: TemplateCategory | None = None,
         tags: list[str] | None = None,  # noqa: ARG002
     ) -> int:
         conditions = self._build_search_conditions(keyword, category)

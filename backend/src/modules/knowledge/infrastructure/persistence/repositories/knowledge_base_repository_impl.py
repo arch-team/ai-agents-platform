@@ -34,7 +34,8 @@ class KnowledgeBaseRepositoryImpl(
 
     async def get_by_name_and_owner(self, name: str, owner_id: int) -> KnowledgeBase | None:  # noqa: D102
         stmt = select(KnowledgeBaseModel).where(
-            KnowledgeBaseModel.name == name, KnowledgeBaseModel.owner_id == owner_id,
+            KnowledgeBaseModel.name == name,
+            KnowledgeBaseModel.owner_id == owner_id,
         )
         result = await self._session.execute(stmt)
         model = result.scalar_one_or_none()

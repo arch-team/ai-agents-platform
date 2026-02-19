@@ -11,7 +11,6 @@ import { streamSSE } from '../lib/sse';
 import { useTeamExecActions } from '../model/store';
 
 import { teamExecutionKeys } from './queries';
-import type { TeamExecutionSSEChunk } from './types';
 
 /**
  * 流式接收 Team Execution 日志 hook
@@ -63,6 +62,3 @@ export function useTeamExecutionStream(token: string | null) {
 
   return { startStream };
 }
-
-// 辅助类型 — 将 SSE chunk 转为 store 日志格式
-export type { TeamExecutionSSEChunk };

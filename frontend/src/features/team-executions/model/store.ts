@@ -22,8 +22,6 @@ export const useTeamExecStore = create<TeamExecState>()((set) => ({
 // 细粒度 selector hooks
 export const useStreamLogs = () => useTeamExecStore((state) => state.streamLogs);
 export const useIsTeamStreaming = () => useTeamExecStore((state) => state.isStreaming);
-export const useSelectedExecutionId = () =>
-  useTeamExecStore((state) => state.selectedExecutionId);
 export const useTeamExecError = () => useTeamExecStore((state) => state.error);
 export const useTeamExecActions = () =>
   useTeamExecStore(

@@ -9,7 +9,7 @@ import * as sns from 'aws-cdk-lib/aws-sns';
 import * as subscriptions from 'aws-cdk-lib/aws-sns-subscriptions';
 import { NagSuppressions } from 'cdk-nag';
 import { Construct } from 'constructs';
-import { PROJECT_NAME, type BaseStackProps } from '../config';
+import { PROJECT_NAME, type BaseStackProps, type EnvironmentName } from '../config';
 
 /** 监控指标统一采样周期 (5 分钟) */
 const METRIC_PERIOD = cdk.Duration.minutes(5);
@@ -51,7 +51,8 @@ export class MonitoringStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props: MonitoringStackProps) {
     super(scope, id, props);
 
-    const { cluster, service, loadBalancer, targetGroup, encryptionKey, alertEmail, envName } = props;
+    const { cluster, service, loadBalancer, targetGroup, encryptionKey, alertEmail, envName } =
+      props;
 
     // SNS 告警主题 — 使用 KMS CMK 加密 (如提供)
     this.alertTopic = new sns.Topic(this, 'AlertTopic', {
@@ -90,7 +91,7 @@ export class MonitoringStack extends cdk.Stack {
   }
 
   /** 创建 Aurora 数据库监控告警 */
-  private createAuroraAlarms(cluster: rds.IDatabaseCluster, envName: string): void {
+  private createAuroraAlarms(cluster: rds.IDatabaseCluster, envName: EnvironmentName): void {
     // Aurora CPU 利用率告警 — 连续 3 个 5 分钟数据点超过 80%
     this.createAlarm('AuroraCpuAlarm', {
       alarmName: `${PROJECT_NAME}-${envName}-aurora-cpu-high`,
@@ -115,7 +116,10 @@ export class MonitoringStack extends cdk.Stack {
     this.createAlarm('AuroraConnectionsAlarm', {
       alarmName: `${PROJECT_NAME}-${envName}-aurora-connections-high`,
       alarmDescription: 'Aurora database connections exceed 80% of max',
-      metric: cluster.metric('DatabaseConnections', { period: METRIC_PERIOD, statistic: 'Average' }),
+      metric: cluster.metric('DatabaseConnections', {
+        period: METRIC_PERIOD,
+        statistic: 'Average',
+      }),
       threshold: 72, // 90 * 0.8 = 72
       ...ALARM_DEFAULTS,
       comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
@@ -123,7 +127,7 @@ export class MonitoringStack extends cdk.Stack {
   }
 
   /** 创建 ECS 服务监控告警 */
-  private createEcsAlarms(service: ecs.FargateService, envName: string): void {
+  private createEcsAlarms(service: ecs.FargateService, envName: EnvironmentName): void {
     // ECS CPU 利用率告警 — 连续 3 个 5 分钟数据点超过 80%
     this.createAlarm('EcsCpuAlarm', {
       alarmName: `${PROJECT_NAME}-${envName}-ecs-cpu-high`,
@@ -149,7 +153,7 @@ export class MonitoringStack extends cdk.Stack {
   private createAlbAlarms(
     loadBalancer: elbv2.IApplicationLoadBalancer,
     targetGroup: elbv2.IApplicationTargetGroup,
-    envName: string,
+    envName: EnvironmentName,
   ): void {
     /** ALB 告警使用即时触发 (单个数据点) */
     const ALB_ALARM_OVERRIDES = { evaluationPeriods: 1 } as const;
@@ -158,7 +162,10 @@ export class MonitoringStack extends cdk.Stack {
     this.createAlarm('UnhealthyHostAlarm', {
       alarmName: `${PROJECT_NAME}-${envName}-alb-unhealthy-hosts`,
       alarmDescription: 'ALB target group has unhealthy hosts',
-      metric: targetGroup.metrics.unhealthyHostCount({ period: METRIC_PERIOD, statistic: 'Maximum' }),
+      metric: targetGroup.metrics.unhealthyHostCount({
+        period: METRIC_PERIOD,
+        statistic: 'Maximum',
+      }),
       threshold: 1,
       ...ALARM_DEFAULTS,
       ...ALB_ALARM_OVERRIDES,
@@ -186,7 +193,7 @@ export class MonitoringStack extends cdk.Stack {
     service: ecs.FargateService,
     loadBalancer: elbv2.IApplicationLoadBalancer,
     targetGroup: elbv2.IApplicationTargetGroup,
-    envName: string,
+    envName: EnvironmentName,
   ): void {
     const dashboard = new cloudwatch.Dashboard(this, 'Dashboard', {
       dashboardName: `${PROJECT_NAME}-${envName}`,

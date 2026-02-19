@@ -28,7 +28,6 @@ export const useChatStore = create<ChatState>()((set) => ({
 // 细粒度 selector hooks
 export const useStreamingContent = () => useChatStore((state) => state.streamingContent);
 export const useIsStreaming = () => useChatStore((state) => state.isStreaming);
-export const useCurrentConversationId = () => useChatStore((state) => state.currentConversationId);
 export const useChatError = () => useChatStore((state) => state.error);
 export const useChatActions = () =>
   useChatStore(

@@ -32,7 +32,11 @@ class DocumentRepositoryImpl(
     )
 
     async def list_by_knowledge_base(  # noqa: D102
-        self, knowledge_base_id: int, *, offset: int = 0, limit: int = 20,
+        self,
+        knowledge_base_id: int,
+        *,
+        offset: int = 0,
+        limit: int = 20,
     ) -> list[Document]:
         stmt = (
             select(DocumentModel)

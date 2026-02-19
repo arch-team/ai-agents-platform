@@ -123,12 +123,14 @@ async def get_team_execution_service(
     agent_runtime = get_agent_runtime()
     settings = get_settings()
 
-    def _bg_repo_factory() -> tuple[
-        TeamExecutionRepositoryImpl,
-        TeamExecutionLogRepositoryImpl,
-        Callable[[], Awaitable[None]],
-        Callable[[], Awaitable[None]],
-    ]:
+    def _bg_repo_factory() -> (
+        tuple[
+            TeamExecutionRepositoryImpl,
+            TeamExecutionLogRepositoryImpl,
+            Callable[[], Awaitable[None]],
+            Callable[[], Awaitable[None]],
+        ]
+    ):
         """为后台任务创建独立 session 的 repos。"""
         bg_session = get_session_factory()()
         return (

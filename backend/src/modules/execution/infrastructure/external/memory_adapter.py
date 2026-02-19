@@ -107,9 +107,7 @@ class MemoryAdapter:
             await asyncio.to_thread(
                 client.update_memory,
                 memoryId=self._memory_id,
-                memoryStrategies=[
-                    {"strategyType": s} for s in (strategies or ["summary", "semantic"])
-                ],
+                memoryStrategies=[{"strategyType": s} for s in (strategies or ["summary", "semantic"])],
             )
         except Exception:
             logger.exception("memory_strategy_config_failed")

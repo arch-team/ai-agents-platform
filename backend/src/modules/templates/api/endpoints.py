@@ -27,7 +27,9 @@ def _to_response(dto: TemplateDTO) -> TemplateResponse:
 
 @router.post("", status_code=status.HTTP_201_CREATED)
 async def create_template(
-    request: CreateTemplateRequest, service: ServiceDep, current_user: CurrentUserDep,
+    request: CreateTemplateRequest,
+    service: ServiceDep,
+    current_user: CurrentUserDep,
 ) -> TemplateResponse:
     """创建模板。"""
     dto = CreateTemplateDTO(**request.model_dump())
@@ -37,28 +39,37 @@ async def create_template(
 
 @router.get("")
 async def list_templates(
-    service: ServiceDep, page: Annotated[int, Query(ge=1)] = 1, page_size: Annotated[int, Query(ge=1, le=100)] = 20,
-    category: str | None = None, keyword: str | None = None,
+    service: ServiceDep,
+    page: Annotated[int, Query(ge=1)] = 1,
+    page_size: Annotated[int, Query(ge=1, le=100)] = 20,
+    category: str | None = None,
+    keyword: str | None = None,
 ) -> TemplateListResponse:
     """获取模板列表 (公开已发布 + 搜索/分类筛选)。"""
     paged = await service.list_templates(page=page, page_size=page_size, category=category, keyword=keyword)
     return TemplateListResponse(
         items=[_to_response(t) for t in paged.items],
-        total=paged.total, page=paged.page, page_size=paged.page_size,
+        total=paged.total,
+        page=paged.page,
+        page_size=paged.page_size,
         total_pages=calc_total_pages(paged.total, page_size),
     )
 
 
 @router.get("/mine")
 async def list_my_templates(
-    service: ServiceDep, current_user: CurrentUserDep,
-    page: Annotated[int, Query(ge=1)] = 1, page_size: Annotated[int, Query(ge=1, le=100)] = 20,
+    service: ServiceDep,
+    current_user: CurrentUserDep,
+    page: Annotated[int, Query(ge=1)] = 1,
+    page_size: Annotated[int, Query(ge=1, le=100)] = 20,
 ) -> TemplateListResponse:
     """获取我的模板列表 (含所有状态)。"""
     paged = await service.list_my_templates(current_user.id, page=page, page_size=page_size)
     return TemplateListResponse(
         items=[_to_response(t) for t in paged.items],
-        total=paged.total, page=paged.page, page_size=paged.page_size,
+        total=paged.total,
+        page=paged.page,
+        page_size=paged.page_size,
         total_pages=calc_total_pages(paged.total, page_size),
     )
 
@@ -72,7 +83,10 @@ async def get_template(template_id: int, service: ServiceDep) -> TemplateRespons
 
 @router.put("/{template_id}")
 async def update_template(
-    template_id: int, request: UpdateTemplateRequest, service: ServiceDep, current_user: CurrentUserDep,
+    template_id: int,
+    request: UpdateTemplateRequest,
+    service: ServiceDep,
+    current_user: CurrentUserDep,
 ) -> TemplateResponse:
     """更新模板 (仅 DRAFT 状态)。"""
     dto = UpdateTemplateDTO(**request.model_dump())

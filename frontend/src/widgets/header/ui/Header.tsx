@@ -3,12 +3,12 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 
 import { useAuth, useLogout } from '@/features/auth';
-import type { User } from '@/entities/user';
+import type { UserSummary } from '@/entities/user';
 import { cn } from '@/shared/lib/cn';
 import { Button } from '@/shared/ui';
 
 // 角色样式映射 — 避免嵌套三元运算符
-const ROLE_STYLES: Record<User['role'], string> = {
+const ROLE_STYLES: Record<UserSummary['role'], string> = {
   admin: 'bg-purple-100 text-purple-700',
   developer: 'bg-blue-100 text-blue-700',
   viewer: 'bg-gray-100 text-gray-700',

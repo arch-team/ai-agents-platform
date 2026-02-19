@@ -32,7 +32,9 @@ class CostExplorerAdapter(ICostExplorer):
         """查询指定日期范围的 Bedrock 成本 (get_cost_and_usage)。"""
         try:
             response: dict[str, Any] = await asyncio.to_thread(
-                self._fetch_cost, start_date, end_date,
+                self._fetch_cost,
+                start_date,
+                end_date,
             )
         except Exception:
             logger.exception("cost_explorer_api_failed", start_date=start_date, end_date=end_date)

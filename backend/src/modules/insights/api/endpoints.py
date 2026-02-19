@@ -44,7 +44,8 @@ def _effective_user_id(current_user: UserDTO, requested_user_id: int | None) -> 
 
 
 def _parse_date_range(
-    start_date: str | None, end_date: str | None,
+    start_date: str | None,
+    end_date: str | None,
 ) -> tuple[datetime, datetime]:
     """解析日期范围参数，默认最近 30 天。"""
     now = datetime.now(tz=UTC)
@@ -59,24 +60,34 @@ def _parse_date_range(
 
 @router.get("/usage-records")
 async def list_usage_records(
-    service: ServiceDep, current_user: CurrentUserDep,
-    user_id: Annotated[int | None, Query()] = None, agent_id: Annotated[int | None, Query()] = None,
-    page: Annotated[int, Query(ge=1)] = 1, page_size: Annotated[int, Query(ge=1, le=100)] = 20,
+    service: ServiceDep,
+    current_user: CurrentUserDep,
+    user_id: Annotated[int | None, Query()] = None,
+    agent_id: Annotated[int | None, Query()] = None,
+    page: Annotated[int, Query(ge=1)] = 1,
+    page_size: Annotated[int, Query(ge=1, le=100)] = 20,
 ) -> UsageRecordListResponse:
     """获取使用记录列表 (支持用户/Agent 过滤)。"""
     paged = await service.list_usage_records(
-        user_id=_effective_user_id(current_user, user_id), agent_id=agent_id, page=page, page_size=page_size,
+        user_id=_effective_user_id(current_user, user_id),
+        agent_id=agent_id,
+        page=page,
+        page_size=page_size,
     )
     return UsageRecordListResponse(
         items=[_to_record_response(r) for r in paged.items],
-        total=paged.total, page=paged.page, page_size=paged.page_size,
+        total=paged.total,
+        page=paged.page,
+        page_size=paged.page_size,
         total_pages=calc_total_pages(paged.total, page_size),
     )
 
 
 @router.get("/usage-records/{record_id}")
 async def get_usage_record(
-    record_id: int, service: ServiceDep, current_user: CurrentUserDep,  # noqa: ARG001
+    record_id: int,
+    service: ServiceDep,
+    current_user: CurrentUserDep,  # noqa: ARG001
 ) -> UsageRecordResponse:
     """获取使用记录详情。"""
     dto = await service.get_usage_record(record_id)
@@ -85,7 +96,8 @@ async def get_usage_record(
 
 @router.get("/summary", response_model=InsightsSummaryResponse)
 async def get_insights_summary(
-    service: ServiceDep, current_user: CurrentUserDep,  # noqa: ARG001
+    service: ServiceDep,
+    current_user: CurrentUserDep,  # noqa: ARG001
     start_date: Annotated[str | None, Query()] = None,
     end_date: Annotated[str | None, Query()] = None,
 ) -> InsightsSummaryResponse:
@@ -107,7 +119,8 @@ async def get_insights_summary(
 
 @router.get("/cost-breakdown", response_model=CostBreakdownResponse)
 async def get_cost_breakdown(
-    service: ServiceDep, current_user: CurrentUserDep,  # noqa: ARG001
+    service: ServiceDep,
+    current_user: CurrentUserDep,  # noqa: ARG001
     start_date: Annotated[str | None, Query()] = None,
     end_date: Annotated[str | None, Query()] = None,
 ) -> CostBreakdownResponse:
@@ -138,7 +151,8 @@ async def get_cost_breakdown(
 
 @router.get("/usage-trends", response_model=UsageTrendResponse)
 async def get_usage_trends(
-    service: ServiceDep, current_user: CurrentUserDep,  # noqa: ARG001
+    service: ServiceDep,
+    current_user: CurrentUserDep,  # noqa: ARG001
     start_date: Annotated[str | None, Query()] = None,
     end_date: Annotated[str | None, Query()] = None,
 ) -> UsageTrendResponse:
@@ -166,18 +180,26 @@ async def get_usage_trends(
 # 保留旧的 summary 端点向后兼容
 @router.get("/usage-summary")
 async def get_usage_summary(
-    service: ServiceDep, current_user: CurrentUserDep,
-    user_id: Annotated[int | None, Query()] = None, agent_id: Annotated[int | None, Query()] = None,
-    start_date: Annotated[datetime | None, Query()] = None, end_date: Annotated[datetime | None, Query()] = None,
+    service: ServiceDep,
+    current_user: CurrentUserDep,
+    user_id: Annotated[int | None, Query()] = None,
+    agent_id: Annotated[int | None, Query()] = None,
+    start_date: Annotated[datetime | None, Query()] = None,
+    end_date: Annotated[datetime | None, Query()] = None,
     period: Annotated[str, Query()] = "all",
 ) -> UsageSummaryResponse:
     """获取使用量摘要统计 (旧接口，向后兼容)。"""
     summary = await service.get_usage_summary(
         user_id=_effective_user_id(current_user, user_id),
-        agent_id=agent_id, start=start_date, end=end_date, period=period,
+        agent_id=agent_id,
+        start=start_date,
+        end=end_date,
+        period=period,
     )
     return UsageSummaryResponse(
-        total_tokens=summary.total_tokens, total_cost=summary.total_cost,
-        conversation_count=summary.conversation_count, record_count=summary.record_count,
+        total_tokens=summary.total_tokens,
+        total_cost=summary.total_cost,
+        conversation_count=summary.conversation_count,
+        record_count=summary.record_count,
         period=summary.period,
     )

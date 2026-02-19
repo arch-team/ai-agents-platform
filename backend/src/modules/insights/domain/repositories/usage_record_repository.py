@@ -69,18 +69,27 @@ class IUsageRecordRepository(IRepository[UsageRecord, int]):
 
     @abstractmethod
     async def get_cost_breakdown_by_agent(
-        self, *, start: datetime, end: datetime,
+        self,
+        *,
+        start: datetime,
+        end: datetime,
     ) -> list[AgentTokenBreakdown]:
         """按 Agent 维度聚合 Token 消耗。"""
 
     @abstractmethod
     async def get_daily_usage_trends(
-        self, *, start: datetime, end: datetime,
+        self,
+        *,
+        start: datetime,
+        end: datetime,
     ) -> list[DailyUsageTrend]:
         """按日维度聚合使用趋势。"""
 
     @abstractmethod
     async def count_distinct_agents(
-        self, *, start: datetime, end: datetime,
+        self,
+        *,
+        start: datetime,
+        end: datetime,
     ) -> int:
         """统计日期范围内的不重复 Agent 数。"""

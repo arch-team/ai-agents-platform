@@ -1,6 +1,5 @@
 """Template 应用服务。"""
 
-
 from src.modules.templates.application.dto.template_dto import (
     CreateTemplateDTO,
     TemplateDTO,

@@ -75,7 +75,10 @@ def fetch_database_credentials(secret_arn: str, region: str) -> DatabaseCredenti
     """
     try:
         secret_dict = _fetch_secret(
-            secret_arn, region, client_label="数据库凭证", format_label="数据库",
+            secret_arn,
+            region,
+            client_label="数据库凭证",
+            format_label="数据库",
         )
         return DatabaseCredentials(
             username=secret_dict["username"],
@@ -97,7 +100,10 @@ def fetch_jwt_credentials(secret_arn: str, region: str) -> JwtCredentials:
     """
     try:
         secret_dict = _fetch_secret(
-            secret_arn, region, client_label=" JWT 密钥", format_label="JWT",
+            secret_arn,
+            region,
+            client_label=" JWT 密钥",
+            format_label="JWT",
         )
         return JwtCredentials(secret_key=secret_dict["secret_key"])
     except KeyError as e:

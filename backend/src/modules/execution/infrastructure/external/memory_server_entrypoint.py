@@ -104,14 +104,17 @@ def _make_error(
 
 def _handle_initialize(request_id: int | str | None) -> dict[str, Any]:
     """处理 initialize 请求。"""
-    return _make_response(request_id, {
-        "protocolVersion": MCP_PROTOCOL_VERSION,
-        "capabilities": {"tools": {}},
-        "serverInfo": {
-            "name": SERVER_NAME,
-            "version": SERVER_VERSION,
+    return _make_response(
+        request_id,
+        {
+            "protocolVersion": MCP_PROTOCOL_VERSION,
+            "capabilities": {"tools": {}},
+            "serverInfo": {
+                "name": SERVER_NAME,
+                "version": SERVER_VERSION,
+            },
         },
-    })
+    )
 
 
 def _handle_tools_list(request_id: int | str | None) -> dict[str, Any]:
@@ -134,9 +137,12 @@ async def _handle_tools_call(
             content=arguments["content"],
             topic=arguments["topic"],
         )
-        return _make_response(request_id, {
-            "content": [{"type": "text", "text": record_id or "memory_save_skipped"}],
-        })
+        return _make_response(
+            request_id,
+            {
+                "content": [{"type": "text", "text": record_id or "memory_save_skipped"}],
+            },
+        )
 
     if tool_name == "recall_memory":
         items = await adapter.recall_memory(
@@ -153,9 +159,12 @@ async def _handle_tools_call(
             }
             for item in items
         ]
-        return _make_response(request_id, {
-            "content": [{"type": "text", "text": json.dumps(results, ensure_ascii=False)}],
-        })
+        return _make_response(
+            request_id,
+            {
+                "content": [{"type": "text", "text": json.dumps(results, ensure_ascii=False)}],
+            },
+        )
 
     return _make_error(request_id, -32601, f"未知工具: {tool_name}")
 
@@ -200,7 +209,8 @@ async def run_stdio_loop(adapter: MemoryAdapter) -> None:
 
     loop = asyncio.get_event_loop()
     write_transport, _ = await loop.connect_write_pipe(
-        asyncio.Protocol, sys.stdout,
+        asyncio.Protocol,
+        sys.stdout,
     )
 
     logger.info("memory_mcp_server_started")

@@ -24,7 +24,9 @@ class MemoryExtractionHandler:
     """异步记忆提取处理器。"""
 
     def __init__(
-        self, memory_adapter: MemoryAdapter, session_factory: async_sessionmaker[AsyncSession],
+        self,
+        memory_adapter: MemoryAdapter,
+        session_factory: async_sessionmaker[AsyncSession],
     ) -> None:
         self._memory_adapter = memory_adapter
         self._session_factory = session_factory

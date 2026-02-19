@@ -28,23 +28,39 @@ AdminUserDep = Annotated[UserDTO, Depends(require_role(Role.ADMIN))]
 def _to_response(dto: ToolDTO) -> ToolResponse:
     """ToolDTO -> ToolResponse（含嵌套 config 结构）。"""
     return ToolResponse(
-        id=dto.id, name=dto.name, description=dto.description,
-        tool_type=dto.tool_type, version=dto.version, status=dto.status, creator_id=dto.creator_id,
+        id=dto.id,
+        name=dto.name,
+        description=dto.description,
+        tool_type=dto.tool_type,
+        version=dto.version,
+        status=dto.status,
+        creator_id=dto.creator_id,
         config=ToolConfigResponse(
-            server_url=dto.server_url, transport=dto.transport, endpoint_url=dto.endpoint_url,
-            method=dto.method, runtime=dto.runtime, handler=dto.handler,
-            code_uri=dto.code_uri, auth_type=dto.auth_type,
+            server_url=dto.server_url,
+            transport=dto.transport,
+            endpoint_url=dto.endpoint_url,
+            method=dto.method,
+            runtime=dto.runtime,
+            handler=dto.handler,
+            code_uri=dto.code_uri,
+            auth_type=dto.auth_type,
         ),
-        allowed_roles=dto.allowed_roles, gateway_target_id=dto.gateway_target_id,
-        reviewer_id=dto.reviewer_id, review_comment=dto.review_comment,
-        reviewed_at=dto.reviewed_at, created_at=dto.created_at, updated_at=dto.updated_at,
+        allowed_roles=dto.allowed_roles,
+        gateway_target_id=dto.gateway_target_id,
+        reviewer_id=dto.reviewer_id,
+        review_comment=dto.review_comment,
+        reviewed_at=dto.reviewed_at,
+        created_at=dto.created_at,
+        updated_at=dto.updated_at,
     )
 
 
 def _to_list_response(paged: PagedResult[ToolDTO], page_size: int) -> ToolListResponse:
     return ToolListResponse(
         items=[_to_response(t) for t in paged.items],
-        total=paged.total, page=paged.page, page_size=paged.page_size,
+        total=paged.total,
+        page=paged.page,
+        page_size=paged.page_size,
         total_pages=calc_total_pages(paged.total, page_size),
     )
 
@@ -59,15 +75,21 @@ async def create_tool(request: CreateToolRequest, service: ServiceDep, current_u
 
 @router.get("")
 async def list_tools(
-    service: ServiceDep, current_user: CurrentUserDep,  # noqa: ARG001
+    service: ServiceDep,
+    current_user: CurrentUserDep,  # noqa: ARG001
     status_filter: Annotated[ToolStatus | None, Query(alias="status")] = None,
     type_filter: Annotated[ToolType | None, Query(alias="type")] = None,
     keyword: Annotated[str | None, Query()] = None,
-    page: Annotated[int, Query(ge=1)] = 1, page_size: Annotated[int, Query(ge=1, le=100)] = 20,
+    page: Annotated[int, Query(ge=1)] = 1,
+    page_size: Annotated[int, Query(ge=1, le=100)] = 20,
 ) -> ToolListResponse:
     """获取 Tool 列表，支持多维筛选。"""
     paged = await service.list_tools(
-        status=status_filter, tool_type=type_filter, keyword=keyword, page=page, page_size=page_size,
+        status=status_filter,
+        tool_type=type_filter,
+        keyword=keyword,
+        page=page,
+        page_size=page_size,
     )
     return _to_list_response(paged, page_size)
 
@@ -75,8 +97,10 @@ async def list_tools(
 # NOTE: /approved 必须在 /{tool_id} 之前注册
 @router.get("/approved")
 async def list_approved_tools(
-    service: ServiceDep, current_user: CurrentUserDep,  # noqa: ARG001
-    page: Annotated[int, Query(ge=1)] = 1, page_size: Annotated[int, Query(ge=1, le=100)] = 20,
+    service: ServiceDep,
+    current_user: CurrentUserDep,  # noqa: ARG001
+    page: Annotated[int, Query(ge=1)] = 1,
+    page_size: Annotated[int, Query(ge=1, le=100)] = 20,
 ) -> ToolListResponse:
     """获取已批准的 Tool 列表。任意认证用户可访问。"""
     paged = await service.list_approved_tools(page=page, page_size=page_size)
@@ -92,7 +116,10 @@ async def get_tool(tool_id: int, service: ServiceDep, current_user: CurrentUserD
 
 @router.put("/{tool_id}")
 async def update_tool(
-    tool_id: int, request: UpdateToolRequest, service: ServiceDep, current_user: CurrentUserDep,
+    tool_id: int,
+    request: UpdateToolRequest,
+    service: ServiceDep,
+    current_user: CurrentUserDep,
 ) -> ToolResponse:
     """更新 Tool。仅 creator 可操作，仅 DRAFT/REJECTED 可编辑。"""
     dto = UpdateToolDTO(**request.model_dump())
@@ -122,7 +149,10 @@ async def approve_tool(tool_id: int, service: ServiceDep, current_user: AdminUse
 
 @router.post("/{tool_id}/reject")
 async def reject_tool(
-    tool_id: int, request: RejectToolRequest, service: ServiceDep, current_user: AdminUserDep,
+    tool_id: int,
+    request: RejectToolRequest,
+    service: ServiceDep,
+    current_user: AdminUserDep,
 ) -> ToolResponse:
     """审批拒绝 Tool。仅 ADMIN 可操作。"""
     tool = await service.reject_tool(tool_id, current_user.id, request.comment)

@@ -2,7 +2,6 @@
 import 'source-map-support/register';
 import * as cdk from 'aws-cdk-lib';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
-import { Aspects } from 'aws-cdk-lib';
 import { AwsSolutionsChecks } from 'cdk-nag';
 import { getEnvironmentConfig, getRequiredTags, isDev, isProd } from '../lib/config';
 import {
@@ -24,11 +23,11 @@ Object.entries(tags).forEach(([key, value]) => {
 });
 
 // 启用 CDK Nag
-Aspects.of(app).add(new AwsSolutionsChecks({ verbose: true }));
+cdk.Aspects.of(app).add(new AwsSolutionsChecks({ verbose: true }));
 
 // 提取公共环境配置，避免重复构建 env 对象
 const cdkEnv = { account: envConfig.account, region: envConfig.region };
-const prefix = `ai-agents-plat`;  // Stack 命名前缀
+const prefix = `ai-agents-plat`; // Stack 命名前缀
 const env = envConfig.envName;
 
 // Stack 实例化 — 命名规范: ai-agents-plat-{stack}-{env}
@@ -69,7 +68,11 @@ const computeStack = new ComputeStack(app, `${prefix}-compute-${env}`, {
   encryptionKeyArn: securityStack.encryptionKey.keyArn,
   jwtSecretArn: securityStack.jwtSecret.secretArn,
   envName: env,
-  // Prod: 512 CPU / 1024 MiB / 2 任务; Dev: 256 CPU / 512 MiB / 1 任务 (默认)
+  // Prod: 512 CPU / 1024 MiB / 2 任务; Dev: 256 CPU / 1024 MiB / 1 任务
+  // Dev 内存从 512→1024 MiB: claude-agent-sdk bundled CLI 运行时需要 >512 MiB (OOM SIGKILL 修复)
+  ...(!isProd(env) && {
+    memoryLimitMiB: 1024,
+  }),
   ...(isProd(env) && {
     cpu: 512,
     memoryLimitMiB: 1024,
