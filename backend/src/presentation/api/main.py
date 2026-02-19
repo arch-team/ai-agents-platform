@@ -132,22 +132,37 @@ def _register_audit_event_subscriptions() -> None:
     # 需要订阅的所有事件类型
     event_types = [
         # agents
-        AgentCreatedEvent, AgentUpdatedEvent, AgentActivatedEvent,
-        AgentArchivedEvent, AgentDeletedEvent,
+        AgentCreatedEvent,
+        AgentUpdatedEvent,
+        AgentActivatedEvent,
+        AgentArchivedEvent,
+        AgentDeletedEvent,
         # execution
-        ConversationCreatedEvent, TeamExecutionStartedEvent,
-        TeamExecutionCompletedEvent, TeamExecutionFailedEvent,
+        ConversationCreatedEvent,
+        TeamExecutionStartedEvent,
+        TeamExecutionCompletedEvent,
+        TeamExecutionFailedEvent,
         # tool_catalog
-        ToolCreatedEvent, ToolUpdatedEvent, ToolDeletedEvent,
-        ToolSubmittedEvent, ToolApprovedAudit, ToolRejectedEvent, ToolDeprecatedAudit,
+        ToolCreatedEvent,
+        ToolUpdatedEvent,
+        ToolDeletedEvent,
+        ToolSubmittedEvent,
+        ToolApprovedAudit,
+        ToolRejectedEvent,
+        ToolDeprecatedAudit,
         # knowledge
-        KnowledgeBaseCreatedEvent, KnowledgeBaseActivatedEvent,
-        KnowledgeBaseDeletedEvent, DocumentUploadedEvent,
+        KnowledgeBaseCreatedEvent,
+        KnowledgeBaseActivatedEvent,
+        KnowledgeBaseDeletedEvent,
+        DocumentUploadedEvent,
         # templates
-        TemplateCreatedEvent, TemplatePublishedEvent, TemplateArchivedEvent,
+        TemplateCreatedEvent,
+        TemplatePublishedEvent,
+        TemplateArchivedEvent,
     ]
 
     for event_type in event_types:
+
         async def _handler(event: object, _sf: object = session_factory) -> None:
             async with _sf() as session:  # type: ignore[operator]
                 try:
@@ -159,6 +174,7 @@ def _register_audit_event_subscriptions() -> None:
                 except Exception:
                     await session.rollback()
                     import structlog
+
                     structlog.get_logger(__name__).exception(
                         "audit_event_subscription_failed",
                         event_type=type(event).__name__,
@@ -465,8 +481,11 @@ def create_app() -> FastAPI:
     register_exception_handlers(app)
 
     # 路由
+    from src.modules.auth.api.admin_endpoints import router as admin_router
+
     app.include_router(health_router)
     app.include_router(auth_router)
+    app.include_router(admin_router)
     app.include_router(agents_router)
     app.include_router(execution_router)
     app.include_router(team_execution_router)

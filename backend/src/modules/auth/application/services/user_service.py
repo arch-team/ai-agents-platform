@@ -3,11 +3,14 @@
 import structlog
 
 from src.modules.auth.application.dto.user_dto import (
+    AdminCreateUserDTO,
+    ChangeRoleDTO,
     CreateUserDTO,
     LoginDTO,
     RefreshTokenDTO,
     TokenDTO,
     UserDTO,
+    UserListDTO,
 )
 from src.modules.auth.application.services.password_service import (
     hash_password,
@@ -255,6 +258,85 @@ class UserService:
             expire_minutes=self._jwt_expire_minutes,
             extra_claims={"role": user.role.value},
         )
+
+    async def list_all_users(self, *, page: int = 1, page_size: int = 20) -> UserListDTO:
+        """列出所有用户（管理员用，分页）。"""
+        import math
+
+        offset = (page - 1) * page_size
+        users = await self._repository.list(offset=offset, limit=page_size)
+        total = await self._repository.count()
+        total_pages = math.ceil(total / page_size) if total > 0 else 0
+        return UserListDTO(
+            items=[self._to_dto(u) for u in users],
+            total=total,
+            page=page,
+            page_size=page_size,
+            total_pages=total_pages,
+        )
+
+    async def create_user_with_role(self, dto: AdminCreateUserDTO) -> UserDTO:
+        """管理员创建用户（可指定角色）。
+
+        Raises:
+            UserAlreadyExistsError: 邮箱已被注册
+        """
+        from src.modules.auth.domain.value_objects.role import Role
+
+        existing = await self._repository.get_by_email(dto.email)
+        if existing is not None:
+            raise UserAlreadyExistsError(dto.email)
+
+        role = Role(dto.role)
+        user = User(
+            email=dto.email,
+            hashed_password=hash_password(dto.password),
+            name=dto.name,
+            role=role,
+        )
+        created = await self._repository.create(user)
+        logger.info(
+            "security_event",
+            event_type="admin_create_user",
+            created_user_id=created.id,
+            role=role.value,
+        )
+        return self._to_dto(created)
+
+    async def change_user_role(self, dto: ChangeRoleDTO, *, operator_id: int) -> UserDTO:
+        """管理员变更用户角色，变更后撤销目标用户的所有 Refresh Token。
+
+        Raises:
+            EntityNotFoundError: 用户不存在
+            AuthorizationError: 不能修改自己的角色
+        """
+        from src.modules.auth.domain.exceptions import AuthorizationError
+        from src.modules.auth.domain.value_objects.role import Role
+        from src.shared.domain.exceptions import EntityNotFoundError
+
+        if dto.user_id == operator_id:
+            msg = "不能修改自己的角色"
+            raise AuthorizationError(msg)
+
+        user = await self._repository.get_by_id(dto.user_id)
+        if user is None:
+            raise EntityNotFoundError(entity_type="User", entity_id=dto.user_id)
+
+        new_role = Role(dto.new_role)
+        user.change_role(new_role)
+        updated = await self._repository.update(user)
+
+        # 角色变更后撤销目标用户的所有 Refresh Token
+        await self.revoke_user_tokens(dto.user_id)
+
+        logger.info(
+            "security_event",
+            event_type="role_changed",
+            target_user_id=dto.user_id,
+            new_role=new_role.value,
+            operator_id=operator_id,
+        )
+        return self._to_dto(updated)
 
     @staticmethod
     def _to_dto(user: User) -> UserDTO:

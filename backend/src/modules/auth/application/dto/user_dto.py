@@ -45,3 +45,32 @@ class UserDTO:
     name: str
     role: str
     is_active: bool
+
+
+@dataclass
+class AdminCreateUserDTO:
+    """管理员创建用户请求数据。"""
+
+    email: str
+    password: str
+    name: str
+    role: str = "viewer"
+
+
+@dataclass
+class ChangeRoleDTO:
+    """变更用户角色请求数据。"""
+
+    user_id: int
+    new_role: str
+
+
+@dataclass
+class UserListDTO:
+    """用户列表分页响应数据。"""
+
+    items: list[UserDTO]
+    total: int
+    page: int
+    page_size: int
+    total_pages: int
