@@ -22,7 +22,6 @@ export type {
   Template,
   TemplateStatus,
   TemplateCategory,
-  TemplateConfig,
   TemplateFilters,
   CreateTemplateRequest,
   UpdateTemplateRequest,

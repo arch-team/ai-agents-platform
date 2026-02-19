@@ -13,45 +13,52 @@ export type TemplateCategory =
   | 'automation'
   | 'other';
 
-// 模板配置
-export interface TemplateConfig {
-  model_id: string;
-  temperature: number;
-  max_tokens: number;
-  tools?: string[];
-  knowledge_base_ids?: number[];
-}
-
-// 模板实体
+// 模板实体（后端 API 返回扁平结构，config 字段展开为顶层属性）
 export interface Template {
   id: number;
   name: string;
   description: string;
-  category: TemplateCategory;
+  category: string;
   status: TemplateStatus;
+  creator_id: number;
   system_prompt: string;
-  config: TemplateConfig;
-  author: string;
-  use_count: number;
+  model_id: string;
+  temperature: number;
+  max_tokens: number;
+  tool_ids: number[];
+  knowledge_base_ids: number[];
+  tags: string[];
+  usage_count: number;
+  is_featured: boolean;
   created_at: string;
   updated_at: string;
 }
 
-// 请求类型
+// 请求类型（后端 API 接受扁平结构）
 export interface CreateTemplateRequest {
   name: string;
   description?: string;
-  category: TemplateCategory;
+  category: string;
   system_prompt: string;
-  config?: Partial<TemplateConfig>;
+  model_id: string;
+  temperature?: number;
+  max_tokens?: number;
+  tool_ids?: number[];
+  knowledge_base_ids?: number[];
+  tags?: string[];
 }
 
 export interface UpdateTemplateRequest {
   name?: string;
   description?: string;
-  category?: TemplateCategory;
+  category?: string;
   system_prompt?: string;
-  config?: Partial<TemplateConfig>;
+  model_id?: string;
+  temperature?: number;
+  max_tokens?: number;
+  tool_ids?: number[];
+  knowledge_base_ids?: number[];
+  tags?: string[];
 }
 
 // 列表响应

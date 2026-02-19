@@ -3,11 +3,7 @@ import { Button, Card, Spinner, ErrorMessage } from '@/shared/ui';
 import { extractApiError } from '@/shared/lib/extractApiError';
 import { formatDateTime } from '@/shared/lib/formatDate';
 
-import {
-  useTemplate,
-  usePublishTemplate,
-  useArchiveTemplate,
-} from '../api/queries';
+import { useTemplate, usePublishTemplate, useArchiveTemplate } from '../api/queries';
 
 import { TemplateStatusBadge } from './TemplateStatusBadge';
 import { CATEGORY_CONFIG } from './CategoryFilter';
@@ -100,12 +96,12 @@ export function TemplateDetail({ templateId, onBack }: TemplateDetailProps) {
             </dd>
           </div>
           <div>
-            <dt className="text-sm font-medium text-gray-500">作者</dt>
-            <dd className="mt-1 text-sm text-gray-900">{template.author}</dd>
+            <dt className="text-sm font-medium text-gray-500">创建者 ID</dt>
+            <dd className="mt-1 text-sm text-gray-900">{template.creator_id}</dd>
           </div>
           <div>
             <dt className="text-sm font-medium text-gray-500">使用次数</dt>
-            <dd className="mt-1 text-sm text-gray-900">{template.use_count} 次</dd>
+            <dd className="mt-1 text-sm text-gray-900">{template.usage_count} 次</dd>
           </div>
           <div>
             <dt className="text-sm font-medium text-gray-500">创建时间</dt>
@@ -132,36 +128,36 @@ export function TemplateDetail({ templateId, onBack }: TemplateDetailProps) {
         <dl className="grid gap-4 sm:grid-cols-2">
           <div>
             <dt className="text-sm font-medium text-gray-500">模型</dt>
-            <dd className="mt-1 text-sm text-gray-900">{template.config.model_id}</dd>
+            <dd className="mt-1 text-sm text-gray-900">{template.model_id}</dd>
           </div>
           <div>
             <dt className="text-sm font-medium text-gray-500">温度</dt>
-            <dd className="mt-1 text-sm text-gray-900">{template.config.temperature}</dd>
+            <dd className="mt-1 text-sm text-gray-900">{template.temperature}</dd>
           </div>
           <div>
             <dt className="text-sm font-medium text-gray-500">最大 Token 数</dt>
-            <dd className="mt-1 text-sm text-gray-900">{template.config.max_tokens}</dd>
+            <dd className="mt-1 text-sm text-gray-900">{template.max_tokens}</dd>
           </div>
-          {template.config.tools && template.config.tools.length > 0 && (
+          {template.tool_ids && template.tool_ids.length > 0 && (
             <div>
               <dt className="text-sm font-medium text-gray-500">工具</dt>
               <dd className="mt-1 flex flex-wrap gap-1">
-                {template.config.tools.map((tool) => (
+                {template.tool_ids.map((toolId) => (
                   <span
-                    key={tool}
+                    key={toolId}
                     className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-700"
                   >
-                    {tool}
+                    {toolId}
                   </span>
                 ))}
               </dd>
             </div>
           )}
-          {template.config.knowledge_base_ids && template.config.knowledge_base_ids.length > 0 && (
+          {template.knowledge_base_ids && template.knowledge_base_ids.length > 0 && (
             <div>
               <dt className="text-sm font-medium text-gray-500">关联知识库</dt>
               <dd className="mt-1 text-sm text-gray-900">
-                {template.config.knowledge_base_ids.join(', ')}
+                {template.knowledge_base_ids.join(', ')}
               </dd>
             </div>
           )}

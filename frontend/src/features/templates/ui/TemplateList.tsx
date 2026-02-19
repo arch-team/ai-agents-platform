@@ -5,7 +5,12 @@ import { Button, Card, Spinner, ErrorMessage, Pagination } from '@/shared/ui';
 import { extractApiError } from '@/shared/lib/extractApiError';
 import { formatDateTime } from '@/shared/lib/formatDate';
 
-import { useTemplates, useDeleteTemplate, usePublishTemplate, useArchiveTemplate } from '../api/queries';
+import {
+  useTemplates,
+  useDeleteTemplate,
+  usePublishTemplate,
+  useArchiveTemplate,
+} from '../api/queries';
 import type { TemplateFilters, TemplateCategory, TemplateStatus } from '../api/types';
 
 import { TemplateStatusBadge } from './TemplateStatusBadge';
@@ -134,7 +139,7 @@ export function TemplateList({ onSelect, onCreate }: TemplateListProps) {
                   <p className="mt-1 line-clamp-2 text-sm text-gray-600">{template.description}</p>
                 )}
                 <div className="mt-3 flex items-center gap-3 text-xs text-gray-500">
-                  <span>使用 {template.use_count} 次</span>
+                  <span>使用 {template.usage_count} 次</span>
                   <span>{formatDateTime(template.updated_at)}</span>
                 </div>
               </button>
