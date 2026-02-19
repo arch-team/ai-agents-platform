@@ -8,11 +8,11 @@ from fastapi.testclient import TestClient
 
 from src.modules.agents.api.dependencies import get_agent_service
 from src.modules.agents.application.dto.agent_dto import AgentDTO
-from src.shared.application.dtos import PagedResult
 from src.modules.agents.domain.exceptions import AgentNameDuplicateError, AgentNotFoundError
 from src.modules.auth.api.dependencies import get_current_user
 from src.modules.auth.application.dto.user_dto import UserDTO
 from src.presentation.api.main import create_app
+from src.shared.application.dtos import PagedResult
 from src.shared.domain.exceptions import InvalidStateTransitionError, ValidationError
 
 
@@ -72,7 +72,7 @@ def mock_user() -> UserDTO:
 
 
 @pytest.fixture
-def app(mock_service: AsyncMock, mock_user: UserDTO):  # noqa: ANN201
+def app(mock_service: AsyncMock, mock_user: UserDTO):
     test_app = create_app()
     test_app.dependency_overrides[get_agent_service] = lambda: mock_service
     test_app.dependency_overrides[get_current_user] = lambda: mock_user
@@ -80,7 +80,7 @@ def app(mock_service: AsyncMock, mock_user: UserDTO):  # noqa: ANN201
 
 
 @pytest.fixture
-def client(app) -> TestClient:  # noqa: ANN001
+def client(app) -> TestClient:
     return TestClient(app)
 
 
@@ -132,6 +132,25 @@ class TestCreateAgentEndpoint:
 
         assert response.status_code in (401, 403)
 
+    def test_create_viewer_role_forbidden(self, mock_service: AsyncMock) -> None:
+        """403 VIEWER 角色无权创建 Agent。"""
+        # Arrange
+        viewer_user = _make_user_dto(role="viewer")
+        test_app = create_app()
+        test_app.dependency_overrides[get_agent_service] = lambda: mock_service
+        test_app.dependency_overrides[get_current_user] = lambda: viewer_user
+        viewer_client = TestClient(test_app)
+
+        # Act
+        response = viewer_client.post(
+            "/api/v1/agents",
+            json={"name": "test-agent"},
+        )
+
+        # Assert
+        assert response.status_code == 403
+        mock_service.create_agent.assert_not_called()
+
     def test_create_invalid_name_empty(self, client: TestClient) -> None:
         """422 空名称。"""
         response = client.post(
@@ -167,7 +186,10 @@ class TestListAgentsEndpoint:
     def test_list_empty(self, client: TestClient, mock_service: AsyncMock) -> None:
         """200 + 空列表。"""
         mock_service.list_agents.return_value = PagedResult(
-            items=[], total=0, page=1, page_size=20,
+            items=[],
+            total=0,
+            page=1,
+            page_size=20,
         )
 
         response = client.get("/api/v1/agents")
@@ -243,7 +265,9 @@ class TestUpdateAgentEndpoint:
     def test_update_non_draft_rejected(self, client: TestClient, mock_service: AsyncMock) -> None:
         """409 非 DRAFT 状态不允许更新。"""
         mock_service.update_agent.side_effect = InvalidStateTransitionError(
-            entity_type="Agent", current_state="active", target_state="updated",
+            entity_type="Agent",
+            current_state="active",
+            target_state="updated",
         )
 
         response = client.put(
@@ -270,7 +294,9 @@ class TestDeleteAgentEndpoint:
     def test_delete_non_draft_rejected(self, client: TestClient, mock_service: AsyncMock) -> None:
         """409 非 DRAFT 状态不允许删除。"""
         mock_service.delete_agent.side_effect = InvalidStateTransitionError(
-            entity_type="Agent", current_state="active", target_state="deleted",
+            entity_type="Agent",
+            current_state="active",
+            target_state="deleted",
         )
 
         response = client.delete("/api/v1/agents/1")
@@ -294,7 +320,9 @@ class TestActivateAgentEndpoint:
         mock_service.activate_agent.assert_called_once_with(1, 1)
 
     def test_activate_without_system_prompt(
-        self, client: TestClient, mock_service: AsyncMock,
+        self,
+        client: TestClient,
+        mock_service: AsyncMock,
     ) -> None:
         """422 缺少 system_prompt。"""
         mock_service.activate_agent.side_effect = ValidationError(
@@ -322,11 +350,15 @@ class TestArchiveAgentEndpoint:
         mock_service.archive_agent.assert_called_once_with(1, 1)
 
     def test_archive_already_archived(
-        self, client: TestClient, mock_service: AsyncMock,
+        self,
+        client: TestClient,
+        mock_service: AsyncMock,
     ) -> None:
         """409 已归档不可重复归档。"""
         mock_service.archive_agent.side_effect = InvalidStateTransitionError(
-            entity_type="Agent", current_state="archived", target_state="archived",
+            entity_type="Agent",
+            current_state="archived",
+            target_state="archived",
         )
 
         response = client.post("/api/v1/agents/1/archive")
@@ -338,18 +370,18 @@ class TestArchiveAgentEndpoint:
 class TestAgentsEndpointsStructure:
     """Agents endpoint route structure tests."""
 
-    def test_agents_list_endpoint_exists(self, app) -> None:  # noqa: ANN001
+    def test_agents_list_endpoint_exists(self, app) -> None:
         routes = [r.path for r in app.routes]
         assert "/api/v1/agents" in routes
 
-    def test_agents_detail_endpoint_exists(self, app) -> None:  # noqa: ANN001
+    def test_agents_detail_endpoint_exists(self, app) -> None:
         routes = [r.path for r in app.routes]
         assert "/api/v1/agents/{agent_id}" in routes
 
-    def test_activate_endpoint_exists(self, app) -> None:  # noqa: ANN001
+    def test_activate_endpoint_exists(self, app) -> None:
         routes = [r.path for r in app.routes]
         assert "/api/v1/agents/{agent_id}/activate" in routes
 
-    def test_archive_endpoint_exists(self, app) -> None:  # noqa: ANN001
+    def test_archive_endpoint_exists(self, app) -> None:
         routes = [r.path for r in app.routes]
         assert "/api/v1/agents/{agent_id}/archive" in routes

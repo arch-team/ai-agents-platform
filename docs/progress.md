@@ -16,7 +16,7 @@
 - **后端模块**: 10 个 (9 业务 + shared) | **前端**: 190 源文件, FSD 架构, 12 页面 + 20 单元测试 + 13 E2E spec
 - **SDK**: claude-agent-sdk 0.1.35 | bedrock-agentcore 1.3.0
 - **环境策略**: Dev (开发+验证) + Prod (生产)，无 Staging (v1.4 简化)
-- **下一步**: Phase 4 已关闭。按 `docs/rollout-plan.md` 启动梯度推广 (Wave 1: 10 人种子用户)
+- **下一步**: Wave 2 准备完成 ✅（20 用户 + 5 新模板 + 培训材料 + 导师确认）。执行 Wave 2 集体培训会（人工），达成退出标准: 30 人 Onboarding + >= 10 Agent 创建
 
 ## 模块状态
 
@@ -856,8 +856,11 @@ Session 5:  #14 (质量验收) + progress.md 更新
 
 | # | 日期 | 类型 | 完成项 | 关键决策 |
 |---|------|------|-------|---------|
+| 45 | 2026-02-19 | Wave 2 准备 | **Wave 2 全准备完成**: 20 用户 (9 部门) + 5 新非技术模板 (财务/法务/销售/PPT/头脑风暴, 共 17 个) + wave2-training-material.md + 3 导师确认; P1 model_id 修复部署 (task def :13) | 模板 model_id 需加 us. 前缀和 v1:0 后缀 |
+| 44 | 2026-02-19 | Wave 1 完成 | **Wave 1 全流程完成**: 10/10 入职 Onboarding; 平均满意度 4.2/5.0 (目标 4.0) ✅; 发现 P1 模板 model_id 格式 bug (us. 前缀缺失，已修复 seed_data.py); 退出标准全部达成，进入 Wave 2 准备 | 非技术用户(PM/运营/HR)满意度 4.0+ 达成 40% 自助化目标基础 |
+| 43 | 2026-02-19 | Wave 1 正式启动 | **Wave 1 用户创建**: 10 名种子用户全部就位 (9 创建 + 1 已存在); rollout-plan.md 4/5 Checklist 完成; 剩余: 人工创建支持沟通群 | Wave 1 密码: Wave1@2026! |
+| 42 | 2026-02-19 | Wave 1 推广准备 + Bug 修复 | **Wave 1 准备**: 用户批量创建脚本 + Demo 脚本 + 反馈表单 + 文档助手模板; **模拟测试**: Dev 环境端到端测试，发现 4 Bug; **Bug 修复**: BUG-1 Admin 邮箱格式 + BUG-2 VIEWER 创建 Agent RBAC 漏洞 + BUG-3 ECS OOM+SDK exit code 1 + BUG-4 预置模板未 seed; 1857 后端测试 + 184 infra 测试全通过; Agent SDK 全链路验证通过 | SDK plain Exception 包装 ProcessError; CLAUDE_CODE_USE_BEDROCK=1; 1024 MiB 内存 |
 | 41 | 2026-02-19 | Eval + E2E + 工具链 | **Eval 框架建立**: 11 个 eval 定义 (4 初始 + 7 新增) 覆盖全部后端模块 + 前端 E2E; **E2E 扩展**: 新增 10 个 Playwright spec (43 测试), 57 总测试全通过; **ECC 安装**: 11 个 skill (工作流质量+数据库); **后端重构**: 9 个 service 移除 asyncio.gather 假并发; **Code Review**: 全通过 | Eval-driven development; asyncio.gather 单 session 无真实并发 |
 | 40 | 2026-02-14 | **M12 大幅推进** | **M12 #1-#12 完成 (Agent Teams 并行)**: 3 ADR (011 A2A 有限采纳 + 012 蓝绿暂缓 + 013 Strands 不迁移) + Identity OAuth/Token Vault + Memory Strategy/记忆注入 + A2A 适配器 + API 文档 9 文件 + locust 压测 + Onboarding 4 文件 + 推广计划; 变更积压清零 (Phase 4 19/19 ✅, P3 5/5 ✅) | ADR-011: A2A 有限采纳; ADR-012: 滚动增强; ADR-013: 不迁移 |
 | 39 | 2026-02-14 | **M11 关闭** | **M11 全 13 任务完成**: #7 CDK 增强 (Performance Insights + S3 KnowledgeDocsBucket) + #8 灾备演练方案 (文档+2脚本) + #12 ADR-010 Opus 4.6 评估 + #13 质量验收; 2085+ 测试全通过; M11 关闭, 进入 M12 | ADR-010: 维持 Haiku 默认; 灾备 RPO<5min/RTO<15min |
 | 38 | 2026-02-13 | M11 (D-E 完成) | **M11 #9/#10/#11 完成 (Agent Teams 并行)**: ECS Scheduled Scaling (Dev 成本降 50%) + Agent 预览端点 (execution 模块, §4.4 架构修正) + 前端测试面板/Prompt Editor 增强; SDK 升级 0.1.35+1.3.0; audit 导入修复; 1826 后端 + 167 infra 测试全通过 | preview 归 execution (职责域); AgentNotAvailableError (409) |
-| 37 | 2026-02-13 | M11 (A-C 完成) | **M11 #1-#6 全部完成 (Agent Teams 并行)**: CostExplorerAdapter + model_id 修复 + MessageReceivedEvent 订阅 + 3 新端点 + 22 新测试 (96 总) + 前端 4 组件对齐; 1817 后端测试全通过 | 弃用 BedrockCostCalculator; estimated_cost=0.0; Cost Explorer 真实账单 |

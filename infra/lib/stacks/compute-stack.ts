@@ -68,7 +68,11 @@ export class ComputeStack extends cdk.Stack {
     } = props;
 
     // 在本 Stack 内重新导入 Security 资源，避免跨 Stack grant* 循环依赖
-    const jwtSecret = secretsmanager.Secret.fromSecretCompleteArn(this, 'JwtSecretRef', jwtSecretArn);
+    const jwtSecret = secretsmanager.Secret.fromSecretCompleteArn(
+      this,
+      'JwtSecretRef',
+      jwtSecretArn,
+    );
     const encryptionKey = kms.Key.fromKeyArn(this, 'EncryptionKeyRef', encryptionKeyArn);
 
     // ALB Construct (先创建，ECS 需要引用其安全组配置入站规则)
@@ -101,6 +105,9 @@ export class ComputeStack extends cdk.Stack {
         // Secrets Manager ARN — 应用可选择直接读取 (备用路径, ECS Secrets 为主路径)
         DB_SECRET_ARN: databaseSecret.secretArn,
         JWT_SECRET_ARN: jwtSecret.secretArn,
+        // Claude Agent SDK 所需: 启用 Bedrock 后端 (替代 Anthropic 直接 API)
+        // 依赖链: Python → claude-agent-sdk → Claude Code CLI (Node.js) → Bedrock Invoke API
+        CLAUDE_CODE_USE_BEDROCK: '1',
       },
       secrets: {
         // Aurora Secret JSON fields: host, port, username, password, dbname, engine

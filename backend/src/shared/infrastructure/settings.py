@@ -116,7 +116,7 @@ class Settings(BaseSettings):
     MEMORY_STRATEGIES: str = "summary,semantic"  # 记忆提取策略 (逗号分隔)
 
     # 默认管理员: 应用启动时自动创建, 幂等, 已存在则跳过
-    DEFAULT_ADMIN_EMAIL: str = "admin@ai-agents.local"
+    DEFAULT_ADMIN_EMAIL: str = "admin@company.com"
     DEFAULT_ADMIN_PASSWORD: SecretStr = SecretStr("Admin@2026!")
     DEFAULT_ADMIN_NAME: str = "系统管理员"
 

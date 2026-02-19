@@ -19,6 +19,7 @@ from claude_agent_sdk import (
     create_sdk_mcp_server,
     query,
 )
+from claude_agent_sdk._errors import ProcessError
 
 from src.modules.execution.application.interfaces import (
     AgentRequest,
@@ -41,13 +42,15 @@ logger = structlog.get_logger(__name__)
 
 
 # SSRF 防护: 禁止访问的内部主机名
-_BLOCKED_HOSTS = frozenset({
-    "169.254.169.254",
-    "metadata.google.internal",
-    "localhost",
-    "127.0.0.1",
-    "0.0.0.0",  # noqa: S104
-})
+_BLOCKED_HOSTS = frozenset(
+    {
+        "169.254.169.254",
+        "metadata.google.internal",
+        "localhost",
+        "127.0.0.1",
+        "0.0.0.0",  # noqa: S104
+    },
+)
 
 
 def _validate_url(url: str) -> None:
@@ -107,12 +110,35 @@ class ClaudeAgentAdapter(IAgentRuntime):
                 output_tokens += msg_output
         except DomainError:
             raise
+        except ProcessError as e:
+            # 记录 stderr 用于诊断
+            if e.stderr:
+                logger.warning("claude_agent_sdk_cli_stderr", stderr=e.stderr[:500], exit_code=e.exit_code)
+            # CLI exit code 1 属已知行为: 对话成功完成后 CLI 清理阶段退出非零
+            # 若已收到内容则视为成功; 否则才报错
+            if content_parts:
+                logger.warning("claude_agent_sdk_process_exit1_ignored", exit_code=e.exit_code)
+            else:
+                logger.exception(
+                    "claude_agent_sdk_failed_no_content",
+                    exit_code=e.exit_code,
+                    stderr=str(e.stderr)[:200],
+                )
+                raise DomainError(
+                    message="Agent 服务暂时不可用, 请稍后重试",
+                    code="AGENT_SDK_ERROR",
+                ) from e
         except Exception as e:
-            logger.exception("Claude Agent SDK 调用失败")
-            raise DomainError(
-                message="Agent 服务暂时不可用, 请稍后重试",
-                code="AGENT_SDK_ERROR",
-            ) from e
+            # SDK 有时将 ProcessError 包装为 plain Exception (exit code 1 + 已有内容 = 视为成功)
+            err_msg = str(e)
+            if content_parts and "exit code 1" in err_msg:
+                logger.warning("claude_agent_sdk_plain_exit1_ignored", error=err_msg[:100])
+            else:
+                logger.exception("Claude Agent SDK 调用失败")
+                raise DomainError(
+                    message="Agent 服务暂时不可用, 请稍后重试",
+                    code="AGENT_SDK_ERROR",
+                ) from e
 
         return AgentResponseChunk(
             content="".join(content_parts),
@@ -138,22 +164,37 @@ class ClaudeAgentAdapter(IAgentRuntime):
         input_tokens = 0
         output_tokens = 0
 
+        has_content = False
         try:
             async for message in query(prompt=prompt, options=options):
                 msg_content = extract_content(message)
                 if msg_content:
+                    has_content = True
                     yield AgentResponseChunk(content=msg_content)
                 msg_input, msg_output = extract_usage(message)
                 input_tokens += msg_input
                 output_tokens += msg_output
         except DomainError:
             raise
+        except ProcessError as e:
+            # CLI exit code 1 属已知行为: 流式成功完成后 CLI 清理阶段退出非零
+            if not has_content:
+                logger.exception("Claude Agent SDK 流式调用失败")
+                raise DomainError(
+                    message="Agent 服务暂时不可用, 请稍后重试",
+                    code="AGENT_SDK_ERROR",
+                ) from e
+            logger.warning("claude_agent_sdk_process_exit1_ignored", exit_code=e.exit_code)
         except Exception as e:
-            logger.exception("Claude Agent SDK 流式调用失败")
-            raise DomainError(
-                message="Agent 服务暂时不可用, 请稍后重试",
-                code="AGENT_SDK_ERROR",
-            ) from e
+            err_msg = str(e)
+            if has_content and "exit code 1" in err_msg:
+                logger.warning("claude_agent_sdk_plain_exit1_stream_ignored", error=err_msg[:100])
+            else:
+                logger.exception("Claude Agent SDK 流式调用失败")
+                raise DomainError(
+                    message="Agent 服务暂时不可用, 请稍后重试",
+                    code="AGENT_SDK_ERROR",
+                ) from e
 
         yield AgentResponseChunk(
             done=True,
@@ -282,7 +323,8 @@ class ClaudeAgentAdapter(IAgentRuntime):
 
     @staticmethod
     async def _call_api_tool(
-        config: dict[str, Any], args: dict[str, Any],
+        config: dict[str, Any],
+        args: dict[str, Any],
     ) -> dict[str, Any]:
         """通过 HTTP 调用 API 类型工具。"""
         import httpx

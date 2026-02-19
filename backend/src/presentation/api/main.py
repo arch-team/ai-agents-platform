@@ -418,6 +418,77 @@ async def _seed_default_admin() -> None:
             log.exception("default_admin_seed_failed")
 
 
+async def _seed_default_templates() -> None:
+    """启动时 seed 预置模板（幂等：已存在则跳过）。"""
+    import structlog
+
+    from src.modules.auth.infrastructure.persistence.repositories.user_repository_impl import UserRepositoryImpl
+    from src.modules.templates.application.dto.template_dto import CreateTemplateDTO
+    from src.modules.templates.application.services.template_service import TemplateService
+    from src.modules.templates.domain.seed_data import SEED_TEMPLATES
+    from src.modules.templates.infrastructure.persistence.repositories.template_repository_impl import (
+        TemplateRepositoryImpl,
+    )
+    from src.shared.infrastructure.database import get_session_factory
+
+    log = structlog.get_logger(__name__)
+    settings = get_settings()
+    session_factory = get_session_factory()
+
+    async with session_factory() as session:
+        try:
+            # 查询 Admin 用户作为模板创建者
+            user_repo = UserRepositoryImpl(session=session)
+            admin = await user_repo.get_by_email(settings.DEFAULT_ADMIN_EMAIL)
+            if admin is None or admin.id is None:
+                log.warning("default_templates_seed_skipped_no_admin")
+                return
+
+            template_repo = TemplateRepositoryImpl(session=session)
+            service = TemplateService(template_repo=template_repo)
+
+            seeded = 0
+            for tpl_raw in SEED_TEMPLATES:
+                tpl: dict[str, object] = tpl_raw
+                name = str(tpl["name"])
+                existing = await template_repo.get_by_name(name)
+                if existing is not None:
+                    continue
+
+                dto = CreateTemplateDTO(
+                    name=name,
+                    description=str(tpl["description"]),
+                    category=str(tpl["category"]),
+                    system_prompt=str(tpl["system_prompt"]),
+                    model_id=str(tpl["model_id"]),
+                    temperature=float(str(tpl["temperature"])),
+                    max_tokens=int(str(tpl["max_tokens"])),
+                    tags=[str(t) for t in list(tpl["tags"])],  # type: ignore[call-overload]
+                )
+                created_dto = await service.create_template(dto, current_user_id=admin.id)
+
+                # 将模板发布为可用状态
+                await service.publish_template(created_dto.id, current_user_id=admin.id)
+
+                # 同步 is_featured 字段: create_template 不接收该字段, 直接更新 entity
+                if tpl.get("is_featured"):
+                    created_template = await template_repo.get_by_id(created_dto.id)
+                    if created_template is not None:
+                        created_template.is_featured = True
+                        await template_repo.update(created_template)
+
+                seeded += 1
+
+            if seeded > 0:
+                await session.commit()
+                log.info("default_templates_seeded", count=seeded)
+            else:
+                log.info("default_templates_already_exist")
+        except Exception:
+            await session.rollback()
+            log.warning("default_templates_seed_failed")
+
+
 @asynccontextmanager
 async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
     """应用生命周期: 启动时初始化数据库、日志、追踪和事件订阅。"""
@@ -447,6 +518,7 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
     _register_memory_extraction_event_subscriptions()
     _register_audit_event_subscriptions()
     await _seed_default_admin()
+    await _seed_default_templates()
     yield
 
 

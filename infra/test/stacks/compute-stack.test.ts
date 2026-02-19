@@ -9,8 +9,14 @@ describe('ComputeStack', () => {
 
   beforeEach(() => {
     const app = new cdk.App();
-    const { vpc, dbSecurityGroup, databaseSecret, jwtSecretArn, databaseEndpoint, encryptionKeyArn } =
-      createCrossStackComputeDependencies(app);
+    const {
+      vpc,
+      dbSecurityGroup,
+      databaseSecret,
+      jwtSecretArn,
+      databaseEndpoint,
+      encryptionKeyArn,
+    } = createCrossStackComputeDependencies(app);
 
     stack = new ComputeStack(app, 'TestComputeStack', {
       vpc,
@@ -88,6 +94,18 @@ describe('ComputeStack', () => {
               Match.objectLike({ Name: 'DATABASE_PORT', Value: '3306' }),
               Match.objectLike({ Name: 'DB_SECRET_ARN' }),
               Match.objectLike({ Name: 'JWT_SECRET_ARN' }),
+            ]),
+          }),
+        ]),
+      });
+    });
+
+    it('容器应注入 Claude Agent SDK 所需环境变量', () => {
+      template.hasResourceProperties('AWS::ECS::TaskDefinition', {
+        ContainerDefinitions: Match.arrayWith([
+          Match.objectLike({
+            Environment: Match.arrayWith([
+              Match.objectLike({ Name: 'CLAUDE_CODE_USE_BEDROCK', Value: '1' }),
             ]),
           }),
         ]),

@@ -77,8 +77,8 @@ describe('getEnvironmentConfig', () => {
     expect(() => getEnvironmentConfig(app)).toThrow('无效的环境名称: nonexistent');
   });
 
-  describe('环境变量覆盖', () => {
-    it('CDK_DEFAULT_ACCOUNT 应覆盖 cdk.json 中的 account', () => {
+  describe('cdk.json 优先，环境变量 fallback', () => {
+    it('cdk.json 有值时不被 CDK_DEFAULT_ACCOUNT 覆盖', () => {
       process.env.CDK_DEFAULT_ACCOUNT = '999999999999';
 
       const app = new cdk.App({
@@ -95,11 +95,11 @@ describe('getEnvironmentConfig', () => {
       });
 
       const config = getEnvironmentConfig(app);
-      expect(config.account).toBe('999999999999');
+      expect(config.account).toBe('111111111111');
     });
 
-    it('CDK_DEFAULT_REGION 应覆盖 cdk.json 中的 region', () => {
-      process.env.CDK_DEFAULT_REGION = 'ap-northeast-1';
+    it('cdk.json 有值时不被 CDK_DEFAULT_REGION 覆盖', () => {
+      process.env.CDK_DEFAULT_REGION = 'us-west-2';
 
       const app = new cdk.App({
         context: {
@@ -115,10 +115,10 @@ describe('getEnvironmentConfig', () => {
       });
 
       const config = getEnvironmentConfig(app);
-      expect(config.region).toBe('ap-northeast-1');
+      expect(config.region).toBe('us-east-1');
     });
 
-    it('未设置环境变量时应 fallback 到 cdk.json 配置', () => {
+    it('未设置环境变量时应使用 cdk.json 配置', () => {
       const app = new cdk.App({
         context: {
           env: 'dev',

@@ -14,8 +14,9 @@ from src.modules.agents.api.schemas.responses import (
 from src.modules.agents.application.dto.agent_dto import AgentDTO, CreateAgentDTO, UpdateAgentDTO
 from src.modules.agents.application.services.agent_service import AgentService
 from src.modules.agents.domain.value_objects.agent_status import AgentStatus
-from src.modules.auth.api.dependencies import get_current_user
+from src.modules.auth.api.dependencies import get_current_user, require_role
 from src.modules.auth.application.dto.user_dto import UserDTO
+from src.modules.auth.domain.value_objects.role import Role
 from src.shared.api.schemas import calc_total_pages
 
 
@@ -28,19 +29,32 @@ CurrentUserDep = Annotated[UserDTO, Depends(get_current_user)]
 def _to_response(dto: AgentDTO) -> AgentResponse:
     """AgentDTO -> AgentResponse（含嵌套 config 结构）。"""
     return AgentResponse(
-        id=dto.id, name=dto.name, description=dto.description,
-        system_prompt=dto.system_prompt, status=dto.status, owner_id=dto.owner_id,
+        id=dto.id,
+        name=dto.name,
+        description=dto.description,
+        system_prompt=dto.system_prompt,
+        status=dto.status,
+        owner_id=dto.owner_id,
         config=AgentConfigResponse(
-            model_id=dto.model_id, temperature=dto.temperature, max_tokens=dto.max_tokens,
-            top_p=dto.top_p, runtime_type=dto.runtime_type, enable_teams=dto.enable_teams,
+            model_id=dto.model_id,
+            temperature=dto.temperature,
+            max_tokens=dto.max_tokens,
+            top_p=dto.top_p,
+            runtime_type=dto.runtime_type,
+            enable_teams=dto.enable_teams,
         ),
-        created_at=dto.created_at, updated_at=dto.updated_at,
+        created_at=dto.created_at,
+        updated_at=dto.updated_at,
     )
 
 
 @router.post("", status_code=status.HTTP_201_CREATED)
-async def create_agent(request: CreateAgentRequest, service: ServiceDep, current_user: CurrentUserDep) -> AgentResponse:
-    """创建 Agent。"""
+async def create_agent(
+    request: CreateAgentRequest,
+    service: ServiceDep,
+    current_user: Annotated[UserDTO, Depends(require_role(Role.DEVELOPER, Role.ADMIN))],
+) -> AgentResponse:
+    """创建 Agent。仅 DEVELOPER 和 ADMIN 可创建。"""
     dto = CreateAgentDTO(**request.model_dump())
     agent = await service.create_agent(dto, current_user.id)
     return _to_response(agent)
@@ -48,15 +62,19 @@ async def create_agent(request: CreateAgentRequest, service: ServiceDep, current
 
 @router.get("")
 async def list_agents(
-    service: ServiceDep, current_user: CurrentUserDep,
+    service: ServiceDep,
+    current_user: CurrentUserDep,
     status_filter: Annotated[AgentStatus | None, Query(alias="status")] = None,
-    page: Annotated[int, Query(ge=1)] = 1, page_size: Annotated[int, Query(ge=1, le=100)] = 20,
+    page: Annotated[int, Query(ge=1)] = 1,
+    page_size: Annotated[int, Query(ge=1, le=100)] = 20,
 ) -> AgentListResponse:
     """获取当前用户的 Agent 列表。"""
     paged = await service.list_agents(owner_id=current_user.id, status=status_filter, page=page, page_size=page_size)
     return AgentListResponse(
         items=[_to_response(a) for a in paged.items],
-        total=paged.total, page=paged.page, page_size=paged.page_size,
+        total=paged.total,
+        page=paged.page,
+        page_size=paged.page_size,
         total_pages=calc_total_pages(paged.total, page_size),
     )
 
@@ -70,7 +88,10 @@ async def get_agent(agent_id: int, service: ServiceDep, current_user: CurrentUse
 
 @router.put("/{agent_id}")
 async def update_agent(
-    agent_id: int, request: UpdateAgentRequest, service: ServiceDep, current_user: CurrentUserDep,
+    agent_id: int,
+    request: UpdateAgentRequest,
+    service: ServiceDep,
+    current_user: CurrentUserDep,
 ) -> AgentResponse:
     """更新 Agent。"""
     dto = UpdateAgentDTO(**request.model_dump())

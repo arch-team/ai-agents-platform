@@ -29,7 +29,7 @@ if config.config_file_name is not None:
 
 # 从 Settings 获取数据库 URL 并注入到 Alembic 配置
 settings = get_settings()
-config.set_main_option("sqlalchemy.url", settings.database_url)
+config.set_main_option("sqlalchemy.url", settings.database_url.replace("%", "%%"))
 
 target_metadata = Base.metadata
 

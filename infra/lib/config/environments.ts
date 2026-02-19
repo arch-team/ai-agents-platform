@@ -8,8 +8,8 @@ const VALID_ENV_NAMES: ReadonlySet<string> = new Set<EnvironmentName>(['dev', 'p
  * 从 CDK Context 读取环境配置。
  * @remarks
  * - 环境名称通过 `-c env=dev` 传入，默认为 dev
- * - account 优先使用 CDK_DEFAULT_ACCOUNT 环境变量，fallback 到 cdk.json 配置
- * - region 优先使用 CDK_DEFAULT_REGION 环境变量，fallback 到 cdk.json 配置
+ * - account/region 优先使用 cdk.json 配置，CDK_DEFAULT_* 仅在 cdk.json 未配置时作为 fallback
+ * - 避免 shell 中 AWS_REGION 通过 CDK CLI 意外覆盖 cdk.json 中的目标区域
  */
 export function getEnvironmentConfig(app: cdk.App): EnvironmentConfig {
   const envName = (app.node.tryGetContext('env') || 'dev') as string;
@@ -24,8 +24,8 @@ export function getEnvironmentConfig(app: cdk.App): EnvironmentConfig {
   }
 
   const config = environments[envName];
-  const account = process.env.CDK_DEFAULT_ACCOUNT || config.account;
-  const region = process.env.CDK_DEFAULT_REGION || config.region;
+  const account = config.account || process.env.CDK_DEFAULT_ACCOUNT;
+  const region = config.region || process.env.CDK_DEFAULT_REGION;
 
   if (!account || !region || !config.vpcCidr) {
     throw new Error(`环境 "${envName}" 配置不完整，需要 account, region, vpcCidr`);
