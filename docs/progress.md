@@ -11,8 +11,9 @@
 - **Dev 环境**: 后端 ECS (256 CPU/512 MiB) + 前端 S3 + CORS + Bedrock IAM ✅ | ALB `ai-agents-dev-546356512.us-east-1.elb.amazonaws.com`
 - **Prod 环境**: 后端 ECS (512 CPU/1024 MiB/2 任务) + Aurora db.r6g.large (Writer+Reader) ✅ | ALB `ai-agents-prod-1419512933.us-east-1.elb.amazonaws.com`
 - **Stack 命名**: `ai-agents-plat-{stack}-{env}` (v1.4 规范化, 12 个 Stack 全部重建)
-- **测试**: 后端 1826 测试 + 基础设施 179 测试 + 前端 80+ 测试 = **2085+ 测试**
-- **后端模块**: 10 个 (9 业务 + shared) | **前端**: 190 源文件, FSD 架构, 12 页面 + 20 测试文件
+- **测试**: 后端 1826 测试 + 基础设施 179 测试 + 前端 80+ 单元测试 + **57 E2E 测试** = **2142+ 测试**
+- **Eval 框架**: 11 个 eval 定义 (222 capability + 62 regression), 1,670 测试全部 PASS, 全部 READY
+- **后端模块**: 10 个 (9 业务 + shared) | **前端**: 190 源文件, FSD 架构, 12 页面 + 20 单元测试 + 13 E2E spec
 - **SDK**: claude-agent-sdk 0.1.35 | bedrock-agentcore 1.3.0
 - **环境策略**: Dev (开发+验证) + Prod (生产)，无 Staging (v1.4 简化)
 - **下一步**: Phase 4 已关闭。按 `docs/rollout-plan.md` 启动梯度推广 (Wave 1: 10 人种子用户)
@@ -855,8 +856,8 @@ Session 5:  #14 (质量验收) + progress.md 更新
 
 | # | 日期 | 类型 | 完成项 | 关键决策 |
 |---|------|------|-------|---------|
+| 41 | 2026-02-19 | Eval + E2E + 工具链 | **Eval 框架建立**: 11 个 eval 定义 (4 初始 + 7 新增) 覆盖全部后端模块 + 前端 E2E; **E2E 扩展**: 新增 10 个 Playwright spec (43 测试), 57 总测试全通过; **ECC 安装**: 11 个 skill (工作流质量+数据库); **后端重构**: 9 个 service 移除 asyncio.gather 假并发; **Code Review**: 全通过 | Eval-driven development; asyncio.gather 单 session 无真实并发 |
 | 40 | 2026-02-14 | **M12 大幅推进** | **M12 #1-#12 完成 (Agent Teams 并行)**: 3 ADR (011 A2A 有限采纳 + 012 蓝绿暂缓 + 013 Strands 不迁移) + Identity OAuth/Token Vault + Memory Strategy/记忆注入 + A2A 适配器 + API 文档 9 文件 + locust 压测 + Onboarding 4 文件 + 推广计划; 变更积压清零 (Phase 4 19/19 ✅, P3 5/5 ✅) | ADR-011: A2A 有限采纳; ADR-012: 滚动增强; ADR-013: 不迁移 |
 | 39 | 2026-02-14 | **M11 关闭** | **M11 全 13 任务完成**: #7 CDK 增强 (Performance Insights + S3 KnowledgeDocsBucket) + #8 灾备演练方案 (文档+2脚本) + #12 ADR-010 Opus 4.6 评估 + #13 质量验收; 2085+ 测试全通过; M11 关闭, 进入 M12 | ADR-010: 维持 Haiku 默认; 灾备 RPO<5min/RTO<15min |
 | 38 | 2026-02-13 | M11 (D-E 完成) | **M11 #9/#10/#11 完成 (Agent Teams 并行)**: ECS Scheduled Scaling (Dev 成本降 50%) + Agent 预览端点 (execution 模块, §4.4 架构修正) + 前端测试面板/Prompt Editor 增强; SDK 升级 0.1.35+1.3.0; audit 导入修复; 1826 后端 + 167 infra 测试全通过 | preview 归 execution (职责域); AgentNotAvailableError (409) |
 | 37 | 2026-02-13 | M11 (A-C 完成) | **M11 #1-#6 全部完成 (Agent Teams 并行)**: CostExplorerAdapter + model_id 修复 + MessageReceivedEvent 订阅 + 3 新端点 + 22 新测试 (96 总) + 前端 4 组件对齐; 1817 后端测试全通过 | 弃用 BedrockCostCalculator; estimated_cost=0.0; Cost Explorer 真实账单 |
-| 36 | 2026-02-13 | M11 任务拆解 | **M11 13 任务拆解完成**: 深度探索 insights/execution/infra 现状; 发现前后端 API 不匹配; 砍掉 ROI 虚荣指标 + avg_response_time_ms 虚字段; 6 个工作流 A-F 并行策略 | insights 聚焦成本归因和使用量 (砍 ROI); 灾备/体验/评估并行 |
