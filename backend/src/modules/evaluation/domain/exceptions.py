@@ -59,3 +59,20 @@ class TestSuiteNotDeletableError(EvaluationError):
             message=f"TestSuite(id={suite_id}) 非 DRAFT 状态, 不可删除",
             code="TEST_SUITE_NOT_DELETABLE",
         )
+
+
+class EvalPipelineNotFoundError(EvaluationError, EntityNotFoundError):
+    """Eval Pipeline 不存在。"""
+
+    def __init__(self, pipeline_id: int) -> None:
+        EntityNotFoundError.__init__(self, entity_type="EvalPipeline", entity_id=pipeline_id)
+
+
+class PipelineAlreadyRunningError(EvaluationError):
+    """Pipeline 已在运行中，不能重复触发。"""
+
+    def __init__(self) -> None:
+        super().__init__(
+            message="该 Pipeline 已在运行中,请等待完成后再触发",
+            code="PIPELINE_ALREADY_RUNNING",
+        )
