@@ -101,3 +101,20 @@ class EvaluationResultListResponse(BaseModel):
     page: int
     page_size: int
     total_pages: int
+
+
+class EvalPipelineResponse(BaseModel):
+    """Eval Pipeline 响应。"""
+
+    id: int
+    suite_id: int
+    agent_id: int
+    trigger: str
+    model_ids: list[str]
+    status: str
+    bedrock_job_id: str | None
+    score_summary: dict[str, object]
+    error_message: str | None
+    started_at: datetime | None
+    completed_at: datetime | None
+    created_at: datetime

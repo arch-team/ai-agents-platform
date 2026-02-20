@@ -7,14 +7,20 @@ from fastapi import APIRouter, Depends, Query, status
 
 from src.modules.auth.api.dependencies import get_current_user
 from src.modules.auth.application.dto.user_dto import UserDTO
-from src.modules.evaluation.api.dependencies import get_evaluation_service, get_test_suite_service
+from src.modules.evaluation.api.dependencies import (
+    get_eval_pipeline_service,
+    get_evaluation_service,
+    get_test_suite_service,
+)
 from src.modules.evaluation.api.schemas.requests import (
     CreateEvaluationRunRequest,
     CreateTestCaseRequest,
     CreateTestSuiteRequest,
+    TriggerPipelineRequest,
     UpdateTestSuiteRequest,
 )
 from src.modules.evaluation.api.schemas.responses import (
+    EvalPipelineResponse,
     EvaluationResultListResponse,
     EvaluationResultResponse,
     EvaluationRunListResponse,
@@ -34,17 +40,21 @@ from src.modules.evaluation.application.dto.evaluation_dto import (
     TestSuiteDTO,
     UpdateTestSuiteDTO,
 )
+from src.modules.evaluation.application.dto.pipeline_dto import TriggerPipelineDTO
+from src.modules.evaluation.application.services.eval_pipeline_service import EvalPipelineService
 from src.modules.evaluation.application.services.evaluation_service import EvaluationService
 from src.modules.evaluation.application.services.test_suite_service import TestSuiteService
 from src.shared.api.schemas import calc_total_pages
 
 
-# 使用两个子 router 统一路由前缀, 避免每个端点重复路径
+# 使用三个子 router 统一路由前缀, 避免每个端点重复路径
 suite_router = APIRouter(prefix="/api/v1/test-suites", tags=["evaluation"])
 run_router = APIRouter(prefix="/api/v1/evaluation-runs", tags=["evaluation"])
+pipeline_router = APIRouter(prefix="/api/v1/eval-suites", tags=["evaluation"])
 
 SuiteServiceDep = Annotated[TestSuiteService, Depends(get_test_suite_service)]
 EvalServiceDep = Annotated[EvaluationService, Depends(get_evaluation_service)]
+PipelineServiceDep = Annotated[EvalPipelineService, Depends(get_eval_pipeline_service)]
 CurrentUserDep = Annotated[UserDTO, Depends(get_current_user)]
 
 
@@ -253,7 +263,39 @@ async def get_evaluation_results(
     )
 
 
+# -- Eval Pipeline 端点 --
+
+
+@pipeline_router.post("/{suite_id}/pipelines", status_code=status.HTTP_201_CREATED)
+async def trigger_eval_pipeline(
+    suite_id: int,
+    body: TriggerPipelineRequest,
+    current_user: CurrentUserDep,
+    pipeline_service: PipelineServiceDep,
+) -> EvalPipelineResponse:
+    """触发 Eval Pipeline。"""
+    dto = TriggerPipelineDTO(
+        suite_id=suite_id,
+        agent_id=current_user.id,
+        model_ids=body.model_ids,
+    )
+    result = await pipeline_service.trigger(dto)
+    return EvalPipelineResponse(**asdict(result))
+
+
+@pipeline_router.get("/{suite_id}/pipelines")
+async def list_eval_pipelines(
+    suite_id: int,
+    current_user: CurrentUserDep,  # noqa: ARG001
+    pipeline_service: PipelineServiceDep,
+) -> list[EvalPipelineResponse]:
+    """获取指定 TestSuite 的 Pipeline 列表。"""
+    results = await pipeline_service.list_by_suite(suite_id)
+    return [EvalPipelineResponse(**asdict(r)) for r in results]
+
+
 # 合并子 router 供 main.py 注册
 router = APIRouter(tags=["evaluation"])
 router.include_router(suite_router)
 router.include_router(run_router)
+router.include_router(pipeline_router)
