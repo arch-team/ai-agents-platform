@@ -16,7 +16,7 @@
 - **后端模块**: 10 个 (9 业务 + shared) | **前端**: 190 源文件, FSD 架构, 12 页面 + 20 单元测试 + 13 E2E spec
 - **SDK**: claude-agent-sdk 0.1.35 | bedrock-agentcore 1.3.0
 - **环境策略**: Dev (开发+验证) + Prod (生产)，无 Staging (v1.4 简化)
-- **下一步**: Wave 2 完成 ✅（满意度 4.4/5.0，17 个 Agent 创建）。发现并修复 Bug #5（模板公开端点未过滤 archived）。进入 Wave 3：全公司推广 50+ 人 + 重建归档模板（P2）
+- **下一步**: Wave 3 推广材料准备完成 ✅。Bug #5 已提交 (commit 3045a17)。待执行：人工创建 20+ 用户 (wave3-users-batch.md) + 举办 Wave 3 培训会 + 收集反馈达成 50 活跃用户目标
 
 ## 模块状态
 
@@ -856,11 +856,11 @@ Session 5:  #14 (质量验收) + progress.md 更新
 
 | # | 日期 | 类型 | 完成项 | 关键决策 |
 |---|------|------|-------|---------|
+| 47 | 2026-02-20 | Wave 3 准备 | **Wave 3 全材料准备完成 (3 Agent 并行)**：wave3-training-material.md (628行, Agent Teams 功能) + wave3-faq.md (27问题, 6分类) + wave3-users-batch.md (30人: 主批次20+扩展10); rollout-plan.md Wave 3 Checklist 4/5 更新; Bug #5 committed (3045a17) | Agent Teams 加入 Wave 3 核心演示; 3 并行 Agent 同时完成文档产出 |
 | 46 | 2026-02-20 | Wave 2 完成 | **Wave 2 培训会完成**: 30人/8部门全覆盖; 满意度 4.4/5.0 ✅; 17 Agent 创建 ✅; 退出标准达成; 发现 Bug #5（模板端点未过滤 archived）并修复部署 (task def :14); 进入 Wave 3 | 模板 search() 需默认加 published_only 过滤 |
 | 45 | 2026-02-19 | Wave 2 准备 | **Wave 2 全准备完成**: 20 用户 (9 部门) + 5 新非技术模板 (财务/法务/销售/PPT/头脑风暴, 共 17 个) + wave2-training-material.md + 3 导师确认; P1 model_id 修复部署 (task def :13) | 模板 model_id 需加 us. 前缀和 v1:0 后缀 |
 | 44 | 2026-02-19 | Wave 1 完成 | **Wave 1 全流程完成**: 10/10 入职 Onboarding; 平均满意度 4.2/5.0 (目标 4.0) ✅; 发现 P1 模板 model_id 格式 bug (us. 前缀缺失，已修复 seed_data.py); 退出标准全部达成，进入 Wave 2 准备 | 非技术用户(PM/运营/HR)满意度 4.0+ 达成 40% 自助化目标基础 |
 | 43 | 2026-02-19 | Wave 1 正式启动 | **Wave 1 用户创建**: 10 名种子用户全部就位 (9 创建 + 1 已存在); rollout-plan.md 4/5 Checklist 完成; 剩余: 人工创建支持沟通群 | Wave 1 密码: Wave1@2026! |
-| 42 | 2026-02-19 | Wave 1 推广准备 + Bug 修复 | **Wave 1 准备**: 用户批量创建脚本 + Demo 脚本 + 反馈表单 + 文档助手模板; **模拟测试**: Dev 环境端到端测试，发现 4 Bug; **Bug 修复**: BUG-1 Admin 邮箱格式 + BUG-2 VIEWER 创建 Agent RBAC 漏洞 + BUG-3 ECS OOM+SDK exit code 1 + BUG-4 预置模板未 seed; 1857 后端测试 + 184 infra 测试全通过; Agent SDK 全链路验证通过 | SDK plain Exception 包装 ProcessError; CLAUDE_CODE_USE_BEDROCK=1; 1024 MiB 内存 |
 | 41 | 2026-02-19 | Eval + E2E + 工具链 | **Eval 框架建立**: 11 个 eval 定义 (4 初始 + 7 新增) 覆盖全部后端模块 + 前端 E2E; **E2E 扩展**: 新增 10 个 Playwright spec (43 测试), 57 总测试全通过; **ECC 安装**: 11 个 skill (工作流质量+数据库); **后端重构**: 9 个 service 移除 asyncio.gather 假并发; **Code Review**: 全通过 | Eval-driven development; asyncio.gather 单 session 无真实并发 |
 | 40 | 2026-02-14 | **M12 大幅推进** | **M12 #1-#12 完成 (Agent Teams 并行)**: 3 ADR (011 A2A 有限采纳 + 012 蓝绿暂缓 + 013 Strands 不迁移) + Identity OAuth/Token Vault + Memory Strategy/记忆注入 + A2A 适配器 + API 文档 9 文件 + locust 压测 + Onboarding 4 文件 + 推广计划; 变更积压清零 (Phase 4 19/19 ✅, P3 5/5 ✅) | ADR-011: A2A 有限采纳; ADR-012: 滚动增强; ADR-013: 不迁移 |
 | 39 | 2026-02-14 | **M11 关闭** | **M11 全 13 任务完成**: #7 CDK 增强 (Performance Insights + S3 KnowledgeDocsBucket) + #8 灾备演练方案 (文档+2脚本) + #12 ADR-010 Opus 4.6 评估 + #13 质量验收; 2085+ 测试全通过; M11 关闭, 进入 M12 | ADR-010: 维持 Haiku 默认; 灾备 RPO<5min/RTO<15min |
