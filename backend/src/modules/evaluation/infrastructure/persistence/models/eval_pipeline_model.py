@@ -30,7 +30,7 @@ class EvalPipelineModel(Base):
     model_ids_json: Mapped[str] = mapped_column(Text, nullable=False)
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="scheduled")
     bedrock_job_id: Mapped[str | None] = mapped_column(String(200), nullable=True)
-    score_summary_json: Mapped[str] = mapped_column(Text, nullable=False, default="{}")
+    score_summary_json: Mapped[str] = mapped_column(Text, nullable=False)
     error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
     started_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     completed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
