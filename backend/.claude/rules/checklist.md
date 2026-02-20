@@ -86,7 +86,8 @@
 - [ ] 使用 structlog 结构化键值对，不使用字符串拼接
 - [ ] 敏感数据已脱敏（密码、Token、邮箱）
 - [ ] 没有使用 `print()` 调试输出
-- [ ] 异常记录包含完整 traceback
+- [ ] 异常记录使用 `log.exception()` 而非 `log.warning()`（保留完整 traceback）
+- [ ] lifespan/startup 函数的异常处理和普通函数对称（all use `log.exception`）
 
 详见 [logging.md](logging.md)
 

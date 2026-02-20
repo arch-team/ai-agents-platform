@@ -856,6 +856,7 @@ Session 5:  #14 (质量验收) + progress.md 更新
 
 | # | 日期 | 类型 | 完成项 | 关键决策 |
 |---|------|------|-------|---------|
+| 52 | 2026-02-20 | 质量门控 + 知识沉淀 | **质量门控**: 后端 ruff/mypy/pytest 1857/86.45% ✅; 前端 lint/format/test 355 ✅; Infra lint/format/test 184 ✅; **修复**: RUF003 noqa + vitest E2E 排除 + CDK快照更新 + seed_templates 期望值; **project-learnings 更新**: M5→M12 250→508行 (3新维度/ADR汇总/Agent Teams踩坑); **rules 更新**: checklist log.exception检查 + deployment CDK 目录/context规范; rollout-plan Wave 3状态更新 | vitest.config.ts 需显式排除 E2E; log.exception vs log.warning 不对称=静默失败风险; CDK deploy 必须在 infra/ 目录且加 --context env=prod |
 | 51 | 2026-02-20 | Wave 3 完整收尾 | **扩展批次**: 10人创建完成 (法务/销售/市场/客服/管理层) → Prod 共 35 用户 ✅; **Wave 2 模板补全**: seed_data.py 补入 5 个非技术模板(财务/法务/销售/PPT/头脑风暴) + Prod 发布 → 共 16 模板; **lifespan 启动日志**: templates_seed_starting/done 两条 log.info 完成; 配置即代码补全（模板持久化进 seed_data.py） | Wave 2 模板未进 seed_data 是配置即代码缺口，已修复; Prod 35 用户距 50 目标差 15 人 |
 | 50 | 2026-02-20 | Wave 3 后处理+部署 | **活跃度检查**: 25 用户/10 DEVELOPER/14 VIEWER/5次调用; 差 25 人达标; **Prod CDK 部署**: lifespan seed 修复 + TODO(human) 启动日志 → compute-prod 部署成功 (health ✅, 11模板保留); 活跃度目标: 需邀请扩展批次+7天观察 | CDK context env=prod 必须显式指定; 注册≠活跃，5次调用说明推广刚启动 |
 | 49 | 2026-02-20 | Wave 3 后处理 | **VIEWER→DEVELOPER 升级**: 4人升级 (ops03/hr02/product04/sunny) ✅; ops03 升级后立即创建 Agent[13] ✅; **Prod lifespan seed 根因修复**: `log.warning→log.exception` (main.py:489), 待部署后重新验证 | lifespan seed 静默失败根因: log.warning 吞掉 traceback; VIEWER 403 是正确设计（升级门槛）|

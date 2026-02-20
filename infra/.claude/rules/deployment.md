@@ -113,12 +113,23 @@ pipeline.addStage(prodStage, {
 
 ### 手动部署
 
+> ⚠️ **必须在 `infra/` 目录执行** CDK 命令，否则找不到 `cdk.json`
+> ⚠️ **Prod 环境必须显式传 `--context env=prod`**，否则默认 dev
+
 ```bash
-echo $AWS_PROFILE                                    # 1. 确认环境
-pnpm cdk synth --context env=dev && pnpm cdk diff   # 2. 合成并检查
-pnpm test                                            # 3. 运行测试
-pnpm cdk deploy --all --context env=dev             # 4. 部署
-aws cloudformation describe-stacks --stack-name X   # 5. 验证
+cd infra/                                                    # 必须切换到 infra/ 目录
+echo $AWS_PROFILE                                            # 1. 确认环境
+pnpm cdk synth --context env=dev && pnpm cdk diff           # 2. 合成并检查 (dev)
+pnpm cdk synth --context env=prod && pnpm cdk diff          # 2. 合成并检查 (prod)
+pnpm test                                                    # 3. 运行测试（含快照）
+pnpm cdk deploy --all --context env=dev                     # 4. 部署 dev
+pnpm cdk deploy ai-agents-plat-compute-prod --context env=prod --require-approval never  # 4. 部署 prod
+aws cloudformation describe-stacks --stack-name X           # 5. 验证
+```
+
+**快照更新（CDK 资源变更后必须执行）**:
+```bash
+npx jest --updateSnapshot   # 更新过期的 CDK 快照
 ```
 
 ### 部署顺序
