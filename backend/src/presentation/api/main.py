@@ -518,6 +518,9 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
     _register_memory_extraction_event_subscriptions()
     _register_audit_event_subscriptions()
     await _seed_default_admin()
+    # TODO(human): 在 _seed_default_templates() 调用前后各加一行 log.info，
+    # 让运维人员能从 CloudWatch 日志中明确看到"seed 被触发"vs"seed 未被触发"的区别。
+    # 参考同文件 _seed_default_admin() 的调用风格，保持键名对称。
     await _seed_default_templates()
     yield
 

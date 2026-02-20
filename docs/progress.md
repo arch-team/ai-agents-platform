@@ -16,7 +16,7 @@
 - **后端模块**: 10 个 (9 业务 + shared) | **前端**: 190 源文件, FSD 架构, 12 页面 + 20 单元测试 + 13 E2E spec
 - **SDK**: claude-agent-sdk 0.1.35 | bedrock-agentcore 1.3.0
 - **环境策略**: Dev (开发+验证) + Prod (生产)，无 Staging (v1.4 简化)
-- **下一步**: Wave 3 推广持续中（25 用户/4 VIEWER→DEVELOPER 升级/ops03 第一个 Agent 创建验证）。Bug fix: main.py `log.warning→log.exception`（Prod lifespan seed 静默失败根因修复，待重新部署）。待执行：收集 7 天活跃度数据 → 达成 50 活跃用户目标
+- **下一步**: Wave 3 推广进行中。Prod 已部署修复（task def 新版本，health ✅，11 模板保留）。TODO(human): main.py lifespan 启动日志待补全。待执行：7 天活跃度达标 → 邀请扩展批次 10 人（若需）→ 达成 50 活跃用户目标
 
 ## 模块状态
 
@@ -856,6 +856,7 @@ Session 5:  #14 (质量验收) + progress.md 更新
 
 | # | 日期 | 类型 | 完成项 | 关键决策 |
 |---|------|------|-------|---------|
+| 50 | 2026-02-20 | Wave 3 后处理+部署 | **活跃度检查**: 25 用户/10 DEVELOPER/14 VIEWER/5次调用; 差 25 人达标; **Prod CDK 部署**: lifespan seed 修复 + TODO(human) 启动日志 → compute-prod 部署成功 (health ✅, 11模板保留); 活跃度目标: 需邀请扩展批次+7天观察 | CDK context env=prod 必须显式指定; 注册≠活跃，5次调用说明推广刚启动 |
 | 49 | 2026-02-20 | Wave 3 后处理 | **VIEWER→DEVELOPER 升级**: 4人升级 (ops03/hr02/product04/sunny) ✅; ops03 升级后立即创建 Agent[13] ✅; **Prod lifespan seed 根因修复**: `log.warning→log.exception` (main.py:489), 待部署后重新验证 | lifespan seed 静默失败根因: log.warning 吞掉 traceback; VIEWER 403 是正确设计（升级门槛）|
 | 48 | 2026-02-20 | Wave 3 培训会 | **Wave 3 全流程执行**: 20 用户创建 (Prod, 20/20 ✅); 11 模板 seed+publish; 培训 4 部门代表 Onboarding; **Agent Teams 验证**: enable_teams=True + 链式执行 exec[4→5] (审查819字+文档) ✅; 发现 Prod 模板未 seed 问题（手动修复）; wave3_create_users.py 脚本入库 | Agent 需 enable_teams=True 才能 team-executions; VIEWER 不能创建 Agent（符合预期）; Prod lifespan seed 未自动触发（待查原因） |
 | 47 | 2026-02-20 | Wave 3 准备 | **Wave 3 全材料准备完成 (3 Agent 并行)**：wave3-training-material.md (628行, Agent Teams 功能) + wave3-faq.md (27问题, 6分类) + wave3-users-batch.md (30人: 主批次20+扩展10); rollout-plan.md Wave 3 Checklist 4/5 更新; Bug #5 committed (3045a17) | Agent Teams 加入 Wave 3 核心演示; 3 并行 Agent 同时完成文档产出 |
