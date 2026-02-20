@@ -91,9 +91,13 @@ class TemplateRepositoryImpl(PydanticRepository[Template, TemplateModel, int], I
     # ── 查询辅助方法 ──
 
     @staticmethod
-    def _build_search_conditions(keyword: str, category: TemplateCategory | None) -> list[ColumnElement[bool]]:
+    def _build_search_conditions(
+        keyword: str, category: TemplateCategory | None, *, published_only: bool = True,
+    ) -> list[ColumnElement[bool]]:
         """构建搜索查询条件。"""
         conditions: list[ColumnElement[bool]] = []
+        if published_only:
+            conditions.append(TemplateModel.status == TemplateStatus.PUBLISHED.value)
         if keyword:
             like_pattern = f"%{keyword}%"
             conditions.append(or_(TemplateModel.name.like(like_pattern), TemplateModel.description.like(like_pattern)))

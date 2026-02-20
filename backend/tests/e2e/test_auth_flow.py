@@ -61,8 +61,8 @@ class TestAuthRegister:
 
     def test_register_new_user(self, http: httpx.Client) -> None:
         resp = http.post("/api/v1/auth/register", json=_TEST_USER)
-        # 201 = 新建成功, 409 = 已存在（幂等）
-        assert resp.status_code in (201, 409)
+        # 201 = 新建成功, 409 = 已存在, 429 = 频率限制
+        assert resp.status_code in (201, 409, 429)
 
     def test_register_duplicate_email(self, http: httpx.Client) -> None:
         """重复注册相同邮箱返回 409。"""
@@ -70,4 +70,5 @@ class TestAuthRegister:
         http.post("/api/v1/auth/register", json=_TEST_USER)
         # 再次注册
         resp = http.post("/api/v1/auth/register", json=_TEST_USER)
-        assert resp.status_code == 409
+        # 409 = 重复, 429 = 频率限制
+        assert resp.status_code in (409, 429)

@@ -1,9 +1,16 @@
 """E2E: Agent CRUD 完整生命周期 — 创建→查询→更新→激活→归档 + 独立删除测试。"""
 
+from __future__ import annotations
+
 import time
+from typing import TYPE_CHECKING
 
 import httpx
 import pytest
+
+
+if TYPE_CHECKING:
+    from tests.e2e.conftest import ResourceTracker
 
 
 pytestmark = pytest.mark.e2e
@@ -17,7 +24,12 @@ class TestAgentCRUDLifecycle:
 
     _agent_id: int | None = None
 
-    def test_01_create_agent(self, http: httpx.Client, admin_headers: dict[str, str]) -> None:
+    def test_01_create_agent(
+        self,
+        http: httpx.Client,
+        admin_headers: dict[str, str],
+        resource_tracker: ResourceTracker,
+    ) -> None:
         resp = http.post(
             "/api/v1/agents",
             headers=admin_headers,
@@ -33,6 +45,7 @@ class TestAgentCRUDLifecycle:
         assert body["name"] == f"E2E Agent {_SUFFIX}"
         assert body["status"] == "draft"
         TestAgentCRUDLifecycle._agent_id = body["id"]
+        resource_tracker.track("agent", body["id"])
 
     def test_02_get_agent(self, http: httpx.Client, admin_headers: dict[str, str]) -> None:
         agent_id = TestAgentCRUDLifecycle._agent_id
@@ -89,7 +102,12 @@ class TestAgentCRUDLifecycle:
 class TestAgentDeleteDraft:
     """独立测试: DRAFT 状态的 Agent 可以直接删除。"""
 
-    def test_create_and_delete_draft(self, http: httpx.Client, admin_headers: dict[str, str]) -> None:
+    def test_create_and_delete_draft(
+        self,
+        http: httpx.Client,
+        admin_headers: dict[str, str],
+        resource_tracker: ResourceTracker,
+    ) -> None:
         # 创建
         create_resp = http.post(
             "/api/v1/agents",
@@ -103,6 +121,7 @@ class TestAgentDeleteDraft:
         )
         assert create_resp.status_code == 201
         agent_id = create_resp.json()["id"]
+        resource_tracker.track("agent", agent_id)
 
         # 删除 (draft 状态)
         del_resp = http.delete(f"/api/v1/agents/{agent_id}", headers=admin_headers)
