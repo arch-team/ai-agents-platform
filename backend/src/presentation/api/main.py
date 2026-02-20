@@ -486,7 +486,7 @@ async def _seed_default_templates() -> None:
                 log.info("default_templates_already_exist")
         except Exception:
             await session.rollback()
-            log.warning("default_templates_seed_failed")
+            log.exception("default_templates_seed_failed")
 
 
 @asynccontextmanager
