@@ -8,6 +8,7 @@ import asyncio
 
 import boto3
 import structlog
+from botocore.exceptions import BotoCoreError, ClientError
 
 from src.modules.evaluation.application.interfaces.eval_service import EvalJobResult, IEvalService
 from src.shared.domain.exceptions import DomainError
@@ -22,7 +23,7 @@ class BedrockEvalAdapter(IEvalService):
     def __init__(self, region: str = "us-east-1") -> None:
         self._client = boto3.client("bedrock", region_name=region)
 
-    async def create_eval_job(self, suite_name: str, model_ids: list[str], test_cases: list[dict[str, str]]) -> str:  # noqa: ARG002
+    async def create_eval_job(self, suite_name: str, model_ids: list[str], test_cases: list[dict[str, str]]) -> str:  # noqa: ARG002 — MVP: 当前版本不传入自定义数据集
         """创建 Bedrock Evaluation Job，返回 job_id。
 
         Raises:
@@ -40,7 +41,7 @@ class BedrockEvalAdapter(IEvalService):
                     "models": [{"bedrockModel": {"modelIdentifier": model_ids[0]}}],
                 },
             )
-        except Exception as e:
+        except (ClientError, BotoCoreError) as e:
             log.exception("bedrock_create_eval_job_failed", suite_name=suite_name)
             raise DomainError(message="创建 Evaluation Job 失败", code="EVAL_CREATE_FAILED") from e
 
@@ -60,7 +61,7 @@ class BedrockEvalAdapter(IEvalService):
                 self._client.get_model_evaluation_job,
                 jobIdentifier=job_id,
             )
-        except Exception as e:
+        except (ClientError, BotoCoreError) as e:
             log.exception("bedrock_get_eval_job_failed", job_id=job_id)
             raise DomainError(message="查询 Evaluation Job 失败", code="EVAL_GET_FAILED") from e
 

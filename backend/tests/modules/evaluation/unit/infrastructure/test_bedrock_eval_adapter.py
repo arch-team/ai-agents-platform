@@ -1,6 +1,5 @@
 """BedrockEvalAdapter 单元测试。"""
 
-import asyncio
 import inspect
 from unittest.mock import MagicMock, patch
 
@@ -23,26 +22,26 @@ def adapter(mock_client: MagicMock) -> BedrockEvalAdapter:
 
 
 class TestBedrockEvalAdapter:
-    def test_create_eval_job_returns_job_id(self, adapter: BedrockEvalAdapter, mock_client: MagicMock) -> None:
+    @pytest.mark.asyncio
+    async def test_create_eval_job_returns_job_id(self, adapter: BedrockEvalAdapter, mock_client: MagicMock) -> None:
         mock_client.create_model_evaluation_job.return_value = {
             "jobArn": "arn:aws:bedrock:us-east-1:123456789012:evaluation-job/test-job-001",
         }
-        result = asyncio.get_event_loop().run_until_complete(
-            adapter.create_eval_job(
-                "测试套件",
-                ["us.anthropic.claude-haiku-4-20250514-v1:0"],
-                [{"input": "q", "expected": "a"}],
-            ),
+        result = await adapter.create_eval_job(
+            "测试套件",
+            ["us.anthropic.claude-haiku-4-20250514-v1:0"],
+            [{"input": "q", "expected": "a"}],
         )
         assert result == "test-job-001"
         mock_client.create_model_evaluation_job.assert_called_once()
 
-    def test_get_eval_job_result_completed(self, adapter: BedrockEvalAdapter, mock_client: MagicMock) -> None:
+    @pytest.mark.asyncio
+    async def test_get_eval_job_result_completed(self, adapter: BedrockEvalAdapter, mock_client: MagicMock) -> None:
         mock_client.get_model_evaluation_job.return_value = {
             "status": "Completed",
             "evaluationSummary": {"accuracy": 0.85},
         }
-        result = asyncio.get_event_loop().run_until_complete(adapter.get_eval_job_result("test-job-001"))
+        result = await adapter.get_eval_job_result("test-job-001")
         assert isinstance(result, EvalJobResult)
         assert result.status == "Completed"
         assert result.score_summary == {"accuracy": 0.85}
