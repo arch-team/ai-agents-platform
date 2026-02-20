@@ -16,7 +16,7 @@
 - **后端模块**: 10 个 (9 业务 + shared) | **前端**: 190 源文件, FSD 架构, 12 页面 + 20 单元测试 + 13 E2E spec
 - **SDK**: claude-agent-sdk 0.1.35 | bedrock-agentcore 1.3.0
 - **环境策略**: Dev (开发+验证) + Prod (生产)，无 Staging (v1.4 简化)
-- **下一步**: Wave 3 推广材料准备完成 ✅。Bug #5 已提交 (commit 3045a17)。待执行：人工创建 20+ 用户 (wave3-users-batch.md) + 举办 Wave 3 培训会 + 收集反馈达成 50 活跃用户目标
+- **下一步**: Wave 3 培训会完成 ✅（Prod: 25 用户/11 模板/5 Team 执行/Agent Teams 链式验证）。待执行：收集用户反馈 → 统计 7 天活跃度 → 达成 50 活跃用户目标；VIEWER 用户申请升级 DEVELOPER；Prod 种子模板已补种（lifespan seed 未触发，已手动修复）
 
 ## 模块状态
 
@@ -856,6 +856,7 @@ Session 5:  #14 (质量验收) + progress.md 更新
 
 | # | 日期 | 类型 | 完成项 | 关键决策 |
 |---|------|------|-------|---------|
+| 48 | 2026-02-20 | Wave 3 培训会 | **Wave 3 全流程执行**: 20 用户创建 (Prod, 20/20 ✅); 11 模板 seed+publish; 培训 4 部门代表 Onboarding; **Agent Teams 验证**: enable_teams=True + 链式执行 exec[4→5] (审查819字+文档) ✅; 发现 Prod 模板未 seed 问题（手动修复）; wave3_create_users.py 脚本入库 | Agent 需 enable_teams=True 才能 team-executions; VIEWER 不能创建 Agent（符合预期）; Prod lifespan seed 未自动触发（待查原因） |
 | 47 | 2026-02-20 | Wave 3 准备 | **Wave 3 全材料准备完成 (3 Agent 并行)**：wave3-training-material.md (628行, Agent Teams 功能) + wave3-faq.md (27问题, 6分类) + wave3-users-batch.md (30人: 主批次20+扩展10); rollout-plan.md Wave 3 Checklist 4/5 更新; Bug #5 committed (3045a17) | Agent Teams 加入 Wave 3 核心演示; 3 并行 Agent 同时完成文档产出 |
 | 46 | 2026-02-20 | Wave 2 完成 | **Wave 2 培训会完成**: 30人/8部门全覆盖; 满意度 4.4/5.0 ✅; 17 Agent 创建 ✅; 退出标准达成; 发现 Bug #5（模板端点未过滤 archived）并修复部署 (task def :14); 进入 Wave 3 | 模板 search() 需默认加 published_only 过滤 |
 | 45 | 2026-02-19 | Wave 2 准备 | **Wave 2 全准备完成**: 20 用户 (9 部门) + 5 新非技术模板 (财务/法务/销售/PPT/头脑风暴, 共 17 个) + wave2-training-material.md + 3 导师确认; P1 model_id 修复部署 (task def :13) | 模板 model_id 需加 us. 前缀和 v1:0 后缀 |
