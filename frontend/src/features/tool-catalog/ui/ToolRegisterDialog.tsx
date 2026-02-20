@@ -127,11 +127,7 @@ export function ToolRegisterDialog({ open, onClose, onSuccess }: ToolRegisterDia
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       {/* 遮罩层 */}
-      <div
-        className="absolute inset-0 bg-black/50"
-        onClick={handleClose}
-        aria-hidden="true"
-      />
+      <div className="absolute inset-0 bg-black/50" onClick={handleClose} aria-hidden="true" />
 
       {/* 对话框 */}
       <div
@@ -193,7 +189,10 @@ export function ToolRegisterDialog({ open, onClose, onSuccess }: ToolRegisterDia
           />
 
           {apiError && (
-            <div role="alert" className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            <div
+              role="alert"
+              className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+            >
               {apiError}
             </div>
           )}

@@ -82,11 +82,7 @@ export function TeamExecForm({
         error={errors.prompt?.message}
       />
 
-      <Button
-        type="submit"
-        loading={isSubmitting}
-        disabled={!selectedAgentId || isSubmitting}
-      >
+      <Button type="submit" loading={isSubmitting} disabled={!selectedAgentId || isSubmitting}>
         提交执行
       </Button>
     </form>

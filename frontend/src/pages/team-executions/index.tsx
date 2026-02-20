@@ -73,10 +73,7 @@ export default function TeamExecutionPage() {
       {/* 右侧面板: 执行详情 + 日志 */}
       <div className="flex-1 overflow-hidden">
         {selectedExecution ? (
-          <TeamExecDetail
-            executionId={selectedExecution.id}
-            onStartStream={startStream}
-          />
+          <TeamExecDetail executionId={selectedExecution.id} onStartStream={startStream} />
         ) : (
           <div className="flex h-full items-center justify-center">
             <div className="text-center">

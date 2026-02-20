@@ -30,9 +30,7 @@ export function CategoryFilter({ selected, onChange, className }: CategoryFilter
         onClick={() => onChange(undefined)}
         className={cn(
           'rounded-full px-3 py-1 text-sm font-medium transition-colors',
-          !selected
-            ? 'bg-blue-600 text-white'
-            : 'bg-gray-100 text-gray-700 hover:bg-gray-200',
+          !selected ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200',
         )}
         aria-pressed={!selected}
       >

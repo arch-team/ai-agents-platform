@@ -51,7 +51,10 @@ export function ToolApprovalPanel({ tool }: ToolApprovalPanelProps) {
       <h3 className="mb-3 text-sm font-semibold text-yellow-800">审批操作</h3>
 
       {error && (
-        <div role="alert" className="mb-3 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+        <div
+          role="alert"
+          className="mb-3 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700"
+        >
           {error}
         </div>
       )}
@@ -96,18 +99,10 @@ export function ToolApprovalPanel({ tool }: ToolApprovalPanelProps) {
         </div>
       ) : (
         <div className="flex gap-2">
-          <Button
-            size="sm"
-            loading={approveMutation.isPending}
-            onClick={handleApprove}
-          >
+          <Button size="sm" loading={approveMutation.isPending} onClick={handleApprove}>
             审批通过
           </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => setShowRejectForm(true)}
-          >
+          <Button size="sm" variant="outline" onClick={() => setShowRejectForm(true)}>
             拒绝
           </Button>
         </div>

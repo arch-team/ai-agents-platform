@@ -71,14 +71,11 @@ export function EvaluationRunList({ suiteId, onSelect }: EvaluationRunListProps)
                   <EvaluationRunStatusBadge status={run.status} />
                 </div>
                 <p className="mt-1 text-xs text-gray-500">
-                  测试集 #{run.suite_id} | Agent #{run.agent_id} |{' '}
-                  {formatDateTime(run.created_at)}
+                  测试集 #{run.suite_id} | Agent #{run.agent_id} | {formatDateTime(run.created_at)}
                 </p>
               </div>
               <div className="text-right">
-                <p className="text-sm font-medium text-gray-900">
-                  通过率 {passRate}%
-                </p>
+                <p className="text-sm font-medium text-gray-900">通过率 {passRate}%</p>
                 <p className="text-xs text-gray-500">
                   {run.passed_cases}/{run.total_cases} 通过 | 得分 {run.score.toFixed(2)}
                 </p>
@@ -88,11 +85,7 @@ export function EvaluationRunList({ suiteId, onSelect }: EvaluationRunListProps)
         })}
       </div>
 
-      <Pagination
-        page={data.page}
-        totalPages={data.total_pages}
-        onPageChange={handlePageChange}
-      />
+      <Pagination page={data.page} totalPages={data.total_pages} onPageChange={handlePageChange} />
     </div>
   );
 }

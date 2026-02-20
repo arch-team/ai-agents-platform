@@ -20,10 +20,7 @@ export default function TemplateDetailPage() {
 
   return (
     <div className="mx-auto max-w-3xl p-6">
-      <TemplateDetail
-        templateId={id}
-        onBack={() => navigate('/templates')}
-      />
+      <TemplateDetail templateId={id} onBack={() => navigate('/templates')} />
     </div>
   );
 }

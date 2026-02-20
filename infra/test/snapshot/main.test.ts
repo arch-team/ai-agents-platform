@@ -58,8 +58,14 @@ describe('Snapshot Tests', () => {
 
   it('ComputeStack 快照匹配', () => {
     const app = new cdk.App();
-    const { vpc, dbSecurityGroup, encryptionKeyArn, databaseSecret, jwtSecretArn, databaseEndpoint } =
-      createCrossStackComputeDependencies(app, TEST_ENV);
+    const {
+      vpc,
+      dbSecurityGroup,
+      encryptionKeyArn,
+      databaseSecret,
+      jwtSecretArn,
+      databaseEndpoint,
+    } = createCrossStackComputeDependencies(app, TEST_ENV);
 
     const stack = new ComputeStack(app, 'TestComputeStack', {
       env: TEST_ENV,
@@ -90,8 +96,15 @@ describe('Snapshot Tests', () => {
 
   it('MonitoringStack 快照匹配', () => {
     const app = new cdk.App();
-    const { vpc, dbSecurityGroup, encryptionKey, encryptionKeyArn, databaseSecret, jwtSecretArn, databaseEndpoint } =
-      createCrossStackComputeDependencies(app, TEST_ENV);
+    const {
+      vpc,
+      dbSecurityGroup,
+      encryptionKey,
+      encryptionKeyArn,
+      databaseSecret,
+      jwtSecretArn,
+      databaseEndpoint,
+    } = createCrossStackComputeDependencies(app, TEST_ENV);
 
     const databaseStack = new DatabaseStack(app, 'TestDbStack', {
       env: TEST_ENV,

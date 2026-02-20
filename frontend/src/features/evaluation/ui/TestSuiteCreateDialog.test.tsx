@@ -60,10 +60,9 @@ describe('TestSuiteCreateDialog', () => {
     const handleSuccess = vi.fn();
     const handleClose = vi.fn();
 
-    render(
-      <TestSuiteCreateDialog onSuccess={handleSuccess} onClose={handleClose} />,
-      { wrapper: createWrapper() },
-    );
+    render(<TestSuiteCreateDialog onSuccess={handleSuccess} onClose={handleClose} />, {
+      wrapper: createWrapper(),
+    });
 
     await user.type(screen.getByLabelText('名称'), '新测试集');
     await user.type(screen.getByLabelText('Agent ID'), '1');

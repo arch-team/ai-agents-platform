@@ -70,7 +70,10 @@ export function TestCaseForm({ suiteId, editCase, onSuccess, onCancel }: TestCas
 
       {mutation.isError && (
         <ErrorMessage
-          error={extractApiError(mutation.error, isEditing ? '更新测试用例失败' : '添加测试用例失败')}
+          error={extractApiError(
+            mutation.error,
+            isEditing ? '更新测试用例失败' : '添加测试用例失败',
+          )}
         />
       )}
 
@@ -102,12 +105,7 @@ export function TestCaseForm({ suiteId, editCase, onSuccess, onCancel }: TestCas
             取消
           </Button>
         )}
-        <Button
-          size="sm"
-          type="submit"
-          loading={mutation.isPending}
-          disabled={!inputPrompt.trim()}
-        >
+        <Button size="sm" type="submit" loading={mutation.isPending} disabled={!inputPrompt.trim()}>
           {isEditing ? '保存' : '添加'}
         </Button>
       </div>

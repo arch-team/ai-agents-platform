@@ -95,7 +95,8 @@ export function AgentFormFields({ register, errors, watch }: AgentFormFieldsProp
                 ))}
               </select>
               <p className="text-xs text-gray-500">
-                Haiku: 最经济 ($0.25/百万输入) | Sonnet: 均衡 ($3/百万输入) | Opus: 最强 ($15/百万输入)
+                Haiku: 最经济 ($0.25/百万输入) | Sonnet: 均衡 ($3/百万输入) | Opus: 最强
+                ($15/百万输入)
               </p>
             </div>
 
@@ -112,9 +113,7 @@ export function AgentFormFields({ register, errors, watch }: AgentFormFieldsProp
                 step="0.1"
                 className="w-full"
                 aria-invalid={errors.temperature ? true : undefined}
-                aria-describedby={
-                  errors.temperature ? 'temperature-error' : 'temperature-hint'
-                }
+                aria-describedby={errors.temperature ? 'temperature-error' : 'temperature-hint'}
                 {...register('temperature', { valueAsNumber: true })}
               />
               {errors.temperature && (

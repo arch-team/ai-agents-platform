@@ -81,7 +81,10 @@ export function UsageTrendChart({ dateRange }: UsageTrendChartProps) {
                   tokens: 'Token 消耗',
                   users: '独立用户',
                 };
-                return [Number(value).toLocaleString('zh-CN'), labels[String(name)] ?? String(name)];
+                return [
+                  Number(value).toLocaleString('zh-CN'),
+                  labels[String(name)] ?? String(name),
+                ];
               }}
             />
             <Legend

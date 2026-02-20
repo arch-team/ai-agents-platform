@@ -51,9 +51,7 @@ export class DatabaseStack extends cdk.Stack {
     this.knowledgeBucket = new s3.Bucket(this, 'KnowledgeDocsBucket', {
       bucketName: `${PROJECT_NAME}-knowledge-${props.envName}`,
       versioned: true,
-      encryption: props.encryptionKey
-        ? s3.BucketEncryption.KMS
-        : s3.BucketEncryption.S3_MANAGED,
+      encryption: props.encryptionKey ? s3.BucketEncryption.KMS : s3.BucketEncryption.S3_MANAGED,
       encryptionKey: props.encryptionKey,
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
       enforceSSL: true,

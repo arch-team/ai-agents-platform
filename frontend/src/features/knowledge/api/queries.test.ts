@@ -42,12 +42,8 @@ function createWrapper() {
 describe('knowledge API hooks', () => {
   beforeEach(() => {
     server.use(
-      http.get(`${API_BASE}/api/v1/knowledge-bases`, () =>
-        HttpResponse.json(mockListResponse),
-      ),
-      http.get(`${API_BASE}/api/v1/knowledge-bases/:id`, () =>
-        HttpResponse.json(mockKB),
-      ),
+      http.get(`${API_BASE}/api/v1/knowledge-bases`, () => HttpResponse.json(mockListResponse)),
+      http.get(`${API_BASE}/api/v1/knowledge-bases/:id`, () => HttpResponse.json(mockKB)),
       http.get(`${API_BASE}/api/v1/knowledge-bases/:id/documents`, () =>
         HttpResponse.json({
           items: [

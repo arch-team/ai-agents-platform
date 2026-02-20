@@ -113,9 +113,7 @@ export function KnowledgeList({ onSelect, onCreate }: KnowledgeListProps) {
                     <h3 className="text-base font-semibold text-gray-900">{kb.name}</h3>
                     <KnowledgeStatusBadge status={kb.status} />
                   </div>
-                  {kb.description && (
-                    <p className="mt-1 text-sm text-gray-600">{kb.description}</p>
-                  )}
+                  {kb.description && <p className="mt-1 text-sm text-gray-600">{kb.description}</p>}
                   <div className="mt-2 flex items-center gap-4 text-xs text-gray-500">
                     <span>{kb.document_count} 个文档</span>
                     <span>创建于 {formatDateTime(kb.created_at)}</span>

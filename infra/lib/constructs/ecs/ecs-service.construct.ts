@@ -141,8 +141,13 @@ export class EcsServiceConstruct extends Construct {
 
     // 定时缩放 — Dev 环境非工作时段自动缩减任务数以降低成本
     if (props.scheduledScaling) {
-      const { scaleDownSchedule, scaleUpSchedule, scaleDownMinCapacity = 0, scaleUpMinCapacity, scaleUpMaxCapacity } =
-        props.scheduledScaling;
+      const {
+        scaleDownSchedule,
+        scaleUpSchedule,
+        scaleDownMinCapacity = 0,
+        scaleUpMinCapacity,
+        scaleUpMaxCapacity,
+      } = props.scheduledScaling;
 
       const scalableTarget = this.service.autoScaleTaskCount({
         minCapacity: scaleDownMinCapacity,

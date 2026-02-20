@@ -185,9 +185,7 @@ export default function AgentDetailPage() {
             )}
 
             {previewMutation.isError && (
-              <ErrorMessage
-                error={extractApiError(previewMutation.error, '预览请求失败')}
-              />
+              <ErrorMessage error={extractApiError(previewMutation.error, '预览请求失败')} />
             )}
 
             {previewMutation.data && (

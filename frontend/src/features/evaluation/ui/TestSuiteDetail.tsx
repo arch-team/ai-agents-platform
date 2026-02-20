@@ -200,9 +200,7 @@ export function TestSuiteDetail({ suiteId, onBack, onRunEvaluation }: TestSuiteD
                         variant="outline"
                         size="sm"
                         loading={deleteCaseMutation.isPending}
-                        onClick={() =>
-                          deleteCaseMutation.mutate({ suiteId, caseId: tc.id })
-                        }
+                        onClick={() => deleteCaseMutation.mutate({ suiteId, caseId: tc.id })}
                         aria-label={`删除用例 #${tc.order_index + 1}`}
                       >
                         删除

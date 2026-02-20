@@ -22,10 +22,9 @@ export function useTeamExecutions(page = 1, pageSize = 20) {
   return useQuery({
     queryKey: teamExecutionKeys.list(page),
     queryFn: async () => {
-      const { data } = await apiClient.get<PageResponse<TeamExecution>>(
-        '/api/v1/team-executions',
-        { params: { page, page_size: pageSize } },
-      );
+      const { data } = await apiClient.get<PageResponse<TeamExecution>>('/api/v1/team-executions', {
+        params: { page, page_size: pageSize },
+      });
       return data;
     },
   });
@@ -81,9 +80,7 @@ export function useCancelTeamExecution() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (id: number) => {
-      const { data } = await apiClient.post<TeamExecution>(
-        `/api/v1/team-executions/${id}/cancel`,
-      );
+      const { data } = await apiClient.post<TeamExecution>(`/api/v1/team-executions/${id}/cancel`);
       return data;
     },
     onSuccess: (data) => {

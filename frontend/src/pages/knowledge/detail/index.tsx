@@ -20,10 +20,7 @@ export default function KnowledgeDetailPage() {
 
   return (
     <div className="mx-auto max-w-3xl p-6">
-      <KnowledgeDetail
-        knowledgeBaseId={id}
-        onBack={() => navigate('/knowledge')}
-      />
+      <KnowledgeDetail knowledgeBaseId={id} onBack={() => navigate('/knowledge')} />
     </div>
   );
 }

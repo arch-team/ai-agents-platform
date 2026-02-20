@@ -45,9 +45,7 @@ describe('team-executions API hooks', () => {
           total_pages: 1,
         }),
       ),
-      http.get(`${API_BASE}/api/v1/team-executions/:id`, () =>
-        HttpResponse.json(mockExecution),
-      ),
+      http.get(`${API_BASE}/api/v1/team-executions/:id`, () => HttpResponse.json(mockExecution)),
       http.get(`${API_BASE}/api/v1/team-executions/:id/logs`, () =>
         HttpResponse.json([
           {

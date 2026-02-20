@@ -36,9 +36,7 @@ describe('parseSSEStream', () => {
       'data: {"type":"message","content":"World"}\n\n',
     ]);
 
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-      new Response(mockStream, { status: 200 }),
-    );
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(mockStream, { status: 200 }));
 
     const results: unknown[] = [];
     for await (const chunk of parseSSEStream<{ type: string; content: string }>(baseConfig)) {
@@ -82,9 +80,9 @@ describe('parseSSEStream', () => {
   });
 
   it('应该发送 GET 请求并设置正确的 headers', async () => {
-    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-      new Response(createMockReadableStream([]), { status: 200 }),
-    );
+    const fetchSpy = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValue(new Response(createMockReadableStream([]), { status: 200 }));
 
     const generator = parseSSEStream(baseConfig);
     // 消费生成器
@@ -106,9 +104,9 @@ describe('parseSSEStream', () => {
   });
 
   it('应该发送 POST 请求并携带 body', async () => {
-    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-      new Response(createMockReadableStream([]), { status: 200 }),
-    );
+    const fetchSpy = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValue(new Response(createMockReadableStream([]), { status: 200 }));
 
     const postConfig: SSERequestConfig = {
       ...baseConfig,
@@ -136,9 +134,9 @@ describe('parseSSEStream', () => {
   });
 
   it('应该在无 token 时不发送 Authorization header', async () => {
-    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-      new Response(createMockReadableStream([]), { status: 200 }),
-    );
+    const fetchSpy = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValue(new Response(createMockReadableStream([]), { status: 200 }));
 
     const noTokenConfig: SSERequestConfig = { ...baseConfig, token: null };
     const generator = parseSSEStream(noTokenConfig);
@@ -152,14 +150,9 @@ describe('parseSSEStream', () => {
   });
 
   it('应该跳过无效 JSON 数据行', async () => {
-    const mockStream = createMockReadableStream([
-      'data: not-json\n\n',
-      'data: {"valid":true}\n\n',
-    ]);
+    const mockStream = createMockReadableStream(['data: not-json\n\n', 'data: {"valid":true}\n\n']);
 
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-      new Response(mockStream, { status: 200 }),
-    );
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(mockStream, { status: 200 }));
 
     const results: unknown[] = [];
     for await (const chunk of parseSSEStream(baseConfig)) {
@@ -171,14 +164,9 @@ describe('parseSSEStream', () => {
 
   it('应该处理跨 chunk 的数据分割', async () => {
     // 模拟数据跨 chunk 分割的情况
-    const mockStream = createMockReadableStream([
-      'data: {"part',
-      '":"complete"}\n\n',
-    ]);
+    const mockStream = createMockReadableStream(['data: {"part', '":"complete"}\n\n']);
 
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-      new Response(mockStream, { status: 200 }),
-    );
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(mockStream, { status: 200 }));
 
     const results: unknown[] = [];
     for await (const chunk of parseSSEStream(baseConfig)) {
@@ -196,9 +184,7 @@ describe('parseSSEStream', () => {
       'id: 123\n',
     ]);
 
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-      new Response(mockStream, { status: 200 }),
-    );
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(mockStream, { status: 200 }));
 
     const results: unknown[] = [];
     for await (const chunk of parseSSEStream(baseConfig)) {
@@ -209,9 +195,7 @@ describe('parseSSEStream', () => {
   });
 
   it('应该在响应无 body 时抛出异常', async () => {
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-      new Response(null, { status: 200 }),
-    );
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(null, { status: 200 }));
 
     // Response(null) 仍有 body，但 getReader 可能成功
     // 我们需要模拟一个没有 body 的 response

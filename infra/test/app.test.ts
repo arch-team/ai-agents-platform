@@ -81,7 +81,14 @@ function createStackGroup(app: cdk.App): StackGroup {
   monitoringStack.addDependency(computeStack);
   monitoringStack.addDependency(securityStack);
 
-  return { networkStack, securityStack, databaseStack, computeStack, agentCoreStack, monitoringStack };
+  return {
+    networkStack,
+    securityStack,
+    databaseStack,
+    computeStack,
+    agentCoreStack,
+    monitoringStack,
+  };
 }
 
 describe('CDK App 集成测试', () => {
@@ -99,8 +106,14 @@ describe('CDK App 集成测试', () => {
 
   it('Stack 依赖关系应正确', () => {
     const app = new cdk.App();
-    const { networkStack, securityStack, databaseStack, computeStack, agentCoreStack, monitoringStack } =
-      createStackGroup(app);
+    const {
+      networkStack,
+      securityStack,
+      databaseStack,
+      computeStack,
+      agentCoreStack,
+      monitoringStack,
+    } = createStackGroup(app);
 
     // SecurityStack 依赖 NetworkStack
     expect(securityStack.dependencies).toContain(networkStack);

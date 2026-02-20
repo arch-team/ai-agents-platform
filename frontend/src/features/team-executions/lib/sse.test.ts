@@ -84,13 +84,16 @@ describe('team-executions streamSSE', () => {
 
     await drain(streamSSE('/test', 'test-token'));
 
-    expect(fetchSpy).toHaveBeenCalledWith('/test', expect.objectContaining({
-      method: 'GET',
-      headers: expect.objectContaining({
-        Authorization: 'Bearer test-token',
-        Accept: 'text/event-stream',
+    expect(fetchSpy).toHaveBeenCalledWith(
+      '/test',
+      expect.objectContaining({
+        method: 'GET',
+        headers: expect.objectContaining({
+          Authorization: 'Bearer test-token',
+          Accept: 'text/event-stream',
+        }),
       }),
-    }));
+    );
   });
 
   it('应该在无 token 时不携带 Authorization header', async () => {
@@ -121,9 +124,12 @@ describe('team-executions streamSSE', () => {
 
     await drain(streamSSE('/test', null, controller.signal));
 
-    expect(fetchSpy).toHaveBeenCalledWith('/test', expect.objectContaining({
-      signal: controller.signal,
-    }));
+    expect(fetchSpy).toHaveBeenCalledWith(
+      '/test',
+      expect.objectContaining({
+        signal: controller.signal,
+      }),
+    );
   });
 
   it('应该忽略无法解析 JSON 的行', async () => {

@@ -1,14 +1,6 @@
 // Token 消耗归因图表组件
 
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-} from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 import { Card, Spinner, ErrorMessage } from '@/shared/ui';
 import { extractApiError } from '@/shared/lib/extractApiError';
@@ -68,9 +60,7 @@ export function CostBreakdownChart({ dateRange }: CostBreakdownChartProps) {
     <Card>
       <div className="mb-4 flex items-center justify-between">
         <h3 className="text-base font-semibold text-gray-900">Token 消耗归因 (Top 10)</h3>
-        <span className="text-sm text-gray-500">
-          总 Token: {formatTokens(data.total_tokens)}
-        </span>
+        <span className="text-sm text-gray-500">总 Token: {formatTokens(data.total_tokens)}</span>
       </div>
       <div className="h-80">
         <ResponsiveContainer width="100%" height="100%">

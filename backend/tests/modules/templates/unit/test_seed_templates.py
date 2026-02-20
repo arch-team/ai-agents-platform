@@ -13,8 +13,8 @@ from src.modules.templates.domain.value_objects.template_config import TemplateC
 class TestSeedTemplates:
     """预置模板种子数据完整性测试。"""
 
-    def test_has_10_templates(self) -> None:
-        assert len(SEED_TEMPLATES) == 11
+    def test_has_16_templates(self) -> None:
+        assert len(SEED_TEMPLATES) == 16
 
     def test_all_have_required_fields(self) -> None:
         required_fields = {
@@ -42,7 +42,7 @@ class TestSeedTemplates:
 
     def test_featured_count(self) -> None:
         featured = [t for t in SEED_TEMPLATES if t["is_featured"]]
-        assert len(featured) == 6
+        assert len(featured) == 7
 
     def test_configs_valid(self) -> None:
         for t in SEED_TEMPLATES:

@@ -81,9 +81,7 @@ describe('DatabaseStack', () => {
         encryptionKey,
         envName: 'prod',
       });
-      template = Template.fromStack(
-        app.node.findChild('TestDatabaseStack') as cdk.Stack,
-      );
+      template = Template.fromStack(app.node.findChild('TestDatabaseStack') as cdk.Stack);
     });
 
     it('Prod 环境应启用 Performance Insights', () => {
@@ -110,9 +108,7 @@ describe('DatabaseStack', () => {
         encryptionKey,
         envName: 'dev',
       });
-      template = Template.fromStack(
-        app.node.findChild('TestDatabaseStack') as cdk.Stack,
-      );
+      template = Template.fromStack(app.node.findChild('TestDatabaseStack') as cdk.Stack);
     });
 
     it('应创建 S3 Bucket', () => {

@@ -72,7 +72,16 @@ export function useSendMessageStream(token: string | null) {
         queryClient.invalidateQueries({ queryKey: conversationKeys.detail(conversationId) });
       }
     },
-    [appendStreamContent, clearStream, setStreaming, setError, clearError, queryClient, token, abort],
+    [
+      appendStreamContent,
+      clearStream,
+      setStreaming,
+      setError,
+      clearError,
+      queryClient,
+      token,
+      abort,
+    ],
   );
 
   return { sendMessage, abort };

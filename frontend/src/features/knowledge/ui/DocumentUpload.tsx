@@ -95,12 +95,8 @@ export function DocumentUpload({ knowledgeBaseId }: DocumentUploadProps) {
           className="text-sm text-gray-600 file:mr-3 file:rounded-md file:border-0 file:bg-blue-50 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-blue-700 hover:file:bg-blue-100"
           aria-label="选择文档文件"
         />
-        {uploadMutation.isPending && (
-          <span className="text-sm text-blue-600">上传中...</span>
-        )}
-        {uploadMutation.isSuccess && (
-          <span className="text-sm text-green-600">上传成功</span>
-        )}
+        {uploadMutation.isPending && <span className="text-sm text-blue-600">上传中...</span>}
+        {uploadMutation.isSuccess && <span className="text-sm text-green-600">上传成功</span>}
       </div>
       {validationError && (
         <div role="alert" className="text-sm text-red-600">
@@ -110,9 +106,7 @@ export function DocumentUpload({ knowledgeBaseId }: DocumentUploadProps) {
       {uploadMutation.isError && (
         <ErrorMessage error={extractApiError(uploadMutation.error, '上传文档失败')} />
       )}
-      <p className="text-xs text-gray-500">
-        支持格式: PDF、TXT、Markdown、DOCX、CSV（最大 10MB）
-      </p>
+      <p className="text-xs text-gray-500">支持格式: PDF、TXT、Markdown、DOCX、CSV（最大 10MB）</p>
     </div>
   );
 }

@@ -114,7 +114,12 @@ export function TeamExecDetail({ executionId, onStartStream }: TeamExecDetailPro
       </div>
 
       {/* 日志区域 */}
-      <div className="flex-1 overflow-y-auto p-4" role="log" aria-label="执行日志" aria-live="polite">
+      <div
+        className="flex-1 overflow-y-auto p-4"
+        role="log"
+        aria-label="执行日志"
+        aria-live="polite"
+      >
         <h3 className="mb-3 text-sm font-semibold text-gray-700">执行日志</h3>
 
         {streamError && <ErrorMessage error={streamError} className="mb-3" />}

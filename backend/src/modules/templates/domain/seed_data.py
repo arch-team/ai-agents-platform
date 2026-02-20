@@ -2,7 +2,7 @@
 
 供应用启动时 seed 预置模板（幂等），也供 scripts/seed_templates.py 独立脚本使用。
 """
-# ruff: noqa: RUF001  # 中文字符串中的全角标点为正常中文书写规范
+# ruff: noqa: RUF001, RUF003  # 中文字符串/注释中的全角标点为正常中文书写规范
 
 from src.modules.templates.domain.value_objects.template_category import TemplateCategory
 

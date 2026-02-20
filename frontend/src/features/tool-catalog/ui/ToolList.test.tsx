@@ -63,9 +63,7 @@ function createWrapper() {
 
 describe('ToolList', () => {
   beforeEach(() => {
-    server.use(
-      http.get(`${API_BASE}/api/v1/tools`, () => HttpResponse.json(mockResponse)),
-    );
+    server.use(http.get(`${API_BASE}/api/v1/tools`, () => HttpResponse.json(mockResponse)));
   });
 
   it('应显示加载状态', () => {

@@ -66,20 +66,14 @@ export function ToolDetail({ toolId, onBack }: ToolDetailProps) {
               <span className="text-sm text-gray-500">
                 {TOOL_TYPE_LABELS[tool.tool_type] ?? tool.tool_type}
               </span>
-              {tool.version && (
-                <span className="text-sm text-gray-500">v{tool.version}</span>
-              )}
+              {tool.version && <span className="text-sm text-gray-500">v{tool.version}</span>}
             </div>
           </div>
 
           {/* 操作按钮 */}
           <div className="flex gap-2">
             {tool.status === 'DRAFT' && (
-              <Button
-                size="sm"
-                loading={submitMutation.isPending}
-                onClick={handleSubmit}
-              >
+              <Button size="sm" loading={submitMutation.isPending} onClick={handleSubmit}>
                 提交审批
               </Button>
             )}
@@ -116,15 +110,11 @@ export function ToolDetail({ toolId, onBack }: ToolDetailProps) {
           </div>
           <div>
             <dt className="text-xs font-medium text-gray-500">创建时间</dt>
-            <dd className="mt-1 text-sm text-gray-900">
-              {formatDateTime(tool.created_at)}
-            </dd>
+            <dd className="mt-1 text-sm text-gray-900">{formatDateTime(tool.created_at)}</dd>
           </div>
           <div>
             <dt className="text-xs font-medium text-gray-500">更新时间</dt>
-            <dd className="mt-1 text-sm text-gray-900">
-              {formatDateTime(tool.updated_at)}
-            </dd>
+            <dd className="mt-1 text-sm text-gray-900">{formatDateTime(tool.updated_at)}</dd>
           </div>
           {tool.approved_by && (
             <div>

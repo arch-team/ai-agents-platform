@@ -53,9 +53,7 @@ describe('DateRangePicker', () => {
     const user = userEvent.setup();
     const handleStartChange = vi.fn();
 
-    render(
-      <DateRangePicker {...defaultProps} onStartDateChange={handleStartChange} />,
-    );
+    render(<DateRangePicker {...defaultProps} onStartDateChange={handleStartChange} />);
 
     const startInput = screen.getByLabelText('从');
     await user.clear(startInput);
@@ -68,9 +66,7 @@ describe('DateRangePicker', () => {
     const user = userEvent.setup();
     const handleEndChange = vi.fn();
 
-    render(
-      <DateRangePicker {...defaultProps} onEndDateChange={handleEndChange} />,
-    );
+    render(<DateRangePicker {...defaultProps} onEndDateChange={handleEndChange} />);
 
     const endInput = screen.getByLabelText('至');
     await user.clear(endInput);

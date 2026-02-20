@@ -160,10 +160,7 @@ export function useCreateTestCase() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({ suiteId, ...dto }: CreateTestCaseRequest & { suiteId: number }) => {
-      const { data } = await apiClient.post<TestCase>(
-        `/api/v1/test-suites/${suiteId}/cases`,
-        dto,
-      );
+      const { data } = await apiClient.post<TestCase>(`/api/v1/test-suites/${suiteId}/cases`, dto);
       return data;
     },
     onSuccess: (_data, { suiteId }) => {

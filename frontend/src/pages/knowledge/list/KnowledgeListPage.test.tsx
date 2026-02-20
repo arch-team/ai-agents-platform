@@ -6,7 +6,13 @@ import { renderWithProviders } from '../../../../tests/utils';
 
 // Mock feature 组件，避免 API 调用
 vi.mock('@/features/knowledge', () => ({
-  KnowledgeList: ({ onSelect, onCreate }: { onSelect: (id: string) => void; onCreate: () => void }) => (
+  KnowledgeList: ({
+    onSelect,
+    onCreate,
+  }: {
+    onSelect: (id: string) => void;
+    onCreate: () => void;
+  }) => (
     <div data-testid="knowledge-list">
       <button onClick={() => onSelect('1')}>选择</button>
       <button onClick={onCreate}>创建</button>

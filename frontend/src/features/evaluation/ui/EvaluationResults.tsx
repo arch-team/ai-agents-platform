@@ -106,9 +106,7 @@ export function EvaluationResults({ runId }: EvaluationResultsProps) {
                       <span
                         className={cn(
                           'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium',
-                          result.passed
-                            ? 'bg-green-100 text-green-700'
-                            : 'bg-red-100 text-red-700',
+                          result.passed ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700',
                         )}
                       >
                         {result.passed ? '通过' : '未通过'}

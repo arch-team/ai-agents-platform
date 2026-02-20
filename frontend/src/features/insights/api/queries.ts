@@ -14,7 +14,8 @@ import type {
 // Query Key Factory
 export const insightKeys = {
   all: ['insights'] as const,
-  costBreakdown: (params: DateRangeParams) => [...insightKeys.all, 'cost-breakdown', params] as const,
+  costBreakdown: (params: DateRangeParams) =>
+    [...insightKeys.all, 'cost-breakdown', params] as const,
   usageTrends: (params: DateRangeParams) => [...insightKeys.all, 'usage-trends', params] as const,
   summary: (params: DateRangeParams) => [...insightKeys.all, 'summary', params] as const,
 };
@@ -24,9 +25,12 @@ export function useCostBreakdown(params: DateRangeParams) {
   return useQuery({
     queryKey: insightKeys.costBreakdown(params),
     queryFn: async () => {
-      const { data } = await apiClient.get<CostBreakdownResponse>('/api/v1/insights/cost-breakdown', {
-        params,
-      });
+      const { data } = await apiClient.get<CostBreakdownResponse>(
+        '/api/v1/insights/cost-breakdown',
+        {
+          params,
+        },
+      );
       return data;
     },
   });

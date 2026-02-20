@@ -6,7 +6,12 @@ import { extractApiError } from '@/shared/lib/extractApiError';
 import { formatDateTime } from '@/shared/lib/formatDate';
 import { Button, Spinner, ErrorMessage, Pagination } from '@/shared/ui';
 
-import { useTestSuites, useActivateTestSuite, useArchiveTestSuite, useDeleteTestSuite } from '../api/queries';
+import {
+  useTestSuites,
+  useActivateTestSuite,
+  useArchiveTestSuite,
+  useDeleteTestSuite,
+} from '../api/queries';
 
 import type { TestSuiteStatus, TestSuiteFilters } from '../api/types';
 

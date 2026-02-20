@@ -142,7 +142,8 @@ export function KnowledgeDetail({ knowledgeBaseId, onBack }: KnowledgeDetailProp
                 <div>
                   <p className="text-sm font-medium text-gray-900">{doc.file_name}</p>
                   <p className="text-xs text-gray-500">
-                    {formatFileSize(doc.file_size)} · {doc.content_type} · {formatDateTime(doc.created_at)}
+                    {formatFileSize(doc.file_size)} · {doc.content_type} ·{' '}
+                    {formatDateTime(doc.created_at)}
                   </p>
                 </div>
                 <Button
@@ -207,10 +208,7 @@ export function KnowledgeDetail({ knowledgeBaseId, onBack }: KnowledgeDetailProp
             ) : (
               <ul className="space-y-2" role="list" aria-label="检索结果">
                 {queryMutation.data.results.map((result, index) => (
-                  <li
-                    key={index}
-                    className="rounded-md border border-gray-200 bg-gray-50 p-3"
-                  >
+                  <li key={index} className="rounded-md border border-gray-200 bg-gray-50 p-3">
                     <p className="whitespace-pre-wrap text-sm text-gray-800">{result.content}</p>
                     <p className="mt-1 text-xs text-gray-500">
                       相关度: {(result.score * 100).toFixed(1)}%

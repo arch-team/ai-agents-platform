@@ -6,9 +6,7 @@ import { Pagination } from './Pagination';
 
 describe('Pagination', () => {
   it('应该在总页数 <= 1 时不渲染', () => {
-    const { container } = render(
-      <Pagination page={1} totalPages={1} onPageChange={vi.fn()} />,
-    );
+    const { container } = render(<Pagination page={1} totalPages={1} onPageChange={vi.fn()} />);
     expect(container.innerHTML).toBe('');
   });
 

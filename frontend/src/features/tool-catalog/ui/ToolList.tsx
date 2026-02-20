@@ -177,10 +177,7 @@ export function ToolList({ onSelect }: ToolListProps) {
       )}
 
       {/* 注册对话框 */}
-      <ToolRegisterDialog
-        open={registerOpen}
-        onClose={() => setRegisterOpen(false)}
-      />
+      <ToolRegisterDialog open={registerOpen} onClose={() => setRegisterOpen(false)} />
     </div>
   );
 }

@@ -62,23 +62,14 @@ export function InsightsSummary({ dateRange }: InsightsSummaryProps) {
 
   return (
     <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
-      <MetricCard
-        label="Agent 总数"
-        value={data.total_agents}
-      />
+      <MetricCard label="Agent 总数" value={data.total_agents} />
       <MetricCard
         label="活跃 Agent"
         value={data.active_agents}
         subLabel={`共 ${data.total_agents} 个`}
       />
-      <MetricCard
-        label="调用总量"
-        value={formatNumber(data.total_invocations)}
-      />
-      <MetricCard
-        label="总 Token"
-        value={formatNumber(data.total_tokens)}
-      />
+      <MetricCard label="调用总量" value={formatNumber(data.total_invocations)} />
+      <MetricCard label="总 Token" value={formatNumber(data.total_tokens)} />
       <MetricCard
         label="平台总成本"
         value={formatCurrency(data.total_cost)}

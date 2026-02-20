@@ -21,20 +21,18 @@ function createWrapper() {
 
 describe('RunEvaluationDialog', () => {
   it('应渲染对话框内容', () => {
-    render(
-      <RunEvaluationDialog suiteId={1} suiteName="回归测试集" onClose={vi.fn()} />,
-      { wrapper: createWrapper() },
-    );
+    render(<RunEvaluationDialog suiteId={1} suiteName="回归测试集" onClose={vi.fn()} />, {
+      wrapper: createWrapper(),
+    });
 
     expect(screen.getByText('发起评估')).toBeInTheDocument();
     expect(screen.getByText('回归测试集')).toBeInTheDocument();
   });
 
   it('应具有正确的 ARIA 对话框属性', () => {
-    render(
-      <RunEvaluationDialog suiteId={1} suiteName="回归测试集" onClose={vi.fn()} />,
-      { wrapper: createWrapper() },
-    );
+    render(<RunEvaluationDialog suiteId={1} suiteName="回归测试集" onClose={vi.fn()} />, {
+      wrapper: createWrapper(),
+    });
 
     const dialog = screen.getByRole('dialog');
     expect(dialog).toHaveAttribute('aria-modal', 'true');
@@ -45,10 +43,9 @@ describe('RunEvaluationDialog', () => {
     const user = userEvent.setup();
     const handleClose = vi.fn();
 
-    render(
-      <RunEvaluationDialog suiteId={1} suiteName="回归测试集" onClose={handleClose} />,
-      { wrapper: createWrapper() },
-    );
+    render(<RunEvaluationDialog suiteId={1} suiteName="回归测试集" onClose={handleClose} />, {
+      wrapper: createWrapper(),
+    });
 
     await user.click(screen.getByRole('button', { name: '取消' }));
     expect(handleClose).toHaveBeenCalled();
@@ -86,10 +83,9 @@ describe('RunEvaluationDialog', () => {
 
     const user = userEvent.setup();
 
-    render(
-      <RunEvaluationDialog suiteId={1} suiteName="回归测试集" onClose={vi.fn()} />,
-      { wrapper: createWrapper() },
-    );
+    render(<RunEvaluationDialog suiteId={1} suiteName="回归测试集" onClose={vi.fn()} />, {
+      wrapper: createWrapper(),
+    });
 
     await user.click(screen.getByRole('button', { name: '确认发起' }));
 

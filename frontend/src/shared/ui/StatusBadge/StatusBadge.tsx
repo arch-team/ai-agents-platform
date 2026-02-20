@@ -14,7 +14,12 @@ interface StatusBadgeProps<T extends string> {
   prefix?: React.ReactNode;
 }
 
-export function StatusBadge<T extends string>({ status, config, className, prefix }: StatusBadgeProps<T>) {
+export function StatusBadge<T extends string>({
+  status,
+  config,
+  className,
+  prefix,
+}: StatusBadgeProps<T>) {
   const statusConfig = config[status];
 
   return (

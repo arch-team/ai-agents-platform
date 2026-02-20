@@ -30,12 +30,8 @@ export default function InsightsPage() {
         <DateRangePicker
           startDate={dateRange.start_date}
           endDate={dateRange.end_date}
-          onStartDateChange={(date) =>
-            setDateRange((prev) => ({ ...prev, start_date: date }))
-          }
-          onEndDateChange={(date) =>
-            setDateRange((prev) => ({ ...prev, end_date: date }))
-          }
+          onStartDateChange={(date) => setDateRange((prev) => ({ ...prev, start_date: date }))}
+          onEndDateChange={(date) => setDateRange((prev) => ({ ...prev, end_date: date }))}
         />
       </div>
 

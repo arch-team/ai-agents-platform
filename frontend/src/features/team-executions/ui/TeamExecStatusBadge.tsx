@@ -26,7 +26,10 @@ export function TeamExecStatusBadge({ status, className }: TeamExecStatusBadgePr
       className={className}
       prefix={
         status === 'running' ? (
-          <span className="mr-1.5 h-2 w-2 animate-pulse rounded-full bg-blue-500" aria-hidden="true" />
+          <span
+            className="mr-1.5 h-2 w-2 animate-pulse rounded-full bg-blue-500"
+            aria-hidden="true"
+          />
         ) : undefined
       }
     />

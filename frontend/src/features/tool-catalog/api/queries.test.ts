@@ -45,15 +45,9 @@ function createWrapper() {
 describe('tool-catalog API hooks', () => {
   beforeEach(() => {
     server.use(
-      http.get(`${API_BASE}/api/v1/tools`, () =>
-        HttpResponse.json(mockListResponse),
-      ),
-      http.get(`${API_BASE}/api/v1/tools/approved`, () =>
-        HttpResponse.json(mockListResponse),
-      ),
-      http.get(`${API_BASE}/api/v1/tools/:id`, () =>
-        HttpResponse.json(mockTool),
-      ),
+      http.get(`${API_BASE}/api/v1/tools`, () => HttpResponse.json(mockListResponse)),
+      http.get(`${API_BASE}/api/v1/tools/approved`, () => HttpResponse.json(mockListResponse)),
+      http.get(`${API_BASE}/api/v1/tools/:id`, () => HttpResponse.json(mockTool)),
     );
   });
 

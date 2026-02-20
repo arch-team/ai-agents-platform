@@ -53,9 +53,7 @@ export function TeamExecList({ selectedId, onSelect }: TeamExecListProps) {
           >
             <div className="min-w-0 flex-1">
               {/* CSS truncate 自动处理文本溢出，无需手动截断 */}
-              <p className="truncate text-sm font-medium text-gray-900">
-                {execution.prompt}
-              </p>
+              <p className="truncate text-sm font-medium text-gray-900">{execution.prompt}</p>
               <p className="mt-1 text-xs text-gray-500">
                 #{execution.id} · {formatDateTime(execution.created_at)}
               </p>
