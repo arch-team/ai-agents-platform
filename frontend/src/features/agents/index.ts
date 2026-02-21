@@ -1,7 +1,6 @@
 // UI 组件
 export { AgentList } from './ui/AgentList';
 export { AgentCreateForm } from './ui/AgentCreateForm';
-export { AgentEditForm } from './ui/AgentEditForm';
 export { AgentStatusBadge } from './ui/AgentStatusBadge';
 
 // Hooks

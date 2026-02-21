@@ -442,4 +442,5 @@ dev = [
     "greenlet>=3.3.1",
     "pytest-asyncio>=1.3.0",
     "pytest-cov>=7.0.0",
+    "vulture>=2.14",
 ]

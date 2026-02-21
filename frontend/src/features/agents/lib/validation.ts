@@ -18,8 +18,3 @@ export const createAgentSchema = z.object({
 });
 
 export type CreateAgentFormData = z.input<typeof createAgentSchema>;
-
-// 更新 Agent 独立 schema（当前与 Create 相同，便于独立演进）
-export const updateAgentSchema = createAgentSchema;
-
-export type UpdateAgentFormData = z.input<typeof updateAgentSchema>;
