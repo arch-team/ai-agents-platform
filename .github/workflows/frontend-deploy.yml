@@ -1,0 +1,126 @@
+name: Frontend Deploy
+
+on:
+  push:
+    branches: [main, ai-agents-factory-v1]
+    paths:
+      - 'frontend/src/**'
+      - 'frontend/public/**'
+      - 'frontend/index.html'
+      - 'frontend/package.json'
+      - 'frontend/pnpm-lock.yaml'
+      - 'frontend/vite.config.ts'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: '目标部署环境'
+        type: choice
+        options: [dev, prod]
+        default: dev
+
+# 同一分支上的新推送取消旧的运行
+concurrency:
+  group: frontend-deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: "22"
+  PNPM_VERSION: "9"
+
+jobs:
+  # ============================================================
+  # 质量门控 (部署前必须通过)
+  # ============================================================
+  quality-gate:
+    name: 质量门控
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+          cache-dependency-path: frontend/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm test
+      - name: 构建生产版本
+        run: pnpm build
+      # 保存构建产物供后续 job 使用
+      - uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend/dist/
+          retention-days: 1
+
+  # ============================================================
+  # 部署 — Dev 环境
+  # ============================================================
+  deploy-dev:
+    name: 部署 Dev
+    needs: quality-gate
+    if: >-
+      (github.event_name == 'push') ||
+      (github.event_name == 'workflow_dispatch' && inputs.environment == 'dev')
+    runs-on: ubuntu-latest
+    environment: dev
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: frontend-dist
+          path: dist/
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: us-east-1
+      - name: 同步到 Dev S3
+        run: aws s3 sync dist/ s3://ai-agents-platform-frontend-dev-897473/ --delete
+      - name: 验证部署
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" "http://ai-agents-platform-frontend-dev-897473.s3-website-us-east-1.amazonaws.com")
+          echo "HTTP Status: $STATUS"
+          test "$STATUS" = "200"
+
+  # ============================================================
+  # 部署 — Prod 环境 (需要手动审批)
+  # ============================================================
+  deploy-prod:
+    name: 部署 Prod
+    needs: deploy-dev
+    if: >-
+      (github.event_name == 'push' &&
+       (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/ai-agents-factory-v1')) ||
+      (github.event_name == 'workflow_dispatch' && inputs.environment == 'prod')
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      # GitHub 环境保护规则中配置 required_reviewers
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: frontend-dist
+          path: dist/
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_PROD_ROLE_ARN }}
+          aws-region: us-east-1
+      - name: 同步到 Prod S3
+        run: aws s3 sync dist/ s3://ai-agents-platform-frontend-prod-897473/ --delete
+      - name: 验证部署
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" "http://ai-agents-platform-frontend-prod-897473.s3-website-us-east-1.amazonaws.com")
+          echo "HTTP Status: $STATUS"
+          test "$STATUS" = "200"
