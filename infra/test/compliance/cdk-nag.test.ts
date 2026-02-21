@@ -11,6 +11,7 @@ import {
 import {
   createCrossStackComputeDependencies,
   createCrossStackDbDependencies,
+  createMonitoringTestDeps,
   createVpcDependency,
   TEST_ENV,
   TEST_VPC_CIDR,
@@ -127,34 +128,7 @@ describe('CDK Nag 合规测试', () => {
 
   it('MonitoringStack 应通过 AWS Solutions checks', () => {
     const app = new cdk.App();
-    const {
-      vpc,
-      dbSecurityGroup,
-      encryptionKey,
-      encryptionKeyArn,
-      databaseSecret,
-      jwtSecretArn,
-      databaseEndpoint,
-    } = createCrossStackComputeDependencies(app, TEST_ENV);
-
-    const databaseStack = new DatabaseStack(app, 'TestDbStack', {
-      env: TEST_ENV,
-      vpc,
-      dbSecurityGroup,
-      encryptionKey,
-      envName: 'dev',
-    });
-
-    const computeStack = new ComputeStack(app, 'TestCompStack', {
-      env: TEST_ENV,
-      vpc,
-      dbSecurityGroup,
-      databaseSecret,
-      databaseEndpoint,
-      encryptionKeyArn,
-      jwtSecretArn,
-      envName: 'dev',
-    });
+    const { databaseStack, computeStack, encryptionKey } = createMonitoringTestDeps(app, TEST_ENV);
 
     const stack = new MonitoringStack(app, 'TestMonitoringStack', {
       env: TEST_ENV,

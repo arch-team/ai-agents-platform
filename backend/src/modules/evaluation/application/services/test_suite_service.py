@@ -38,7 +38,15 @@ class TestSuiteService:
         self._suite_repo = suite_repo
         self._case_repo = case_repo
 
-    # -- 辅助方法 --
+    # -- 内部辅助方法 --
+
+    async def _get_suite_or_raise(self, suite_id: int) -> TestSuite:
+        return await get_or_raise(self._suite_repo, suite_id, TestSuiteNotFoundError, suite_id)
+
+    async def _get_owned_suite(self, suite_id: int, user_id: int) -> TestSuite:
+        suite = await self._get_suite_or_raise(suite_id)
+        check_ownership(suite, user_id)
+        return suite
 
     @staticmethod
     def _to_suite_dto(suite: TestSuite) -> TestSuiteDTO:
@@ -93,8 +101,7 @@ class TestSuiteService:
 
     async def get_suite(self, suite_id: int, current_user_id: int) -> TestSuiteDTO:
         """获取测试集详情。"""
-        suite = await get_or_raise(self._suite_repo, suite_id, TestSuiteNotFoundError, suite_id)
-        check_ownership(suite, current_user_id)
+        suite = await self._get_owned_suite(suite_id, current_user_id)
         return self._to_suite_dto(suite)
 
     async def list_suites(
@@ -122,8 +129,7 @@ class TestSuiteService:
         current_user_id: int,
     ) -> TestSuiteDTO:
         """更新测试集。"""
-        suite = await get_or_raise(self._suite_repo, suite_id, TestSuiteNotFoundError, suite_id)
-        check_ownership(suite, current_user_id)
+        suite = await self._get_owned_suite(suite_id, current_user_id)
         if dto.name is not None:
             suite.name = dto.name
         if dto.description is not None:
@@ -134,8 +140,7 @@ class TestSuiteService:
 
     async def delete_suite(self, suite_id: int, current_user_id: int) -> None:
         """删除测试集（仅 DRAFT 状态）。"""
-        suite = await get_or_raise(self._suite_repo, suite_id, TestSuiteNotFoundError, suite_id)
-        check_ownership(suite, current_user_id)
+        suite = await self._get_owned_suite(suite_id, current_user_id)
         if not suite.can_delete():
             raise TestSuiteNotDeletableError(suite_id)
         await self._case_repo.delete_by_suite(suite_id)
@@ -143,8 +148,7 @@ class TestSuiteService:
 
     async def activate_suite(self, suite_id: int, current_user_id: int) -> TestSuiteDTO:
         """激活测试集。"""
-        suite = await get_or_raise(self._suite_repo, suite_id, TestSuiteNotFoundError, suite_id)
-        check_ownership(suite, current_user_id)
+        suite = await self._get_owned_suite(suite_id, current_user_id)
         # 校验是否有测试用例
         case_count = await self._case_repo.count_by_suite(suite_id)
         if case_count == 0:
@@ -156,8 +160,7 @@ class TestSuiteService:
 
     async def archive_suite(self, suite_id: int, current_user_id: int) -> TestSuiteDTO:
         """归档测试集。"""
-        suite = await get_or_raise(self._suite_repo, suite_id, TestSuiteNotFoundError, suite_id)
-        check_ownership(suite, current_user_id)
+        suite = await self._get_owned_suite(suite_id, current_user_id)
         suite.archive()
         updated = await self._suite_repo.update(suite)
         await event_bus.publish_async(TestSuiteArchivedEvent(suite_id=suite_id))
@@ -172,8 +175,7 @@ class TestSuiteService:
         current_user_id: int,
     ) -> TestCaseDTO:
         """添加测试用例到测试集。"""
-        suite = await get_or_raise(self._suite_repo, suite_id, TestSuiteNotFoundError, suite_id)
-        check_ownership(suite, current_user_id)
+        await self._get_owned_suite(suite_id, current_user_id)
         case = TestCase(
             suite_id=suite_id,
             input_prompt=dto.input_prompt,
@@ -193,8 +195,7 @@ class TestSuiteService:
         page_size: int = 20,
     ) -> PagedResult[TestCaseDTO]:
         """列出测试集的测试用例。"""
-        suite = await get_or_raise(self._suite_repo, suite_id, TestSuiteNotFoundError, suite_id)
-        check_ownership(suite, current_user_id)
+        await self._get_owned_suite(suite_id, current_user_id)
         offset = (page - 1) * page_size
         cases = await self._case_repo.list_by_suite(suite_id, offset=offset, limit=page_size)
         total = await self._case_repo.count_by_suite(suite_id)
@@ -212,8 +213,7 @@ class TestSuiteService:
         current_user_id: int,
     ) -> None:
         """删除测试用例。"""
-        suite = await get_or_raise(self._suite_repo, suite_id, TestSuiteNotFoundError, suite_id)
-        check_ownership(suite, current_user_id)
+        await self._get_owned_suite(suite_id, current_user_id)
         case = await self._case_repo.get_by_id(case_id)
         if case is None or case.suite_id != suite_id:
             raise TestCaseNotFoundError(case_id)

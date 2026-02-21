@@ -1,9 +1,7 @@
 // 全局错误边界 — React 19 仍需 class component 实现 ErrorBoundary
 // 捕获渲染异常，防止白屏，提供恢复操作
 
-import { Component } from 'react';
-
-import type { ErrorInfo, ReactNode } from 'react';
+import { Component, type ErrorInfo, type ReactNode } from 'react';
 
 interface ErrorBoundaryProps {
   children: ReactNode;

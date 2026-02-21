@@ -2,6 +2,8 @@ import * as cdk from 'aws-cdk-lib';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as kms from 'aws-cdk-lib/aws-kms';
 import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
+import { DatabaseStack } from '../../lib/stacks/database-stack';
+import { ComputeStack } from '../../lib/stacks/compute-stack';
 
 /** 测试用占位符 AWS 环境 */
 export const TEST_ENV: cdk.Environment = { account: '000000000000', region: 'us-east-1' };
@@ -119,4 +121,51 @@ export function createCrossStackComputeDependencies(
     jwtSecretArn: jwtSecret.secretArn,
     databaseEndpoint,
   };
+}
+
+/** MonitoringStack 测试依赖集返回类型 */
+export interface MonitoringTestDependencies {
+  readonly databaseStack: DatabaseStack;
+  readonly computeStack: ComputeStack;
+  readonly encryptionKey: kms.Key;
+}
+
+/**
+ * 创建 MonitoringStack 测试所需的完整依赖链 (Database + Compute)。
+ * @remarks 供 MonitoringStack 的功能测试、快照测试和 CDK Nag 合规测试复用
+ */
+export function createMonitoringTestDeps(
+  app: cdk.App,
+  env?: cdk.Environment,
+): MonitoringTestDependencies {
+  const {
+    vpc,
+    dbSecurityGroup,
+    databaseSecret,
+    jwtSecretArn,
+    databaseEndpoint,
+    encryptionKey,
+    encryptionKeyArn,
+  } = createCrossStackComputeDependencies(app, env);
+
+  const databaseStack = new DatabaseStack(app, 'TestDatabaseStack', {
+    ...(env ? { env } : {}),
+    vpc,
+    dbSecurityGroup,
+    encryptionKey,
+    envName: 'dev',
+  });
+
+  const computeStack = new ComputeStack(app, 'TestComputeStack', {
+    ...(env ? { env } : {}),
+    vpc,
+    dbSecurityGroup,
+    databaseSecret,
+    databaseEndpoint,
+    encryptionKeyArn,
+    jwtSecretArn,
+    envName: 'dev',
+  });
+
+  return { databaseStack, computeStack, encryptionKey };
 }

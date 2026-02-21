@@ -1,6 +1,7 @@
 // 知识库列表组件
 import { useState } from 'react';
 
+import { useOperatingItem } from '@/shared/hooks';
 import { Button, Card, Spinner, ErrorMessage, Pagination } from '@/shared/ui';
 import { extractApiError } from '@/shared/lib/extractApiError';
 import { formatDateTime } from '@/shared/lib/formatDate';
@@ -25,21 +26,11 @@ interface KnowledgeListProps {
 
 export function KnowledgeList({ onSelect, onCreate }: KnowledgeListProps) {
   const [filters, setFilters] = useState<KnowledgeBaseFilters>({ page: 1, page_size: 10 });
-  const [operatingId, setOperatingId] = useState<number | null>(null);
+  const { operatingId, execute } = useOperatingItem<number>();
   const { data, isLoading, error } = useKnowledgeBases(filters);
 
   const deleteMutation = useDeleteKnowledgeBase();
   const syncMutation = useSyncKnowledgeBase();
-
-  const handleDelete = (id: number) => {
-    setOperatingId(id);
-    deleteMutation.mutate(id, { onSettled: () => setOperatingId(null) });
-  };
-
-  const handleSync = (id: number) => {
-    setOperatingId(id);
-    syncMutation.mutate(id, { onSettled: () => setOperatingId(null) });
-  };
 
   const handleStatusFilter = (status: KnowledgeBaseStatus | '') => {
     setFilters((prev) => ({
@@ -127,7 +118,7 @@ export function KnowledgeList({ onSelect, onCreate }: KnowledgeListProps) {
                       loading={syncMutation.isPending && operatingId === kb.id}
                       onClick={(e) => {
                         e.stopPropagation();
-                        handleSync(kb.id);
+                        execute(syncMutation, kb.id);
                       }}
                       aria-label={`同步 ${kb.name}`}
                     >
@@ -140,7 +131,7 @@ export function KnowledgeList({ onSelect, onCreate }: KnowledgeListProps) {
                     loading={deleteMutation.isPending && operatingId === kb.id}
                     onClick={(e) => {
                       e.stopPropagation();
-                      handleDelete(kb.id);
+                      execute(deleteMutation, kb.id);
                     }}
                     aria-label={`删除 ${kb.name}`}
                   >

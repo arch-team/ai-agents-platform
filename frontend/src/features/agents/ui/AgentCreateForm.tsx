@@ -5,11 +5,9 @@ import { Button, ErrorMessage } from '@/shared/ui';
 import { extractApiError } from '@/shared/lib/extractApiError';
 
 import { useCreateAgent } from '../api/queries';
-import { createAgentSchema } from '../lib/validation';
+import { createAgentSchema, type CreateAgentFormData } from '../lib/validation';
 
 import { AgentFormFields } from './AgentFormFields';
-
-import type { CreateAgentFormData } from '../lib/validation';
 
 interface AgentCreateFormProps {
   onSuccess?: (id: number) => void;

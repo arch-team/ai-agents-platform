@@ -6,8 +6,8 @@ import {
   CostBreakdownChart,
   UsageTrendChart,
   DateRangePicker,
+  type DateRangeParams,
 } from '@/features/insights';
-import type { DateRangeParams } from '@/features/insights';
 
 // 默认时间范围: 最近 30 天
 function getDefaultDateRange(): DateRangeParams {

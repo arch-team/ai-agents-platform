@@ -33,7 +33,7 @@ export function useTeamExecutions(page = 1, pageSize = 20) {
 // 执行详情
 export function useTeamExecution(id: number | null) {
   return useQuery({
-    queryKey: teamExecutionKeys.detail(id!),
+    queryKey: teamExecutionKeys.detail(id ?? 0),
     queryFn: async () => {
       const { data } = await apiClient.get<TeamExecution>(`/api/v1/team-executions/${id}`);
       return data;
@@ -50,7 +50,7 @@ export function useTeamExecution(id: number | null) {
 // 执行日志
 export function useTeamExecutionLogs(id: number | null) {
   return useQuery({
-    queryKey: teamExecutionKeys.logs(id!),
+    queryKey: teamExecutionKeys.logs(id ?? 0),
     queryFn: async () => {
       const { data } = await apiClient.get<TeamExecutionLog[]>(
         `/api/v1/team-executions/${id}/logs`,

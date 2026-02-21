@@ -20,14 +20,14 @@ export {
 } from './api/queries';
 
 // 类型与常量
-export type {
-  Tool,
-  ToolType,
-  ToolStatus,
-  ToolFilters,
-  CreateToolRequest,
-  UpdateToolRequest,
-  RejectToolRequest,
-  ToolListResponse,
+export {
+  TOOL_TYPE_LABELS,
+  type Tool,
+  type ToolType,
+  type ToolStatus,
+  type ToolFilters,
+  type CreateToolRequest,
+  type UpdateToolRequest,
+  type RejectToolRequest,
+  type ToolListResponse,
 } from './api/types';
-export { TOOL_TYPE_LABELS } from './api/types';

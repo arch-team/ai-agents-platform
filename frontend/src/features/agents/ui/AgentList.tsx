@@ -1,7 +1,7 @@
 import { useState } from 'react';
 
-import { AgentCard } from '@/entities/agent';
-import type { AgentStatus } from '@/entities/agent';
+import { AgentCard, type AgentStatus } from '@/entities/agent';
+import { useOperatingItem } from '@/shared/hooks';
 import { Button, Spinner, ErrorMessage, Pagination } from '@/shared/ui';
 import { extractApiError } from '@/shared/lib/extractApiError';
 
@@ -23,21 +23,12 @@ interface AgentListProps {
 
 export function AgentList({ onSelect, onEdit, onCreate }: AgentListProps) {
   const [filters, setFilters] = useState<AgentFilters>({ page: 1, page_size: 10 });
-  const [operatingAgentId, setOperatingAgentId] = useState<number | null>(null);
+  const { operatingId, execute } = useOperatingItem<number>();
   const { data, isLoading, error } = useAgents(filters);
 
   const activateMutation = useActivateAgent();
   const archiveMutation = useArchiveAgent();
   const deleteMutation = useDeleteAgent();
-
-  // 通用 mutation 执行：统一管理 operatingAgentId 状态
-  const execute = (
-    mutation: { mutate: (id: number, opts: { onSettled: () => void }) => void },
-    agentId: number,
-  ) => {
-    setOperatingAgentId(agentId);
-    mutation.mutate(agentId, { onSettled: () => setOperatingAgentId(null) });
-  };
 
   const handleDelete = (agentId: number) => {
     if (!window.confirm('确定要删除这个 Agent 吗？此操作不可撤销。')) return;
@@ -122,7 +113,7 @@ export function AgentList({ onSelect, onEdit, onCreate }: AgentListProps) {
                     <Button
                       variant="primary"
                       size="sm"
-                      loading={activateMutation.isPending && operatingAgentId === agent.id}
+                      loading={activateMutation.isPending && operatingId === agent.id}
                       onClick={() => execute(activateMutation, agent.id)}
                       aria-label={`激活 ${agent.name}`}
                     >
@@ -134,7 +125,7 @@ export function AgentList({ onSelect, onEdit, onCreate }: AgentListProps) {
                   <Button
                     variant="outline"
                     size="sm"
-                    loading={archiveMutation.isPending && operatingAgentId === agent.id}
+                    loading={archiveMutation.isPending && operatingId === agent.id}
                     onClick={() => execute(archiveMutation, agent.id)}
                     aria-label={`归档 ${agent.name}`}
                   >
@@ -144,7 +135,7 @@ export function AgentList({ onSelect, onEdit, onCreate }: AgentListProps) {
                 <Button
                   variant="outline"
                   size="sm"
-                  loading={deleteMutation.isPending && operatingAgentId === agent.id}
+                  loading={deleteMutation.isPending && operatingId === agent.id}
                   onClick={() => handleDelete(agent.id)}
                   aria-label={`删除 ${agent.name}`}
                 >

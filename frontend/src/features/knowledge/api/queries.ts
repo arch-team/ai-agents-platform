@@ -52,7 +52,7 @@ export function useKnowledgeBases(filters?: KnowledgeBaseFilters) {
 // 查询单个知识库详情
 export function useKnowledgeBase(id: number | undefined) {
   return useQuery({
-    queryKey: knowledgeKeys.detail(id!),
+    queryKey: knowledgeKeys.detail(id ?? 0),
     queryFn: async () => {
       const { data } = await apiClient.get<KnowledgeBase>(`/api/v1/knowledge-bases/${id}`);
       return data;
@@ -64,7 +64,7 @@ export function useKnowledgeBase(id: number | undefined) {
 // 查询知识库文档列表
 export function useKnowledgeDocuments(kbId: number | undefined) {
   return useQuery({
-    queryKey: knowledgeKeys.documents(kbId!),
+    queryKey: knowledgeKeys.documents(kbId ?? 0),
     queryFn: async () => {
       const { data } = await apiClient.get<KnowledgeDocumentListResponse>(
         `/api/v1/knowledge-bases/${kbId}/documents`,

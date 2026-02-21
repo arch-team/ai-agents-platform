@@ -1,7 +1,6 @@
 // Agent 状态徽章组件
 import { StatusBadge } from '@/shared/ui';
-import { AGENT_STATUS_CONFIG } from '@/entities/agent';
-import type { AgentStatus } from '@/entities/agent';
+import { AGENT_STATUS_CONFIG, type AgentStatus } from '@/entities/agent';
 
 interface AgentStatusBadgeProps {
   status: AgentStatus;

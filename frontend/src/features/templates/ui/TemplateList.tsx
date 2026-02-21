@@ -1,6 +1,7 @@
 // 模板卡片网格列表组件
 import { useState } from 'react';
 
+import { useOperatingItem } from '@/shared/hooks';
 import { Button, Card, Spinner, ErrorMessage, Pagination } from '@/shared/ui';
 import { extractApiError } from '@/shared/lib/extractApiError';
 import { formatDateTime } from '@/shared/lib/formatDate';
@@ -30,27 +31,12 @@ interface TemplateListProps {
 
 export function TemplateList({ onSelect, onCreate }: TemplateListProps) {
   const [filters, setFilters] = useState<TemplateFilters>({ page: 1, page_size: 12 });
-  const [operatingId, setOperatingId] = useState<number | null>(null);
+  const { operatingId, execute } = useOperatingItem<number>();
   const { data, isLoading, error } = useTemplates(filters);
 
   const deleteMutation = useDeleteTemplate();
   const publishMutation = usePublishTemplate();
   const archiveMutation = useArchiveTemplate();
-
-  const handleDelete = (id: number) => {
-    setOperatingId(id);
-    deleteMutation.mutate(id, { onSettled: () => setOperatingId(null) });
-  };
-
-  const handlePublish = (id: number) => {
-    setOperatingId(id);
-    publishMutation.mutate(id, { onSettled: () => setOperatingId(null) });
-  };
-
-  const handleArchive = (id: number) => {
-    setOperatingId(id);
-    archiveMutation.mutate(id, { onSettled: () => setOperatingId(null) });
-  };
 
   const handleCategoryChange = (category: TemplateCategory | undefined) => {
     setFilters((prev) => ({ ...prev, category, page: 1 }));
@@ -152,7 +138,7 @@ export function TemplateList({ onSelect, onCreate }: TemplateListProps) {
                     loading={publishMutation.isPending && operatingId === template.id}
                     onClick={(e) => {
                       e.stopPropagation();
-                      handlePublish(template.id);
+                      execute(publishMutation, template.id);
                     }}
                     aria-label={`发布 ${template.name}`}
                   >
@@ -166,7 +152,7 @@ export function TemplateList({ onSelect, onCreate }: TemplateListProps) {
                     loading={archiveMutation.isPending && operatingId === template.id}
                     onClick={(e) => {
                       e.stopPropagation();
-                      handleArchive(template.id);
+                      execute(archiveMutation, template.id);
                     }}
                     aria-label={`归档 ${template.name}`}
                   >
@@ -179,7 +165,7 @@ export function TemplateList({ onSelect, onCreate }: TemplateListProps) {
                   loading={deleteMutation.isPending && operatingId === template.id}
                   onClick={(e) => {
                     e.stopPropagation();
-                    handleDelete(template.id);
+                    execute(deleteMutation, template.id);
                   }}
                   aria-label={`删除 ${template.name}`}
                 >

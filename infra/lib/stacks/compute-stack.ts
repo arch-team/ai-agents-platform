@@ -19,9 +19,11 @@ import {
   getBedrockEvalResourceArns,
   getCorsAllowedOrigins,
   getLogRetention,
+  getRemovalPolicy,
   isDev,
   PROJECT_NAME,
   type BaseStackProps,
+  type EnvironmentName,
 } from '../config';
 import { AlbConstruct } from '../constructs/alb';
 import { EcsServiceConstruct, type ScheduledScalingConfig } from '../constructs/ecs';
@@ -207,7 +209,7 @@ export class ComputeStack extends cdk.Stack {
    * 创建评估 Pipeline 定时触发 Lambda + EventBridge 规则。
    * @remarks Lambda 通过 ALB 调用后端 API 触发评估任务; EventBridge 每天 UTC 02:00 (北京 10:00) 执行
    */
-  private createEvalTriggerLambda(albDnsName: string, envName: string): lambda.Function {
+  private createEvalTriggerLambda(albDnsName: string, envName: EnvironmentName): lambda.Function {
     // Lambda 内联 Python 代码 — 健康检查 + 评估触发占位
     const evalTriggerCode = `
 import json
@@ -230,10 +232,8 @@ def handler(event, context):
     // 显式创建 LogGroup，遵循 CDK Nag AwsSolutions-L1 要求
     const evalLogGroup = new logs.LogGroup(this, 'EvalTriggerLogGroup', {
       logGroupName: `/aws/lambda/${PROJECT_NAME}-eval-trigger-${envName}`,
-      retention: getLogRetention(envName as 'dev' | 'prod'),
-      removalPolicy: isDev(envName as 'dev' | 'prod')
-        ? cdk.RemovalPolicy.DESTROY
-        : cdk.RemovalPolicy.RETAIN,
+      retention: getLogRetention(envName),
+      removalPolicy: getRemovalPolicy(envName),
     });
 
     const evalFn = new lambda.Function(this, 'EvalTriggerFn', {
@@ -257,7 +257,7 @@ def handler(event, context):
       ruleName: `${PROJECT_NAME}-eval-trigger-${envName}`,
       description: '每天 UTC 02:00 定时触发评估 Pipeline',
       schedule: events.Schedule.cron({ hour: '2', minute: '0' }),
-      enabled: !isDev(envName as 'dev' | 'prod'),
+      enabled: !isDev(envName),
       targets: [new targets.LambdaFunction(evalFn)],
     });
 

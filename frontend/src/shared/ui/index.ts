@@ -17,6 +17,6 @@ export {
   WrenchIcon,
   BarChartIcon,
   ClipboardCheckIcon,
+  type IconProps,
 } from './Icons';
-export type { IconProps } from './Icons';
 export { StatCard } from './StatCard';

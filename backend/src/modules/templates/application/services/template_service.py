@@ -1,5 +1,7 @@
 """Template 应用服务。"""
 
+from dataclasses import replace
+
 from src.modules.templates.application.dto.template_dto import (
     CreateTemplateDTO,
     TemplateDTO,
@@ -125,17 +127,13 @@ class TemplateService:
             template.tags = dto.tags
 
         # 重建 TemplateConfig (frozen 值对象, 任一字段变化需整体替换)
-        cfg = template.config
-        template.config = TemplateConfig(
-            system_prompt=dto.system_prompt if dto.system_prompt is not None else cfg.system_prompt,
-            model_id=dto.model_id if dto.model_id is not None else cfg.model_id,
-            temperature=dto.temperature if dto.temperature is not None else cfg.temperature,
-            max_tokens=dto.max_tokens if dto.max_tokens is not None else cfg.max_tokens,
-            tool_ids=dto.tool_ids if dto.tool_ids is not None else list(cfg.tool_ids),
-            knowledge_base_ids=(
-                dto.knowledge_base_ids if dto.knowledge_base_ids is not None else list(cfg.knowledge_base_ids)
-            ),
-        )
+        config_overrides: dict[str, str | float | int | list[int]] = {}
+        for field in ("system_prompt", "model_id", "temperature", "max_tokens", "tool_ids", "knowledge_base_ids"):
+            value = getattr(dto, field)
+            if value is not None:
+                config_overrides[field] = value
+        if config_overrides:
+            template.config = replace(template.config, **config_overrides)  # type: ignore[arg-type]
 
         template.touch()
         updated = await self._repo.update(template)

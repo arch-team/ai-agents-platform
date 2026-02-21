@@ -1198,7 +1198,7 @@ exports[`Snapshot Tests ComputeStack 快照匹配 1`] = `
               "Timeout": 5,
             },
             "Image": {
-              "Fn::Sub": "000000000000.dkr.ecr.us-east-1.\${AWS::URLSuffix}/cdk-hnb659fds-container-assets-000000000000-us-east-1:e935080bbc531efa68183540282a712cd5973d3a1ef7124e00a5f2c7aad18fbf",
+              "Fn::Sub": "000000000000.dkr.ecr.us-east-1.\${AWS::URLSuffix}/cdk-hnb659fds-container-assets-000000000000-us-east-1:2b5aaaf35f4b8b8039ab56c4af5334fc005092996c6d2ce5504cb45c43e86323",
             },
             "LogConfiguration": {
               "LogDriver": "awslogs",
@@ -2381,7 +2381,7 @@ exports[`Snapshot Tests MonitoringStack 快照匹配 1`] = `
           {
             "Name": "LoadBalancer",
             "Value": {
-              "Fn::ImportValue": "TestCompStack:ExportsOutputFnGetAttAlb6F14D334LoadBalancerFullNameA3921A6E",
+              "Fn::ImportValue": "TestComputeStack:ExportsOutputFnGetAttAlb6F14D334LoadBalancerFullNameA3921A6E",
             },
           },
         ],
@@ -2429,7 +2429,7 @@ exports[`Snapshot Tests MonitoringStack 快照匹配 1`] = `
           {
             "Name": "DBClusterIdentifier",
             "Value": {
-              "Fn::ImportValue": "TestDbStack:ExportsOutputRefAuroraClusterD4EFE71C76EDACA0",
+              "Fn::ImportValue": "TestDatabaseStack:ExportsOutputRefAuroraClusterD4EFE71C76EDACA0",
             },
           },
         ],
@@ -2457,7 +2457,7 @@ exports[`Snapshot Tests MonitoringStack 快照匹配 1`] = `
           {
             "Name": "DBClusterIdentifier",
             "Value": {
-              "Fn::ImportValue": "TestDbStack:ExportsOutputRefAuroraClusterD4EFE71C76EDACA0",
+              "Fn::ImportValue": "TestDatabaseStack:ExportsOutputRefAuroraClusterD4EFE71C76EDACA0",
             },
           },
         ],
@@ -2485,7 +2485,7 @@ exports[`Snapshot Tests MonitoringStack 快照匹配 1`] = `
           {
             "Name": "DBClusterIdentifier",
             "Value": {
-              "Fn::ImportValue": "TestDbStack:ExportsOutputRefAuroraClusterD4EFE71C76EDACA0",
+              "Fn::ImportValue": "TestDatabaseStack:ExportsOutputRefAuroraClusterD4EFE71C76EDACA0",
             },
           },
         ],
@@ -2511,7 +2511,7 @@ exports[`Snapshot Tests MonitoringStack 快照匹配 1`] = `
               },
               "","metrics":[["AWS/RDS","CPUUtilization","DBClusterIdentifier","",
               {
-                "Fn::ImportValue": "TestDbStack:ExportsOutputRefAuroraClusterD4EFE71C76EDACA0",
+                "Fn::ImportValue": "TestDatabaseStack:ExportsOutputRefAuroraClusterD4EFE71C76EDACA0",
               },
               ""]],"yAxis":{}}},{"type":"metric","width":8,"height":6,"x":8,"y":0,"properties":{"view":"timeSeries","title":"Aurora Freeable Memory","region":"",
               {
@@ -2519,7 +2519,7 @@ exports[`Snapshot Tests MonitoringStack 快照匹配 1`] = `
               },
               "","metrics":[["AWS/RDS","FreeableMemory","DBClusterIdentifier","",
               {
-                "Fn::ImportValue": "TestDbStack:ExportsOutputRefAuroraClusterD4EFE71C76EDACA0",
+                "Fn::ImportValue": "TestDatabaseStack:ExportsOutputRefAuroraClusterD4EFE71C76EDACA0",
               },
               ""]],"yAxis":{}}},{"type":"metric","width":8,"height":6,"x":16,"y":0,"properties":{"view":"timeSeries","title":"Aurora Database Connections","region":"",
               {
@@ -2527,7 +2527,7 @@ exports[`Snapshot Tests MonitoringStack 快照匹配 1`] = `
               },
               "","metrics":[["AWS/RDS","DatabaseConnections","DBClusterIdentifier","",
               {
-                "Fn::ImportValue": "TestDbStack:ExportsOutputRefAuroraClusterD4EFE71C76EDACA0",
+                "Fn::ImportValue": "TestDatabaseStack:ExportsOutputRefAuroraClusterD4EFE71C76EDACA0",
               },
               ""]],"yAxis":{}}},{"type":"metric","width":12,"height":6,"x":0,"y":6,"properties":{"view":"timeSeries","title":"ECS CPU Utilization","region":"",
               {
@@ -2535,11 +2535,11 @@ exports[`Snapshot Tests MonitoringStack 快照匹配 1`] = `
               },
               "","metrics":[["AWS/ECS","CPUUtilization","ClusterName","",
               {
-                "Fn::ImportValue": "TestCompStack:ExportsOutputRefEcsClusterEAC0C105E232FD8C",
+                "Fn::ImportValue": "TestComputeStack:ExportsOutputRefEcsClusterEAC0C105E232FD8C",
               },
               "","ServiceName","",
               {
-                "Fn::ImportValue": "TestCompStack:ExportsOutputFnGetAttEcsService5196398AName37BB8143",
+                "Fn::ImportValue": "TestComputeStack:ExportsOutputFnGetAttEcsService5196398AName37BB8143",
               },
               ""]],"yAxis":{}}},{"type":"metric","width":12,"height":6,"x":12,"y":6,"properties":{"view":"timeSeries","title":"ECS Memory Utilization","region":"",
               {
@@ -2547,11 +2547,11 @@ exports[`Snapshot Tests MonitoringStack 快照匹配 1`] = `
               },
               "","metrics":[["AWS/ECS","MemoryUtilization","ClusterName","",
               {
-                "Fn::ImportValue": "TestCompStack:ExportsOutputRefEcsClusterEAC0C105E232FD8C",
+                "Fn::ImportValue": "TestComputeStack:ExportsOutputRefEcsClusterEAC0C105E232FD8C",
               },
               "","ServiceName","",
               {
-                "Fn::ImportValue": "TestCompStack:ExportsOutputFnGetAttEcsService5196398AName37BB8143",
+                "Fn::ImportValue": "TestComputeStack:ExportsOutputFnGetAttEcsService5196398AName37BB8143",
               },
               ""]],"yAxis":{}}},{"type":"metric","width":8,"height":6,"x":0,"y":12,"properties":{"view":"timeSeries","title":"ALB Request Count","region":"",
               {
@@ -2559,7 +2559,7 @@ exports[`Snapshot Tests MonitoringStack 快照匹配 1`] = `
               },
               "","metrics":[["AWS/ApplicationELB","RequestCount","LoadBalancer","",
               {
-                "Fn::ImportValue": "TestCompStack:ExportsOutputFnGetAttAlb6F14D334LoadBalancerFullNameA3921A6E",
+                "Fn::ImportValue": "TestComputeStack:ExportsOutputFnGetAttAlb6F14D334LoadBalancerFullNameA3921A6E",
               },
               "",{"stat":"Sum"}]],"yAxis":{}}},{"type":"metric","width":8,"height":6,"x":8,"y":12,"properties":{"view":"timeSeries","title":"ALB 5XX Errors","region":"",
               {
@@ -2567,7 +2567,7 @@ exports[`Snapshot Tests MonitoringStack 快照匹配 1`] = `
               },
               "","metrics":[["AWS/ApplicationELB","HTTPCode_ELB_5XX_Count","LoadBalancer","",
               {
-                "Fn::ImportValue": "TestCompStack:ExportsOutputFnGetAttAlb6F14D334LoadBalancerFullNameA3921A6E",
+                "Fn::ImportValue": "TestComputeStack:ExportsOutputFnGetAttAlb6F14D334LoadBalancerFullNameA3921A6E",
               },
               "",{"stat":"Sum"}]],"yAxis":{}}},{"type":"metric","width":8,"height":6,"x":16,"y":12,"properties":{"view":"timeSeries","title":"ALB Unhealthy Hosts","region":"",
               {
@@ -2581,7 +2581,7 @@ exports[`Snapshot Tests MonitoringStack 快照匹配 1`] = `
                     "Fn::Split": [
                       "/",
                       {
-                        "Fn::ImportValue": "TestCompStack:ExportsOutputRefAlbHttpListenerC9825CF44524FA3B",
+                        "Fn::ImportValue": "TestComputeStack:ExportsOutputRefAlbHttpListenerC9825CF44524FA3B",
                       },
                     ],
                   },
@@ -2595,7 +2595,7 @@ exports[`Snapshot Tests MonitoringStack 快照匹配 1`] = `
                     "Fn::Split": [
                       "/",
                       {
-                        "Fn::ImportValue": "TestCompStack:ExportsOutputRefAlbHttpListenerC9825CF44524FA3B",
+                        "Fn::ImportValue": "TestComputeStack:ExportsOutputRefAlbHttpListenerC9825CF44524FA3B",
                       },
                     ],
                   },
@@ -2609,7 +2609,7 @@ exports[`Snapshot Tests MonitoringStack 快照匹配 1`] = `
                     "Fn::Split": [
                       "/",
                       {
-                        "Fn::ImportValue": "TestCompStack:ExportsOutputRefAlbHttpListenerC9825CF44524FA3B",
+                        "Fn::ImportValue": "TestComputeStack:ExportsOutputRefAlbHttpListenerC9825CF44524FA3B",
                       },
                     ],
                   },
@@ -2617,7 +2617,7 @@ exports[`Snapshot Tests MonitoringStack 快照匹配 1`] = `
               },
               "","TargetGroup","",
               {
-                "Fn::ImportValue": "TestCompStack:ExportsOutputFnGetAttAlbTargetGroup3E290A92TargetGroupFullNameC43F1128",
+                "Fn::ImportValue": "TestComputeStack:ExportsOutputFnGetAttAlbTargetGroup3E290A92TargetGroupFullNameC43F1128",
               },
               ""]],"yAxis":{}}},{"type":"text","width":24,"height":1,"x":0,"y":18,"properties":{"markdown":"## Eval Pipeline"}}]}",
             ],
@@ -2641,13 +2641,13 @@ exports[`Snapshot Tests MonitoringStack 快照匹配 1`] = `
           {
             "Name": "ClusterName",
             "Value": {
-              "Fn::ImportValue": "TestCompStack:ExportsOutputRefEcsClusterEAC0C105E232FD8C",
+              "Fn::ImportValue": "TestComputeStack:ExportsOutputRefEcsClusterEAC0C105E232FD8C",
             },
           },
           {
             "Name": "ServiceName",
             "Value": {
-              "Fn::ImportValue": "TestCompStack:ExportsOutputFnGetAttEcsService5196398AName37BB8143",
+              "Fn::ImportValue": "TestComputeStack:ExportsOutputFnGetAttEcsService5196398AName37BB8143",
             },
           },
         ],
@@ -2675,13 +2675,13 @@ exports[`Snapshot Tests MonitoringStack 快照匹配 1`] = `
           {
             "Name": "ClusterName",
             "Value": {
-              "Fn::ImportValue": "TestCompStack:ExportsOutputRefEcsClusterEAC0C105E232FD8C",
+              "Fn::ImportValue": "TestComputeStack:ExportsOutputRefEcsClusterEAC0C105E232FD8C",
             },
           },
           {
             "Name": "ServiceName",
             "Value": {
-              "Fn::ImportValue": "TestCompStack:ExportsOutputFnGetAttEcsService5196398AName37BB8143",
+              "Fn::ImportValue": "TestComputeStack:ExportsOutputFnGetAttEcsService5196398AName37BB8143",
             },
           },
         ],
@@ -2719,7 +2719,7 @@ exports[`Snapshot Tests MonitoringStack 快照匹配 1`] = `
                         "Fn::Split": [
                           "/",
                           {
-                            "Fn::ImportValue": "TestCompStack:ExportsOutputRefAlbHttpListenerC9825CF44524FA3B",
+                            "Fn::ImportValue": "TestComputeStack:ExportsOutputRefAlbHttpListenerC9825CF44524FA3B",
                           },
                         ],
                       },
@@ -2733,7 +2733,7 @@ exports[`Snapshot Tests MonitoringStack 快照匹配 1`] = `
                         "Fn::Split": [
                           "/",
                           {
-                            "Fn::ImportValue": "TestCompStack:ExportsOutputRefAlbHttpListenerC9825CF44524FA3B",
+                            "Fn::ImportValue": "TestComputeStack:ExportsOutputRefAlbHttpListenerC9825CF44524FA3B",
                           },
                         ],
                       },
@@ -2747,7 +2747,7 @@ exports[`Snapshot Tests MonitoringStack 快照匹配 1`] = `
                         "Fn::Split": [
                           "/",
                           {
-                            "Fn::ImportValue": "TestCompStack:ExportsOutputRefAlbHttpListenerC9825CF44524FA3B",
+                            "Fn::ImportValue": "TestComputeStack:ExportsOutputRefAlbHttpListenerC9825CF44524FA3B",
                           },
                         ],
                       },
@@ -2760,7 +2760,7 @@ exports[`Snapshot Tests MonitoringStack 快照匹配 1`] = `
           {
             "Name": "TargetGroup",
             "Value": {
-              "Fn::ImportValue": "TestCompStack:ExportsOutputFnGetAttAlbTargetGroup3E290A92TargetGroupFullNameC43F1128",
+              "Fn::ImportValue": "TestComputeStack:ExportsOutputFnGetAttAlbTargetGroup3E290A92TargetGroupFullNameC43F1128",
             },
           },
         ],

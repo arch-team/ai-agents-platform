@@ -41,6 +41,11 @@ class InsightsService:
         self._usage_repo = usage_repo
         self._cost_explorer = cost_explorer
 
+    @staticmethod
+    def _validate_date_range(start: datetime, end: datetime) -> None:
+        if start > end:
+            raise InvalidDateRangeError
+
     async def record_usage(self, dto: CreateUsageRecordDTO) -> UsageRecordDTO:
         """创建使用记录。
 
@@ -126,8 +131,8 @@ class InsightsService:
         Raises:
             InvalidDateRangeError: start > end
         """
-        if start is not None and end is not None and start > end:
-            raise InvalidDateRangeError
+        if start is not None and end is not None:
+            self._validate_date_range(start, end)
 
         stats = await self._usage_repo.get_aggregated_stats(
             user_id=user_id,
@@ -150,8 +155,7 @@ class InsightsService:
         end: datetime,
     ) -> list[AgentTokenBreakdown]:
         """获取按 Agent 维度的 Token 消耗归因。"""
-        if start > end:
-            raise InvalidDateRangeError
+        self._validate_date_range(start, end)
         return await self._usage_repo.get_cost_breakdown_by_agent(start=start, end=end)
 
     async def get_usage_trends(
@@ -160,8 +164,7 @@ class InsightsService:
         end: datetime,
     ) -> list[DailyUsageTrend]:
         """获取按日维度的使用趋势。"""
-        if start > end:
-            raise InvalidDateRangeError
+        self._validate_date_range(start, end)
         return await self._usage_repo.get_daily_usage_trends(start=start, end=end)
 
     async def get_insights_summary(
@@ -170,8 +173,7 @@ class InsightsService:
         end: datetime,
     ) -> InsightsSummaryDTO:
         """获取 Insights 概览 — 组合 Cost Explorer + Repository 聚合。"""
-        if start > end:
-            raise InvalidDateRangeError
+        self._validate_date_range(start, end)
 
         # Repository 聚合
         stats = await self._usage_repo.get_aggregated_stats(start=start, end=end)

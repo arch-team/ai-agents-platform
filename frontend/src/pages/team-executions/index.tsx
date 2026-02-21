@@ -10,11 +10,10 @@ import {
   TeamExecDetail,
   useCreateTeamExecution,
   useTeamExecutionStream,
+  type TeamExecution,
 } from '@/features/team-executions';
 import { extractApiError } from '@/shared/lib/extractApiError';
 import { ErrorMessage } from '@/shared/ui';
-
-import type { TeamExecution } from '@/features/team-executions';
 
 export default function TeamExecutionPage() {
   const token = useAuthToken();

@@ -54,7 +54,7 @@ export function usePublishedTemplates() {
 // 查询单个模板详情
 export function useTemplate(id: number | undefined) {
   return useQuery({
-    queryKey: templateKeys.detail(id!),
+    queryKey: templateKeys.detail(id ?? 0),
     queryFn: async () => {
       const { data } = await apiClient.get<Template>(`/api/v1/templates/${id}`);
       return data;

@@ -7,8 +7,13 @@ import { extractApiError } from '@/shared/lib/extractApiError';
 import { formatDateTime } from '@/shared/lib/formatDate';
 
 import { useTools } from '../api/queries';
-import type { ToolStatus, ToolType, ToolFilters, Tool } from '../api/types';
-import { TOOL_TYPE_LABELS } from '../api/types';
+import {
+  TOOL_TYPE_LABELS,
+  type ToolStatus,
+  type ToolType,
+  type ToolFilters,
+  type Tool,
+} from '../api/types';
 
 import { ToolStatusBadge } from './ToolStatusBadge';
 import { ToolRegisterDialog } from './ToolRegisterDialog';

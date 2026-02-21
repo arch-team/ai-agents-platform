@@ -12,8 +12,8 @@ import {
   WrenchIcon,
   BarChartIcon,
   ClipboardCheckIcon,
+  type IconProps,
 } from '@/shared/ui';
-import type { IconProps } from '@/shared/ui';
 
 interface SidebarProps {
   isOpen?: boolean;

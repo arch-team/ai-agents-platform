@@ -68,7 +68,7 @@ export function useTestSuites(filters?: TestSuiteFilters) {
 /** 查询测试集详情 */
 export function useTestSuite(id: number | undefined) {
   return useQuery({
-    queryKey: testSuiteKeys.detail(id!),
+    queryKey: testSuiteKeys.detail(id ?? 0),
     queryFn: async () => {
       const { data } = await apiClient.get<TestSuite>(`/api/v1/test-suites/${id}`);
       return data;
@@ -146,7 +146,7 @@ export function useArchiveTestSuite() {
 /** 查询测试用例列表 */
 export function useTestCases(suiteId: number | undefined) {
   return useQuery({
-    queryKey: testSuiteKeys.cases(suiteId!),
+    queryKey: testSuiteKeys.cases(suiteId ?? 0),
     queryFn: async () => {
       const { data } = await apiClient.get<TestCaseListResponse>(
         `/api/v1/test-suites/${suiteId}/cases`,
@@ -237,7 +237,7 @@ export function useEvaluationRuns(filters?: EvaluationRunFilters) {
 /** 查询评估运行详情 */
 export function useEvaluationRun(id: number | undefined) {
   return useQuery({
-    queryKey: evaluationRunKeys.detail(id!),
+    queryKey: evaluationRunKeys.detail(id ?? 0),
     queryFn: async () => {
       const { data } = await apiClient.get<EvaluationRun>(`/api/v1/evaluation-runs/${id}`);
       return data;
@@ -249,7 +249,7 @@ export function useEvaluationRun(id: number | undefined) {
 /** 查询评估结果 */
 export function useEvaluationResults(runId: number | undefined) {
   return useQuery({
-    queryKey: evaluationRunKeys.results(runId!),
+    queryKey: evaluationRunKeys.results(runId ?? 0),
     queryFn: async () => {
       const { data } = await apiClient.get<EvaluationResultListResponse>(
         `/api/v1/evaluation-runs/${runId}/results`,
@@ -273,7 +273,7 @@ export const pipelineKeys = {
 /** 查询测试集的 Pipeline 列表 */
 export function useEvalPipelines(suiteId: number | undefined) {
   return useQuery({
-    queryKey: pipelineKeys.list(suiteId!),
+    queryKey: pipelineKeys.list(suiteId ?? 0),
     queryFn: async () => {
       const { data } = await apiClient.get<EvalPipeline[]>(
         `/api/v1/eval-suites/${suiteId}/pipelines`,

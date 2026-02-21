@@ -33,7 +33,7 @@ export function useConversations(agentId?: number) {
 // 对话详情（含消息历史）
 export function useConversation(id: number | null) {
   return useQuery({
-    queryKey: conversationKeys.detail(id!),
+    queryKey: conversationKeys.detail(id ?? 0),
     queryFn: async () => {
       const { data } = await apiClient.get<ConversationDetail>(`/api/v1/conversations/${id}`);
       return data;

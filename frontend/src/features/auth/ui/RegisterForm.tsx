@@ -8,9 +8,7 @@ import { Button, Input, ErrorMessage } from '@/shared/ui';
 import { extractApiError } from '@/shared/lib/extractApiError';
 
 import { useRegister } from '../api/queries';
-import { registerSchema } from '../lib/validation';
-
-import type { RegisterFormData } from '../lib/validation';
+import { registerSchema, type RegisterFormData } from '../lib/validation';
 
 export function RegisterForm() {
   const navigate = useNavigate();

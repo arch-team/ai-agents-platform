@@ -56,7 +56,7 @@ export function useApprovedTools() {
 // 查询单个工具详情
 export function useTool(id: string | undefined) {
   return useQuery({
-    queryKey: toolKeys.detail(id!),
+    queryKey: toolKeys.detail(id ?? ''),
     queryFn: async () => {
       const { data } = await apiClient.get<Tool>(`/api/v1/tools/${id}`);
       return data;

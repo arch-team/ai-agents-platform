@@ -1,45 +1,7 @@
 import * as cdk from 'aws-cdk-lib';
 import { Match, Template } from 'aws-cdk-lib/assertions';
 import { MonitoringStack } from '../../lib/stacks/monitoring-stack';
-import { ComputeStack } from '../../lib/stacks/compute-stack';
-import { DatabaseStack } from '../../lib/stacks/database-stack';
-import { createCrossStackComputeDependencies } from '../helpers/test-utils';
-
-/** 唯一后缀计数器，确保同一 App 内 Stack 名称不冲突 */
-let monitoringDepsCounter = 0;
-
-/** 创建 MonitoringStack 测试所需的完整依赖链 */
-function createMonitoringDeps(app: cdk.App) {
-  const suffix = monitoringDepsCounter++;
-  const {
-    vpc,
-    dbSecurityGroup,
-    databaseSecret,
-    jwtSecretArn,
-    databaseEndpoint,
-    encryptionKey,
-    encryptionKeyArn,
-  } = createCrossStackComputeDependencies(app);
-
-  const databaseStack = new DatabaseStack(app, `TestDatabaseStack-${suffix}`, {
-    vpc,
-    dbSecurityGroup,
-    encryptionKey,
-    envName: 'dev',
-  });
-
-  const computeStack = new ComputeStack(app, `TestComputeStack-${suffix}`, {
-    vpc,
-    dbSecurityGroup,
-    databaseSecret,
-    databaseEndpoint,
-    encryptionKeyArn,
-    jwtSecretArn,
-    envName: 'dev',
-  });
-
-  return { databaseStack, computeStack, encryptionKey };
-}
+import { createMonitoringTestDeps } from '../helpers/test-utils';
 
 describe('MonitoringStack', () => {
   let template: Template;
@@ -47,7 +9,7 @@ describe('MonitoringStack', () => {
 
   beforeEach(() => {
     const app = new cdk.App();
-    const { databaseStack, computeStack } = createMonitoringDeps(app);
+    const { databaseStack, computeStack } = createMonitoringTestDeps(app);
 
     stack = new MonitoringStack(app, 'TestMonitoringStack', {
       cluster: databaseStack.cluster,
@@ -185,7 +147,7 @@ describe('MonitoringStack', () => {
   describe('无 alertEmail 时', () => {
     it('不应创建邮件订阅', () => {
       const app = new cdk.App();
-      const { databaseStack, computeStack } = createMonitoringDeps(app);
+      const { databaseStack, computeStack } = createMonitoringTestDeps(app);
 
       const noEmailStack = new MonitoringStack(app, 'TestMonitoringNoEmail', {
         cluster: databaseStack.cluster,
@@ -213,7 +175,7 @@ describe('MonitoringStack', () => {
   describe('KMS 加密', () => {
     it('提供 encryptionKey 时 SNS Topic 应使用 KMS 加密', () => {
       const app = new cdk.App();
-      const { databaseStack, computeStack, encryptionKey } = createMonitoringDeps(app);
+      const { databaseStack, computeStack, encryptionKey } = createMonitoringTestDeps(app);
 
       const encryptedStack = new MonitoringStack(app, 'TestMonitoringEncrypted', {
         cluster: databaseStack.cluster,

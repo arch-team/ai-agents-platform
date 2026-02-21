@@ -8,9 +8,7 @@ import { Button, Input, ErrorMessage } from '@/shared/ui';
 import { extractApiError } from '@/shared/lib/extractApiError';
 
 import { useLogin } from '../api/queries';
-import { loginSchema } from '../lib/validation';
-
-import type { LoginFormData } from '../lib/validation';
+import { loginSchema, type LoginFormData } from '../lib/validation';
 
 export function LoginForm() {
   const navigate = useNavigate();
