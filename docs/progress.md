@@ -4,19 +4,19 @@
 
 ## 当前状态
 
-- **阶段**: Phase 4 企业成熟 (12-18 月) — **M12 ✅ 已完成**, Phase 4 关闭
-- **里程碑**: Phase 4: M10-prep ✅ → M10 ✅ → M11 ✅ → **M12 ✅**
-- **变更积压**: Phase 2-3: 24/24 ✅ | Phase 4: 19/19 ✅ | AgentCore P3: 5/5 ✅
+- **阶段**: Phase 5 Agent 驱动的企业智能 (18-30 月) — **M13 🔄 进行中**
+- **里程碑**: Phase 4 全闭 ✅ → Phase 5: **M13（自动化评估）🔄** → M14（Builder）→ M15（规模运营）
+- **变更积压**: Phase 2-3: 24/24 ✅ | Phase 4: 19/19 ✅ | AgentCore P3: 5/5 ✅ | Phase 5 季度评审待启动
 - **关键发现**: 无当前阻断项
 - **Dev 环境**: 后端 ECS (256 CPU/512 MiB) + 前端 S3 + CORS + Bedrock IAM ✅ | ALB `ai-agents-dev-546356512.us-east-1.elb.amazonaws.com`
 - **Prod 环境**: 后端 ECS (512 CPU/1024 MiB/2 任务) + Aurora db.r6g.large (Writer+Reader) ✅ | ALB `ai-agents-prod-1419512933.us-east-1.elb.amazonaws.com`
 - **Stack 命名**: `ai-agents-plat-{stack}-{env}` (v1.4 规范化, 12 个 Stack 全部重建)
-- **测试**: 后端 1826 测试 + 基础设施 179 测试 + 前端 80+ 单元测试 + **57 E2E 测试** = **2142+ 测试**
+- **测试**: 后端 1884 测试 + 基础设施 179 测试 + 前端 80+ 单元测试 + **57 E2E 测试** = **2200+ 测试**
 - **Eval 框架**: 11 个 eval 定义 (222 capability + 62 regression), 1,670 测试全部 PASS, 全部 READY
-- **后端模块**: 10 个 (9 业务 + shared) | **前端**: 190 源文件, FSD 架构, 12 页面 + 20 单元测试 + 13 E2E spec
+- **后端模块**: 10 个 (9 业务 + shared) + **evaluation 扩展 (EvalPipeline)** | **前端**: 190 源文件, FSD 架构, 12 页面
 - **SDK**: claude-agent-sdk 0.1.35 | bedrock-agentcore 1.3.0
 - **环境策略**: Dev (开发+验证) + Prod (生产)，无 Staging (v1.4 简化)
-- **下一步**: Wave 3 全部就绪 ✅（35 用户/16 模板/lifespan 日志/Prod 最新 db1d50d 已部署）。等待 7 天活跃数据 → 验收 ≥50 活跃用户 + ≥40% 非技术自助创建目标
+- **下一步**: M13 实施完成（9 文件/+58 测试/86.72% 覆盖率）。待完成：EventBridge 定时触发规则 + CDK IAM 权限 + 前端 EvaluationPage Pipeline 视图
 
 ## 模块状态
 
@@ -856,6 +856,7 @@ Session 5:  #14 (质量验收) + progress.md 更新
 
 | # | 日期 | 类型 | 完成项 | 关键决策 |
 |---|------|------|-------|---------|
+| 53 | 2026-02-21 | Phase 5 规划 + M13 实施 | **Phase 5 设计**: 深度 AWS 集成方案 (5A Bedrock Eval + 5B Builder MCP + 5C billing) 批准，设计文档 committed; **M13 实施**: Subagent 驱动开发 10 任务全完成 — PipelineStatus/EvalPipeline/IEvalPipelineRepository/IEvalService/EvalPipelineService/BedrockEvalAdapter/ORM+迁移/RepositoryImpl/API 端点; 1884 tests ✅ 86.72% ✅ ruff ✅ mypy ✅ | IRepository 方法名为 create/update/get_by_id (非 save/get); asyncio.to_thread 包装同步 boto3 是项目标准模式; MySQL TEXT 列不支持 ORM default= |
 | 52 | 2026-02-20 | 质量门控 + 知识沉淀 | **质量门控**: 后端 ruff/mypy/pytest 1857/86.45% ✅; 前端 lint/format/test 355 ✅; Infra lint/format/test 184 ✅; **修复**: RUF003 noqa + vitest E2E 排除 + CDK快照更新 + seed_templates 期望值; **project-learnings 更新**: M5→M12 250→508行 (3新维度/ADR汇总/Agent Teams踩坑); **rules 更新**: checklist log.exception检查 + deployment CDK 目录/context规范; rollout-plan Wave 3状态更新 | vitest.config.ts 需显式排除 E2E; log.exception vs log.warning 不对称=静默失败风险; CDK deploy 必须在 infra/ 目录且加 --context env=prod |
 | 51 | 2026-02-20 | Wave 3 完整收尾 | **扩展批次**: 10人创建完成 (法务/销售/市场/客服/管理层) → Prod 共 35 用户 ✅; **Wave 2 模板补全**: seed_data.py 补入 5 个非技术模板(财务/法务/销售/PPT/头脑风暴) + Prod 发布 → 共 16 模板; **lifespan 启动日志**: templates_seed_starting/done 两条 log.info 完成; 配置即代码补全（模板持久化进 seed_data.py） | Wave 2 模板未进 seed_data 是配置即代码缺口，已修复; Prod 35 用户距 50 目标差 15 人 |
 | 50 | 2026-02-20 | Wave 3 后处理+部署 | **活跃度检查**: 25 用户/10 DEVELOPER/14 VIEWER/5次调用; 差 25 人达标; **Prod CDK 部署**: lifespan seed 修复 + TODO(human) 启动日志 → compute-prod 部署成功 (health ✅, 11模板保留); 活跃度目标: 需邀请扩展批次+7天观察 | CDK context env=prod 必须显式指定; 注册≠活跃，5次调用说明推广刚启动 |
