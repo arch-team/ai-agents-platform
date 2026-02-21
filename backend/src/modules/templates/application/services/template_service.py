@@ -220,12 +220,16 @@ class TemplateService:
         tags: list[str] | None = None,
     ) -> PagedResult[TemplateDTO]:
         """查询模板列表。"""
+        import asyncio
+
         offset = (page - 1) * page_size
         cat = TemplateCategory(category) if category else None
         kw = keyword or ""
 
-        items = await self._repo.search(kw, category=cat, tags=tags, offset=offset, limit=page_size)
-        total = await self._repo.count_by_search(kw, category=cat, tags=tags)
+        items, total = await asyncio.gather(
+            self._repo.search(kw, category=cat, tags=tags, offset=offset, limit=page_size),
+            self._repo.count_by_search(kw, category=cat, tags=tags),
+        )
 
         return PagedResult(
             items=[self._to_dto(t) for t in items],
@@ -242,9 +246,13 @@ class TemplateService:
         page_size: int = 20,
     ) -> PagedResult[TemplateDTO]:
         """查询当前用户的模板列表。"""
+        import asyncio
+
         offset = (page - 1) * page_size
-        items = await self._repo.list_by_creator(current_user_id, offset=offset, limit=page_size)
-        total = await self._repo.count_by_creator(current_user_id)
+        items, total = await asyncio.gather(
+            self._repo.list_by_creator(current_user_id, offset=offset, limit=page_size),
+            self._repo.count_by_creator(current_user_id),
+        )
 
         return PagedResult(
             items=[self._to_dto(t) for t in items],

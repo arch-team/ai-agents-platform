@@ -47,7 +47,7 @@ export interface ComputeStackProps extends BaseStackProps {
   readonly memoryLimitMiB?: number;
   /** 期望运行的任务数量 @default 1 */
   readonly desiredCount?: number;
-  /** 定时缩放配置 — Dev 环境非工作时段自动缩减 ECS 任务数 */
+  /** 定时缩放配置 — Dev 环境非工作时段自动缩减 ECS 任务数 @default undefined (不启用定时缩放) */
   readonly scheduledScaling?: ScheduledScalingConfig;
 }
 

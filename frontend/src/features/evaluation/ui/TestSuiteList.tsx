@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 
+import { useOperatingItem } from '@/shared/hooks';
 import { extractApiError } from '@/shared/lib/extractApiError';
 import { formatDateTime } from '@/shared/lib/formatDate';
 import { Button, Spinner, ErrorMessage, Pagination } from '@/shared/ui';
@@ -33,28 +34,12 @@ export function TestSuiteList({ onSelect, onCreate }: TestSuiteListProps) {
   const [filters, setFilters] = useState<TestSuiteFilters>({ page: 1, page_size: 10 });
   // 前端过滤状态（后端列表接口不支持 status 参数）
   const [statusFilter, setStatusFilter] = useState<TestSuiteStatus | ''>('');
-  const [operatingId, setOperatingId] = useState<number | null>(null);
+  const { operatingId, execute } = useOperatingItem<number>();
   const { data, isLoading, error } = useTestSuites(filters);
 
-  const mutationCallbacks = { onSettled: () => setOperatingId(null) };
   const activateMutation = useActivateTestSuite();
   const archiveMutation = useArchiveTestSuite();
   const deleteMutation = useDeleteTestSuite();
-
-  const handleActivate = (id: number) => {
-    setOperatingId(id);
-    activateMutation.mutate(id, mutationCallbacks);
-  };
-
-  const handleArchive = (id: number) => {
-    setOperatingId(id);
-    archiveMutation.mutate(id, mutationCallbacks);
-  };
-
-  const handleDelete = (id: number) => {
-    setOperatingId(id);
-    deleteMutation.mutate(id, mutationCallbacks);
-  };
 
   const handleStatusFilter = (status: TestSuiteStatus | '') => {
     setStatusFilter(status);
@@ -141,7 +126,7 @@ export function TestSuiteList({ onSelect, onCreate }: TestSuiteListProps) {
                     variant="primary"
                     size="sm"
                     loading={activateMutation.isPending && operatingId === suite.id}
-                    onClick={() => handleActivate(suite.id)}
+                    onClick={() => execute(activateMutation, suite.id)}
                     aria-label={`激活 ${suite.name}`}
                   >
                     激活
@@ -152,7 +137,7 @@ export function TestSuiteList({ onSelect, onCreate }: TestSuiteListProps) {
                     variant="outline"
                     size="sm"
                     loading={archiveMutation.isPending && operatingId === suite.id}
-                    onClick={() => handleArchive(suite.id)}
+                    onClick={() => execute(archiveMutation, suite.id)}
                     aria-label={`归档 ${suite.name}`}
                   >
                     归档
@@ -163,7 +148,7 @@ export function TestSuiteList({ onSelect, onCreate }: TestSuiteListProps) {
                     variant="outline"
                     size="sm"
                     loading={deleteMutation.isPending && operatingId === suite.id}
-                    onClick={() => handleDelete(suite.id)}
+                    onClick={() => execute(deleteMutation, suite.id)}
                     aria-label={`删除 ${suite.name}`}
                   >
                     删除

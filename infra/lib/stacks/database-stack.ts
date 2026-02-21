@@ -15,9 +15,9 @@ export interface DatabaseStackProps extends BaseStackProps {
   readonly vpc: ec2.IVpc;
   /** 数据库安全组 */
   readonly dbSecurityGroup: ec2.ISecurityGroup;
-  /** KMS 加密密钥 */
+  /** KMS 加密密钥 @default undefined (使用 AWS 默认加密) */
   readonly encryptionKey?: kms.IKey;
-  /** Aurora 实例类型 @default db.t3.medium (Dev), db.r6g.large (Prod) */
+  /** Aurora 实例类型 @default db.t3.medium */
   readonly instanceType?: ec2.InstanceType;
 }
 
@@ -131,7 +131,7 @@ export class DatabaseStack extends cdk.Stack {
     );
   }
 
-  /** CDK Nag 合规規則抑制 — S3 知识库 Bucket 相关 */
+  /** CDK Nag 合规规则抑制 — S3 知识库 Bucket 相关 */
   private suppressKnowledgeBucketNagRules(): void {
     NagSuppressions.addResourceSuppressions(this.knowledgeBucket, [
       {

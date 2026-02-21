@@ -3,6 +3,7 @@
 import { memo } from 'react';
 
 import { cn } from '@/shared/lib/cn';
+import { extractApiError } from '@/shared/lib/extractApiError';
 import { formatShortDateTime } from '@/shared/lib/formatDate';
 import { Button, Spinner, ErrorMessage } from '@/shared/ui';
 
@@ -77,7 +78,9 @@ export function ConversationList({
           </div>
         )}
 
-        {error && <ErrorMessage error="加载对话列表失败" className="m-2" />}
+        {error && (
+          <ErrorMessage error={extractApiError(error, '加载对话列表失败')} className="m-2" />
+        )}
 
         {data && data.items.length === 0 && (
           <p className="px-3 py-8 text-center text-sm text-gray-400">暂无对话</p>

@@ -1,6 +1,7 @@
 // Team Execution 列表
 
 import { cn } from '@/shared/lib/cn';
+import { extractApiError } from '@/shared/lib/extractApiError';
 import { formatDateTime } from '@/shared/lib/formatDate';
 import { Spinner, ErrorMessage } from '@/shared/ui';
 
@@ -26,12 +27,12 @@ export function TeamExecList({ selectedId, onSelect }: TeamExecListProps) {
   }
 
   if (error) {
-    return <ErrorMessage error="加载执行列表失败" />;
+    return <ErrorMessage error={extractApiError(error, '加载执行列表失败')} />;
   }
 
   if (!data?.items.length) {
     return (
-      <div className="py-8 text-center text-sm text-gray-500">
+      <div className="py-8 text-center text-sm text-gray-500" role="status">
         暂无执行记录，创建第一个 Team Execution 开始使用
       </div>
     );

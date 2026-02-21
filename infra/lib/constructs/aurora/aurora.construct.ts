@@ -11,7 +11,7 @@ export interface AuroraConstructProps {
   readonly vpc: ec2.IVpc;
   /** 数据库安全组 */
   readonly securityGroup: ec2.ISecurityGroup;
-  /** KMS 加密密钥 */
+  /** KMS 加密密钥 @default undefined (使用 AWS 默认加密) */
   readonly encryptionKey?: kms.IKey;
   /** 环境名称 (dev | prod) */
   readonly envName: EnvironmentName;
@@ -51,6 +51,16 @@ export class AuroraConstruct extends Construct {
       enablePerformanceInsights = false,
     } = props;
 
+    // 实例配置 — Writer 和 Reader 共享相同的规格和 Performance Insights 设置
+    const instanceProps: rds.ProvisionedClusterInstanceProps = {
+      instanceType,
+      publiclyAccessible: false,
+      enablePerformanceInsights,
+      ...(enablePerformanceInsights && {
+        performanceInsightRetention: rds.PerformanceInsightRetention.DEFAULT,
+      }),
+    };
+
     this.cluster = new rds.DatabaseCluster(this, 'Cluster', {
       engine: rds.DatabaseClusterEngine.auroraMysql({
         version: rds.AuroraMysqlEngineVersion.of('8.0.mysql_aurora.3.10.3', '8.0'),
@@ -62,27 +72,8 @@ export class AuroraConstruct extends Construct {
       vpc,
       vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_ISOLATED },
       securityGroups: [securityGroup],
-      writer: rds.ClusterInstance.provisioned('Writer', {
-        instanceType,
-        publiclyAccessible: false,
-        enablePerformanceInsights,
-        ...(enablePerformanceInsights && {
-          performanceInsightRetention: rds.PerformanceInsightRetention.DEFAULT,
-        }),
-      }),
-      readers:
-        instances > 1
-          ? [
-              rds.ClusterInstance.provisioned('Reader', {
-                instanceType,
-                publiclyAccessible: false,
-                enablePerformanceInsights,
-                ...(enablePerformanceInsights && {
-                  performanceInsightRetention: rds.PerformanceInsightRetention.DEFAULT,
-                }),
-              }),
-            ]
-          : [],
+      writer: rds.ClusterInstance.provisioned('Writer', instanceProps),
+      readers: instances > 1 ? [rds.ClusterInstance.provisioned('Reader', instanceProps)] : [],
       storageEncrypted: true,
       storageEncryptionKey: encryptionKey,
       deletionProtection,

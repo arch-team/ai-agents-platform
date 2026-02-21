@@ -19,8 +19,14 @@ from urllib.parse import quote_plus
 from pydantic import SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from src.shared.domain.constants import MODEL_CLAUDE_HAIKU_35
+
 
 logger = logging.getLogger(__name__)
+
+# pydantic_settings 字段默认值必须是字面量或简单变量引用;
+# 使用模块级别别名让 Settings 类可以直接引用常量。
+_DEFAULT_MODEL_ID: str = MODEL_CLAUDE_HAIKU_35
 
 
 class Settings(BaseSettings):
@@ -60,7 +66,7 @@ class Settings(BaseSettings):
     AWS_REGION: str = "us-east-1"
 
     # Bedrock 配置
-    BEDROCK_DEFAULT_MODEL_ID: str = "us.anthropic.claude-3-5-haiku-20241022-v1:0"
+    BEDROCK_DEFAULT_MODEL_ID: str = _DEFAULT_MODEL_ID
 
     # AgentCore 配置
     AGENTCORE_GATEWAY_ID: str = ""  # AgentCore Gateway 资源 ID (用于 Tool 注册/注销)

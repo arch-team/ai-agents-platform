@@ -77,7 +77,7 @@ describe('ChatInterface', () => {
     } as ReturnType<typeof useConversation>);
 
     render(<ChatInterface conversationId={1} token={null} />, { wrapper: createWrapper() });
-    expect(screen.getByRole('alert')).toHaveTextContent('加载对话失败');
+    expect(screen.getByRole('alert')).toHaveTextContent('请求失败');
   });
 
   it('应该显示对话标题和消息列表', () => {

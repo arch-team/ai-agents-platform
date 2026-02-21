@@ -2,6 +2,7 @@
 
 import { memo, useCallback, useEffect, useRef } from 'react';
 
+import { extractApiError } from '@/shared/lib/extractApiError';
 import { ErrorMessage, Spinner } from '@/shared/ui';
 
 import { useConversation } from '../api/queries';
@@ -90,7 +91,7 @@ export function ChatInterface({ conversationId, token }: ChatInterfaceProps) {
   if (error) {
     return (
       <div className="flex h-full items-center justify-center p-4">
-        <ErrorMessage error="加载对话失败，请重试" />
+        <ErrorMessage error={extractApiError(error, '加载对话失败，请重试')} />
       </div>
     );
   }

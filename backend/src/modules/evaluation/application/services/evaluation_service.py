@@ -171,13 +171,19 @@ class EvaluationService:
         page_size: int = 20,
     ) -> PagedResult[EvaluationRunDTO]:
         """列出评估运行。"""
+        import asyncio
+
         offset = (page - 1) * page_size
         if suite_id is not None:
-            runs = await self._run_repo.list_by_suite(suite_id, offset=offset, limit=page_size)
-            total = await self._run_repo.count_by_suite(suite_id)
+            runs, total = await asyncio.gather(
+                self._run_repo.list_by_suite(suite_id, offset=offset, limit=page_size),
+                self._run_repo.count_by_suite(suite_id),
+            )
         else:
-            runs = await self._run_repo.list_by_user(current_user_id, offset=offset, limit=page_size)
-            total = await self._run_repo.count_by_user(current_user_id)
+            runs, total = await asyncio.gather(
+                self._run_repo.list_by_user(current_user_id, offset=offset, limit=page_size),
+                self._run_repo.count_by_user(current_user_id),
+            )
         return PagedResult(
             items=[self._to_run_dto(r) for r in runs],
             total=total,
@@ -193,10 +199,14 @@ class EvaluationService:
         page_size: int = 20,
     ) -> PagedResult[EvaluationResultDTO]:
         """获取评估运行的结果列表。"""
+        import asyncio
+
         await get_or_raise(self._run_repo, run_id, EvaluationRunNotFoundError, run_id)
         offset = (page - 1) * page_size
-        results = await self._result_repo.list_by_run(run_id, offset=offset, limit=page_size)
-        total = await self._result_repo.count_by_run(run_id)
+        results, total = await asyncio.gather(
+            self._result_repo.list_by_run(run_id, offset=offset, limit=page_size),
+            self._result_repo.count_by_run(run_id),
+        )
         return PagedResult(
             items=[self._to_result_dto(r) for r in results],
             total=total,

@@ -30,9 +30,9 @@ export interface MonitoringStackProps extends BaseStackProps {
   readonly loadBalancer: elbv2.IApplicationLoadBalancer;
   /** ALB Target Group */
   readonly targetGroup: elbv2.IApplicationTargetGroup;
-  /** KMS 加密密钥 — 用于 SNS Topic 加密 */
+  /** KMS 加密密钥 — 用于 SNS Topic 加密 @default undefined (不加密) */
   readonly encryptionKey?: kms.IKey;
-  /** 告警通知邮箱 (可选) */
+  /** 告警通知邮箱 @default undefined (不创建邮件订阅) */
   readonly alertEmail?: string;
 }
 

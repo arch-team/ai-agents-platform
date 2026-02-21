@@ -75,13 +75,13 @@ describe('DatabaseStack', () => {
       const app = new cdk.App();
       const { vpc, dbSecurityGroup, encryptionKey } = createCrossStackDbDependencies(app);
 
-      new DatabaseStack(app, 'TestDatabaseStack', {
+      const stack = new DatabaseStack(app, 'TestDatabaseStack', {
         vpc,
         dbSecurityGroup,
         encryptionKey,
         envName: 'prod',
       });
-      template = Template.fromStack(app.node.findChild('TestDatabaseStack') as cdk.Stack);
+      template = Template.fromStack(stack);
     });
 
     it('Prod 环境应启用 Performance Insights', () => {
@@ -102,13 +102,13 @@ describe('DatabaseStack', () => {
       const app = new cdk.App();
       const { vpc, dbSecurityGroup, encryptionKey } = createCrossStackDbDependencies(app);
 
-      new DatabaseStack(app, 'TestDatabaseStack', {
+      const stack = new DatabaseStack(app, 'TestDatabaseStack', {
         vpc,
         dbSecurityGroup,
         encryptionKey,
         envName: 'dev',
       });
-      template = Template.fromStack(app.node.findChild('TestDatabaseStack') as cdk.Stack);
+      template = Template.fromStack(stack);
     });
 
     it('应创建 S3 Bucket', () => {

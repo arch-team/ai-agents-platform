@@ -138,8 +138,10 @@ class KnowledgeService:
     ) -> PagedResult[KnowledgeBaseDTO]:
         """获取知识库列表。"""
         offset = (page - 1) * page_size
-        items = await self._kb_repo.list_by_owner(user_id, offset=offset, limit=page_size)
-        total = await self._kb_repo.count_by_owner(user_id)
+        items, total = await asyncio.gather(
+            self._kb_repo.list_by_owner(user_id, offset=offset, limit=page_size),
+            self._kb_repo.count_by_owner(user_id),
+        )
         return PagedResult(
             items=[self._to_kb_dto(kb) for kb in items],
             total=total,
@@ -265,8 +267,10 @@ class KnowledgeService:
         await self._get_owned_kb(kb_id, user_id)
 
         offset = (page - 1) * page_size
-        docs = await self._doc_repo.list_by_knowledge_base(kb_id, offset=offset, limit=page_size)
-        total = await self._doc_repo.count_by_knowledge_base(kb_id)
+        docs, total = await asyncio.gather(
+            self._doc_repo.list_by_knowledge_base(kb_id, offset=offset, limit=page_size),
+            self._doc_repo.count_by_knowledge_base(kb_id),
+        )
         return [self._to_doc_dto(d) for d in docs], total
 
     async def delete_document(

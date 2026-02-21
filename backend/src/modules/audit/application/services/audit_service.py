@@ -131,8 +131,12 @@ class AuditService:
         end_date: datetime | None = None,
     ) -> AuditStatsDTO:
         """获取审计统计信息。"""
-        by_category = await self._repository.count_by_category(start_date, end_date)
-        by_action = await self._repository.count_by_action(start_date, end_date)
+        import asyncio
+
+        by_category, by_action = await asyncio.gather(
+            self._repository.count_by_category(start_date, end_date),
+            self._repository.count_by_action(start_date, end_date),
+        )
         total = sum(by_category.values())
         return AuditStatsDTO(
             by_category=by_category,

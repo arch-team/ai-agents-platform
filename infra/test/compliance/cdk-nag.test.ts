@@ -35,12 +35,18 @@ describe('CDK Nag 合规测试', () => {
 
     cdk.Aspects.of(stack).add(new AwsSolutionsChecks({ verbose: true }));
 
-    NagSuppressions.addStackSuppressions(stack, [
-      {
-        id: 'AwsSolutions-IAM5',
-        reason: 'VPC Flow Log 使用 CloudWatch Logs 需要通配符日志组权限',
-      },
-    ]);
+    // 资源级抑制: VPC Flow Log 内部创建的 IAM Role 需要通配符日志组权限
+    NagSuppressions.addResourceSuppressions(
+      stack,
+      [
+        {
+          id: 'AwsSolutions-IAM5',
+          reason:
+            'VPC Flow Log delivery role created by CDK requires wildcard CloudWatch Logs permissions (logs:CreateLogGroup, logs:CreateLogStream, etc.)',
+        },
+      ],
+      true,
+    );
 
     expectNoNagErrors(app, stack);
   });
@@ -74,12 +80,18 @@ describe('CDK Nag 合规测试', () => {
 
     cdk.Aspects.of(stack).add(new AwsSolutionsChecks({ verbose: true }));
 
-    NagSuppressions.addStackSuppressions(stack, [
-      {
-        id: 'AwsSolutions-RDS6',
-        reason: 'IAM 认证已通过 iamAuthentication: true 启用',
-      },
-    ]);
+    // 资源级抑制: CDK Nag RDS6 规则误报 — iamAuthentication: true 已在 AuroraConstruct 中启用
+    NagSuppressions.addResourceSuppressions(
+      stack,
+      [
+        {
+          id: 'AwsSolutions-RDS6',
+          reason:
+            'IAM database authentication enabled via iamAuthentication: true in AuroraConstruct; CDK Nag may not detect the synthesized EnableIAMDatabaseAuthentication property',
+        },
+      ],
+      true,
+    );
 
     expectNoNagErrors(app, stack);
   });

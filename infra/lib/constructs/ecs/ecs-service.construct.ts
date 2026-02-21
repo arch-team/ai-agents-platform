@@ -43,7 +43,7 @@ export interface EcsServiceConstructProps {
   readonly secrets?: Record<string, ecs.Secret>;
   /** 自定义容器健康检查命令 @default ['CMD-SHELL', 'python -c "import httpx; httpx.get(\'http://localhost:{port}/health\').raise_for_status()" || exit 1'] */
   readonly healthCheckCommand?: string[];
-  /** 定时缩放配置 — Dev 环境非工作时段自动缩减 ECS 任务数以降低成本 */
+  /** 定时缩放配置 — Dev 环境非工作时段自动缩减 ECS 任务数以降低成本 @default undefined (不启用定时缩放) */
   readonly scheduledScaling?: ScheduledScalingConfig;
 }
 

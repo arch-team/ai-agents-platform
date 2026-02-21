@@ -22,7 +22,9 @@ from src.modules.auth.domain.exceptions import (
 )
 from src.modules.evaluation.api.endpoints import router as evaluation_router
 from src.modules.evaluation.domain.exceptions import (
+    EvalPipelineNotFoundError,
     EvaluationRunNotFoundError,
+    PipelineAlreadyRunningError,
     TestCaseNotFoundError,
     TestSuiteEmptyError,
     TestSuiteNotActiveError,
@@ -36,6 +38,7 @@ from src.modules.execution.domain.exceptions import (
     AgentNotAvailableError,
     ConversationNotActiveError,
     ConversationNotFoundError,
+    MessageNotFoundError,
     TeamExecutionNotCancellableError,
     TeamExecutionNotFoundError,
 )
@@ -564,6 +567,7 @@ def create_app() -> FastAPI:
         AgentNameDuplicateError: 409,
         # execution
         ConversationNotFoundError: 404,
+        MessageNotFoundError: 404,
         ConversationNotActiveError: 409,
         AgentNotAvailableError: 409,
         TeamExecutionNotFoundError: 404,
@@ -589,6 +593,8 @@ def create_app() -> FastAPI:
         TestSuiteNotActiveError: 409,
         TestSuiteEmptyError: 409,
         TestSuiteNotDeletableError: 409,
+        EvalPipelineNotFoundError: 404,
+        PipelineAlreadyRunningError: 409,
         # audit
         AuditNotFoundError: 404,
         # shared — SSE 连接限制

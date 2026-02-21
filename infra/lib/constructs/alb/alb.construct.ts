@@ -9,11 +9,11 @@ export interface AlbConstructProps {
   readonly vpc: ec2.IVpc;
   /** 环境名称 (dev | prod) */
   readonly envName: EnvironmentName;
-  /** ECS 服务安全组 — 用于添加 ALB → ECS 的显式出站规则 */
+  /** ECS 服务安全组 — 用于添加 ALB → ECS 的显式出站规则 @default undefined (不创建出站规则) */
   readonly ecsSecurityGroup?: ec2.ISecurityGroup;
   /** ECS 容器端口 @default 8000 */
   readonly containerPort?: number;
-  /** ACM 证书 ARN — 提供时启用 HTTPS，HTTP 自动重定向到 HTTPS */
+  /** ACM 证书 ARN — 提供时启用 HTTPS，HTTP 自动重定向到 HTTPS @default undefined (HTTP-only 模式) */
   readonly certificateArn?: string;
 }
 
