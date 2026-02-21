@@ -52,4 +52,39 @@ describe('extractApiError', () => {
     expect(extractApiError(null, '默认错误')).toBe('默认错误');
     expect(extractApiError(undefined, '默认错误')).toBe('默认错误');
   });
+
+  it('应该从 FastAPI 422 验证错误的 detail 数组提取消息', () => {
+    const error = createAxiosError(
+      {
+        detail: [
+          { type: 'string_too_short', loc: ['body', 'name'], msg: '最少 1 个字符', input: '' },
+        ],
+      },
+      422,
+    );
+    expect(extractApiError(error, '默认错误')).toBe('name: 最少 1 个字符');
+  });
+
+  it('应该拼接多个 FastAPI 422 验证错误', () => {
+    const error = createAxiosError(
+      {
+        detail: [
+          { type: 'string_too_short', loc: ['body', 'name'], msg: '最少 1 个字符', input: '' },
+          { type: 'missing', loc: ['body', 'system_prompt'], msg: '字段必填', input: null },
+        ],
+      },
+      422,
+    );
+    expect(extractApiError(error, '默认错误')).toBe('name: 最少 1 个字符; system_prompt: 字段必填');
+  });
+
+  it('应该处理 detail 数组中无 loc 的情况', () => {
+    const error = createAxiosError({ detail: [{ msg: '请求无效' }] }, 422);
+    expect(extractApiError(error, '默认错误')).toBe('请求无效');
+  });
+
+  it('应该处理空 detail 数组返回默认消息', () => {
+    const error = createAxiosError({ detail: [] }, 422);
+    expect(extractApiError(error, '默认错误')).toBe('默认错误');
+  });
 });
