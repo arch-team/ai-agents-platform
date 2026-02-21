@@ -615,6 +615,39 @@ Session 5:  #14 (质量验收) + progress.md 更新
 
 ---
 
+### M13: 自动化评估 Pipeline (Phase 5A, 第 1-3 月)
+
+> 交付物: evaluation 模块扩展 — EvalPipeline 实体 + BedrockEvalAdapter + API 端点
+> 验收标准: ≥5 模板每日自动回归；Bedrock Eval API 集成；ruff + mypy + pytest 全通过
+> 实施方式: Subagent 驱动开发（10 任务，双阶段 Review）
+> 技术方案: Bedrock Model Evaluation API（方案二：深度 AWS 集成）
+
+| # | 任务 | 状态 | 依赖 | 参考规范 | 会话 |
+|---|------|:----:|:----:|---------|------|
+| 1 | PipelineStatus 枚举 (`StrEnum`, 4 状态) | 已完成 | - | `rules/architecture.md` §5 | 2026-02-21 |
+| 2 | EvalPipeline 实体 + 状态机 (start/complete/fail) | 已完成 | #1 | `rules/architecture.md` §5 DDD | 2026-02-21 |
+| 3 | IEvalPipelineRepository 接口 + 领域异常 (EvalPipelineNotFoundError/PipelineAlreadyRunningError) | 已完成 | #2 | `rules/architecture.md` §5.4 | 2026-02-21 |
+| 4 | IEvalService 外部服务接口 + EvalJobResult DTO | 已完成 | - | `rules/sdk-first.md` | 2026-02-21 |
+| 5 | EvalPipelineService + TriggerPipelineDTO + EvalPipelineDTO | 已完成 | #3, #4 | `rules/architecture.md` §5 | 2026-02-21 |
+| 6 | BedrockEvalAdapter (SDK-First, 72 行, asyncio.to_thread) | 已完成 | #4 | `rules/sdk-first.md` 封装 < 100 行 | 2026-02-21 |
+| 7 | EvalPipelineModel ORM + Alembic 迁移 (s8t9u0v1w2x3) | 已完成 | #2 | `rules/tech-stack.md` | 2026-02-21 |
+| 8 | EvalPipelineRepositoryImpl (PydanticRepository 多重继承) | 已完成 | #3, #7 | `rules/architecture.md` §5.4 | 2026-02-21 |
+| 9 | API 端点 (POST/GET /eval-suites/{id}/pipelines) + Schema + DI | 已完成 | #5, #8 | `rules/api-design.md` | 2026-02-21 |
+| 10 | 质量验收: ruff ✅ mypy ✅ 1884 后端测试 86.72% ✅ 架构合规 14/14 ✅ | 已完成 | #1-#9 | `rules/checklist.md` | 2026-02-21 |
+| 11 | CDK 基础设施: EventBridge 定时规则 + IAM Eval 权限 + CloudWatch 质量面板 | 待开始 | #10 | infra 规范 | - |
+| 12 | 前端: EvaluationPage Pipeline 视图 + 模型对比 Dashboard | 待开始 | #10 | FSD 架构 | - |
+
+#### M13 关键设计决策
+
+| 决策 | 选择 | 理由 |
+|------|------|------|
+| 评估引擎 | Bedrock Model Evaluation API（而非自建）| SDK-First 原则，GA API，零基础设施 |
+| 异步封装 | asyncio.to_thread() | 与项目 BedrockLLMClient 模式一致 |
+| 异常类型 | ClientError/BotoCoreError（非 Exception）| SDK-First 规范：精确捕获 SDK 异常 |
+| 测试模式 | pytest-asyncio + dependency_overrides | 项目标准，非 run_until_complete |
+
+---
+
 ## 变更积压 (Change Backlog)
 
 > **来源**: `docs/strategy/improvement-plan.md` 五维度深度审查
