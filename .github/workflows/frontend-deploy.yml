@@ -51,14 +51,9 @@ jobs:
       - run: pnpm lint
       - run: pnpm typecheck
       - run: pnpm test
-      - name: 构建生产版本
-        run: pnpm build
-      # 保存构建产物供后续 job 使用
-      - uses: actions/upload-artifact@v4
-        with:
-          name: frontend-dist
-          path: frontend/dist/
-          retention-days: 1
+      # 仅做构建验证，不保存产物（Dev/Prod 各自用对应 --mode 重新构建）
+      - name: 构建验证 (dev mode)
+        run: pnpm build --mode dev
 
   # ============================================================
   # 部署 — Dev 环境
@@ -75,10 +70,19 @@ jobs:
       id-token: write
       contents: read
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
         with:
-          name: frontend-dist
-          path: dist/
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+          cache-dependency-path: frontend/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      # Dev 专用：使用 .env.dev (VITE_API_BASE_URL = Dev ALB)
+      - name: 构建 Dev 版本
+        run: pnpm build --mode dev
       - uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
@@ -109,10 +113,19 @@ jobs:
       id-token: write
       contents: read
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
         with:
-          name: frontend-dist
-          path: dist/
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+          cache-dependency-path: frontend/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      # Prod 专用：使用 .env.prod (VITE_API_BASE_URL = Prod ALB)
+      - name: 构建 Prod 版本
+        run: pnpm build --mode prod
       - uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_PROD_ROLE_ARN }}
