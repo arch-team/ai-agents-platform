@@ -19,6 +19,8 @@ import type {
   CreateEvaluationRunRequest,
   EvaluationRunFilters,
   EvaluationResultListResponse,
+  EvalPipeline,
+  TriggerPipelineRequest,
 } from './types';
 
 // -- Query Key Factory --
@@ -255,5 +257,46 @@ export function useEvaluationResults(runId: number | undefined) {
       return data;
     },
     enabled: !!runId,
+  });
+}
+
+// -- Pipeline Query Key Factory --
+
+export const pipelineKeys = {
+  all: ['eval-pipelines'] as const,
+  lists: () => [...pipelineKeys.all, 'list'] as const,
+  list: (suiteId: number) => [...pipelineKeys.lists(), suiteId] as const,
+};
+
+// -- Pipeline Hooks --
+
+/** 查询测试集的 Pipeline 列表 */
+export function useEvalPipelines(suiteId: number | undefined) {
+  return useQuery({
+    queryKey: pipelineKeys.list(suiteId!),
+    queryFn: async () => {
+      const { data } = await apiClient.get<EvalPipeline[]>(
+        `/api/v1/eval-suites/${suiteId}/pipelines`,
+      );
+      return data;
+    },
+    enabled: !!suiteId,
+  });
+}
+
+/** 触发 Pipeline 评估 */
+export function useTriggerPipeline() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ suiteId, ...dto }: TriggerPipelineRequest & { suiteId: number }) => {
+      const { data } = await apiClient.post<EvalPipeline>(
+        `/api/v1/eval-suites/${suiteId}/pipelines`,
+        dto,
+      );
+      return data;
+    },
+    onSuccess: (_data, { suiteId }) => {
+      queryClient.invalidateQueries({ queryKey: pipelineKeys.list(suiteId) });
+    },
   });
 }

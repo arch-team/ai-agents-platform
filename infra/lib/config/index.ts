@@ -9,6 +9,8 @@ export {
   getCorsAllowedOrigins,
   BEDROCK_INVOKE_ACTIONS,
   getBedrockResourceArns,
+  BEDROCK_EVAL_ACTIONS,
+  getBedrockEvalResourceArns,
 } from './constants';
 export { getEnvironmentConfig } from './environments';
 export type { BaseStackProps, EnvironmentConfig, EnvironmentName } from './types';

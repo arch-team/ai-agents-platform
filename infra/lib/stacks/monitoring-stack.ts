@@ -254,6 +254,15 @@ export class MonitoringStack extends cdk.Stack {
         width: 8,
       }),
     );
+
+    // Eval Pipeline 指标占位 (M13 — 后续可添加基于 Lambda 日志的自定义 Metric Widget)
+    dashboard.addWidgets(
+      new cloudwatch.TextWidget({
+        markdown: '## Eval Pipeline',
+        width: 24,
+        height: 1,
+      }),
+    );
   }
 
   /** CDK Nag 合规规则抑制 */

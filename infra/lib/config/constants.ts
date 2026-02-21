@@ -82,3 +82,19 @@ export function getBedrockResourceArns(accountId: string): string[] {
     `arn:aws:bedrock:*:${accountId}:application-inference-profile/*`,
   ];
 }
+
+/** Bedrock 评估 Pipeline 所需的 IAM actions (M13 评估功能) */
+export const BEDROCK_EVAL_ACTIONS = [
+  'bedrock:CreateModelEvaluationJob',
+  'bedrock:GetModelEvaluationJob',
+  'bedrock:ListModelEvaluationJobs',
+  'bedrock:StopModelEvaluationJob',
+] as const;
+
+/**
+ * 获取 Bedrock 评估权限的 IAM 资源 ARN 列表。
+ * @remarks 限制到 evaluation-job 资源
+ */
+export function getBedrockEvalResourceArns(accountId: string): string[] {
+  return [`arn:aws:bedrock:*:${accountId}:evaluation-job/*`];
+}

@@ -8,6 +8,9 @@ export { EvaluationRunStatusBadge } from './ui/EvaluationRunStatusBadge';
 export { EvaluationRunList } from './ui/EvaluationRunList';
 export { EvaluationResults } from './ui/EvaluationResults';
 export { RunEvaluationDialog } from './ui/RunEvaluationDialog';
+export { PipelineList } from './ui/PipelineList';
+export { PipelineStatusBadge } from './ui/PipelineStatusBadge';
+export { ModelComparisonChart } from './ui/ModelComparisonChart';
 
 // Hooks
 export {
@@ -26,6 +29,9 @@ export {
   useEvaluationRuns,
   useEvaluationRun,
   useEvaluationResults,
+  useEvalPipelines,
+  useTriggerPipeline,
+  pipelineKeys,
 } from './api/queries';
 
 // 类型
@@ -42,4 +48,7 @@ export type {
   CreateEvaluationRunRequest,
   TestSuiteFilters,
   EvaluationRunFilters,
+  EvalPipeline,
+  PipelineStatus,
+  TriggerPipelineRequest,
 } from './api/types';

@@ -7,6 +7,8 @@ import {
   getLogRetention,
   isDev,
   isProd,
+  BEDROCK_EVAL_ACTIONS,
+  getBedrockEvalResourceArns,
 } from '../../lib/config/constants';
 import type { EnvironmentName } from '../../lib/config/types';
 
@@ -70,6 +72,24 @@ describe('constants', () => {
 
     it('Prod 环境应返回 THREE_MONTHS', () => {
       expect(getLogRetention('prod')).toBe(logs.RetentionDays.THREE_MONTHS);
+    });
+  });
+
+  describe('BEDROCK_EVAL_ACTIONS', () => {
+    it('应包含 4 个评估相关 IAM actions', () => {
+      expect(BEDROCK_EVAL_ACTIONS).toHaveLength(4);
+      expect(BEDROCK_EVAL_ACTIONS).toContain('bedrock:CreateModelEvaluationJob');
+      expect(BEDROCK_EVAL_ACTIONS).toContain('bedrock:GetModelEvaluationJob');
+      expect(BEDROCK_EVAL_ACTIONS).toContain('bedrock:ListModelEvaluationJobs');
+      expect(BEDROCK_EVAL_ACTIONS).toContain('bedrock:StopModelEvaluationJob');
+    });
+  });
+
+  describe('getBedrockEvalResourceArns', () => {
+    it('应返回 evaluation-job 资源 ARN', () => {
+      const arns = getBedrockEvalResourceArns('123456789012');
+      expect(arns).toHaveLength(1);
+      expect(arns[0]).toBe('arn:aws:bedrock:*:123456789012:evaluation-job/*');
     });
   });
 });

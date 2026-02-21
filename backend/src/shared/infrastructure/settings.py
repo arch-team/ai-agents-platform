@@ -120,6 +120,9 @@ class Settings(BaseSettings):
     DEFAULT_ADMIN_PASSWORD: SecretStr = SecretStr("Admin@2026!")
     DEFAULT_ADMIN_NAME: str = "系统管理员"
 
+    # Bedrock Eval Pipeline 配置
+    BEDROCK_EVAL_ROLE_ARN: str = ""  # Bedrock 评估 Job 执行角色 ARN (CDK ComputeStack 创建)
+
     # OpenTelemetry 可观测性
     OTEL_EXPORTER_OTLP_ENDPOINT: str = ""  # OTLP 导出端点 (如 http://localhost:4317)
 

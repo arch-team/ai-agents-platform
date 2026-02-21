@@ -169,6 +169,82 @@ describe('ComputeStack', () => {
     });
   });
 
+  describe('Bedrock Eval IAM', () => {
+    it('ECS Task Role 应包含 Bedrock 评估 Pipeline IAM 权限', () => {
+      template.hasResourceProperties('AWS::IAM::Policy', {
+        PolicyDocument: {
+          Statement: Match.arrayWith([
+            Match.objectLike({
+              Action: Match.arrayWith([
+                'bedrock:CreateModelEvaluationJob',
+                'bedrock:GetModelEvaluationJob',
+                'bedrock:ListModelEvaluationJobs',
+                'bedrock:StopModelEvaluationJob',
+              ]),
+              Effect: 'Allow',
+            }),
+          ]),
+        },
+      });
+    });
+  });
+
+  describe('Eval Trigger Lambda', () => {
+    it('应创建评估触发 Lambda 函数 (Python 3.14, ARM_64)', () => {
+      template.hasResourceProperties('AWS::Lambda::Function', {
+        FunctionName: 'ai-agents-platform-eval-trigger-dev',
+        Runtime: 'python3.13',
+        Architectures: ['arm64'],
+        Timeout: 60,
+        MemorySize: 128,
+        TracingConfig: { Mode: 'Active' },
+      });
+    });
+
+    it('Lambda 应配置 API_BASE_URL 环境变量', () => {
+      template.hasResourceProperties('AWS::Lambda::Function', {
+        Environment: {
+          Variables: Match.objectLike({
+            API_BASE_URL: Match.anyValue(),
+          }),
+        },
+      });
+    });
+
+    it('应创建 Lambda CloudWatch 日志组', () => {
+      template.hasResourceProperties('AWS::Logs::LogGroup', {
+        LogGroupName: '/aws/lambda/ai-agents-platform-eval-trigger-dev',
+        RetentionInDays: 7,
+      });
+    });
+  });
+
+  describe('EventBridge Schedule Rule', () => {
+    it('应创建评估定时触发规则', () => {
+      template.hasResourceProperties('AWS::Events::Rule', {
+        Name: 'ai-agents-platform-eval-trigger-dev',
+        ScheduleExpression: 'cron(0 2 * * ? *)',
+        State: 'DISABLED',
+      });
+    });
+
+    it('Prod 环境规则应启用', () => {
+      const app = new cdk.App();
+      const deps = createCrossStackComputeDependencies(app);
+
+      const prodStack = new ComputeStack(app, 'TestComputeStackProd', {
+        ...deps,
+        envName: 'prod',
+      });
+      const prodTemplate = Template.fromStack(prodStack);
+
+      prodTemplate.hasResourceProperties('AWS::Events::Rule', {
+        Name: 'ai-agents-platform-eval-trigger-prod',
+        State: 'ENABLED',
+      });
+    });
+  });
+
   describe('定时缩放', () => {
     it('配置 scheduledScaling 时应创建 ScalableTarget 和 2 个 ScheduledAction', () => {
       const app = new cdk.App();

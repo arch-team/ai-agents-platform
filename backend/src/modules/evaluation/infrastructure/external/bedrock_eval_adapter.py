@@ -20,8 +20,9 @@ log = structlog.get_logger(__name__)
 class BedrockEvalAdapter(IEvalService):
     """Bedrock Model Evaluation 服务适配器（SDK-First，薄封装）。"""
 
-    def __init__(self, region: str = "us-east-1") -> None:
+    def __init__(self, region: str = "us-east-1", role_arn: str = "") -> None:
         self._client = boto3.client("bedrock", region_name=region)
+        self._role_arn = role_arn
 
     async def create_eval_job(self, suite_name: str, model_ids: list[str], test_cases: list[dict[str, str]]) -> str:  # noqa: ARG002 — MVP: 当前版本不传入自定义数据集
         """创建 Bedrock Evaluation Job，返回 job_id。
@@ -33,6 +34,7 @@ class BedrockEvalAdapter(IEvalService):
             response = await asyncio.to_thread(
                 self._client.create_model_evaluation_job,
                 jobName=f"eval-{suite_name[:40].replace(' ', '-')}",
+                # TODO(human): 实现 roleArn 赋值逻辑
                 roleArn="",
                 evaluatorModelConfig={
                     "bedrockEvaluatorModels": [{"modelIdentifier": m} for m in model_ids],

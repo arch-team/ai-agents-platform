@@ -113,3 +113,26 @@ export interface EvaluationRunFilters {
   page?: number;
   page_size?: number;
 }
+
+// -- Pipeline --
+
+export type PipelineStatus = 'scheduled' | 'running' | 'completed' | 'failed';
+
+export interface EvalPipeline {
+  id: number;
+  suite_id: number;
+  agent_id: number;
+  trigger: string;
+  model_ids: string[];
+  status: PipelineStatus;
+  bedrock_job_id: string | null;
+  score_summary: Record<string, number>;
+  error_message: string | null;
+  started_at: string | null;
+  completed_at: string | null;
+  created_at: string;
+}
+
+export interface TriggerPipelineRequest {
+  model_ids?: string[];
+}

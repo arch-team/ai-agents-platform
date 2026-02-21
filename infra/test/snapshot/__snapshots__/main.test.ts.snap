@@ -1198,7 +1198,7 @@ exports[`Snapshot Tests ComputeStack 快照匹配 1`] = `
               "Timeout": 5,
             },
             "Image": {
-              "Fn::Sub": "000000000000.dkr.ecr.us-east-1.\${AWS::URLSuffix}/cdk-hnb659fds-container-assets-000000000000-us-east-1:c758c0ca6d38f7b7d476019d282bb285a600414c6d9a5885a956814baee3ba67",
+              "Fn::Sub": "000000000000.dkr.ecr.us-east-1.\${AWS::URLSuffix}/cdk-hnb659fds-container-assets-000000000000-us-east-1:e935080bbc531efa68183540282a712cd5973d3a1ef7124e00a5f2c7aad18fbf",
             },
             "LogConfiguration": {
               "LogDriver": "awslogs",
@@ -1538,6 +1538,16 @@ exports[`Snapshot Tests ComputeStack 快照匹配 1`] = `
                 "arn:aws:bedrock:*:000000000000:application-inference-profile/*",
               ],
             },
+            {
+              "Action": [
+                "bedrock:CreateModelEvaluationJob",
+                "bedrock:GetModelEvaluationJob",
+                "bedrock:ListModelEvaluationJobs",
+                "bedrock:StopModelEvaluationJob",
+              ],
+              "Effect": "Allow",
+              "Resource": "arn:aws:bedrock:*:000000000000:evaluation-job/*",
+            },
           ],
           "Version": "2012-10-17",
         },
@@ -1567,6 +1577,225 @@ exports[`Snapshot Tests ComputeStack 快照匹配 1`] = `
         "ToPort": 3306,
       },
       "Type": "AWS::EC2::SecurityGroupIngress",
+    },
+    "EvalScheduleRule5DBEF2D0": {
+      "Properties": {
+        "Description": "每天 UTC 02:00 定时触发评估 Pipeline",
+        "Name": "ai-agents-platform-eval-trigger-dev",
+        "ScheduleExpression": "cron(0 2 * * ? *)",
+        "State": "DISABLED",
+        "Targets": [
+          {
+            "Arn": {
+              "Fn::GetAtt": [
+                "EvalTriggerFn315F785D",
+                "Arn",
+              ],
+            },
+            "Id": "Target0",
+          },
+        ],
+      },
+      "Type": "AWS::Events::Rule",
+    },
+    "EvalScheduleRuleAllowEventRuleTestComputeStackEvalTriggerFn05C3726ABE70B75A": {
+      "Properties": {
+        "Action": "lambda:InvokeFunction",
+        "FunctionName": {
+          "Fn::GetAtt": [
+            "EvalTriggerFn315F785D",
+            "Arn",
+          ],
+        },
+        "Principal": "events.amazonaws.com",
+        "SourceArn": {
+          "Fn::GetAtt": [
+            "EvalScheduleRule5DBEF2D0",
+            "Arn",
+          ],
+        },
+      },
+      "Type": "AWS::Lambda::Permission",
+    },
+    "EvalTriggerFn315F785D": {
+      "DependsOn": [
+        "EvalTriggerFnServiceRoleDefaultPolicyB8882F22",
+        "EvalTriggerFnServiceRole4098D982",
+      ],
+      "Metadata": {
+        "cdk_nag": {
+          "rules_to_suppress": [
+            {
+              "id": "AwsSolutions-IAM4",
+              "reason": "Lambda execution role uses AWSLambdaBasicExecutionRole managed policy for CloudWatch Logs access",
+            },
+            {
+              "id": "AwsSolutions-IAM5",
+              "reason": "Lambda X-Ray tracing policy requires xray:PutTelemetryRecords and xray:PutTraceSegments with wildcard resources",
+            },
+            {
+              "id": "AwsSolutions-L1",
+              "is_reason_encoded": true,
+              "reason": "VXNpbmcgUFlUSE9OXzNfMTMg4oCUIHRoZSBsYXRlc3QgR0EgUHl0aG9uIExhbWJkYSBydW50aW1lOyBDREsgTmFnIEwxIHJ1bGUgbWF5IGxhZyBiZWhpbmQgQ0RLIHJ1bnRpbWUgZGVmaW5pdGlvbnM=",
+            },
+          ],
+        },
+      },
+      "Properties": {
+        "Architectures": [
+          "arm64",
+        ],
+        "Code": {
+          "ZipFile": "import json
+import os
+import urllib.request
+
+def handler(event, context):
+    """EventBridge 定时触发评估 Pipeline"""
+    base_url = os.environ['API_BASE_URL']
+    # 健康检查
+    health_url = f'http://{base_url}/api/v1/health'
+    req = urllib.request.Request(health_url)
+    with urllib.request.urlopen(req, timeout=10) as resp:
+        print(f'Health check: {resp.status}')
+    # TODO: 认证 + 触发 Pipeline (需系统账户配置后启用)
+    print('Eval trigger placeholder - configure system credentials to enable')
+    return {'statusCode': 200, 'body': 'OK'}",
+        },
+        "Description": "定时触发评估 Pipeline — 调用后端 API 启动 Bedrock 评估任务",
+        "Environment": {
+          "Variables": {
+            "API_BASE_URL": {
+              "Fn::GetAtt": [
+                "Alb6F14D334",
+                "DNSName",
+              ],
+            },
+          },
+        },
+        "FunctionName": "ai-agents-platform-eval-trigger-dev",
+        "Handler": "index.handler",
+        "LoggingConfig": {
+          "LogGroup": {
+            "Ref": "EvalTriggerLogGroup8AE04669",
+          },
+        },
+        "MemorySize": 128,
+        "Role": {
+          "Fn::GetAtt": [
+            "EvalTriggerFnServiceRole4098D982",
+            "Arn",
+          ],
+        },
+        "Runtime": "python3.13",
+        "Timeout": 60,
+        "TracingConfig": {
+          "Mode": "Active",
+        },
+      },
+      "Type": "AWS::Lambda::Function",
+    },
+    "EvalTriggerFnServiceRole4098D982": {
+      "Metadata": {
+        "cdk_nag": {
+          "rules_to_suppress": [
+            {
+              "id": "AwsSolutions-IAM4",
+              "reason": "Lambda execution role uses AWSLambdaBasicExecutionRole managed policy for CloudWatch Logs access",
+            },
+            {
+              "id": "AwsSolutions-IAM5",
+              "reason": "Lambda X-Ray tracing policy requires xray:PutTelemetryRecords and xray:PutTraceSegments with wildcard resources",
+            },
+            {
+              "id": "AwsSolutions-L1",
+              "is_reason_encoded": true,
+              "reason": "VXNpbmcgUFlUSE9OXzNfMTMg4oCUIHRoZSBsYXRlc3QgR0EgUHl0aG9uIExhbWJkYSBydW50aW1lOyBDREsgTmFnIEwxIHJ1bGUgbWF5IGxhZyBiZWhpbmQgQ0RLIHJ1bnRpbWUgZGVmaW5pdGlvbnM=",
+            },
+          ],
+        },
+      },
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition",
+                },
+                ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
+              ],
+            ],
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Role",
+    },
+    "EvalTriggerFnServiceRoleDefaultPolicyB8882F22": {
+      "Metadata": {
+        "cdk_nag": {
+          "rules_to_suppress": [
+            {
+              "id": "AwsSolutions-IAM4",
+              "reason": "Lambda execution role uses AWSLambdaBasicExecutionRole managed policy for CloudWatch Logs access",
+            },
+            {
+              "id": "AwsSolutions-IAM5",
+              "reason": "Lambda X-Ray tracing policy requires xray:PutTelemetryRecords and xray:PutTraceSegments with wildcard resources",
+            },
+            {
+              "id": "AwsSolutions-L1",
+              "is_reason_encoded": true,
+              "reason": "VXNpbmcgUFlUSE9OXzNfMTMg4oCUIHRoZSBsYXRlc3QgR0EgUHl0aG9uIExhbWJkYSBydW50aW1lOyBDREsgTmFnIEwxIHJ1bGUgbWF5IGxhZyBiZWhpbmQgQ0RLIHJ1bnRpbWUgZGVmaW5pdGlvbnM=",
+            },
+          ],
+        },
+      },
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": [
+                "xray:PutTraceSegments",
+                "xray:PutTelemetryRecords",
+              ],
+              "Effect": "Allow",
+              "Resource": "*",
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "EvalTriggerFnServiceRoleDefaultPolicyB8882F22",
+        "Roles": [
+          {
+            "Ref": "EvalTriggerFnServiceRole4098D982",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
+    },
+    "EvalTriggerLogGroup8AE04669": {
+      "DeletionPolicy": "Delete",
+      "Properties": {
+        "LogGroupName": "/aws/lambda/ai-agents-platform-eval-trigger-dev",
+        "RetentionInDays": 7,
+      },
+      "Type": "AWS::Logs::LogGroup",
+      "UpdateReplacePolicy": "Delete",
     },
   },
   "Rules": {
@@ -2390,7 +2619,7 @@ exports[`Snapshot Tests MonitoringStack 快照匹配 1`] = `
               {
                 "Fn::ImportValue": "TestCompStack:ExportsOutputFnGetAttAlbTargetGroup3E290A92TargetGroupFullNameC43F1128",
               },
-              ""]],"yAxis":{}}}]}",
+              ""]],"yAxis":{}}},{"type":"text","width":24,"height":1,"x":0,"y":18,"properties":{"markdown":"## Eval Pipeline"}}]}",
             ],
           ],
         },

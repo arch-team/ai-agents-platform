@@ -3,15 +3,24 @@ import * as cdk from 'aws-cdk-lib';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as ecs from 'aws-cdk-lib/aws-ecs';
 import * as elbv2 from 'aws-cdk-lib/aws-elasticloadbalancingv2';
+import * as events from 'aws-cdk-lib/aws-events';
+import * as targets from 'aws-cdk-lib/aws-events-targets';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as kms from 'aws-cdk-lib/aws-kms';
+import * as lambda from 'aws-cdk-lib/aws-lambda';
+import * as logs from 'aws-cdk-lib/aws-logs';
 import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
 import { NagSuppressions } from 'cdk-nag';
 import { Construct } from 'constructs';
 import {
   BEDROCK_INVOKE_ACTIONS,
+  BEDROCK_EVAL_ACTIONS,
   getBedrockResourceArns,
+  getBedrockEvalResourceArns,
   getCorsAllowedOrigins,
+  getLogRetention,
+  isDev,
+  PROJECT_NAME,
   type BaseStackProps,
 } from '../config';
 import { AlbConstruct } from '../constructs/alb';
@@ -160,13 +169,24 @@ export class ComputeStack extends cdk.Stack {
       }),
     );
 
+    // 授权 ECS Task Role 调用 Bedrock Eval API (M13 评估 Pipeline 所需)
+    ecsConstruct.service.taskDefinition.taskRole.addToPrincipalPolicy(
+      new iam.PolicyStatement({
+        actions: [...BEDROCK_EVAL_ACTIONS],
+        resources: getBedrockEvalResourceArns(accountId),
+      }),
+    );
+
+    // EventBridge 定时触发评估 Pipeline 的 Lambda 函数
+    const evalLambda = this.createEvalTriggerLambda(albConstruct.alb.loadBalancerDnsName, envName);
+
     this.albDnsName = albConstruct.alb.loadBalancerDnsName;
     this.service = ecsConstruct.service;
     this.loadBalancer = albConstruct.alb;
     this.targetGroup = albConstruct.targetGroup;
 
     // CDK Nag 抑制
-    this.suppressNagRules(albConstruct, ecsConstruct);
+    this.suppressNagRules(albConstruct, ecsConstruct, evalLambda);
 
     // Outputs
     new cdk.CfnOutput(this, 'AlbDnsName', {
@@ -183,8 +203,75 @@ export class ComputeStack extends cdk.Stack {
     });
   }
 
-  /** CDK Nag 合规规则抑制 — ALB 和 ECS 相关安全规则的合理豁免 */
-  private suppressNagRules(albConstruct: AlbConstruct, ecsConstruct: EcsServiceConstruct): void {
+  /**
+   * 创建评估 Pipeline 定时触发 Lambda + EventBridge 规则。
+   * @remarks Lambda 通过 ALB 调用后端 API 触发评估任务; EventBridge 每天 UTC 02:00 (北京 10:00) 执行
+   */
+  private createEvalTriggerLambda(albDnsName: string, envName: string): lambda.Function {
+    // Lambda 内联 Python 代码 — 健康检查 + 评估触发占位
+    const evalTriggerCode = `
+import json
+import os
+import urllib.request
+
+def handler(event, context):
+    """EventBridge 定时触发评估 Pipeline"""
+    base_url = os.environ['API_BASE_URL']
+    # 健康检查
+    health_url = f'http://{base_url}/api/v1/health'
+    req = urllib.request.Request(health_url)
+    with urllib.request.urlopen(req, timeout=10) as resp:
+        print(f'Health check: {resp.status}')
+    # TODO: 认证 + 触发 Pipeline (需系统账户配置后启用)
+    print('Eval trigger placeholder - configure system credentials to enable')
+    return {'statusCode': 200, 'body': 'OK'}
+`.trim();
+
+    // 显式创建 LogGroup，遵循 CDK Nag AwsSolutions-L1 要求
+    const evalLogGroup = new logs.LogGroup(this, 'EvalTriggerLogGroup', {
+      logGroupName: `/aws/lambda/${PROJECT_NAME}-eval-trigger-${envName}`,
+      retention: getLogRetention(envName as 'dev' | 'prod'),
+      removalPolicy: isDev(envName as 'dev' | 'prod')
+        ? cdk.RemovalPolicy.DESTROY
+        : cdk.RemovalPolicy.RETAIN,
+    });
+
+    const evalFn = new lambda.Function(this, 'EvalTriggerFn', {
+      functionName: `${PROJECT_NAME}-eval-trigger-${envName}`,
+      description: '定时触发评估 Pipeline — 调用后端 API 启动 Bedrock 评估任务',
+      runtime: lambda.Runtime.PYTHON_3_13,
+      architecture: lambda.Architecture.ARM_64,
+      handler: 'index.handler',
+      code: lambda.Code.fromInline(evalTriggerCode),
+      timeout: cdk.Duration.seconds(60),
+      memorySize: 128,
+      environment: {
+        API_BASE_URL: albDnsName,
+      },
+      logGroup: evalLogGroup,
+      tracing: lambda.Tracing.ACTIVE,
+    });
+
+    // EventBridge Schedule Rule — 每天 UTC 02:00 (北京 10:00)
+    new events.Rule(this, 'EvalScheduleRule', {
+      ruleName: `${PROJECT_NAME}-eval-trigger-${envName}`,
+      description: '每天 UTC 02:00 定时触发评估 Pipeline',
+      schedule: events.Schedule.cron({ hour: '2', minute: '0' }),
+      enabled: !isDev(envName as 'dev' | 'prod'),
+      targets: [new targets.LambdaFunction(evalFn)],
+    });
+
+    return evalFn;
+  }
+
+  /**
+   * CDK Nag 合规规则抑制 — ALB、ECS 和 Lambda 相关安全规则的合理豁免。
+   */
+  private suppressNagRules(
+    albConstruct: AlbConstruct,
+    ecsConstruct: EcsServiceConstruct,
+    evalLambda: lambda.Function,
+  ): void {
     // ALB: 未启用访问日志 (Dev 环境不需要)
     NagSuppressions.addResourceSuppressions(albConstruct.alb, [
       {
@@ -252,6 +339,29 @@ export class ComputeStack extends cdk.Stack {
           id: 'AwsSolutions-ECS2',
           reason:
             'ENV_NAME, DATABASE_HOST, DATABASE_PORT are non-sensitive config; no need to inject via Secrets Manager',
+        },
+      ],
+      true,
+    );
+
+    // Lambda Execution Role: AWS 托管策略和通配符权限
+    NagSuppressions.addResourceSuppressions(
+      evalLambda,
+      [
+        {
+          id: 'AwsSolutions-IAM4',
+          reason:
+            'Lambda execution role uses AWSLambdaBasicExecutionRole managed policy for CloudWatch Logs access',
+        },
+        {
+          id: 'AwsSolutions-IAM5',
+          reason:
+            'Lambda X-Ray tracing policy requires xray:PutTelemetryRecords and xray:PutTraceSegments with wildcard resources',
+        },
+        {
+          id: 'AwsSolutions-L1',
+          reason:
+            'Using PYTHON_3_13 — the latest GA Python Lambda runtime; CDK Nag L1 rule may lag behind CDK runtime definitions',
         },
       ],
       true,

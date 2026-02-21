@@ -38,9 +38,7 @@ export const handlers = [
     }),
   ),
 
-  http.get(`${BASE_URL}/api/v1/agents/:id`, () =>
-    HttpResponse.json(mockAgent),
-  ),
+  http.get(`${BASE_URL}/api/v1/agents/:id`, () => HttpResponse.json(mockAgent)),
 
   http.post(`${BASE_URL}/api/v1/agents`, async ({ request }) => {
     const body = (await request.json()) as Record<string, unknown>;
@@ -85,10 +83,7 @@ export const handlers = [
   http.post(`${BASE_URL}/api/v1/auth/register`, async ({ request }) => {
     const body = (await request.json()) as { email: string; password: string; name: string };
     if (body.email === 'existing@example.com') {
-      return HttpResponse.json(
-        { code: 'EMAIL_EXISTS', message: '邮箱已被注册' },
-        { status: 409 },
-      );
+      return HttpResponse.json({ code: 'EMAIL_EXISTS', message: '邮箱已被注册' }, { status: 409 });
     }
     return HttpResponse.json({ message: '注册成功' }, { status: 201 });
   }),
@@ -139,10 +134,7 @@ export const handlers = [
 
   http.post(`${BASE_URL}/api/v1/conversations`, async ({ request }) => {
     const body = (await request.json()) as Record<string, unknown>;
-    return HttpResponse.json(
-      { ...mockConversation, ...body, id: 2 },
-      { status: 201 },
-    );
+    return HttpResponse.json({ ...mockConversation, ...body, id: 2 }, { status: 201 });
   }),
 
   // Dashboard Stats
@@ -200,13 +192,21 @@ export const handlers = [
   http.post(`${BASE_URL}/api/v1/knowledge-bases`, async ({ request }) => {
     const body = (await request.json()) as Record<string, unknown>;
     return HttpResponse.json(
-      { id: 2, ...body, status: 'CREATING', document_count: 0, created_at: '2025-01-01T00:00:00Z', updated_at: '2025-01-01T00:00:00Z' },
+      {
+        id: 2,
+        ...body,
+        status: 'CREATING',
+        document_count: 0,
+        created_at: '2025-01-01T00:00:00Z',
+        updated_at: '2025-01-01T00:00:00Z',
+      },
       { status: 201 },
     );
   }),
 
-  http.delete(`${BASE_URL}/api/v1/knowledge-bases/:id`, () =>
-    new HttpResponse(null, { status: 204 }),
+  http.delete(
+    `${BASE_URL}/api/v1/knowledge-bases/:id`,
+    () => new HttpResponse(null, { status: 204 }),
   ),
 
   http.post(`${BASE_URL}/api/v1/knowledge-bases/:id/sync`, ({ params }) =>
@@ -275,14 +275,20 @@ export const handlers = [
   http.post(`${BASE_URL}/api/v1/templates`, async ({ request }) => {
     const body = (await request.json()) as Record<string, unknown>;
     return HttpResponse.json(
-      { id: 2, ...body, status: 'draft', author: '管理员', use_count: 0, created_at: '2025-01-01T00:00:00Z', updated_at: '2025-01-01T00:00:00Z' },
+      {
+        id: 2,
+        ...body,
+        status: 'draft',
+        author: '管理员',
+        use_count: 0,
+        created_at: '2025-01-01T00:00:00Z',
+        updated_at: '2025-01-01T00:00:00Z',
+      },
       { status: 201 },
     );
   }),
 
-  http.delete(`${BASE_URL}/api/v1/templates/:id`, () =>
-    new HttpResponse(null, { status: 204 }),
-  ),
+  http.delete(`${BASE_URL}/api/v1/templates/:id`, () => new HttpResponse(null, { status: 204 })),
 
   http.post(`${BASE_URL}/api/v1/templates/:id/publish`, ({ params }) =>
     HttpResponse.json({
@@ -356,14 +362,20 @@ export const handlers = [
   http.post(`${BASE_URL}/api/v1/tools`, async ({ request }) => {
     const body = (await request.json()) as Record<string, unknown>;
     return HttpResponse.json(
-      { id: 'tool-2', ...body, status: 'DRAFT', configuration: {}, created_by: 'admin', created_at: '2025-01-01T00:00:00Z', updated_at: '2025-01-01T00:00:00Z' },
+      {
+        id: 'tool-2',
+        ...body,
+        status: 'DRAFT',
+        configuration: {},
+        created_by: 'admin',
+        created_at: '2025-01-01T00:00:00Z',
+        updated_at: '2025-01-01T00:00:00Z',
+      },
       { status: 201 },
     );
   }),
 
-  http.delete(`${BASE_URL}/api/v1/tools/:id`, () =>
-    new HttpResponse(null, { status: 204 }),
-  ),
+  http.delete(`${BASE_URL}/api/v1/tools/:id`, () => new HttpResponse(null, { status: 204 })),
 
   // Team Executions
   http.get(`${BASE_URL}/api/v1/team-executions`, () =>
@@ -402,14 +414,21 @@ export const handlers = [
     }),
   ),
 
-  http.get(`${BASE_URL}/api/v1/team-executions/:id/logs`, () =>
-    HttpResponse.json([]),
-  ),
+  http.get(`${BASE_URL}/api/v1/team-executions/:id/logs`, () => HttpResponse.json([])),
 
   http.post(`${BASE_URL}/api/v1/team-executions`, async ({ request }) => {
     const body = (await request.json()) as Record<string, unknown>;
     return HttpResponse.json(
-      { id: 2, ...body, user_id: 1, status: 'pending', result: null, error: null, created_at: '2025-01-01T00:00:00Z', updated_at: '2025-01-01T00:00:00Z' },
+      {
+        id: 2,
+        ...body,
+        user_id: 1,
+        status: 'pending',
+        result: null,
+        error: null,
+        created_at: '2025-01-01T00:00:00Z',
+        updated_at: '2025-01-01T00:00:00Z',
+      },
       { status: 201 },
     );
   }),
@@ -514,9 +533,7 @@ export const handlers = [
     }),
   ),
 
-  http.delete(`${BASE_URL}/api/v1/test-suites/:id`, () =>
-    new HttpResponse(null, { status: 204 }),
-  ),
+  http.delete(`${BASE_URL}/api/v1/test-suites/:id`, () => new HttpResponse(null, { status: 204 })),
 
   // Test Cases
   http.get(`${BASE_URL}/api/v1/test-suites/:suiteId/cases`, () =>
@@ -653,6 +670,46 @@ export const handlers = [
       page_size: 10,
       total_pages: 1,
     }),
+  ),
+
+  // Eval Pipelines
+  http.get(`${BASE_URL}/api/v1/eval-suites/:suiteId/pipelines`, () =>
+    HttpResponse.json([
+      {
+        id: 1,
+        suite_id: 1,
+        agent_id: 1,
+        trigger: 'manual',
+        model_ids: ['us.anthropic.claude-haiku-4-20250514-v1:0'],
+        status: 'completed',
+        bedrock_job_id: 'job-123',
+        score_summary: { accuracy: 0.85, relevance: 0.92 },
+        error_message: null,
+        started_at: '2026-02-21T10:00:00Z',
+        completed_at: '2026-02-21T10:15:00Z',
+        created_at: '2026-02-21T10:00:00Z',
+      },
+    ]),
+  ),
+
+  http.post(`${BASE_URL}/api/v1/eval-suites/:suiteId/pipelines`, () =>
+    HttpResponse.json(
+      {
+        id: 2,
+        suite_id: 1,
+        agent_id: 1,
+        trigger: 'manual',
+        model_ids: [],
+        status: 'scheduled',
+        bedrock_job_id: null,
+        score_summary: {},
+        error_message: null,
+        started_at: null,
+        completed_at: null,
+        created_at: '2026-02-21T12:00:00Z',
+      },
+      { status: 201 },
+    ),
   ),
 
   // Insights

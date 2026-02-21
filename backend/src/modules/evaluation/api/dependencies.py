@@ -25,6 +25,7 @@ from src.modules.evaluation.infrastructure.persistence.repositories.test_suite_r
     TestSuiteRepositoryImpl,
 )
 from src.shared.infrastructure.database import get_db
+from src.shared.infrastructure.settings import get_settings
 
 
 async def get_test_suite_service(
@@ -57,5 +58,8 @@ async def get_eval_pipeline_service(
         pipeline_repo=EvalPipelineRepositoryImpl(session=session),
         suite_repo=TestSuiteRepositoryImpl(session=session),
         case_repo=TestCaseRepositoryImpl(session=session),
-        eval_service=BedrockEvalAdapter(),
+        eval_service=BedrockEvalAdapter(
+            region=get_settings().AWS_REGION,
+            role_arn=get_settings().BEDROCK_EVAL_ROLE_ARN,
+        ),
     )
