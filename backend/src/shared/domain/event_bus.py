@@ -3,9 +3,13 @@
 from collections import defaultdict
 from collections.abc import Callable
 
+import structlog
 from cachetools import TTLCache
 
 from src.shared.domain.events import DomainEvent
+
+
+log = structlog.get_logger(__name__)
 
 
 # 已处理事件 ID 缓存配置: 最大 10 万条, 1 小时过期自动清理
@@ -39,16 +43,22 @@ class EventBus:
         if not self._mark_processed(event):
             return
         for handler in self._handlers.get(type(event), []):
-            result = handler(event)
-            if hasattr(result, "__await__"):
-                await result
+            try:
+                result = handler(event)
+                if hasattr(result, "__await__"):
+                    await result
+            except Exception:
+                log.exception("事件处理器异常", handler=str(handler), event_type=type(event).__name__)
 
     def publish(self, event: DomainEvent) -> None:
         """同步发布事件（幂等）。"""
         if not self._mark_processed(event):
             return
         for handler in self._handlers.get(type(event), []):
-            handler(event)
+            try:
+                handler(event)
+            except Exception:
+                log.exception("事件处理器异常", handler=str(handler), event_type=type(event).__name__)
 
     def clear(self) -> None:
         """清空所有处理器和已处理事件记录。"""

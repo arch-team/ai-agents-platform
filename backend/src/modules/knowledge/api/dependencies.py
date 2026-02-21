@@ -8,10 +8,8 @@ from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.modules.knowledge.application.services.knowledge_service import KnowledgeService
-from src.modules.knowledge.infrastructure.external.bedrock_knowledge_adapter import (
-    BedrockKBConfig,
-    BedrockKnowledgeAdapter,
-)
+from src.modules.knowledge.infrastructure.external.bedrock_knowledge_adapter import BedrockKnowledgeAdapter
+from src.modules.knowledge.infrastructure.external.knowledge_config_builder import BedrockKBConfig
 from src.modules.knowledge.infrastructure.external.s3_document_storage import S3DocumentStorage
 from src.modules.knowledge.infrastructure.persistence.repositories.document_repository_impl import (
     DocumentRepositoryImpl,

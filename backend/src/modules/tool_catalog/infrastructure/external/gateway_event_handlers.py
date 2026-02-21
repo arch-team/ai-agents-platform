@@ -30,13 +30,17 @@ async def handle_tool_approved(
         logger.debug("gateway_sync_skip_non_mcp", tool_id=event.tool_id, tool_type=tool.tool_type.value)
         return
 
-    target_id = await gateway_sync.register_tool(
-        tool_id=event.tool_id,
-        tool_name=tool.name,
-        description=tool.description,
-        server_url=tool.config.server_url,
-        transport=tool.config.transport,
-    )
+    try:
+        target_id = await gateway_sync.register_tool(
+            tool_id=event.tool_id,
+            tool_name=tool.name,
+            description=tool.description,
+            server_url=tool.config.server_url,
+            transport=tool.config.transport,
+        )
+    except Exception:
+        logger.exception("gateway_sync_register_failed", tool_id=event.tool_id)
+        return
 
     if target_id:
         tool.gateway_target_id = target_id
@@ -60,10 +64,14 @@ async def handle_tool_deprecated(
         logger.debug("gateway_sync_skip_no_target", tool_id=event.tool_id)
         return
 
-    await gateway_sync.unregister_tool(
-        tool_id=event.tool_id,
-        target_id=tool.gateway_target_id,
-    )
+    try:
+        await gateway_sync.unregister_tool(
+            tool_id=event.tool_id,
+            target_id=tool.gateway_target_id,
+        )
+    except Exception:
+        logger.exception("gateway_sync_unregister_failed", tool_id=event.tool_id)
+        return
 
     tool.gateway_target_id = ""
     await repo.update(tool)

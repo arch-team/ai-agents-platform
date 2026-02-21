@@ -146,3 +146,42 @@ class TestEventBus:
 
         # Assert — 两次都被处理（因为 TTL=0 缓存立即过期）
         assert len(received) == 2
+
+    def test_publish_isolates_handler_exceptions(self) -> None:
+        """同步发布：第一个 handler 抛异常不影响第二个 handler 执行。"""
+        # Arrange
+        received: list[_TestEvent] = []
+
+        def failing_handler(event: _TestEvent) -> None:
+            raise RuntimeError("handler 故障")
+
+        self.bus.subscribe(_TestEvent, failing_handler)
+        self.bus.subscribe(_TestEvent, received.append)
+        event = _TestEvent(payload="isolation")
+
+        # Act
+        self.bus.publish(event)
+
+        # Assert — 第二个 handler 仍被调用
+        assert len(received) == 1
+        assert received[0].payload == "isolation"
+
+    @pytest.mark.asyncio
+    async def test_publish_async_isolates_handler_exceptions(self) -> None:
+        """异步发布：第一个 handler 抛异常不影响第二个 handler 执行。"""
+        # Arrange
+        received: list[_TestEvent] = []
+
+        async def failing_async_handler(event: _TestEvent) -> None:
+            raise RuntimeError("async handler 故障")
+
+        self.bus.subscribe(_TestEvent, failing_async_handler)
+        self.bus.subscribe(_TestEvent, received.append)
+        event = _TestEvent(payload="async-isolation")
+
+        # Act
+        await self.bus.publish_async(event)
+
+        # Assert — 第二个 handler 仍被调用
+        assert len(received) == 1
+        assert received[0].payload == "async-isolation"

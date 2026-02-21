@@ -1,12 +1,11 @@
 """BedrockKnowledgeAdapter 单元测试。"""
 
-import pytest
 from unittest.mock import MagicMock
 
-from src.modules.knowledge.infrastructure.external.bedrock_knowledge_adapter import (
-    BedrockKBConfig,
-    BedrockKnowledgeAdapter,
-)
+import pytest
+
+from src.modules.knowledge.infrastructure.external.bedrock_knowledge_adapter import BedrockKnowledgeAdapter
+from src.modules.knowledge.infrastructure.external.knowledge_config_builder import BedrockKBConfig
 from src.shared.domain.exceptions import DomainError
 
 

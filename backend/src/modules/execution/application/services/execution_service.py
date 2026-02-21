@@ -484,11 +484,18 @@ class ExecutionService:
         )
 
     async def _get_agent_tools(self) -> list[AgentTool]:
-        """通过 IToolQuerier 获取已审批工具并转换为 AgentTool。"""
+        """通过 IToolQuerier 获取已审批工具并转换为 AgentTool。
+
+        降级: IToolQuerier 异常时返回空列表, Agent 无工具继续执行。
+        """
         if self._tool_querier is None:
             return []
         with tracer.start_as_current_span("tools.load"):
-            approved = await self._tool_querier.list_approved_tools()
+            try:
+                approved = await self._tool_querier.list_approved_tools()
+            except Exception:
+                logger.warning("tool_querier_degraded", reason="list_approved_tools failed")
+                return []
             tools = [self._to_agent_tool(t) for t in approved]
             span = trace.get_current_span()
             span.set_attribute("tools.count", len(tools))
@@ -565,6 +572,7 @@ class ExecutionService:
         llm_messages = [LLMMessage(role=m.role.value, content=m.content) for m in truncated]
 
         # RAG 上下文注入: 将检索结果附加到 system prompt
+        # 降级: IKnowledgeQuerier 异常时跳过 RAG 注入, 不阻塞对话
         system_prompt = agent_info.system_prompt
         if agent_info.knowledge_base_id and self._knowledge_querier:
             with tracer.start_as_current_span(
@@ -574,11 +582,18 @@ class ExecutionService:
                     "rag.top_k": 5,
                 },
             ):
-                rag_results = await self._knowledge_querier.retrieve(
-                    agent_info.knowledge_base_id,
-                    content,
-                    top_k=5,
-                )
+                try:
+                    rag_results = await self._knowledge_querier.retrieve(
+                        agent_info.knowledge_base_id,
+                        content,
+                        top_k=5,
+                    )
+                except Exception:
+                    logger.warning(
+                        "knowledge_querier_degraded",
+                        knowledge_base_id=agent_info.knowledge_base_id,
+                    )
+                    rag_results = []
             if rag_results:
                 rag_context = "\n\n".join(f"[参考文档] {r.content}" for r in rag_results)
                 system_prompt = f"{system_prompt}\n\n## 知识库参考资料\n\n{rag_context}"
