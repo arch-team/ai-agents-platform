@@ -1,0 +1,150 @@
+name: Backend Deploy
+
+on:
+  push:
+    branches: [main, ai-agents-factory-v1]
+    paths:
+      - 'backend/src/**'
+      - 'backend/migrations/**'
+      - 'backend/pyproject.toml'
+      - 'backend/uv.lock'
+      - 'backend/Dockerfile'
+      - 'backend/alembic.ini'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: '目标部署环境'
+        type: choice
+        options: [dev, prod]
+        default: dev
+
+# 同一分支上的新推送取消旧的运行
+concurrency:
+  group: backend-deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: "22"
+  PNPM_VERSION: "9"
+
+jobs:
+  # ============================================================
+  # 后端 CI 质量门控 (部署前必须通过)
+  # ============================================================
+  quality-gate:
+    name: 质量门控
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: test_root_password
+          MYSQL_DATABASE: ai_agents_test
+          MYSQL_USER: test_user
+          MYSQL_PASSWORD: test_password
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+    env:
+      DATABASE_URL: "mysql+asyncmy://test_user:test_password@localhost:3306/ai_agents_test"
+      APP_ENV: "test"
+      UV_VERSION: "0.7.12"
+      PYTHON_VERSION: "3.11"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install uv==0.7.12
+      - uses: actions/cache@v4
+        with:
+          path: |
+            backend/.venv
+            ~/.cache/uv
+          key: uv-${{ runner.os }}-py3.11-${{ hashFiles('backend/uv.lock') }}
+      - run: uv sync
+      - run: uv run ruff check src/
+      - run: uv run mypy src/
+      - run: uv run pytest --cov=src --cov-fail-under=85 -q
+
+  # ============================================================
+  # 部署 — Dev 环境 (push 触发自动部署)
+  # ============================================================
+  deploy-dev:
+    name: 部署 Dev
+    needs: quality-gate
+    if: >-
+      (github.event_name == 'push') ||
+      (github.event_name == 'workflow_dispatch' && inputs.environment == 'dev')
+    runs-on: ubuntu-latest
+    environment: dev
+    defaults:
+      run:
+        working-directory: infra
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+          cache-dependency-path: infra/pnpm-lock.yaml
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: us-east-1
+      - run: pnpm install --frozen-lockfile
+      # 只部署 compute stack（包含 Docker 镜像构建 + ECS 更新）
+      - run: pnpm cdk deploy ai-agents-plat-compute-dev --context env=dev --require-approval never
+
+  # ============================================================
+  # 部署 — Prod 环境 (需要手动审批)
+  # ============================================================
+  deploy-prod:
+    name: 部署 Prod
+    needs: deploy-dev
+    if: >-
+      (github.event_name == 'push' &&
+       (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/ai-agents-factory-v1')) ||
+      (github.event_name == 'workflow_dispatch' && inputs.environment == 'prod')
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      # GitHub 环境保护规则中配置 required_reviewers
+    defaults:
+      run:
+        working-directory: infra
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+          cache-dependency-path: infra/pnpm-lock.yaml
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_PROD_ROLE_ARN }}
+          aws-region: us-east-1
+      - run: pnpm install --frozen-lockfile
+      - name: CDK Diff (生产变更确认)
+        run: pnpm cdk diff ai-agents-plat-compute-prod --context env=prod
+      - name: 部署到生产环境
+        run: pnpm cdk deploy ai-agents-plat-compute-prod --context env=prod --require-approval never
