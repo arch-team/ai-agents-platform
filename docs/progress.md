@@ -687,7 +687,7 @@ Session 5:  #14 (质量验收) + progress.md 更新
 | # | 任务 | 状态 | 依赖 | 参考规范 | 会话 |
 |---|------|:----:|:----:|---------|------|
 | 15 | CDK: `SecurityStack` 新增 SAML IdP 元数据 SSM 参数 + LDAP SG 出站规则（port 389/636）+ Secrets Manager SAML SP 私钥；`ComputeStack` 新增 SSO callback ALB 路由 | 已完成 | #10 | infra 规范 | 2026-02-22 |
-| 16 | 质量验收: `ruff` ✅ `mypy` ✅ `pytest` ≥85% ✅ `infra tests` ✅ + Builder 手动 E2E（对话→配置草稿→确认创建）+ M14 Prod 部署 | 进行中 | #1-#15 | `rules/checklist.md` | 2026-02-22 |
+| 16 | 质量验收: `ruff` ✅ `mypy` ✅ `pytest` ≥85% ✅ `infra tests` ✅ + Builder 手动 E2E（对话→配置草稿→确认创建）+ M14 Prod 部署 | 已完成 | #1-#15 | `rules/checklist.md` | 2026-02-22 |
 
 #### M14 并行策略
 
@@ -948,6 +948,8 @@ auth SSO (#10-#12)    ── 100% 并行 ──── ┤──► 前端 (#13-#
 14. ~~**Docker 本地构建待验证**~~ → ✅ 构建成功: `ai-agents-agent:latest` (701MB), 基础镜像改为 `public.ecr.aws` (修复 Docker Hub 连接问题)
 15. ~~**Insights 前后端 API 不匹配**~~ → ✅ M11 #1-#6 修复: cost-breakdown/usage-trends/summary 端点补全; model_id 从事件传递; MessageReceivedEvent 订阅; 前端 3 图表对齐
 16. ~~**Insights 数据采集不完整**~~ → ✅ 架构变更: 平台总成本依托 AWS Cost Explorer (真实账单), estimated_cost 弃用为 0.0, BedrockCostCalculator 标记弃用
+
+17. **asyncio.gather 并发 Session Bug** → ✅ 已修复（6 模块 12 处：templates/insights/tool_catalog/audit/knowledge/evaluation，asyncio.gather(repo.A, repo.B) 改为顺序 await）
 
 ### 部署信息
 
