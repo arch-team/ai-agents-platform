@@ -255,12 +255,38 @@ export class MonitoringStack extends cdk.Stack {
       }),
     );
 
-    // Eval Pipeline 指标占位 (M13 — 后续可添加基于 Lambda 日志的自定义 Metric Widget)
+    // Eval Pipeline 指标 (M13 — 自定义 CloudWatch Metric)
     dashboard.addWidgets(
       new cloudwatch.TextWidget({
         markdown: '## Eval Pipeline',
         width: 24,
         height: 1,
+      }),
+    );
+    dashboard.addWidgets(
+      new cloudwatch.GraphWidget({
+        title: 'Eval Pipeline Job Succeeded',
+        left: [
+          new cloudwatch.Metric({
+            namespace: 'EvalPipeline',
+            metricName: 'JobSucceeded',
+            period: METRIC_PERIOD,
+            statistic: 'Sum',
+          }),
+        ],
+        width: 12,
+      }),
+      new cloudwatch.GraphWidget({
+        title: 'Eval Pipeline Job Failed',
+        left: [
+          new cloudwatch.Metric({
+            namespace: 'EvalPipeline',
+            metricName: 'JobFailed',
+            period: METRIC_PERIOD,
+            statistic: 'Sum',
+          }),
+        ],
+        width: 12,
       }),
     );
   }

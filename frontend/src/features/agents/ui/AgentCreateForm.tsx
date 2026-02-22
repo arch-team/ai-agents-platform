@@ -1,4 +1,5 @@
 import { useForm } from 'react-hook-form';
+import { useLocation } from 'react-router-dom';
 import { zodResolver } from '@hookform/resolvers/zod';
 
 import { Button, ErrorMessage } from '@/shared/ui';
@@ -9,12 +10,23 @@ import { createAgentSchema, type CreateAgentFormData } from '../lib/validation';
 
 import { AgentFormFields } from './AgentFormFields';
 
+/** 从模板预填的字段 */
+interface TemplatePreset {
+  system_prompt: string;
+  model_id: string;
+  temperature: number;
+  max_tokens: number;
+}
+
 interface AgentCreateFormProps {
   onSuccess?: (id: number) => void;
   onCancel?: () => void;
 }
 
 export function AgentCreateForm({ onSuccess, onCancel }: AgentCreateFormProps) {
+  const location = useLocation();
+  const templateData = (location.state as { fromTemplate?: TemplatePreset } | null)?.fromTemplate;
+
   const createMutation = useCreateAgent();
 
   const {
@@ -27,10 +39,10 @@ export function AgentCreateForm({ onSuccess, onCancel }: AgentCreateFormProps) {
     defaultValues: {
       name: '',
       description: '',
-      system_prompt: '',
-      model_id: 'claude-3-5-sonnet',
-      temperature: 0.7,
-      max_tokens: 4096,
+      system_prompt: templateData?.system_prompt ?? '',
+      model_id: templateData?.model_id ?? 'claude-3-5-sonnet',
+      temperature: templateData?.temperature ?? 0.7,
+      max_tokens: templateData?.max_tokens ?? 4096,
     },
   });
 

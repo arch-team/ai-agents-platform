@@ -50,5 +50,4 @@ export type {
   EvaluationRunFilters,
   EvalPipeline,
   PipelineStatus,
-  TriggerPipelineRequest,
 } from './api/types';

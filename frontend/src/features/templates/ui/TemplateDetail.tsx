@@ -1,4 +1,6 @@
 // 模板详情 + 配置预览组件
+import { useNavigate } from 'react-router-dom';
+
 import { Button, Card, Spinner, ErrorMessage } from '@/shared/ui';
 import { extractApiError } from '@/shared/lib/extractApiError';
 import { formatDateTime } from '@/shared/lib/formatDate';
@@ -15,10 +17,25 @@ interface TemplateDetailProps {
 }
 
 export function TemplateDetail({ templateId, onBack }: TemplateDetailProps) {
+  const navigate = useNavigate();
   const { data: template, isLoading, error } = useTemplate(templateId);
 
   const publishMutation = usePublishTemplate();
   const archiveMutation = useArchiveTemplate();
+
+  const handleUseTemplate = () => {
+    if (!template) return;
+    navigate('/agents/create', {
+      state: {
+        fromTemplate: {
+          system_prompt: template.system_prompt,
+          model_id: template.model_id,
+          temperature: template.temperature,
+          max_tokens: template.max_tokens,
+        },
+      },
+    });
+  };
 
   if (isLoading) {
     return (
@@ -68,15 +85,25 @@ export function TemplateDetail({ templateId, onBack }: TemplateDetailProps) {
             </Button>
           )}
           {template.status === 'published' && (
-            <Button
-              variant="outline"
-              size="sm"
-              loading={archiveMutation.isPending}
-              onClick={() => archiveMutation.mutate(template.id)}
-              aria-label={`归档 ${template.name}`}
-            >
-              归档
-            </Button>
+            <>
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={handleUseTemplate}
+                aria-label={`使用 ${template.name} 模板创建 Agent`}
+              >
+                使用此模板
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                loading={archiveMutation.isPending}
+                onClick={() => archiveMutation.mutate(template.id)}
+                aria-label={`归档 ${template.name}`}
+              >
+                归档
+              </Button>
+            </>
           )}
           {onBack && (
             <Button variant="outline" size="sm" onClick={onBack}>

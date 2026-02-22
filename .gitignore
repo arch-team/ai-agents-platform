@@ -120,3 +120,4 @@ secrets/
 *.pem
 *.key
 credentials.json
+frontend/tests/e2e/.auth/

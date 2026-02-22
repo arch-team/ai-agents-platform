@@ -12,32 +12,20 @@ const API_BASE = 'http://localhost:8000';
 
 const mockPipelines = [
   {
-    id: 1,
-    suite_id: 1,
-    agent_id: 1,
-    trigger: 'manual',
-    model_ids: ['us.anthropic.claude-haiku-4-20250514-v1:0'],
+    id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+    eval_suite_id: '1',
     status: 'completed',
     bedrock_job_id: 'job-123',
-    score_summary: { accuracy: 0.85, relevance: 0.92 },
-    error_message: null,
     started_at: '2026-02-21T10:00:00Z',
     completed_at: '2026-02-21T10:15:00Z',
-    created_at: '2026-02-21T10:00:00Z',
   },
   {
-    id: 2,
-    suite_id: 1,
-    agent_id: 1,
-    trigger: 'scheduled',
-    model_ids: ['us.anthropic.claude-sonnet-4-20250514-v1:0'],
+    id: 'b2c3d4e5-f6a7-8901-bcde-f12345678901',
+    eval_suite_id: '1',
     status: 'running',
     bedrock_job_id: 'job-456',
-    score_summary: {},
-    error_message: null,
     started_at: '2026-02-21T11:00:00Z',
     completed_at: null,
-    created_at: '2026-02-21T11:00:00Z',
   },
 ];
 
@@ -75,16 +63,15 @@ describe('PipelineList', () => {
     render(<PipelineList suiteId={1} />, { wrapper: createWrapper() });
 
     await waitFor(() => {
-      expect(screen.getByText('#1')).toBeInTheDocument();
+      expect(screen.getByText('a1b2c3d4')).toBeInTheDocument();
     });
 
     // 验证列表数据
-    expect(screen.getByText('#2')).toBeInTheDocument();
-    expect(screen.getByText('manual')).toBeInTheDocument();
-    expect(screen.getByText('scheduled')).toBeInTheDocument();
+    expect(screen.getByText('b2c3d4e5')).toBeInTheDocument();
     expect(screen.getByText('已完成')).toBeInTheDocument();
     expect(screen.getByText('运行中')).toBeInTheDocument();
-    expect(screen.getByText('accuracy: 0.85, relevance: 0.92')).toBeInTheDocument();
+    expect(screen.getByText('job-123')).toBeInTheDocument();
+    expect(screen.getByText('job-456')).toBeInTheDocument();
     expect(screen.getByText('共 2 条 Pipeline 记录')).toBeInTheDocument();
   });
 
@@ -124,7 +111,7 @@ describe('PipelineList', () => {
     render(<PipelineList suiteId={1} />, { wrapper: createWrapper() });
 
     await waitFor(() => {
-      expect(screen.getByText('#1')).toBeInTheDocument();
+      expect(screen.getByText('a1b2c3d4')).toBeInTheDocument();
     });
 
     const button = screen.getByRole('button', { name: '触发评估' });
@@ -140,18 +127,12 @@ describe('PipelineList', () => {
       ),
       http.post(`${API_BASE}/api/v1/eval-suites/:suiteId/pipelines`, () =>
         HttpResponse.json({
-          id: 3,
-          suite_id: 1,
-          agent_id: 1,
-          trigger: 'manual',
-          model_ids: [],
-          status: 'scheduled',
+          id: 'c3d4e5f6-a7b8-9012-cdef-123456789012',
+          eval_suite_id: '1',
+          status: 'pending',
           bedrock_job_id: null,
-          score_summary: {},
-          error_message: null,
-          started_at: null,
+          started_at: '2026-02-21T12:00:00Z',
           completed_at: null,
-          created_at: '2026-02-21T12:00:00Z',
         }),
       ),
     );
@@ -159,15 +140,14 @@ describe('PipelineList', () => {
     render(<PipelineList suiteId={1} />, { wrapper: createWrapper() });
 
     await waitFor(() => {
-      expect(screen.getByText('#1')).toBeInTheDocument();
+      expect(screen.getByText('a1b2c3d4')).toBeInTheDocument();
     });
 
     const button = screen.getByRole('button', { name: '触发评估' });
     await user.click(button);
 
-    // 触发后按钮应显示"触发中..."（isPending 状态）
+    // 触发后按钮应显示"触发中..."（isPending 状态），成功后恢复
     await waitFor(() => {
-      // 成功后应重新加载列表（mutation onSuccess 会 invalidate queries）
       expect(screen.getByRole('button', { name: '触发评估' })).toBeInTheDocument();
     });
   });

@@ -20,7 +20,6 @@ import type {
   EvaluationRunFilters,
   EvaluationResultListResponse,
   EvalPipeline,
-  TriggerPipelineRequest,
 } from './types';
 
 // -- Query Key Factory --
@@ -288,10 +287,9 @@ export function useEvalPipelines(suiteId: number | undefined) {
 export function useTriggerPipeline() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ suiteId, ...dto }: TriggerPipelineRequest & { suiteId: number }) => {
+    mutationFn: async ({ suiteId }: { suiteId: number }) => {
       const { data } = await apiClient.post<EvalPipeline>(
         `/api/v1/eval-suites/${suiteId}/pipelines`,
-        dto,
       );
       return data;
     },

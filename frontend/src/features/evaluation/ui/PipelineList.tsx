@@ -13,25 +13,6 @@ interface PipelineListProps {
   suiteId: number;
 }
 
-/** 格式化评分摘要为可读字符串 */
-function formatScoreSummary(scoreSummary: Record<string, number>): string {
-  const entries = Object.entries(scoreSummary);
-  if (entries.length === 0) return '-';
-  return entries.map(([key, value]) => `${key}: ${value.toFixed(2)}`).join(', ');
-}
-
-/** 截断模型 ID 显示 */
-function formatModelIds(modelIds: string[]): string {
-  if (modelIds.length === 0) return '-';
-  // 截取模型名称最后部分便于展示
-  return modelIds
-    .map((id) => {
-      const parts = id.split('.');
-      return parts.length > 1 ? parts.slice(1).join('.') : id;
-    })
-    .join(', ');
-}
-
 export function PipelineList({ suiteId }: PipelineListProps) {
   const { data: pipelines, isLoading, error } = useEvalPipelines(suiteId);
   const triggerMutation = useTriggerPipeline();
@@ -84,29 +65,27 @@ export function PipelineList({ suiteId }: PipelineListProps) {
               <tr className="border-b border-gray-200 bg-gray-50">
                 <th className="px-4 py-3 font-medium text-gray-500">ID</th>
                 <th className="px-4 py-3 font-medium text-gray-500">状态</th>
-                <th className="px-4 py-3 font-medium text-gray-500">触发方式</th>
-                <th className="px-4 py-3 font-medium text-gray-500">模型</th>
-                <th className="px-4 py-3 font-medium text-gray-500">评分摘要</th>
-                <th className="px-4 py-3 font-medium text-gray-500">创建时间</th>
+                <th className="px-4 py-3 font-medium text-gray-500">Bedrock Job</th>
+                <th className="px-4 py-3 font-medium text-gray-500">开始时间</th>
+                <th className="px-4 py-3 font-medium text-gray-500">完成时间</th>
               </tr>
             </thead>
             <tbody>
               {pipelines.map((pipeline) => (
                 <tr key={pipeline.id} className="border-b border-gray-100">
-                  <td className="px-4 py-3 text-gray-900">#{pipeline.id}</td>
+                  <td className="px-4 py-3 font-mono text-xs text-gray-900">
+                    {pipeline.id.slice(0, 8)}
+                  </td>
                   <td className="px-4 py-3">
                     <PipelineStatusBadge status={pipeline.status} />
                   </td>
-                  <td className="px-4 py-3 text-gray-600">{pipeline.trigger}</td>
-                  <td className="px-4 py-3 text-gray-600">
-                    <span title={pipeline.model_ids.join(', ')}>
-                      {formatModelIds(pipeline.model_ids)}
-                    </span>
+                  <td className="px-4 py-3 font-mono text-xs text-gray-600">
+                    {pipeline.bedrock_job_id ?? '-'}
                   </td>
-                  <td className="px-4 py-3 text-gray-600">
-                    {formatScoreSummary(pipeline.score_summary)}
+                  <td className="px-4 py-3 text-gray-500">{formatDateTime(pipeline.started_at)}</td>
+                  <td className="px-4 py-3 text-gray-500">
+                    {pipeline.completed_at ? formatDateTime(pipeline.completed_at) : '-'}
                   </td>
-                  <td className="px-4 py-3 text-gray-500">{formatDateTime(pipeline.created_at)}</td>
                 </tr>
               ))}
             </tbody>

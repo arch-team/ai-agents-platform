@@ -1198,7 +1198,7 @@ exports[`Snapshot Tests ComputeStack 快照匹配 1`] = `
               "Timeout": 5,
             },
             "Image": {
-              "Fn::Sub": "000000000000.dkr.ecr.us-east-1.\${AWS::URLSuffix}/cdk-hnb659fds-container-assets-000000000000-us-east-1:6c435a93af47953f00b2556363b0baae73f8677b250cb2f83b98c63a67455168",
+              "Fn::Sub": "000000000000.dkr.ecr.us-east-1.\${AWS::URLSuffix}/cdk-hnb659fds-container-assets-000000000000-us-east-1:aa91b4e81a09e2d7d28790f0cf9611d4d92dfe819f4f37315ffde2f56370ed9f",
             },
             "LogConfiguration": {
               "LogDriver": "awslogs",
@@ -2619,7 +2619,15 @@ exports[`Snapshot Tests MonitoringStack 快照匹配 1`] = `
               {
                 "Fn::ImportValue": "TestComputeStack:ExportsOutputFnGetAttAlbTargetGroup3E290A92TargetGroupFullNameC43F1128",
               },
-              ""]],"yAxis":{}}},{"type":"text","width":24,"height":1,"x":0,"y":18,"properties":{"markdown":"## Eval Pipeline"}}]}",
+              ""]],"yAxis":{}}},{"type":"text","width":24,"height":1,"x":0,"y":18,"properties":{"markdown":"## Eval Pipeline"}},{"type":"metric","width":12,"height":6,"x":0,"y":19,"properties":{"view":"timeSeries","title":"Eval Pipeline Job Succeeded","region":"",
+              {
+                "Ref": "AWS::Region",
+              },
+              "","metrics":[["EvalPipeline","JobSucceeded",{"stat":"Sum"}]],"yAxis":{}}},{"type":"metric","width":12,"height":6,"x":12,"y":19,"properties":{"view":"timeSeries","title":"Eval Pipeline Job Failed","region":"",
+              {
+                "Ref": "AWS::Region",
+              },
+              "","metrics":[["EvalPipeline","JobFailed",{"stat":"Sum"}]],"yAxis":{}}}]}",
             ],
           ],
         },
