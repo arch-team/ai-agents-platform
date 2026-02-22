@@ -30,13 +30,14 @@ function invalidateAndUpdateDetail(queryClient: QueryClient, tool: Tool) {
 }
 
 // 查询工具列表
+// 注意：后端 API 的工具类型参数别名为 ?type=（非 ?tool_type=），需要映射
 export function useTools(filters?: ToolFilters) {
   return useQuery({
     queryKey: toolKeys.list(filters ?? {}),
     queryFn: async () => {
-      const { data } = await apiClient.get<ToolListResponse>('/api/v1/tools', {
-        params: filters,
-      });
+      const { tool_type, ...rest } = filters ?? {};
+      const params = { ...rest, ...(tool_type ? { type: tool_type } : {}) };
+      const { data } = await apiClient.get<ToolListResponse>('/api/v1/tools', { params });
       return data;
     },
   });

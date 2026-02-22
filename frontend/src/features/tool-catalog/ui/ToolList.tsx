@@ -21,19 +21,19 @@ import { ToolRegisterDialog } from './ToolRegisterDialog';
 // 状态筛选选项
 const STATUS_OPTIONS: Array<{ value: ToolStatus | ''; label: string }> = [
   { value: '', label: '全部状态' },
-  { value: 'DRAFT', label: '草稿' },
-  { value: 'PENDING_REVIEW', label: '待审批' },
-  { value: 'APPROVED', label: '已审批' },
-  { value: 'REJECTED', label: '已拒绝' },
-  { value: 'DEPRECATED', label: '已废弃' },
+  { value: 'draft', label: '草稿' },
+  { value: 'pending_review', label: '待审批' },
+  { value: 'approved', label: '已审批' },
+  { value: 'rejected', label: '已拒绝' },
+  { value: 'deprecated', label: '已废弃' },
 ];
 
 // 工具类型筛选选项
 const TYPE_OPTIONS: Array<{ value: ToolType | ''; label: string }> = [
   { value: '', label: '全部类型' },
-  { value: 'MCP_SERVER', label: 'MCP Server' },
-  { value: 'API', label: 'API' },
-  { value: 'FUNCTION', label: 'Function' },
+  { value: 'mcp_server', label: 'MCP Server' },
+  { value: 'api', label: 'API' },
+  { value: 'function', label: 'Function' },
 ];
 
 interface ToolListProps {

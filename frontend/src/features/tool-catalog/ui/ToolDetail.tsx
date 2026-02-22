@@ -72,12 +72,12 @@ export function ToolDetail({ toolId, onBack }: ToolDetailProps) {
 
           {/* 操作按钮 */}
           <div className="flex gap-2">
-            {tool.status === 'DRAFT' && (
+            {tool.status === 'draft' && (
               <Button size="sm" loading={submitMutation.isPending} onClick={handleSubmit}>
                 提交审批
               </Button>
             )}
-            {tool.status === 'APPROVED' && (
+            {tool.status === 'approved' && (
               <Button
                 size="sm"
                 variant="outline"
@@ -87,7 +87,7 @@ export function ToolDetail({ toolId, onBack }: ToolDetailProps) {
                 废弃
               </Button>
             )}
-            {(tool.status === 'DRAFT' || tool.status === 'REJECTED') && (
+            {(tool.status === 'draft' || tool.status === 'rejected') && (
               <Button
                 size="sm"
                 variant="outline"
@@ -125,7 +125,7 @@ export function ToolDetail({ toolId, onBack }: ToolDetailProps) {
         </div>
 
         {/* 拒绝原因 */}
-        {tool.status === 'REJECTED' && tool.rejected_reason && (
+        {tool.status === 'rejected' && tool.rejected_reason && (
           <div className="mt-4 rounded-md border border-red-200 bg-red-50 px-4 py-3">
             <h4 className="text-sm font-medium text-red-800">拒绝原因</h4>
             <p className="mt-1 text-sm text-red-700">{tool.rejected_reason}</p>

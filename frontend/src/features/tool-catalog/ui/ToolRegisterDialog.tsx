@@ -13,16 +13,16 @@ import type { ToolType } from '../api/types';
 
 // 工具类型选项
 const TOOL_TYPE_OPTIONS: Array<{ value: ToolType; label: string; description: string }> = [
-  { value: 'MCP_SERVER', label: 'MCP Server', description: '基于 MCP 协议的工具服务' },
-  { value: 'API', label: 'API', description: '外部 REST/GraphQL API 接口' },
-  { value: 'FUNCTION', label: 'Function', description: '自定义函数工具' },
+  { value: 'mcp_server', label: 'MCP Server', description: '基于 MCP 协议的工具服务' },
+  { value: 'api', label: 'API', description: '外部 REST/GraphQL API 接口' },
+  { value: 'function', label: 'Function', description: '自定义函数工具' },
 ];
 
 // 表单验证 schema
 const createToolSchema = z.object({
   name: z.string().min(1, '请输入工具名称').max(100, '名称不超过 100 个字符'),
   description: z.string().min(1, '请输入工具描述').max(500, '描述不超过 500 个字符'),
-  tool_type: z.enum(['MCP_SERVER', 'API', 'FUNCTION'] as const),
+  tool_type: z.enum(['mcp_server', 'api', 'function'] as const),
   version: z.string().optional(),
 });
 
@@ -49,7 +49,7 @@ export function ToolRegisterDialog({ open, onClose, onSuccess }: ToolRegisterDia
   } = useForm<CreateToolFormData>({
     resolver: zodResolver(createToolSchema),
     defaultValues: {
-      tool_type: 'MCP_SERVER',
+      tool_type: 'mcp_server',
     },
   });
 

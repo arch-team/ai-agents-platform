@@ -2,18 +2,18 @@
 
 import type { PageResponse } from '@/shared/types';
 
-// 工具类型
-export type ToolType = 'MCP_SERVER' | 'API' | 'FUNCTION';
+// 工具类型（与后端 Python ToolType 枚举值一致：小写）
+export type ToolType = 'mcp_server' | 'api' | 'function';
 
 // 工具类型显示名
 export const TOOL_TYPE_LABELS: Record<ToolType, string> = {
-  MCP_SERVER: 'MCP Server',
-  API: 'API',
-  FUNCTION: 'Function',
+  mcp_server: 'MCP Server',
+  api: 'API',
+  function: 'Function',
 };
 
-// 工具状态
-export type ToolStatus = 'DRAFT' | 'PENDING_REVIEW' | 'APPROVED' | 'REJECTED' | 'DEPRECATED';
+// 工具状态（与后端 Python ToolStatus 枚举值一致：小写）
+export type ToolStatus = 'draft' | 'pending_review' | 'approved' | 'rejected' | 'deprecated';
 
 // 工具实体
 export interface Tool {

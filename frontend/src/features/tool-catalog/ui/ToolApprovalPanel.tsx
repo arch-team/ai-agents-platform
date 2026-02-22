@@ -21,7 +21,7 @@ export function ToolApprovalPanel({ tool }: ToolApprovalPanelProps) {
   const rejectMutation = useRejectTool();
 
   // 仅在 PENDING_REVIEW 状态时显示审批面板
-  if (tool.status !== 'PENDING_REVIEW') {
+  if (tool.status !== 'pending_review') {
     return null;
   }
 

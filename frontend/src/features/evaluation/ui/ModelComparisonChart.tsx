@@ -90,7 +90,11 @@ export function ModelComparisonChart({ pipelines }: ModelComparisonChartProps) {
               height={60}
             />
             <YAxis tick={{ fontSize: 12 }} domain={[0, 1]} />
-            <Tooltip formatter={(value: number) => value.toFixed(2)} />
+            <Tooltip
+              formatter={(value: number | string | undefined) =>
+                typeof value === 'number' ? value.toFixed(2) : (value ?? '')
+              }
+            />
             <Legend />
             {scoreKeys.map((key, index) => (
               <Bar
