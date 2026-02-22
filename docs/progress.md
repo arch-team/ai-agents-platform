@@ -5,7 +5,7 @@
 ## 当前状态
 
 - **阶段**: Phase 5 Agent 驱动的企业智能 (18-30 月) — **M14 🔄 进行中**
-- **里程碑**: Phase 4 全闭 ✅ → M13（自动化评估）✅ → Phase 5: **M14（Builder MCP + SSO）🔄** → M15（规模运营）
+- **里程碑**: Phase 4 全闭 ✅ → M13（自动化评估）✅ → Phase 5: M14（Builder MCP + SSO）✅ → **M15（规模运营）**
 - **变更积压**: Phase 2-3: 24/24 ✅ | Phase 4: 19/19 ✅ | AgentCore P3: 5/5 ✅ | Phase 5: 0/5 🔄
 - **关键发现**: 无当前阻断项
 - **Dev 环境**: 后端 ECS (256 CPU/512 MiB) + 前端 S3 + CORS + Bedrock IAM ✅ | ALB `ai-agents-dev-546356512.us-east-1.elb.amazonaws.com`
@@ -16,7 +16,7 @@
 - **后端模块**: 10 个 (9 业务 + shared) + evaluation 扩展 | **前端**: 190+ 源文件, FSD 架构, 12 页面
 - **SDK**: claude-agent-sdk 0.1.35 | bedrock-agentcore 1.3.0
 - **环境策略**: Dev (开发+验证) + Prod (生产)，无 Staging (v1.4 简化)
-- **下一步**: **M14 全量质量门通过 ✅ → 待 Prod 部署**（#16 进行中）
+- **下一步**: **M14 全部完成 ✅**（#1-#16 全闭）。下一个里程碑：M15 规模运营
 
 ## 模块状态
 
@@ -974,6 +974,7 @@ auth SSO (#10-#12)    ── 100% 并行 ──── ┤──► 前端 (#13-#
 | # | 日期 | 类型 | 完成项 | 关键决策 |
 |---|------|------|-------|---------|
 | 57 | 2026-02-22 | 测试 | AgentCore Gateway 完整 E2E 验证: 5 个新测试文件 31 测试(25 集成+6 E2E); 覆盖 execution MCP 配置构建 + agent_entrypoint gateway 传递 + tool_catalog Gateway 注册/注销链路 + 事件处理器 + 生命周期 E2E; ruff ✅ mypy ✅ 25 集成测试全通过 | 集成测试 mock 粒度在 boto3 客户端层; Gateway 失败不阻断业务操作 |
+| 57 | 2026-02-22 | M14 后端+前端+CDK 全闭 | **M14 #1-#16 全部完成**: builder模块(IAgentCreator接口+ClaudeBuilderAdapter+DDD四层+46测试); auth SAML扩展(SsoService+python3-saml3+SSO端点); 前端BuilderPage(SSE三层架构+左右分栏)+AdminPage+LoginPage SSO入口; CDK SecurityStack(SamlSpSecret+IdP SSM+2 CfnOutput+4测试); 质量门: ruff✅ mypy✅ 2051后端✅ 196infra✅ 399前端✅ | IAgentCreator接口解决builder→agents架构合规; providers.py是唯一Composition Root; 两路并行迁移ID冲突=Mid Review必查项 |
 | 56 | 2026-02-22 | M14 启动 + Phase 5 季度评审 | Phase 5 季度评审完成 — M13 成果验收(1954/192/372 测试全绿)、五维度扫描、M14 风险决策、16任务拆解；progress.md 更新（当前状态/M14任务表/Phase 5变更积压C-S5-1~5）；M14 三路并行启动：builder模块(#1-#9) + auth SSO(#10-#12) | SAML必须/LDAP可选(降R3); ClaudeBuilderAdapter复用claude_agent_sdk; builder→agents直接依赖(DTO解耦,无需IAgentQuerier) |
 | 55 | 2026-02-22 | M13 全闭 + Agent Teams 并行开发 | **3路并行**: cdk-agent(CDK Eval CloudWatch面板) + pipeline-agent(EvalPipeline视图类型对齐) + template-agent(使用此模板功能); M13 #11/#12 全部完成; **修复工具目录3个Bug**: ToolStatus/ToolType大小写不一致(致命崩溃) + ?tool_type→?type参数名错误(过滤失效) + ModelComparisonChart TS类型错误; **E2E**: 工具目录 24/25=96%通过; frontend-deploy.yml/backend-deploy.yml CI/CD补全; Dev ECS定时关机问题排查 | Agent Teams 最佳实践: 3个独立代码路径可真正并行(infra/evaluation/templates+agents); cdk-agent发现EventBridge+IAM已存在(幽灵实现); E2E比文档更可靠 |
 | 54 | 2026-02-21 | 增量发布 (Dev + Prod) | **M13 增量发布**: ruff ✅ mypy ✅ 1954 tests 88.48% ✅; CDK diff 确认只有 Docker 镜像哈希变更 (`10900203`→`c758c0ca`); compute-dev 部署成功 (4.5min Rolling Update ✅); Dev 健康验证 health/ready/M13 API 401 ✅; compute-prod 部署成功 (3.5min Rolling Update ✅); Prod 健康验证通过 ✅; **backend-deploy.yml 新增**: 修复 backend/** 变更不触发部署的 CI/CD 缺口 | CDK fromAsset 内容哈希驱动部署: `cdk deploy compute-*` 自动构建镜像+推送ECR+更新ECS; 401=端点存在(非404)是验证部署的快速方法; 覆盖率单元测试84.68%<85% 但全量(含集成)88.48%✅ |
