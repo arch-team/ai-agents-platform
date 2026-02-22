@@ -16,7 +16,7 @@
 - **后端模块**: 10 个 (9 业务 + shared) + **evaluation 扩展 (EvalPipeline)** | **前端**: 190 源文件, FSD 架构, 12 页面
 - **SDK**: claude-agent-sdk 0.1.35 | bedrock-agentcore 1.3.0
 - **环境策略**: Dev (开发+验证) + Prod (生产)，无 Staging (v1.4 简化)
-- **下一步**: M13 实施完成（9 文件/+58 测试/86.72% 覆盖率）。待完成：EventBridge 定时触发规则 + CDK IAM 权限 + 前端 EvaluationPage Pipeline 视图
+- **下一步**: **M13 全部完成 ✅**（#1-#12 全闭）。下一个里程碑：M14 Builder MCP Server
 
 ## 模块状态
 
@@ -634,8 +634,8 @@ Session 5:  #14 (质量验收) + progress.md 更新
 | 8 | EvalPipelineRepositoryImpl (PydanticRepository 多重继承) | 已完成 | #3, #7 | `rules/architecture.md` §5.4 | 2026-02-21 |
 | 9 | API 端点 (POST/GET /eval-suites/{id}/pipelines) + Schema + DI | 已完成 | #5, #8 | `rules/api-design.md` | 2026-02-21 |
 | 10 | 质量验收: ruff ✅ mypy ✅ 1884 后端测试 86.72% ✅ 架构合规 14/14 ✅ | 已完成 | #1-#9 | `rules/checklist.md` | 2026-02-21 |
-| 11 | CDK 基础设施: EventBridge 定时规则 + IAM Eval 权限 + CloudWatch 质量面板 | 待开始 | #10 | infra 规范 | - |
-| 12 | 前端: EvaluationPage Pipeline 视图 + 模型对比 Dashboard | 待开始 | #10 | FSD 架构 | - |
+| 11 | CDK 基础设施: EventBridge 定时规则 + IAM Eval 权限 + CloudWatch 质量面板 | 已完成 | #10 | infra 规范 | 2026-02-22 |
+| 12 | 前端: EvaluationPage Pipeline 视图 + 模型对比 Dashboard | 已完成 | #10 | FSD 架构 | 2026-02-22 |
 
 #### M13 关键设计决策
 
@@ -889,6 +889,7 @@ Session 5:  #14 (质量验收) + progress.md 更新
 
 | # | 日期 | 类型 | 完成项 | 关键决策 |
 |---|------|------|-------|---------|
+| 55 | 2026-02-22 | M13 全闭 + Agent Teams 并行开发 | **3路并行**: cdk-agent(CDK Eval CloudWatch面板) + pipeline-agent(EvalPipeline视图类型对齐) + template-agent(使用此模板功能); M13 #11/#12 全部完成; **修复工具目录3个Bug**: ToolStatus/ToolType大小写不一致(致命崩溃) + ?tool_type→?type参数名错误(过滤失效) + ModelComparisonChart TS类型错误; **E2E**: 工具目录 24/25=96%通过; frontend-deploy.yml/backend-deploy.yml CI/CD补全; Dev ECS定时关机问题排查 | Agent Teams 最佳实践: 3个独立代码路径可真正并行(infra/evaluation/templates+agents); cdk-agent发现EventBridge+IAM已存在(幽灵实现); E2E比文档更可靠 |
 | 54 | 2026-02-21 | 增量发布 (Dev + Prod) | **M13 增量发布**: ruff ✅ mypy ✅ 1954 tests 88.48% ✅; CDK diff 确认只有 Docker 镜像哈希变更 (`10900203`→`c758c0ca`); compute-dev 部署成功 (4.5min Rolling Update ✅); Dev 健康验证 health/ready/M13 API 401 ✅; compute-prod 部署成功 (3.5min Rolling Update ✅); Prod 健康验证通过 ✅; **backend-deploy.yml 新增**: 修复 backend/** 变更不触发部署的 CI/CD 缺口 | CDK fromAsset 内容哈希驱动部署: `cdk deploy compute-*` 自动构建镜像+推送ECR+更新ECS; 401=端点存在(非404)是验证部署的快速方法; 覆盖率单元测试84.68%<85% 但全量(含集成)88.48%✅ |
 | 53 | 2026-02-21 | Phase 5 规划 + M13 实施 | **Phase 5 设计**: 深度 AWS 集成方案 (5A Bedrock Eval + 5B Builder MCP + 5C billing) 批准，设计文档 committed; **M13 实施**: Subagent 驱动开发 10 任务全完成 — PipelineStatus/EvalPipeline/IEvalPipelineRepository/IEvalService/EvalPipelineService/BedrockEvalAdapter/ORM+迁移/RepositoryImpl/API 端点; 1884 tests ✅ 86.72% ✅ ruff ✅ mypy ✅ | IRepository 方法名为 create/update/get_by_id (非 save/get); asyncio.to_thread 包装同步 boto3 是项目标准模式; MySQL TEXT 列不支持 ORM default= |
 | 52 | 2026-02-20 | 质量门控 + 知识沉淀 | **质量门控**: 后端 ruff/mypy/pytest 1857/86.45% ✅; 前端 lint/format/test 355 ✅; Infra lint/format/test 184 ✅; **修复**: RUF003 noqa + vitest E2E 排除 + CDK快照更新 + seed_templates 期望值; **project-learnings 更新**: M5→M12 250→508行 (3新维度/ADR汇总/Agent Teams踩坑); **rules 更新**: checklist log.exception检查 + deployment CDK 目录/context规范; rollout-plan Wave 3状态更新 | vitest.config.ts 需显式排除 E2E; log.exception vs log.warning 不对称=静默失败风险; CDK deploy 必须在 infra/ 目录且加 --context env=prod |
