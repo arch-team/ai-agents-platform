@@ -112,13 +112,10 @@ class TestSuiteService:
         page_size: int = 20,
     ) -> PagedResult[TestSuiteDTO]:
         """获取当前用户的测试集列表（分页）。"""
-        import asyncio
-
         offset = (page - 1) * page_size
-        suites, total = await asyncio.gather(
-            self._suite_repo.list_by_owner(current_user_id, offset=offset, limit=page_size),
-            self._suite_repo.count_by_owner(current_user_id),
-        )
+        # SQLAlchemy AsyncSession 不支持同一 session 的并发操作, 必须顺序执行
+        suites = await self._suite_repo.list_by_owner(current_user_id, offset=offset, limit=page_size)
+        total = await self._suite_repo.count_by_owner(current_user_id)
         return PagedResult(
             items=[self._to_suite_dto(s) for s in suites],
             total=total,
@@ -199,14 +196,11 @@ class TestSuiteService:
         page_size: int = 20,
     ) -> PagedResult[TestCaseDTO]:
         """列出测试集的测试用例。"""
-        import asyncio
-
         await self._get_owned_suite(suite_id, current_user_id)
         offset = (page - 1) * page_size
-        cases, total = await asyncio.gather(
-            self._case_repo.list_by_suite(suite_id, offset=offset, limit=page_size),
-            self._case_repo.count_by_suite(suite_id),
-        )
+        # SQLAlchemy AsyncSession 不支持同一 session 的并发操作, 必须顺序执行
+        cases = await self._case_repo.list_by_suite(suite_id, offset=offset, limit=page_size)
+        total = await self._case_repo.count_by_suite(suite_id)
         return PagedResult(
             items=[self._to_case_dto(c) for c in cases],
             total=total,

@@ -225,20 +225,22 @@ class ToolCatalogService:
         page_size: int = 20,
     ) -> PagedResult[ToolDTO]:
         """获取 Tool 列表，支持多维筛选和分页。"""
-        import asyncio
-
         offset = (page - 1) * page_size
 
-        tools, total = await asyncio.gather(
-            self._repository.list_filtered(
-                creator_id=creator_id,
-                status=status,
-                tool_type=tool_type,
-                keyword=keyword,
-                offset=offset,
-                limit=page_size,
-            ),
-            self._repository.count_filtered(creator_id=creator_id, status=status, tool_type=tool_type, keyword=keyword),
+        # SQLAlchemy AsyncSession 不支持同一 session 的并发操作, 必须顺序执行
+        tools = await self._repository.list_filtered(
+            creator_id=creator_id,
+            status=status,
+            tool_type=tool_type,
+            keyword=keyword,
+            offset=offset,
+            limit=page_size,
+        )
+        total = await self._repository.count_filtered(
+            creator_id=creator_id,
+            status=status,
+            tool_type=tool_type,
+            keyword=keyword,
         )
 
         return PagedResult(
@@ -255,14 +257,11 @@ class ToolCatalogService:
         page_size: int = 20,
     ) -> PagedResult[ToolDTO]:
         """获取已批准的 Tool 列表（任意认证用户可访问）。"""
-        import asyncio
-
         offset = (page - 1) * page_size
 
-        tools, total = await asyncio.gather(
-            self._repository.list_approved(offset=offset, limit=page_size),
-            self._repository.count_approved(),
-        )
+        # SQLAlchemy AsyncSession 不支持同一 session 的并发操作, 必须顺序执行
+        tools = await self._repository.list_approved(offset=offset, limit=page_size)
+        total = await self._repository.count_approved()
 
         return PagedResult(
             items=[self._to_dto(t) for t in tools],

@@ -98,25 +98,18 @@ class InsightsService:
         page_size: int = 20,
     ) -> PagedResult[UsageRecordDTO]:
         """获取使用记录列表 (按用户或 Agent 过滤)。"""
-        import asyncio
-
         offset = (page - 1) * page_size
 
+        # SQLAlchemy AsyncSession 不支持同一 session 的并发操作, 必须顺序执行
         if user_id is not None:
-            items, total = await asyncio.gather(
-                self._usage_repo.list_by_user(user_id, offset=offset, limit=page_size),
-                self._usage_repo.count_by_user(user_id),
-            )
+            items = await self._usage_repo.list_by_user(user_id, offset=offset, limit=page_size)
+            total = await self._usage_repo.count_by_user(user_id)
         elif agent_id is not None:
-            items, total = await asyncio.gather(
-                self._usage_repo.list_by_agent(agent_id, offset=offset, limit=page_size),
-                self._usage_repo.count_by_agent(agent_id),
-            )
+            items = await self._usage_repo.list_by_agent(agent_id, offset=offset, limit=page_size)
+            total = await self._usage_repo.count_by_agent(agent_id)
         else:
-            items, total = await asyncio.gather(
-                self._usage_repo.list(offset=offset, limit=page_size),
-                self._usage_repo.count(),
-            )
+            items = await self._usage_repo.list(offset=offset, limit=page_size)
+            total = await self._usage_repo.count()
 
         return PagedResult(
             items=[self._to_dto(r) for r in items],
@@ -181,15 +174,11 @@ class InsightsService:
         end: datetime,
     ) -> InsightsSummaryDTO:
         """获取 Insights 概览 — 组合 Cost Explorer + Repository 聚合。"""
-        import asyncio
-
         self._validate_date_range(start, end)
 
-        # Repository 聚合 + Agent 计数并发执行
-        stats, distinct_agents = await asyncio.gather(
-            self._usage_repo.get_aggregated_stats(start=start, end=end),
-            self._usage_repo.count_distinct_agents(start=start, end=end),
-        )
+        # SQLAlchemy AsyncSession 不支持同一 session 的并发操作, 必须顺序执行
+        stats = await self._usage_repo.get_aggregated_stats(start=start, end=end)
+        distinct_agents = await self._usage_repo.count_distinct_agents(start=start, end=end)
 
         # Cost Explorer 真实成本 (降级为 0.0)
         total_cost = 0.0
