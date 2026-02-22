@@ -19,7 +19,7 @@ class TestTeamExecutionStartedEvent:
     def test_started_event_fields(self) -> None:
         """验证 execution_id, agent_id, user_id。"""
         event = TeamExecutionStartedEvent(
-            execution_id=1, agent_id=5, user_id=10
+            execution_id=1, agent_id=5, user_id=10,
         )
         assert event.execution_id == 1
         assert event.agent_id == 5
@@ -30,13 +30,13 @@ class TestTeamExecutionStartedEvent:
 
     def test_has_event_id(self) -> None:
         event = TeamExecutionStartedEvent(
-            execution_id=1, agent_id=5, user_id=10
+            execution_id=1, agent_id=5, user_id=10,
         )
         assert isinstance(event.event_id, UUID)
 
     def test_has_occurred_at(self) -> None:
         event = TeamExecutionStartedEvent(
-            execution_id=1, agent_id=5, user_id=10
+            execution_id=1, agent_id=5, user_id=10,
         )
         assert event.occurred_at is not None
 
@@ -78,7 +78,7 @@ class TestTeamExecutionFailedEvent:
     def test_failed_event_fields(self) -> None:
         """验证 execution_id, user_id, error_message。"""
         event = TeamExecutionFailedEvent(
-            execution_id=1, user_id=10, error_message="超时错误"
+            execution_id=1, user_id=10, error_message="超时错误",
         )
         assert event.execution_id == 1
         assert event.user_id == 10

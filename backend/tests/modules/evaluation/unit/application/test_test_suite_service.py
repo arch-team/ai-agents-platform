@@ -20,7 +20,6 @@ from src.modules.evaluation.domain.exceptions import (
 )
 from src.modules.evaluation.domain.value_objects.test_suite_status import TestSuiteStatus
 from src.shared.domain.exceptions import ForbiddenError
-
 from tests.modules.evaluation.conftest import make_test_case, make_test_suite
 
 

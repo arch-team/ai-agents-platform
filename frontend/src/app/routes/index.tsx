@@ -24,6 +24,8 @@ const KnowledgeListPage = lazy(() => import('@/pages/knowledge/list'));
 const KnowledgeDetailPage = lazy(() => import('@/pages/knowledge/detail'));
 const TemplateListPage = lazy(() => import('@/pages/templates/list'));
 const TemplateDetailPage = lazy(() => import('@/pages/templates/detail'));
+const BuilderPage = lazy(() => import('@/pages/builder'));
+const AdminPage = lazy(() => import('@/pages/admin'));
 const NotFoundPage = lazy(() => import('@/pages/not-found'));
 
 // 延迟加载布局组件
@@ -57,6 +59,8 @@ export function AppRoutes() {
             <Route path="/knowledge/:knowledgeBaseId" element={<KnowledgeDetailPage />} />
             <Route path="/templates" element={<TemplateListPage />} />
             <Route path="/templates/:templateId" element={<TemplateDetailPage />} />
+            <Route path="/builder" element={<BuilderPage />} />
+            <Route path="/admin" element={<AdminPage />} />
           </Route>
         </Route>
 

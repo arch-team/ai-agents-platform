@@ -11,3 +11,8 @@ class IUserRepository(IRepository[User, int]):
 
     @abstractmethod
     async def get_by_email(self, email: str) -> User | None: ...  # noqa: D102
+
+    @abstractmethod
+    async def get_by_sso_subject(self, sso_provider: str, sso_subject: str) -> User | None:
+        """根据 SSO 提供者和 Subject 查找用户。"""
+        ...

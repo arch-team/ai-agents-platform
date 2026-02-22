@@ -93,7 +93,7 @@ class TestAgentRuntimeMock:
 
         mock_runtime = AsyncMock(spec=IAgentRuntime)
 
-        async def mock_stream(_request: AgentRequest):  # noqa: ANN202
+        async def mock_stream(_request: AgentRequest):
             for c in chunks:
                 yield c
 

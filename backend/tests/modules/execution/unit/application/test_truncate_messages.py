@@ -2,14 +2,12 @@
 
 import pytest
 
-from src.modules.execution.domain.entities.message import Message
-from src.modules.execution.domain.value_objects.message_role import MessageRole
-
-
 # 直接测试静态方法, 无需构建完整 ExecutionService
 from src.modules.execution.application.services.execution_service import (
     ExecutionService,
 )
+from src.modules.execution.domain.entities.message import Message
+from src.modules.execution.domain.value_objects.message_role import MessageRole
 
 
 def _make_messages(count: int, *, token_count: int = 100) -> list[Message]:
@@ -24,7 +22,7 @@ def _make_messages(count: int, *, token_count: int = 100) -> list[Message]:
                 role=role,
                 content=f"消息 {i + 1}",
                 token_count=token_count,
-            )
+            ),
         )
     return messages
 

@@ -1,6 +1,6 @@
 """DomainEvent 基类测试。"""
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from uuid import UUID
 
 import pytest
@@ -23,13 +23,13 @@ class TestDomainEvent:
     def test_event_has_occurred_at_timestamp(self) -> None:
         """事件自动记录 occurred_at 时间戳。"""
         # Arrange
-        before = datetime.now(timezone.utc)
+        before = datetime.now(UTC)
 
         # Act
         event = DomainEvent()
 
         # Assert
-        after = datetime.now(timezone.utc)
+        after = datetime.now(UTC)
         assert isinstance(event.occurred_at, datetime)
         assert before <= event.occurred_at <= after
         assert event.occurred_at.tzinfo is not None

@@ -5,6 +5,7 @@ from datetime import UTC, datetime, timedelta
 from pydantic import EmailStr, Field
 
 from src.modules.auth.domain.value_objects.role import Role
+from src.modules.auth.domain.value_objects.sso_provider import SsoProvider
 from src.shared.domain.base_entity import PydanticEntity
 
 
@@ -18,6 +19,8 @@ class User(PydanticEntity):
     is_active: bool = True
     failed_login_count: int = 0
     locked_until: datetime | None = None
+    sso_provider: SsoProvider = SsoProvider.INTERNAL
+    sso_subject: str | None = None  # SAML NameID / LDAP DN, SSO 用户唯一标识
 
     @property
     def is_locked(self) -> bool:

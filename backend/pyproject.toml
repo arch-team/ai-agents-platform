@@ -40,6 +40,8 @@ dependencies = [
     # 安全
     "PyJWT>=2.8.0",
     "bcrypt>=4.0.0",
+    # SSO / SAML
+    "python3-saml>=1.16.0",
     # 日志
     "structlog>=24.1.0",
     # 工具
@@ -352,6 +354,7 @@ module = [
     "google.*",
     "grpc.*",
     "sse_starlette.*",
+    "onelogin.*",
 ]
 ignore_missing_imports = true
 

@@ -1,7 +1,8 @@
 """S3DocumentStorage 单元测试。"""
 
-import pytest
 from unittest.mock import MagicMock
+
+import pytest
 
 from src.modules.knowledge.infrastructure.external.s3_document_storage import S3DocumentStorage
 

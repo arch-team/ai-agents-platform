@@ -1,8 +1,8 @@
 """Auth API dependencies 单元测试。"""
 
-import pytest
 from unittest.mock import AsyncMock
 
+import pytest
 from fastapi.security import HTTPAuthorizationCredentials
 from pydantic import SecretStr
 

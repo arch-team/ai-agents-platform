@@ -11,9 +11,11 @@ from typing import Annotated
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.modules.agents.application.services.agent_service import AgentService
 from src.modules.agents.infrastructure.persistence.repositories.agent_repository_impl import (
     AgentRepositoryImpl,
 )
+from src.modules.agents.infrastructure.services.agent_creator_impl import AgentCreatorImpl
 from src.modules.agents.infrastructure.services.agent_querier_impl import AgentQuerierImpl
 from src.modules.knowledge.api.dependencies import get_bedrock_knowledge_client
 from src.modules.knowledge.infrastructure.persistence.repositories.knowledge_base_repository_impl import (
@@ -24,6 +26,7 @@ from src.modules.tool_catalog.infrastructure.persistence.repositories.tool_repos
     ToolRepositoryImpl,
 )
 from src.modules.tool_catalog.infrastructure.services.tool_querier_impl import ToolQuerierImpl
+from src.shared.domain.interfaces.agent_creator import IAgentCreator
 from src.shared.domain.interfaces.agent_querier import IAgentQuerier
 from src.shared.domain.interfaces.knowledge_querier import IKnowledgeQuerier
 from src.shared.domain.interfaces.tool_querier import IToolQuerier
@@ -53,6 +56,15 @@ async def get_agent_querier(
     """创建 IAgentQuerier 实例。"""
     agent_repo = AgentRepositoryImpl(session=session)
     return AgentQuerierImpl(agent_repository=agent_repo)
+
+
+async def get_agent_creator(
+    session: Annotated[AsyncSession, Depends(get_db)],
+) -> IAgentCreator:
+    """创建 IAgentCreator 实例（供 builder 模块使用）。"""
+    agent_repo = AgentRepositoryImpl(session=session)
+    agent_service = AgentService(repository=agent_repo)
+    return AgentCreatorImpl(agent_service=agent_service)
 
 
 async def get_tool_querier(

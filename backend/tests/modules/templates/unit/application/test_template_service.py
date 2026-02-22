@@ -15,7 +15,6 @@ from src.modules.templates.domain.exceptions import (
 )
 from src.modules.templates.domain.value_objects.template_status import TemplateStatus
 from src.shared.domain.exceptions import DomainError, InvalidStateTransitionError
-
 from tests.modules.templates.conftest import make_template
 
 

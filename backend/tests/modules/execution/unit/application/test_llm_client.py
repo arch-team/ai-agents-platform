@@ -57,7 +57,7 @@ class TestLLMStreamChunk:
 class TestILLMClient:
     def test_is_abstract_class(self) -> None:
         assert ILLMClient.__abstractmethods__ == frozenset(
-            {"invoke", "invoke_stream"}
+            {"invoke", "invoke_stream"},
         )
 
     def test_cannot_instantiate(self) -> None:

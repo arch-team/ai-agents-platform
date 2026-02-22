@@ -1,7 +1,8 @@
 """AgentQuerierImpl 单元测试。"""
 
-import pytest
 from unittest.mock import AsyncMock
+
+import pytest
 
 from src.modules.agents.domain import Agent, AgentConfig, AgentStatus, IAgentRepository
 from src.modules.agents.infrastructure import AgentQuerierImpl
@@ -9,7 +10,7 @@ from src.shared.domain import ActiveAgentInfo, IAgentQuerier
 
 
 def _make_agent(
-    *, status: AgentStatus = AgentStatus.ACTIVE, agent_id: int = 1
+    *, status: AgentStatus = AgentStatus.ACTIVE, agent_id: int = 1,
 ) -> Agent:
     return Agent(
         id=agent_id,

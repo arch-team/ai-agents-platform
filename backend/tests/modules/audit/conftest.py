@@ -70,7 +70,7 @@ def audit_service(mock_audit_repo: AsyncMock) -> AuditService:
 def mock_event_bus():  # type: ignore[no-untyped-def]
     """Mock event_bus，自动 patch AuditService 中的 event_bus。"""
     with patch(
-        "src.modules.audit.application.services.audit_service.event_bus"
+        "src.modules.audit.application.services.audit_service.event_bus",
     ) as mock_bus:
         mock_bus.publish_async = AsyncMock()
         yield mock_bus

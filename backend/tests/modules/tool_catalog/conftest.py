@@ -62,7 +62,7 @@ def tool_service(mock_tool_repo: AsyncMock) -> ToolCatalogService:
 def mock_event_bus():
     """Mock event_bus，自动 patch ToolCatalogService 中的 event_bus。"""
     with patch(
-        "src.modules.tool_catalog.application.services.tool_service.event_bus"
+        "src.modules.tool_catalog.application.services.tool_service.event_bus",
     ) as mock_bus:
         mock_bus.publish_async = AsyncMock()
         yield mock_bus

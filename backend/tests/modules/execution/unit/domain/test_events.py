@@ -17,7 +17,7 @@ from src.shared.domain.events import DomainEvent
 class TestConversationCreatedEvent:
     def test_fields(self) -> None:
         event = ConversationCreatedEvent(
-            conversation_id=1, agent_id=5, user_id=10
+            conversation_id=1, agent_id=5, user_id=10,
         )
         assert event.conversation_id == 1
         assert event.agent_id == 5
@@ -28,13 +28,13 @@ class TestConversationCreatedEvent:
 
     def test_has_event_id(self) -> None:
         event = ConversationCreatedEvent(
-            conversation_id=1, agent_id=5, user_id=10
+            conversation_id=1, agent_id=5, user_id=10,
         )
         assert isinstance(event.event_id, UUID)
 
     def test_has_occurred_at(self) -> None:
         event = ConversationCreatedEvent(
-            conversation_id=1, agent_id=5, user_id=10
+            conversation_id=1, agent_id=5, user_id=10,
         )
         assert event.occurred_at is not None
 
@@ -43,7 +43,7 @@ class TestConversationCreatedEvent:
 class TestMessageSentEvent:
     def test_fields(self) -> None:
         event = MessageSentEvent(
-            conversation_id=1, message_id=10, user_id=5
+            conversation_id=1, message_id=10, user_id=5,
         )
         assert event.conversation_id == 1
         assert event.message_id == 10

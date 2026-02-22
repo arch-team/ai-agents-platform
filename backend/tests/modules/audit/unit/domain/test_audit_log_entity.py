@@ -4,7 +4,6 @@ import pytest
 from pydantic import ValidationError
 
 from src.modules.audit.domain.entities.audit_log import AuditAction, AuditCategory, AuditLog
-
 from tests.modules.audit.conftest import make_audit_log
 
 

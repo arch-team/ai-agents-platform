@@ -1,7 +1,8 @@
 """IRepository 泛型接口测试。"""
 
-import pytest
 from abc import ABC
+
+import pytest
 
 from src.shared.domain.base_entity import PydanticEntity
 from src.shared.domain.repositories import IRepository

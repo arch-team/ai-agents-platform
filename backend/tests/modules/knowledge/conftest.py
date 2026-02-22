@@ -119,7 +119,7 @@ def knowledge_service(
 def mock_event_bus():
     """Mock event_bus，自动 patch KnowledgeService 中的 event_bus。"""
     with patch(
-        "src.modules.knowledge.application.services.knowledge_service.event_bus"
+        "src.modules.knowledge.application.services.knowledge_service.event_bus",
     ) as mock_bus:
         mock_bus.publish_async = AsyncMock()
         yield mock_bus

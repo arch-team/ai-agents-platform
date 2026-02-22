@@ -14,11 +14,30 @@ class UserRepositoryImpl(PydanticRepository[User, UserModel, int], IUserReposito
     entity_class = User
     model_class = UserModel
     _updatable_fields: frozenset[str] = frozenset(
-        {"name", "role", "is_active", "hashed_password", "failed_login_count", "locked_until", "updated_at"},
+        {
+            "name",
+            "role",
+            "is_active",
+            "hashed_password",
+            "failed_login_count",
+            "locked_until",
+            "sso_provider",
+            "sso_subject",
+            "updated_at",
+        },
     )
 
     async def get_by_email(self, email: str) -> User | None:  # noqa: D102
         stmt = select(UserModel).where(UserModel.email == email)
+        result = await self._session.execute(stmt)
+        model = result.scalar_one_or_none()
+        return self._to_entity(model) if model else None
+
+    async def get_by_sso_subject(self, sso_provider: str, sso_subject: str) -> User | None:  # noqa: D102
+        stmt = select(UserModel).where(
+            UserModel.sso_provider == sso_provider,
+            UserModel.sso_subject == sso_subject,
+        )
         result = await self._session.execute(stmt)
         model = result.scalar_one_or_none()
         return self._to_entity(model) if model else None

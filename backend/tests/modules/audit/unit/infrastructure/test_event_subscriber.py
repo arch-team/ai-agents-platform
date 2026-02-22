@@ -1,7 +1,7 @@
 """事件订阅器单元测试 — 验证 DomainEvent → AuditLog 映射。"""
 
 from dataclasses import dataclass
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock
 
 import pytest
 

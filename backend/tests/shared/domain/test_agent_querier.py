@@ -105,7 +105,7 @@ class TestIAgentQuerier:
     def test_has_abstract_method(self) -> None:
         assert hasattr(IAgentQuerier, "get_active_agent")
         assert getattr(
-            IAgentQuerier.get_active_agent, "__isabstractmethod__", False
+            IAgentQuerier.get_active_agent, "__isabstractmethod__", False,
         )
 
     def test_concrete_implementation(self) -> None:
@@ -113,7 +113,7 @@ class TestIAgentQuerier:
 
         class ConcreteQuerier(IAgentQuerier):
             async def get_active_agent(
-                self, agent_id: int
+                self, agent_id: int,
             ) -> ActiveAgentInfo | None:
                 return None
 

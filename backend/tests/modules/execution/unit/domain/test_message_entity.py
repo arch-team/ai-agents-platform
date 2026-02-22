@@ -55,6 +55,6 @@ class TestMessageCreation:
 
     def test_assistant_role_message(self) -> None:
         message = Message(
-            conversation_id=1, role=MessageRole.ASSISTANT, content="你好"
+            conversation_id=1, role=MessageRole.ASSISTANT, content="你好",
         )
         assert message.role == MessageRole.ASSISTANT

@@ -106,16 +106,16 @@ class TestStatsSummary:
 
 
 def _override_deps(
-    app,  # noqa: ANN001
+    app,
     engine: AsyncEngine,
     user: UserDTO,
-):  # noqa: ANN202
+):
     """覆盖 FastAPI 依赖，返回 session factory 用于 seeding。"""
     from sqlalchemy.ext.asyncio import async_sessionmaker
 
     factory = async_sessionmaker(engine, expire_on_commit=False)
 
-    async def _get_db():  # noqa: ANN202
+    async def _get_db():
         async with factory() as session:
             yield session
 

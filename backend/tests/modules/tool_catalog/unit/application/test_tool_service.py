@@ -1,7 +1,8 @@
 """ToolCatalogService 测试。"""
 
-import pytest
 from unittest.mock import AsyncMock
+
+import pytest
 
 from src.modules.tool_catalog.application.dto.tool_dto import (
     CreateToolDTO,
@@ -22,7 +23,6 @@ from src.shared.domain.exceptions import (
     DomainError,
     InvalidStateTransitionError,
 )
-
 from tests.modules.tool_catalog.conftest import make_tool
 
 
@@ -30,7 +30,7 @@ from tests.modules.tool_catalog.conftest import make_tool
 class TestToolCatalogServiceCreate:
     @pytest.mark.asyncio
     async def test_create_tool_success(
-        self, mock_tool_repo: AsyncMock, tool_service: ToolCatalogService, mock_event_bus: AsyncMock
+        self, mock_tool_repo: AsyncMock, tool_service: ToolCatalogService, mock_event_bus: AsyncMock,
     ) -> None:
         mock_tool_repo.get_by_name_and_creator.return_value = None
         mock_tool_repo.create.side_effect = lambda t: make_tool(
@@ -51,7 +51,7 @@ class TestToolCatalogServiceCreate:
 
     @pytest.mark.asyncio
     async def test_create_tool_duplicate_name_raises(
-        self, mock_tool_repo: AsyncMock, tool_service: ToolCatalogService
+        self, mock_tool_repo: AsyncMock, tool_service: ToolCatalogService,
     ) -> None:
         mock_tool_repo.get_by_name_and_creator.return_value = make_tool(name="已存在")
 
@@ -64,7 +64,7 @@ class TestToolCatalogServiceCreate:
 
     @pytest.mark.asyncio
     async def test_create_tool_uses_dto_config(
-        self, mock_tool_repo: AsyncMock, tool_service: ToolCatalogService, mock_event_bus: AsyncMock
+        self, mock_tool_repo: AsyncMock, tool_service: ToolCatalogService, mock_event_bus: AsyncMock,
     ) -> None:
         mock_tool_repo.get_by_name_and_creator.return_value = None
         created_tool: Tool | None = None
@@ -108,7 +108,7 @@ class TestToolCatalogServiceCreate:
 class TestToolCatalogServiceGet:
     @pytest.mark.asyncio
     async def test_get_tool_returns_dto(
-        self, mock_tool_repo: AsyncMock, tool_service: ToolCatalogService
+        self, mock_tool_repo: AsyncMock, tool_service: ToolCatalogService,
     ) -> None:
         mock_tool_repo.get_by_id.return_value = make_tool()
 
@@ -119,7 +119,7 @@ class TestToolCatalogServiceGet:
 
     @pytest.mark.asyncio
     async def test_get_tool_not_found_raises(
-        self, mock_tool_repo: AsyncMock, tool_service: ToolCatalogService
+        self, mock_tool_repo: AsyncMock, tool_service: ToolCatalogService,
     ) -> None:
         mock_tool_repo.get_by_id.return_value = None
 
@@ -128,7 +128,7 @@ class TestToolCatalogServiceGet:
 
     @pytest.mark.asyncio
     async def test_get_owned_tool_success(
-        self, mock_tool_repo: AsyncMock, tool_service: ToolCatalogService
+        self, mock_tool_repo: AsyncMock, tool_service: ToolCatalogService,
     ) -> None:
         mock_tool_repo.get_by_id.return_value = make_tool(creator_id=100)
 
@@ -138,7 +138,7 @@ class TestToolCatalogServiceGet:
 
     @pytest.mark.asyncio
     async def test_get_owned_tool_non_owner_raises(
-        self, mock_tool_repo: AsyncMock, tool_service: ToolCatalogService
+        self, mock_tool_repo: AsyncMock, tool_service: ToolCatalogService,
     ) -> None:
         mock_tool_repo.get_by_id.return_value = make_tool(creator_id=100)
 
@@ -150,7 +150,7 @@ class TestToolCatalogServiceGet:
 class TestToolCatalogServiceUpdate:
     @pytest.mark.asyncio
     async def test_update_draft_tool_success(
-        self, mock_tool_repo: AsyncMock, tool_service: ToolCatalogService, mock_event_bus: AsyncMock
+        self, mock_tool_repo: AsyncMock, tool_service: ToolCatalogService, mock_event_bus: AsyncMock,
     ) -> None:
         mock_tool_repo.get_by_id.return_value = make_tool(status=ToolStatus.DRAFT)
         mock_tool_repo.get_by_name_and_creator.return_value = None
@@ -166,7 +166,7 @@ class TestToolCatalogServiceUpdate:
 
     @pytest.mark.asyncio
     async def test_update_rejected_tool_success(
-        self, mock_tool_repo: AsyncMock, tool_service: ToolCatalogService, mock_event_bus: AsyncMock
+        self, mock_tool_repo: AsyncMock, tool_service: ToolCatalogService, mock_event_bus: AsyncMock,
     ) -> None:
         mock_tool_repo.get_by_id.return_value = make_tool(status=ToolStatus.REJECTED)
         mock_tool_repo.get_by_name_and_creator.return_value = None
@@ -179,7 +179,7 @@ class TestToolCatalogServiceUpdate:
 
     @pytest.mark.asyncio
     async def test_update_non_owner_raises(
-        self, mock_tool_repo: AsyncMock, tool_service: ToolCatalogService
+        self, mock_tool_repo: AsyncMock, tool_service: ToolCatalogService,
     ) -> None:
         mock_tool_repo.get_by_id.return_value = make_tool(creator_id=100)
 
@@ -190,7 +190,7 @@ class TestToolCatalogServiceUpdate:
 
     @pytest.mark.asyncio
     async def test_update_approved_tool_raises(
-        self, mock_tool_repo: AsyncMock, tool_service: ToolCatalogService
+        self, mock_tool_repo: AsyncMock, tool_service: ToolCatalogService,
     ) -> None:
         mock_tool_repo.get_by_id.return_value = make_tool(status=ToolStatus.APPROVED)
 
@@ -201,11 +201,11 @@ class TestToolCatalogServiceUpdate:
 
     @pytest.mark.asyncio
     async def test_update_duplicate_name_raises(
-        self, mock_tool_repo: AsyncMock, tool_service: ToolCatalogService
+        self, mock_tool_repo: AsyncMock, tool_service: ToolCatalogService,
     ) -> None:
         mock_tool_repo.get_by_id.return_value = make_tool(status=ToolStatus.DRAFT, name="原始名称")
         mock_tool_repo.get_by_name_and_creator.return_value = make_tool(
-            tool_id=2, name="已存在"
+            tool_id=2, name="已存在",
         )
 
         dto = UpdateToolDTO(name="已存在")
@@ -215,7 +215,7 @@ class TestToolCatalogServiceUpdate:
 
     @pytest.mark.asyncio
     async def test_update_partial_fields(
-        self, mock_tool_repo: AsyncMock, tool_service: ToolCatalogService, mock_event_bus: AsyncMock
+        self, mock_tool_repo: AsyncMock, tool_service: ToolCatalogService, mock_event_bus: AsyncMock,
     ) -> None:
         mock_tool_repo.get_by_id.return_value = make_tool(status=ToolStatus.DRAFT)
         mock_tool_repo.update.side_effect = lambda t: t
@@ -231,7 +231,7 @@ class TestToolCatalogServiceUpdate:
 class TestToolCatalogServiceDelete:
     @pytest.mark.asyncio
     async def test_delete_draft_tool_success(
-        self, mock_tool_repo: AsyncMock, tool_service: ToolCatalogService, mock_event_bus: AsyncMock
+        self, mock_tool_repo: AsyncMock, tool_service: ToolCatalogService, mock_event_bus: AsyncMock,
     ) -> None:
         mock_tool_repo.get_by_id.return_value = make_tool(status=ToolStatus.DRAFT)
 
@@ -242,7 +242,7 @@ class TestToolCatalogServiceDelete:
 
     @pytest.mark.asyncio
     async def test_delete_non_draft_raises(
-        self, mock_tool_repo: AsyncMock, tool_service: ToolCatalogService
+        self, mock_tool_repo: AsyncMock, tool_service: ToolCatalogService,
     ) -> None:
         mock_tool_repo.get_by_id.return_value = make_tool(status=ToolStatus.APPROVED)
 
@@ -251,7 +251,7 @@ class TestToolCatalogServiceDelete:
 
     @pytest.mark.asyncio
     async def test_delete_non_owner_raises(
-        self, mock_tool_repo: AsyncMock, tool_service: ToolCatalogService
+        self, mock_tool_repo: AsyncMock, tool_service: ToolCatalogService,
     ) -> None:
         mock_tool_repo.get_by_id.return_value = make_tool(creator_id=100)
 
@@ -263,7 +263,7 @@ class TestToolCatalogServiceDelete:
 class TestToolCatalogServiceList:
     @pytest.mark.asyncio
     async def test_list_tools_returns_paged_result(
-        self, mock_tool_repo: AsyncMock, tool_service: ToolCatalogService
+        self, mock_tool_repo: AsyncMock, tool_service: ToolCatalogService,
     ) -> None:
         mock_tool_repo.list_filtered.return_value = [
             make_tool(tool_id=1, name="T1"),
@@ -280,7 +280,7 @@ class TestToolCatalogServiceList:
 
     @pytest.mark.asyncio
     async def test_list_tools_empty(
-        self, mock_tool_repo: AsyncMock, tool_service: ToolCatalogService
+        self, mock_tool_repo: AsyncMock, tool_service: ToolCatalogService,
     ) -> None:
         mock_tool_repo.list_filtered.return_value = []
         mock_tool_repo.count_filtered.return_value = 0
@@ -292,7 +292,7 @@ class TestToolCatalogServiceList:
 
     @pytest.mark.asyncio
     async def test_list_tools_with_filters(
-        self, mock_tool_repo: AsyncMock, tool_service: ToolCatalogService
+        self, mock_tool_repo: AsyncMock, tool_service: ToolCatalogService,
     ) -> None:
         mock_tool_repo.list_filtered.return_value = [
             make_tool(tool_id=1, status=ToolStatus.APPROVED),
@@ -318,7 +318,7 @@ class TestToolCatalogServiceList:
 
     @pytest.mark.asyncio
     async def test_list_tools_pagination(
-        self, mock_tool_repo: AsyncMock, tool_service: ToolCatalogService
+        self, mock_tool_repo: AsyncMock, tool_service: ToolCatalogService,
     ) -> None:
         mock_tool_repo.list_filtered.return_value = [
             make_tool(tool_id=3, name="T3"),
@@ -344,7 +344,7 @@ class TestToolCatalogServiceList:
 class TestToolCatalogServiceListApproved:
     @pytest.mark.asyncio
     async def test_list_approved_tools_returns_paged_result(
-        self, mock_tool_repo: AsyncMock, tool_service: ToolCatalogService
+        self, mock_tool_repo: AsyncMock, tool_service: ToolCatalogService,
     ) -> None:
         mock_tool_repo.list_approved.return_value = [
             make_tool(tool_id=1, status=ToolStatus.APPROVED),
@@ -359,7 +359,7 @@ class TestToolCatalogServiceListApproved:
 
     @pytest.mark.asyncio
     async def test_list_approved_tools_empty(
-        self, mock_tool_repo: AsyncMock, tool_service: ToolCatalogService
+        self, mock_tool_repo: AsyncMock, tool_service: ToolCatalogService,
     ) -> None:
         mock_tool_repo.list_approved.return_value = []
         mock_tool_repo.count_approved.return_value = 0
@@ -374,7 +374,7 @@ class TestToolCatalogServiceListApproved:
 class TestToolCatalogServiceSubmit:
     @pytest.mark.asyncio
     async def test_submit_draft_tool_success(
-        self, mock_tool_repo: AsyncMock, tool_service: ToolCatalogService, mock_event_bus: AsyncMock
+        self, mock_tool_repo: AsyncMock, tool_service: ToolCatalogService, mock_event_bus: AsyncMock,
     ) -> None:
         tool = make_tool(
             status=ToolStatus.DRAFT,
@@ -392,7 +392,7 @@ class TestToolCatalogServiceSubmit:
 
     @pytest.mark.asyncio
     async def test_submit_non_draft_raises(
-        self, mock_tool_repo: AsyncMock, tool_service: ToolCatalogService
+        self, mock_tool_repo: AsyncMock, tool_service: ToolCatalogService,
     ) -> None:
         mock_tool_repo.get_by_id.return_value = make_tool(status=ToolStatus.APPROVED)
 
@@ -401,7 +401,7 @@ class TestToolCatalogServiceSubmit:
 
     @pytest.mark.asyncio
     async def test_submit_non_owner_raises(
-        self, mock_tool_repo: AsyncMock, tool_service: ToolCatalogService
+        self, mock_tool_repo: AsyncMock, tool_service: ToolCatalogService,
     ) -> None:
         mock_tool_repo.get_by_id.return_value = make_tool(creator_id=100)
 
@@ -413,7 +413,7 @@ class TestToolCatalogServiceSubmit:
 class TestToolCatalogServiceApprove:
     @pytest.mark.asyncio
     async def test_approve_pending_tool_success(
-        self, mock_tool_repo: AsyncMock, tool_service: ToolCatalogService, mock_event_bus: AsyncMock
+        self, mock_tool_repo: AsyncMock, tool_service: ToolCatalogService, mock_event_bus: AsyncMock,
     ) -> None:
         tool = make_tool(
             status=ToolStatus.PENDING_REVIEW,
@@ -432,7 +432,7 @@ class TestToolCatalogServiceApprove:
 
     @pytest.mark.asyncio
     async def test_approve_non_pending_raises(
-        self, mock_tool_repo: AsyncMock, tool_service: ToolCatalogService
+        self, mock_tool_repo: AsyncMock, tool_service: ToolCatalogService,
     ) -> None:
         mock_tool_repo.get_by_id.return_value = make_tool(status=ToolStatus.DRAFT)
 
@@ -444,7 +444,7 @@ class TestToolCatalogServiceApprove:
 class TestToolCatalogServiceReject:
     @pytest.mark.asyncio
     async def test_reject_pending_tool_success(
-        self, mock_tool_repo: AsyncMock, tool_service: ToolCatalogService, mock_event_bus: AsyncMock
+        self, mock_tool_repo: AsyncMock, tool_service: ToolCatalogService, mock_event_bus: AsyncMock,
     ) -> None:
         tool = make_tool(
             status=ToolStatus.PENDING_REVIEW,
@@ -464,7 +464,7 @@ class TestToolCatalogServiceReject:
 
     @pytest.mark.asyncio
     async def test_reject_non_pending_raises(
-        self, mock_tool_repo: AsyncMock, tool_service: ToolCatalogService
+        self, mock_tool_repo: AsyncMock, tool_service: ToolCatalogService,
     ) -> None:
         mock_tool_repo.get_by_id.return_value = make_tool(status=ToolStatus.DRAFT)
 
@@ -473,7 +473,7 @@ class TestToolCatalogServiceReject:
 
     @pytest.mark.asyncio
     async def test_reject_records_comment(
-        self, mock_tool_repo: AsyncMock, tool_service: ToolCatalogService, mock_event_bus: AsyncMock
+        self, mock_tool_repo: AsyncMock, tool_service: ToolCatalogService, mock_event_bus: AsyncMock,
     ) -> None:
         tool = make_tool(
             status=ToolStatus.PENDING_REVIEW,
@@ -484,7 +484,7 @@ class TestToolCatalogServiceReject:
         mock_tool_repo.update.side_effect = lambda t: t
 
         result = await tool_service.reject_tool(
-            1, reviewer_id=200, comment="描述不够详细"
+            1, reviewer_id=200, comment="描述不够详细",
         )
 
         assert result.review_comment == "描述不够详细"
@@ -496,7 +496,7 @@ class TestToolCatalogServiceReject:
 class TestToolCatalogServiceDeprecate:
     @pytest.mark.asyncio
     async def test_deprecate_approved_tool_success(
-        self, mock_tool_repo: AsyncMock, tool_service: ToolCatalogService, mock_event_bus: AsyncMock
+        self, mock_tool_repo: AsyncMock, tool_service: ToolCatalogService, mock_event_bus: AsyncMock,
     ) -> None:
         mock_tool_repo.get_by_id.return_value = make_tool(status=ToolStatus.APPROVED)
         mock_tool_repo.update.side_effect = lambda t: t
@@ -509,7 +509,7 @@ class TestToolCatalogServiceDeprecate:
 
     @pytest.mark.asyncio
     async def test_deprecate_non_approved_raises(
-        self, mock_tool_repo: AsyncMock, tool_service: ToolCatalogService
+        self, mock_tool_repo: AsyncMock, tool_service: ToolCatalogService,
     ) -> None:
         mock_tool_repo.get_by_id.return_value = make_tool(status=ToolStatus.DRAFT)
 
@@ -518,7 +518,7 @@ class TestToolCatalogServiceDeprecate:
 
     @pytest.mark.asyncio
     async def test_deprecate_non_owner_raises(
-        self, mock_tool_repo: AsyncMock, tool_service: ToolCatalogService
+        self, mock_tool_repo: AsyncMock, tool_service: ToolCatalogService,
     ) -> None:
         mock_tool_repo.get_by_id.return_value = make_tool(status=ToolStatus.APPROVED, creator_id=100)
 

@@ -20,7 +20,7 @@ from src.shared.domain.events import DomainEvent
 class TestToolCreatedEvent:
     def test_fields(self) -> None:
         event = ToolCreatedEvent(
-            tool_id=1, creator_id=10, name="Test Tool", tool_type="mcp_server"
+            tool_id=1, creator_id=10, name="Test Tool", tool_type="mcp_server",
         )
         assert event.tool_id == 1
         assert event.creator_id == 10
@@ -43,7 +43,7 @@ class TestToolCreatedEvent:
 class TestToolUpdatedEvent:
     def test_fields(self) -> None:
         event = ToolUpdatedEvent(
-            tool_id=1, creator_id=10, changed_fields=("name", "description")
+            tool_id=1, creator_id=10, changed_fields=("name", "description"),
         )
         assert event.tool_id == 1
         assert event.creator_id == 10
@@ -91,7 +91,7 @@ class TestToolApprovedEvent:
 class TestToolRejectedEvent:
     def test_fields(self) -> None:
         event = ToolRejectedEvent(
-            tool_id=1, creator_id=10, reviewer_id=99, comment="配置不完整"
+            tool_id=1, creator_id=10, reviewer_id=99, comment="配置不完整",
         )
         assert event.tool_id == 1
         assert event.creator_id == 10

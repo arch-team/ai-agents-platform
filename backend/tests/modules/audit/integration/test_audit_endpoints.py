@@ -8,9 +8,9 @@ from fastapi.testclient import TestClient
 
 from src.modules.audit.api.dependencies import get_audit_service
 from src.modules.audit.application.dto.audit_log_dto import AuditLogDTO, AuditStatsDTO
+from src.modules.audit.domain.exceptions import AuditNotFoundError
 from src.modules.auth.api.dependencies import get_current_user
 from src.modules.auth.application.dto.user_dto import UserDTO
-from src.modules.audit.domain.exceptions import AuditNotFoundError
 from src.presentation.api.main import create_app
 from src.shared.application.dtos import PagedResult
 
@@ -73,7 +73,7 @@ def admin_user() -> UserDTO:
 
 
 @pytest.fixture
-def app(mock_service: AsyncMock, admin_user: UserDTO):  # noqa: ANN201
+def app(mock_service: AsyncMock, admin_user: UserDTO):
     test_app = create_app()
     test_app.dependency_overrides[get_audit_service] = lambda: mock_service
     test_app.dependency_overrides[get_current_user] = lambda: admin_user
@@ -81,7 +81,7 @@ def app(mock_service: AsyncMock, admin_user: UserDTO):  # noqa: ANN201
 
 
 @pytest.fixture
-def client(app) -> TestClient:  # noqa: ANN001
+def client(app) -> TestClient:
     return TestClient(app)
 
 
@@ -274,22 +274,22 @@ class TestExportAuditLogsEndpoint:
 class TestAuditEndpointRoutes:
     """路由注册验证。"""
 
-    def test_audit_list_endpoint_exists(self, app) -> None:  # noqa: ANN001
+    def test_audit_list_endpoint_exists(self, app) -> None:
         routes = [r.path for r in app.routes]
         assert "/api/v1/audit-logs" in routes
 
-    def test_audit_detail_endpoint_exists(self, app) -> None:  # noqa: ANN001
+    def test_audit_detail_endpoint_exists(self, app) -> None:
         routes = [r.path for r in app.routes]
         assert "/api/v1/audit-logs/{audit_log_id}" in routes
 
-    def test_audit_stats_endpoint_exists(self, app) -> None:  # noqa: ANN001
+    def test_audit_stats_endpoint_exists(self, app) -> None:
         routes = [r.path for r in app.routes]
         assert "/api/v1/audit-logs/stats" in routes
 
-    def test_audit_resource_endpoint_exists(self, app) -> None:  # noqa: ANN001
+    def test_audit_resource_endpoint_exists(self, app) -> None:
         routes = [r.path for r in app.routes]
         assert "/api/v1/audit-logs/resource/{resource_type}/{resource_id}" in routes
 
-    def test_audit_export_endpoint_exists(self, app) -> None:  # noqa: ANN001
+    def test_audit_export_endpoint_exists(self, app) -> None:
         routes = [r.path for r in app.routes]
         assert "/api/v1/audit-logs/export" in routes

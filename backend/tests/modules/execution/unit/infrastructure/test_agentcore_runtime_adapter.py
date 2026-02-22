@@ -1,6 +1,6 @@
 """AgentCoreRuntimeAdapter 单元测试。"""
 
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -64,7 +64,7 @@ class TestAgentCoreRuntimeAdapterExecute:
         mock_client.invoke_inline_agent.return_value = {
             "completion": [
                 {"chunk": {"bytes": b"\xe4\xbd\xa0\xe5\xa5\xbd"}},  # "你好"
-                {"chunk": {"bytes": "！有什么可以帮助你？".encode("utf-8")}},
+                {"chunk": {"bytes": "！有什么可以帮助你？".encode()}},
             ],
         }
 
@@ -94,7 +94,7 @@ class TestAgentCoreRuntimeAdapterExecute:
         mock_client = MagicMock()
         mock_client.invoke_inline_agent.return_value = {
             "completion": [
-                {"chunk": {"bytes": "内容".encode("utf-8")}},
+                {"chunk": {"bytes": "内容".encode()}},
                 {"trace": {"agentTrace": {}}},  # trace 事件，应被忽略
                 {"returnControl": {}},  # returnControl 事件，应被忽略
             ],
@@ -121,7 +121,7 @@ class TestAgentCoreRuntimeAdapterExecute:
         """DomainError 直接透传，不被二次包装。"""
         mock_client = MagicMock()
         mock_client.invoke_inline_agent.side_effect = DomainError(
-            message="配额超限", code="QUOTA_EXCEEDED"
+            message="配额超限", code="QUOTA_EXCEEDED",
         )
 
         adapter = AgentCoreRuntimeAdapter(client=mock_client)
@@ -176,8 +176,8 @@ class TestAgentCoreRuntimeAdapterExecuteStream:
         mock_client = MagicMock()
         mock_client.invoke_inline_agent.return_value = {
             "completion": [
-                {"chunk": {"bytes": "第一段".encode("utf-8")}},
-                {"chunk": {"bytes": "第二段".encode("utf-8")}},
+                {"chunk": {"bytes": "第一段".encode()}},
+                {"chunk": {"bytes": "第二段".encode()}},
             ],
         }
 
@@ -222,7 +222,7 @@ class TestAgentCoreRuntimeAdapterExecuteStream:
         mock_client = MagicMock()
         mock_client.invoke_inline_agent.return_value = {
             "completion": [
-                {"chunk": {"bytes": "内容".encode("utf-8")}},
+                {"chunk": {"bytes": "内容".encode()}},
                 {"trace": {"agentTrace": {}}},
             ],
         }

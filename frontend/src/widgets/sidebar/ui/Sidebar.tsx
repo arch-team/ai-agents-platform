@@ -12,6 +12,8 @@ import {
   WrenchIcon,
   BarChartIcon,
   ClipboardCheckIcon,
+  BuilderIcon,
+  SettingsIcon,
   type IconProps,
 } from '@/shared/ui';
 
@@ -51,6 +53,11 @@ const navGroups: NavGroup[] = [
         label: 'Agent 列表',
         path: '/agents',
         Icon: AgentIcon,
+      },
+      {
+        label: 'Agent 构建器',
+        path: '/builder',
+        Icon: BuilderIcon,
       },
       {
         label: '对话',
@@ -96,6 +103,16 @@ const navGroups: NavGroup[] = [
         label: '评估',
         path: '/evaluation',
         Icon: ClipboardCheckIcon,
+      },
+    ],
+  },
+  {
+    title: '系统管理',
+    items: [
+      {
+        label: '系统设置',
+        path: '/admin',
+        Icon: SettingsIcon,
       },
     ],
   },

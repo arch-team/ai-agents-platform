@@ -10,13 +10,13 @@ from src.modules.auth.api.dependencies import get_current_user
 from src.modules.auth.application.dto.user_dto import UserDTO
 from src.modules.templates.api.dependencies import get_template_service
 from src.modules.templates.application.dto.template_dto import TemplateDTO
-from src.shared.application.dtos import PagedResult
 from src.modules.templates.domain.exceptions import (
     DuplicateTemplateNameError,
     TemplateNotFoundError,
 )
-from src.shared.domain.exceptions import DomainError, InvalidStateTransitionError
 from src.presentation.api.main import create_app
+from src.shared.application.dtos import PagedResult
+from src.shared.domain.exceptions import DomainError, InvalidStateTransitionError
 
 
 def _make_user() -> UserDTO:

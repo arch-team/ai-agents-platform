@@ -10,12 +10,12 @@ from src.modules.auth.api.dependencies import get_current_user
 from src.modules.auth.application.dto.user_dto import UserDTO
 from src.modules.tool_catalog.api.dependencies import get_tool_service
 from src.modules.tool_catalog.application.dto.tool_dto import ToolDTO
-from src.shared.application.dtos import PagedResult
 from src.modules.tool_catalog.domain.exceptions import (
     ToolNameDuplicateError,
     ToolNotFoundError,
 )
 from src.presentation.api.main import create_app
+from src.shared.application.dtos import PagedResult
 from src.shared.domain.exceptions import InvalidStateTransitionError, ValidationError
 
 
@@ -101,7 +101,7 @@ def mock_admin_user() -> UserDTO:
 
 
 @pytest.fixture
-def app(mock_service: AsyncMock, mock_user: UserDTO):  # noqa: ANN201
+def app(mock_service: AsyncMock, mock_user: UserDTO):
     test_app = create_app()
     test_app.dependency_overrides[get_tool_service] = lambda: mock_service
     test_app.dependency_overrides[get_current_user] = lambda: mock_user
@@ -109,12 +109,12 @@ def app(mock_service: AsyncMock, mock_user: UserDTO):  # noqa: ANN201
 
 
 @pytest.fixture
-def client(app) -> TestClient:  # noqa: ANN001
+def client(app) -> TestClient:
     return TestClient(app)
 
 
 @pytest.fixture
-def admin_app(mock_service: AsyncMock, mock_admin_user: UserDTO):  # noqa: ANN201
+def admin_app(mock_service: AsyncMock, mock_admin_user: UserDTO):
     """ADMIN 角色的应用（approve/reject 需要 require_role）。"""
     test_app = create_app()
     test_app.dependency_overrides[get_tool_service] = lambda: mock_service
@@ -123,7 +123,7 @@ def admin_app(mock_service: AsyncMock, mock_admin_user: UserDTO):  # noqa: ANN20
 
 
 @pytest.fixture
-def admin_client(admin_app) -> TestClient:  # noqa: ANN001
+def admin_client(admin_app) -> TestClient:
     return TestClient(admin_app)
 
 
@@ -503,30 +503,30 @@ class TestDeprecateToolEndpoint:
 class TestToolCatalogEndpointsStructure:
     """Tool Catalog endpoint route structure tests."""
 
-    def test_tools_list_endpoint_exists(self, app) -> None:  # noqa: ANN001
+    def test_tools_list_endpoint_exists(self, app) -> None:
         routes = [r.path for r in app.routes]
         assert "/api/v1/tools" in routes
 
-    def test_tools_approved_endpoint_exists(self, app) -> None:  # noqa: ANN001
+    def test_tools_approved_endpoint_exists(self, app) -> None:
         routes = [r.path for r in app.routes]
         assert "/api/v1/tools/approved" in routes
 
-    def test_tools_detail_endpoint_exists(self, app) -> None:  # noqa: ANN001
+    def test_tools_detail_endpoint_exists(self, app) -> None:
         routes = [r.path for r in app.routes]
         assert "/api/v1/tools/{tool_id}" in routes
 
-    def test_submit_endpoint_exists(self, app) -> None:  # noqa: ANN001
+    def test_submit_endpoint_exists(self, app) -> None:
         routes = [r.path for r in app.routes]
         assert "/api/v1/tools/{tool_id}/submit" in routes
 
-    def test_approve_endpoint_exists(self, app) -> None:  # noqa: ANN001
+    def test_approve_endpoint_exists(self, app) -> None:
         routes = [r.path for r in app.routes]
         assert "/api/v1/tools/{tool_id}/approve" in routes
 
-    def test_reject_endpoint_exists(self, app) -> None:  # noqa: ANN001
+    def test_reject_endpoint_exists(self, app) -> None:
         routes = [r.path for r in app.routes]
         assert "/api/v1/tools/{tool_id}/reject" in routes
 
-    def test_deprecate_endpoint_exists(self, app) -> None:  # noqa: ANN001
+    def test_deprecate_endpoint_exists(self, app) -> None:
         routes = [r.path for r in app.routes]
         assert "/api/v1/tools/{tool_id}/deprecate" in routes

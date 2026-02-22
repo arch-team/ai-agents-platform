@@ -1,7 +1,8 @@
 """KnowledgeService 单元测试。"""
 
-import pytest
 from unittest.mock import AsyncMock
+
+import pytest
 
 from src.modules.knowledge.application.dto.knowledge_dto import (
     CreateKnowledgeBaseDTO,
@@ -27,7 +28,6 @@ from src.modules.knowledge.domain.value_objects.knowledge_base_status import (
     KnowledgeBaseStatus,
 )
 from src.shared.domain.exceptions import DomainError, InvalidStateTransitionError
-
 from tests.modules.knowledge.conftest import make_doc, make_kb
 
 
@@ -76,7 +76,7 @@ class TestCreateKnowledgeBase:
 
     @pytest.mark.asyncio
     async def test_create_duplicate_name_raises(
-        self, mock_kb_repo: AsyncMock, knowledge_service: KnowledgeService
+        self, mock_kb_repo: AsyncMock, knowledge_service: KnowledgeService,
     ) -> None:
         mock_kb_repo.get_by_name_and_owner.return_value = make_kb(name="已存在")
 
@@ -90,7 +90,7 @@ class TestCreateKnowledgeBase:
 class TestGetKnowledgeBase:
     @pytest.mark.asyncio
     async def test_get_success(
-        self, mock_kb_repo: AsyncMock, knowledge_service: KnowledgeService
+        self, mock_kb_repo: AsyncMock, knowledge_service: KnowledgeService,
     ) -> None:
         mock_kb_repo.get_by_id.return_value = make_kb()
 
@@ -101,7 +101,7 @@ class TestGetKnowledgeBase:
 
     @pytest.mark.asyncio
     async def test_get_not_found_raises(
-        self, mock_kb_repo: AsyncMock, knowledge_service: KnowledgeService
+        self, mock_kb_repo: AsyncMock, knowledge_service: KnowledgeService,
     ) -> None:
         mock_kb_repo.get_by_id.return_value = None
 
@@ -110,7 +110,7 @@ class TestGetKnowledgeBase:
 
     @pytest.mark.asyncio
     async def test_get_forbidden_raises(
-        self, mock_kb_repo: AsyncMock, knowledge_service: KnowledgeService
+        self, mock_kb_repo: AsyncMock, knowledge_service: KnowledgeService,
     ) -> None:
         mock_kb_repo.get_by_id.return_value = make_kb(owner_id=100)
 
@@ -122,7 +122,7 @@ class TestGetKnowledgeBase:
 class TestListKnowledgeBases:
     @pytest.mark.asyncio
     async def test_list_success(
-        self, mock_kb_repo: AsyncMock, knowledge_service: KnowledgeService
+        self, mock_kb_repo: AsyncMock, knowledge_service: KnowledgeService,
     ) -> None:
         mock_kb_repo.list_by_owner.return_value = [make_kb(kb_id=1), make_kb(kb_id=2)]
         mock_kb_repo.count_by_owner.return_value = 2
@@ -136,7 +136,7 @@ class TestListKnowledgeBases:
 
     @pytest.mark.asyncio
     async def test_list_empty(
-        self, mock_kb_repo: AsyncMock, knowledge_service: KnowledgeService
+        self, mock_kb_repo: AsyncMock, knowledge_service: KnowledgeService,
     ) -> None:
         mock_kb_repo.list_by_owner.return_value = []
         mock_kb_repo.count_by_owner.return_value = 0
@@ -151,7 +151,7 @@ class TestListKnowledgeBases:
 class TestUpdateKnowledgeBase:
     @pytest.mark.asyncio
     async def test_update_success(
-        self, mock_kb_repo: AsyncMock, knowledge_service: KnowledgeService
+        self, mock_kb_repo: AsyncMock, knowledge_service: KnowledgeService,
     ) -> None:
         mock_kb_repo.get_by_id.return_value = make_kb(status=KnowledgeBaseStatus.ACTIVE)
         mock_kb_repo.get_by_name_and_owner.return_value = None
@@ -166,7 +166,7 @@ class TestUpdateKnowledgeBase:
 
     @pytest.mark.asyncio
     async def test_update_non_active_raises(
-        self, mock_kb_repo: AsyncMock, knowledge_service: KnowledgeService
+        self, mock_kb_repo: AsyncMock, knowledge_service: KnowledgeService,
     ) -> None:
         mock_kb_repo.get_by_id.return_value = make_kb(status=KnowledgeBaseStatus.CREATING)
 
@@ -177,7 +177,7 @@ class TestUpdateKnowledgeBase:
 
     @pytest.mark.asyncio
     async def test_update_forbidden_raises(
-        self, mock_kb_repo: AsyncMock, knowledge_service: KnowledgeService
+        self, mock_kb_repo: AsyncMock, knowledge_service: KnowledgeService,
     ) -> None:
         mock_kb_repo.get_by_id.return_value = make_kb(owner_id=100)
 
@@ -188,7 +188,7 @@ class TestUpdateKnowledgeBase:
 
     @pytest.mark.asyncio
     async def test_update_duplicate_name_raises(
-        self, mock_kb_repo: AsyncMock, knowledge_service: KnowledgeService
+        self, mock_kb_repo: AsyncMock, knowledge_service: KnowledgeService,
     ) -> None:
         mock_kb_repo.get_by_id.return_value = make_kb(
             name="原名称", status=KnowledgeBaseStatus.ACTIVE,
@@ -225,7 +225,7 @@ class TestDeleteKnowledgeBase:
 
     @pytest.mark.asyncio
     async def test_delete_forbidden_raises(
-        self, mock_kb_repo: AsyncMock, knowledge_service: KnowledgeService
+        self, mock_kb_repo: AsyncMock, knowledge_service: KnowledgeService,
     ) -> None:
         mock_kb_repo.get_by_id.return_value = make_kb(owner_id=100)
 
@@ -277,7 +277,7 @@ class TestUploadDocument:
 
     @pytest.mark.asyncio
     async def test_upload_non_active_kb_raises(
-        self, mock_kb_repo: AsyncMock, knowledge_service: KnowledgeService
+        self, mock_kb_repo: AsyncMock, knowledge_service: KnowledgeService,
     ) -> None:
         mock_kb_repo.get_by_id.return_value = make_kb(status=KnowledgeBaseStatus.CREATING)
 
@@ -288,7 +288,7 @@ class TestUploadDocument:
 
     @pytest.mark.asyncio
     async def test_upload_forbidden_raises(
-        self, mock_kb_repo: AsyncMock, knowledge_service: KnowledgeService
+        self, mock_kb_repo: AsyncMock, knowledge_service: KnowledgeService,
     ) -> None:
         mock_kb_repo.get_by_id.return_value = make_kb(owner_id=100)
 
@@ -321,7 +321,7 @@ class TestListDocuments:
 
     @pytest.mark.asyncio
     async def test_list_forbidden_raises(
-        self, mock_kb_repo: AsyncMock, knowledge_service: KnowledgeService
+        self, mock_kb_repo: AsyncMock, knowledge_service: KnowledgeService,
     ) -> None:
         mock_kb_repo.get_by_id.return_value = make_kb(owner_id=100)
 
@@ -362,7 +362,7 @@ class TestDeleteDocument:
 
     @pytest.mark.asyncio
     async def test_delete_forbidden_raises(
-        self, mock_kb_repo: AsyncMock, knowledge_service: KnowledgeService
+        self, mock_kb_repo: AsyncMock, knowledge_service: KnowledgeService,
     ) -> None:
         mock_kb_repo.get_by_id.return_value = make_kb(owner_id=100)
 
@@ -401,7 +401,7 @@ class TestSyncKnowledgeBase:
 
     @pytest.mark.asyncio
     async def test_sync_non_active_raises(
-        self, mock_kb_repo: AsyncMock, knowledge_service: KnowledgeService
+        self, mock_kb_repo: AsyncMock, knowledge_service: KnowledgeService,
     ) -> None:
         mock_kb_repo.get_by_id.return_value = make_kb(status=KnowledgeBaseStatus.SYNCING)
 
@@ -410,7 +410,7 @@ class TestSyncKnowledgeBase:
 
     @pytest.mark.asyncio
     async def test_sync_forbidden_raises(
-        self, mock_kb_repo: AsyncMock, knowledge_service: KnowledgeService
+        self, mock_kb_repo: AsyncMock, knowledge_service: KnowledgeService,
     ) -> None:
         mock_kb_repo.get_by_id.return_value = make_kb(owner_id=100)
 
@@ -472,7 +472,7 @@ class TestQuery:
 
     @pytest.mark.asyncio
     async def test_query_non_queryable_raises(
-        self, mock_kb_repo: AsyncMock, knowledge_service: KnowledgeService
+        self, mock_kb_repo: AsyncMock, knowledge_service: KnowledgeService,
     ) -> None:
         mock_kb_repo.get_by_id.return_value = make_kb(status=KnowledgeBaseStatus.CREATING)
 
@@ -483,7 +483,7 @@ class TestQuery:
 
     @pytest.mark.asyncio
     async def test_query_forbidden_raises(
-        self, mock_kb_repo: AsyncMock, knowledge_service: KnowledgeService
+        self, mock_kb_repo: AsyncMock, knowledge_service: KnowledgeService,
     ) -> None:
         mock_kb_repo.get_by_id.return_value = make_kb(owner_id=100)
 

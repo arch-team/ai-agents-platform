@@ -137,7 +137,7 @@ class TestUserRepositoryImplList:
 
     @pytest.mark.asyncio
     async def test_list_users_with_pagination(
-        self, repo: UserRepositoryImpl, session: AsyncSession
+        self, repo: UserRepositoryImpl, session: AsyncSession,
     ) -> None:
         await repo.create(_make_user(email="a@example.com", name="User A"))
         await repo.create(_make_user(email="b@example.com", name="User B"))

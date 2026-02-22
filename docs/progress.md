@@ -4,19 +4,19 @@
 
 ## 当前状态
 
-- **阶段**: Phase 5 Agent 驱动的企业智能 (18-30 月) — **M13 🔄 进行中**
-- **里程碑**: Phase 4 全闭 ✅ → Phase 5: **M13（自动化评估）🔄** → M14（Builder）→ M15（规模运营）
-- **变更积压**: Phase 2-3: 24/24 ✅ | Phase 4: 19/19 ✅ | AgentCore P3: 5/5 ✅ | Phase 5 季度评审待启动
+- **阶段**: Phase 5 Agent 驱动的企业智能 (18-30 月) — **M14 🔄 进行中**
+- **里程碑**: Phase 4 全闭 ✅ → M13（自动化评估）✅ → Phase 5: **M14（Builder MCP + SSO）🔄** → M15（规模运营）
+- **变更积压**: Phase 2-3: 24/24 ✅ | Phase 4: 19/19 ✅ | AgentCore P3: 5/5 ✅ | Phase 5: 0/5 🔄
 - **关键发现**: 无当前阻断项
 - **Dev 环境**: 后端 ECS (256 CPU/512 MiB) + 前端 S3 + CORS + Bedrock IAM ✅ | ALB `ai-agents-dev-546356512.us-east-1.elb.amazonaws.com`
 - **Prod 环境**: 后端 ECS (512 CPU/1024 MiB/2 任务) + Aurora db.r6g.large (Writer+Reader) ✅ | ALB `ai-agents-prod-1419512933.us-east-1.elb.amazonaws.com`
 - **Stack 命名**: `ai-agents-plat-{stack}-{env}` (v1.4 规范化, 12 个 Stack 全部重建)
-- **测试**: 后端 1884 测试 + 基础设施 179 测试 + 前端 80+ 单元测试 + **57 E2E 测试** = **2200+ 测试**
-- **Eval 框架**: 11 个 eval 定义 (222 capability + 62 regression), 1,670 测试全部 PASS, 全部 READY
-- **后端模块**: 10 个 (9 业务 + shared) + **evaluation 扩展 (EvalPipeline)** | **前端**: 190 源文件, FSD 架构, 12 页面
+- **测试**: 后端 2051 测试 + 基础设施 192 测试 + 前端 399 单元测试 = **2642+ 测试**
+- **Eval 框架**: EvalPipeline 已实现 (BedrockEvalAdapter + EventBridge 定时触发 + CloudWatch 面板)
+- **后端模块**: 10 个 (9 业务 + shared) + evaluation 扩展 | **前端**: 190+ 源文件, FSD 架构, 12 页面
 - **SDK**: claude-agent-sdk 0.1.35 | bedrock-agentcore 1.3.0
 - **环境策略**: Dev (开发+验证) + Prod (生产)，无 Staging (v1.4 简化)
-- **下一步**: **M13 全部完成 ✅**（#1-#12 全闭）。下一个里程碑：M14 Builder MCP Server
+- **下一步**: **M14 #15 待开始**（CDK SecurityStack SAML/LDAP + 质量验收 + Prod 部署）
 
 ## 模块状态
 
@@ -646,6 +646,68 @@ Session 5:  #14 (质量验收) + progress.md 更新
 | 异常类型 | ClientError/BotoCoreError（非 Exception）| SDK-First 规范：精确捕获 SDK 异常 |
 | 测试模式 | pytest-asyncio + dependency_overrides | 项目标准，非 run_until_complete |
 
+### M14: 生态扩展 — Builder MCP + SSO (Phase 5B, 第 4-6 月)
+
+> 交付物: `builder` 新模块（对话式 Agent Builder，MCP 驱动）+ `auth` 扩展（SAML SSO）+ 前端 BuilderPage + CDK 安全变更
+> 验收标准: 非技术自主创建率 ≥70%；Builder 首响应 P95 < 5s；SAML SSO 登录全链路可用；ruff + mypy + pytest ≥85% 全通过
+> 实施方式: Subagent 驱动开发（16 任务，三路并行 + 双阶段 Review）
+> 技术方案: ClaudeBuilderAdapter（claude_agent_sdk 薄封装）+ python3-saml3（SAML）+ ldap3（LDAP 可选）
+
+#### 后端 builder 模块（#1-#9）— 与 auth SSO 100% 并行
+
+| # | 任务 | 状态 | 依赖 | 参考规范 | 会话 |
+|---|------|:----:|:----:|---------|------|
+| 1 | `builder/domain`: `BuilderSession` 实体 + `BuilderStatus` 枚举 + `BuilderMessage` 值对象 + 状态机 (create/generate/confirm/cancel) | 已完成 | - | `rules/architecture.md` §5 DDD | 2026-02-22 |
+| 2 | `builder/domain`: `IBuilderSessionRepository` 接口 + 模块异常 (BuilderSessionNotFound/BuilderSessionExpired) | 已完成 | #1 | `rules/architecture.md` §5.4 | 2026-02-22 |
+| 3 | `builder/application`: `IBuilderService` 接口 + `TriggerBuilderDTO` + `BuilderSessionDTO` + `BuilderService`（自然语言→MCP→`CreateAgentDTO`→确认→调用 AgentService 创建） | 已完成 | #2 | `rules/architecture.md` §5 | 2026-02-22 |
+| 4 | `builder/infrastructure`: `ClaudeBuilderAdapter`（`claude_agent_sdk` 薄封装，< 100 行，SSE 流式，asyncio.to_thread） | 已完成 | #3 | `rules/sdk-first.md` | 2026-02-22 |
+| 5 | `builder/infrastructure`: `BuilderSessionModel` ORM + `BuilderSessionRepositoryImpl` + Alembic 迁移 | 已完成 | #2 | `rules/tech-stack.md` | 2026-02-22 |
+| 6 | `builder/api`: `POST /builder/sessions`、`POST /builder/sessions/{id}/messages`（SSE）、`POST /builder/sessions/{id}/confirm` + Schema + DI | 已完成 | #3, #5 | `rules/api-design.md` | 2026-02-22 |
+| 7 | 模块注册: `main.py` 路由注册 + builder 异常映射 + `__init__.py` 导出 | 已完成 | #6 | `rules/architecture.md` §6.3 | 2026-02-22 |
+| 8 | tests: builder 单元测试（Domain 实体/状态机 + Application Service mock adapter） | 已完成 | #1-#3 | `rules/testing.md` TDD | 2026-02-22 |
+| 9 | tests: builder 集成测试（Repository + API 端点含 SSE + 架构合规）+ **Mid Review #1** | 已完成 | #4-#7, #8 | `rules/testing.md` | 2026-02-22 |
+
+#### auth 扩展 SSO（#10-#12）— 与 builder 100% 并行
+
+| # | 任务 | 状态 | 依赖 | 参考规范 | 会话 |
+|---|------|:----:|:----:|---------|------|
+| 10 | `auth` 扩展: `SsoProvider` 枚举（INTERNAL/SAML/LDAP）+ `SsoConfig` 值对象 + `SsoService`（SAML 2.0 SP，`python3-saml3`）+ User 表新增 `sso_provider` 字段 + Alembic 迁移 | 已完成 | - | `rules/security.md` + `rules/sdk-first.md` | 2026-02-22 |
+| 11 | `auth/api`: `GET /auth/sso/metadata`、`POST /auth/sso/init`、`GET /auth/sso/callback`（SAML 响应解析→JWT 签发）+ Secrets Manager 集成（SAML SP 私钥）| 已完成 | #10 | `rules/api-design.md` + `rules/security.md` | 2026-02-22 |
+| 12 | tests: SSO 单元测试（SAML 响应 mock + JWT 映射）+ 集成测试（SSO 端点）+ **Mid Review #2** | 已完成 | #10, #11 | `rules/testing.md` TDD | 2026-02-22 |
+
+#### 前端（#13-#14）— 依赖后端 API 完成
+
+| # | 任务 | 状态 | 依赖 | 参考规范 | 会话 |
+|---|------|:----:|:----:|---------|------|
+| 13 | 前端 `BuilderPage`（新建）：左侧对话框 SSE 流式展示配置草稿 + 右侧实时预览 `AgentConfig` + 底部确认创建；`LoginPage` 扩展企业 SSO 登录入口 | 已完成 | #6, #11 | FSD 架构 | 2026-02-22 |
+| 14 | 前端 `AdminPage` 增强：SSO 配置管理（SAML metadata 上传 + 连接测试）；前端测试 + 覆盖度验证 | 已完成 | #13 | FSD 架构 | 2026-02-22 |
+
+#### CDK 基础设施 + 质量验收（#15-#16）
+
+| # | 任务 | 状态 | 依赖 | 参考规范 | 会话 |
+|---|------|:----:|:----:|---------|------|
+| 15 | CDK: `SecurityStack` 新增 SAML IdP 元数据 SSM 参数 + LDAP SG 出站规则（port 389/636）+ Secrets Manager SAML SP 私钥；`ComputeStack` 新增 SSO callback ALB 路由 | 待开始 | #10 | infra 规范 |  |
+| 16 | 质量验收: `ruff` ✅ `mypy` ✅ `pytest` ≥85% ✅ `infra tests` ✅ + Builder 手动 E2E（对话→配置草稿→确认创建）+ M14 Prod 部署 | 待开始 | #1-#15 | `rules/checklist.md` |  |
+
+#### M14 并行策略
+
+```
+后端 builder (#1-#9)  ──────────────────┐
+auth SSO (#10-#12)    ── 100% 并行 ──── ┤──► 前端 (#13-#14) ──► CDK (#15) ──► 验收 (#16)
+                                         │
+                       三路并行，无交叉依赖
+```
+
+#### M14 关键设计决策
+
+| 决策 | 选择 | 理由 |
+|------|------|------|
+| ClaudeBuilderAdapter 实现 | `claude_agent_sdk.query()` 薄封装 | 复用 ADR-006 模式，避免重复建设 |
+| SAML 库 | `python3-saml3` | 活跃维护，无 C 依赖，与现有 PyJWT 不冲突 |
+| LDAP 库 | `ldap3`（M14 可选，M15 补全） | 纯 Python，asyncio.to_thread 封装友好 |
+| builder→agents 跨模块 | 直接依赖（DTO 边界解耦） | Builder 是 agents 创建入口，强依赖合理，无需 IAgentQuerier 抽象 |
+| SSO 交付范围 | SAML 必须，LDAP 可选 | 降低 R3 风险（LDAP 企业配置复杂度）|
+
 ---
 
 ## 变更积压 (Change Backlog)
@@ -730,6 +792,28 @@ Session 5:  #14 (质量验收) + progress.md 更新
 2. 让 Domain/DTO/Schema/ORM 统一引用常量，而非各写魔术数字
 3. `execution_service.py` 的构造函数应从 Settings 读取 `MAX_CONTEXT_TOKENS` / `SYSTEM_PROMPT_TOKEN_BUDGET`
 4. `database.py` 的 `pool_recycle` 应从 Settings 读取 `DB_POOL_RECYCLE`
+
+### Phase 5 变更积压 (来源: Phase 5 季度评审 2026-02-22)
+
+> **注入日期**: 2026-02-22 | **来源**: M13 完成后五维度扫描
+
+| 编号 | 变更描述 | 状态 | 依赖 | 来源 | 影响范围 | 参考规范 | 会话 |
+|------|---------|:----:|:----:|------|---------|---------|------|
+| C-S5-1 | `python3-saml3` + `ldap3` 依赖引入（`pyproject.toml` + `uv sync`） | 待开始 | - | Phase 5 季度评审 | backend/pyproject.toml | `rules/sdk-first.md` |  |
+| C-S5-2 | MyPy 存量 20 errors 治理（`# type: ignore` 注释或 stub 安装） | 待开始 | - | Phase 5 季度评审 | shared + modules | `rules/tech-stack.md` |  |
+| C-S5-3 | Builder SSE 与 execution SSE 并发隔离监控（CloudWatch 指标） | 待开始 | M14 #15 | Phase 5 季度评审 | infra/monitoring | infra 规范 |  |
+| C-S5-4 | LDAP SG 出站规则实际网络地址确认（依赖运维团队） | 待开始 | - | Phase 5 季度评审 | infra/SecurityStack | infra 规范 |  |
+| C-S5-5 | `AdminPage` LDAP 连接测试后端端点（`POST /auth/sso/ldap/test`） | 待开始 | M14 #10 | Phase 5 季度评审 | auth 模块 | `rules/api-design.md` |  |
+
+| 级别 | 数量 | 当前进度 |
+|------|:----:|---------|
+| S1 安全 | 1 (C-S5-1) | 0/1 🔄 |
+| S2 技术债务 | 2 (C-S5-2, C-S5-5) | 0/2 🔄 |
+| S3 运维 | 1 (C-S5-4) | 0/1 🔄 |
+| S4 监控 | 1 (C-S5-3) | 0/1 🔄 |
+| **合计** | **5** | **0/5 🔄** |
+
+---
 
 ### 变更统计
 
@@ -889,9 +973,9 @@ Session 5:  #14 (质量验收) + progress.md 更新
 
 | # | 日期 | 类型 | 完成项 | 关键决策 |
 |---|------|------|-------|---------|
+| 57 | 2026-02-22 | 测试 | AgentCore Gateway 完整 E2E 验证: 5 个新测试文件 31 测试(25 集成+6 E2E); 覆盖 execution MCP 配置构建 + agent_entrypoint gateway 传递 + tool_catalog Gateway 注册/注销链路 + 事件处理器 + 生命周期 E2E; ruff ✅ mypy ✅ 25 集成测试全通过 | 集成测试 mock 粒度在 boto3 客户端层; Gateway 失败不阻断业务操作 |
+| 56 | 2026-02-22 | M14 启动 + Phase 5 季度评审 | Phase 5 季度评审完成 — M13 成果验收(1954/192/372 测试全绿)、五维度扫描、M14 风险决策、16任务拆解；progress.md 更新（当前状态/M14任务表/Phase 5变更积压C-S5-1~5）；M14 三路并行启动：builder模块(#1-#9) + auth SSO(#10-#12) | SAML必须/LDAP可选(降R3); ClaudeBuilderAdapter复用claude_agent_sdk; builder→agents直接依赖(DTO解耦,无需IAgentQuerier) |
 | 55 | 2026-02-22 | M13 全闭 + Agent Teams 并行开发 | **3路并行**: cdk-agent(CDK Eval CloudWatch面板) + pipeline-agent(EvalPipeline视图类型对齐) + template-agent(使用此模板功能); M13 #11/#12 全部完成; **修复工具目录3个Bug**: ToolStatus/ToolType大小写不一致(致命崩溃) + ?tool_type→?type参数名错误(过滤失效) + ModelComparisonChart TS类型错误; **E2E**: 工具目录 24/25=96%通过; frontend-deploy.yml/backend-deploy.yml CI/CD补全; Dev ECS定时关机问题排查 | Agent Teams 最佳实践: 3个独立代码路径可真正并行(infra/evaluation/templates+agents); cdk-agent发现EventBridge+IAM已存在(幽灵实现); E2E比文档更可靠 |
 | 54 | 2026-02-21 | 增量发布 (Dev + Prod) | **M13 增量发布**: ruff ✅ mypy ✅ 1954 tests 88.48% ✅; CDK diff 确认只有 Docker 镜像哈希变更 (`10900203`→`c758c0ca`); compute-dev 部署成功 (4.5min Rolling Update ✅); Dev 健康验证 health/ready/M13 API 401 ✅; compute-prod 部署成功 (3.5min Rolling Update ✅); Prod 健康验证通过 ✅; **backend-deploy.yml 新增**: 修复 backend/** 变更不触发部署的 CI/CD 缺口 | CDK fromAsset 内容哈希驱动部署: `cdk deploy compute-*` 自动构建镜像+推送ECR+更新ECS; 401=端点存在(非404)是验证部署的快速方法; 覆盖率单元测试84.68%<85% 但全量(含集成)88.48%✅ |
 | 53 | 2026-02-21 | Phase 5 规划 + M13 实施 | **Phase 5 设计**: 深度 AWS 集成方案 (5A Bedrock Eval + 5B Builder MCP + 5C billing) 批准，设计文档 committed; **M13 实施**: Subagent 驱动开发 10 任务全完成 — PipelineStatus/EvalPipeline/IEvalPipelineRepository/IEvalService/EvalPipelineService/BedrockEvalAdapter/ORM+迁移/RepositoryImpl/API 端点; 1884 tests ✅ 86.72% ✅ ruff ✅ mypy ✅ | IRepository 方法名为 create/update/get_by_id (非 save/get); asyncio.to_thread 包装同步 boto3 是项目标准模式; MySQL TEXT 列不支持 ORM default= |
 | 52 | 2026-02-20 | 质量门控 + 知识沉淀 | **质量门控**: 后端 ruff/mypy/pytest 1857/86.45% ✅; 前端 lint/format/test 355 ✅; Infra lint/format/test 184 ✅; **修复**: RUF003 noqa + vitest E2E 排除 + CDK快照更新 + seed_templates 期望值; **project-learnings 更新**: M5→M12 250→508行 (3新维度/ADR汇总/Agent Teams踩坑); **rules 更新**: checklist log.exception检查 + deployment CDK 目录/context规范; rollout-plan Wave 3状态更新 | vitest.config.ts 需显式排除 E2E; log.exception vs log.warning 不对称=静默失败风险; CDK deploy 必须在 infra/ 目录且加 --context env=prod |
-| 51 | 2026-02-20 | Wave 3 完整收尾 | **扩展批次**: 10人创建完成 (法务/销售/市场/客服/管理层) → Prod 共 35 用户 ✅; **Wave 2 模板补全**: seed_data.py 补入 5 个非技术模板(财务/法务/销售/PPT/头脑风暴) + Prod 发布 → 共 16 模板; **lifespan 启动日志**: templates_seed_starting/done 两条 log.info 完成; 配置即代码补全（模板持久化进 seed_data.py） | Wave 2 模板未进 seed_data 是配置即代码缺口，已修复; Prod 35 用户距 50 目标差 15 人 |
-| 50 | 2026-02-20 | Wave 3 后处理+部署 | **活跃度检查**: 25 用户/10 DEVELOPER/14 VIEWER/5次调用; 差 25 人达标; **Prod CDK 部署**: lifespan seed 修复 + TODO(human) 启动日志 → compute-prod 部署成功 (health ✅, 11模板保留); 活跃度目标: 需邀请扩展批次+7天观察 | CDK context env=prod 必须显式指定; 注册≠活跃，5次调用说明推广刚启动 |

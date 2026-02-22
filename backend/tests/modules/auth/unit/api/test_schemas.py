@@ -3,8 +3,8 @@
 import pytest
 from pydantic import ValidationError
 
-from src.modules.auth.api.schemas.requests import RegisterRequest, LoginRequest
-from src.modules.auth.api.schemas.responses import UserResponse, TokenResponse
+from src.modules.auth.api.schemas.requests import LoginRequest, RegisterRequest
+from src.modules.auth.api.schemas.responses import TokenResponse, UserResponse
 
 
 @pytest.mark.unit

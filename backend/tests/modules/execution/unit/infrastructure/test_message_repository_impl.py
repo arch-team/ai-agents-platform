@@ -153,7 +153,7 @@ class TestMessageRepositoryImplQueryMethods:
 
     @pytest.mark.asyncio
     async def test_list_by_conversation_returns_empty_list(
-        self, repo: MessageRepositoryImpl, mock_session: AsyncMock
+        self, repo: MessageRepositoryImpl, mock_session: AsyncMock,
     ) -> None:
         mock_scalars = MagicMock()
         mock_scalars.all.return_value = []
@@ -166,7 +166,7 @@ class TestMessageRepositoryImplQueryMethods:
 
     @pytest.mark.asyncio
     async def test_count_by_conversation_returns_count(
-        self, repo: MessageRepositoryImpl, mock_session: AsyncMock
+        self, repo: MessageRepositoryImpl, mock_session: AsyncMock,
     ) -> None:
         mock_result = MagicMock()
         mock_result.scalar_one.return_value = 8

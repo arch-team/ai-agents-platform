@@ -99,7 +99,7 @@ class TestClaudeAgentAdapterExecute:
 
         async def _raise_error(*args, **kwargs):
             raise RuntimeError("SDK 连接失败")
-            yield  # noqa: RET503 - 使其成为异步生成器
+            yield  # - 使其成为异步生成器
 
         mock_query.return_value = _raise_error()
 
@@ -113,7 +113,7 @@ class TestClaudeAgentAdapterExecute:
     async def test_execute_domain_error_passthrough(self, mock_query):
         async def _raise_domain_error(*args, **kwargs):
             raise DomainError(message="配额超限", code="QUOTA_EXCEEDED")
-            yield  # noqa: RET503
+            yield
 
         mock_query.return_value = _raise_domain_error()
 
@@ -210,7 +210,7 @@ class TestClaudeAgentAdapterExecuteStream:
     async def test_stream_sdk_exception_raises_domain_error(self, mock_query):
         async def _raise_error(*args, **kwargs):
             raise ConnectionError("网络中断")
-            yield  # noqa: RET503
+            yield
 
         mock_query.return_value = _raise_error()
 

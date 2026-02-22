@@ -9,7 +9,7 @@ from src.modules.agents.infrastructure import AgentQuerierImpl
 
 
 def _make_agent(
-    *, status: AgentStatus = AgentStatus.ACTIVE, agent_id: int = 1
+    *, status: AgentStatus = AgentStatus.ACTIVE, agent_id: int = 1,
 ) -> Agent:
     return Agent(
         id=agent_id,

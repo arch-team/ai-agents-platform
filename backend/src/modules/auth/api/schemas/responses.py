@@ -25,3 +25,10 @@ class MessageResponse(BaseModel):
     """通用消息响应。"""
 
     message: str
+
+
+class SsoInitResponse(BaseModel):
+    """SSO 登录发起响应。"""
+
+    redirect_url: str
+    request_id: str = ""

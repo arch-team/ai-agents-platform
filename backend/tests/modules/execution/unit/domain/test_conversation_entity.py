@@ -54,13 +54,13 @@ def active_conversation() -> Conversation:
 @pytest.mark.unit
 class TestConversationComplete:
     def test_complete_from_active_succeeds(
-        self, active_conversation: Conversation
+        self, active_conversation: Conversation,
     ) -> None:
         active_conversation.complete()
         assert active_conversation.status == ConversationStatus.COMPLETED
 
     def test_complete_updates_timestamp(
-        self, active_conversation: Conversation
+        self, active_conversation: Conversation,
     ) -> None:
         original = active_conversation.updated_at
         active_conversation.complete()
@@ -74,7 +74,7 @@ class TestConversationComplete:
         ids=["from_completed", "from_failed"],
     )
     def test_complete_from_terminal_state_raises(
-        self, active_conversation: Conversation, setup_action: str
+        self, active_conversation: Conversation, setup_action: str,
     ) -> None:
         getattr(active_conversation, setup_action)()
         with pytest.raises(InvalidStateTransitionError):
@@ -84,13 +84,13 @@ class TestConversationComplete:
 @pytest.mark.unit
 class TestConversationFail:
     def test_fail_from_active_succeeds(
-        self, active_conversation: Conversation
+        self, active_conversation: Conversation,
     ) -> None:
         active_conversation.fail()
         assert active_conversation.status == ConversationStatus.FAILED
 
     def test_fail_updates_timestamp(
-        self, active_conversation: Conversation
+        self, active_conversation: Conversation,
     ) -> None:
         original = active_conversation.updated_at
         active_conversation.fail()
@@ -104,7 +104,7 @@ class TestConversationFail:
         ids=["from_completed", "from_failed"],
     )
     def test_fail_from_terminal_state_raises(
-        self, active_conversation: Conversation, setup_action: str
+        self, active_conversation: Conversation, setup_action: str,
     ) -> None:
         getattr(active_conversation, setup_action)()
         with pytest.raises(InvalidStateTransitionError):
@@ -114,14 +114,14 @@ class TestConversationFail:
 @pytest.mark.unit
 class TestConversationAddMessageCount:
     def test_add_message_count_increments(
-        self, active_conversation: Conversation
+        self, active_conversation: Conversation,
     ) -> None:
         active_conversation.add_message_count(token_count=100)
         assert active_conversation.message_count == 1
         assert active_conversation.total_tokens == 100
 
     def test_add_message_count_multiple_times(
-        self, active_conversation: Conversation
+        self, active_conversation: Conversation,
     ) -> None:
         active_conversation.add_message_count(token_count=50)
         active_conversation.add_message_count(token_count=80)
@@ -129,14 +129,14 @@ class TestConversationAddMessageCount:
         assert active_conversation.total_tokens == 130
 
     def test_add_message_count_zero_tokens(
-        self, active_conversation: Conversation
+        self, active_conversation: Conversation,
     ) -> None:
         active_conversation.add_message_count(token_count=0)
         assert active_conversation.message_count == 1
         assert active_conversation.total_tokens == 0
 
     def test_add_message_count_updates_timestamp(
-        self, active_conversation: Conversation
+        self, active_conversation: Conversation,
     ) -> None:
         original = active_conversation.updated_at
         active_conversation.add_message_count(token_count=10)
@@ -150,7 +150,7 @@ class TestConversationAddMessageCount:
         ids=["when_completed", "when_failed"],
     )
     def test_add_message_count_when_terminal_raises(
-        self, active_conversation: Conversation, setup_action: str
+        self, active_conversation: Conversation, setup_action: str,
     ) -> None:
         getattr(active_conversation, setup_action)()
         with pytest.raises(InvalidStateTransitionError):

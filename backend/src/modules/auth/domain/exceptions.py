@@ -52,3 +52,17 @@ class UserAlreadyExistsError(DuplicateEntityError):
 
     def __init__(self, email: str) -> None:
         super().__init__(entity_type="User", field="email", value=email)
+
+
+class SsoAuthError(DomainError):
+    """SSO 认证失败（SAML Response 验证不通过等）。"""
+
+    def __init__(self, message: str = "SSO 认证失败") -> None:
+        super().__init__(message=message, code="SSO_AUTH_FAILED")
+
+
+class SsoNotConfiguredError(DomainError):
+    """SSO 未配置。"""
+
+    def __init__(self, message: str = "SSO 未配置, 请联系管理员") -> None:
+        super().__init__(message=message, code="SSO_NOT_CONFIGURED")

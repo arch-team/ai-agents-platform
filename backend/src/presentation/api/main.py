@@ -19,7 +19,11 @@ from src.modules.auth.domain.exceptions import (
     AuthenticationError,
     AuthorizationError,
     InvalidRefreshTokenError,
+    SsoAuthError,
+    SsoNotConfiguredError,
 )
+from src.modules.builder.api.endpoints import router as builder_router
+from src.modules.builder.domain.exceptions import BuilderSessionNotFoundError
 from src.modules.evaluation.api.endpoints import router as evaluation_router
 from src.modules.evaluation.domain.exceptions import (
     EvalPipelineNotFoundError,
@@ -562,6 +566,8 @@ def create_app() -> FastAPI:
         InvalidRefreshTokenError: 401,
         AccountLockedError: 423,
         AuthorizationError: 403,
+        SsoAuthError: 401,
+        SsoNotConfiguredError: 400,
         # agents
         AgentNotFoundError: 404,
         AgentNameDuplicateError: 409,
@@ -597,6 +603,8 @@ def create_app() -> FastAPI:
         PipelineAlreadyRunningError: 409,
         # audit
         AuditNotFoundError: 404,
+        # builder
+        BuilderSessionNotFoundError: 404,
         # shared — SSE 连接限制
         TooManySSEConnectionsError: 429,
     }
@@ -608,10 +616,12 @@ def create_app() -> FastAPI:
 
     # 路由
     from src.modules.auth.api.admin_endpoints import router as admin_router
+    from src.modules.auth.api.sso_endpoints import router as sso_router
 
     app.include_router(health_router)
     app.include_router(auth_router)
     app.include_router(admin_router)
+    app.include_router(sso_router)
     app.include_router(agents_router)
     app.include_router(execution_router)
     app.include_router(team_execution_router)
@@ -622,6 +632,7 @@ def create_app() -> FastAPI:
     app.include_router(templates_router)
     app.include_router(evaluation_router)
     app.include_router(audit_router)
+    app.include_router(builder_router)
     app.include_router(stats_router)
 
     # Rate Limiting

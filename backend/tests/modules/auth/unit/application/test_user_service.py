@@ -1,7 +1,8 @@
 """UserService 测试。"""
 
-import pytest
 from unittest.mock import AsyncMock
+
+import pytest
 
 from src.modules.auth.application.dto.user_dto import CreateUserDTO, LoginDTO
 from src.modules.auth.application.services.password_service import hash_password

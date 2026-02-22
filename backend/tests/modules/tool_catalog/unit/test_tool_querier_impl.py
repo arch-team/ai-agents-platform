@@ -44,7 +44,7 @@ class TestToolQuerierImpl:
         return ToolQuerierImpl(tool_repository=mock_repo)
 
     async def test_list_approved_tools_returns_approved_only(
-        self, querier: ToolQuerierImpl, mock_repo: AsyncMock
+        self, querier: ToolQuerierImpl, mock_repo: AsyncMock,
     ) -> None:
         tools = [_make_tool(tool_id=1, name="tool-a"), _make_tool(tool_id=2, name="tool-b")]
         mock_repo.list_filtered.return_value = tools
@@ -53,11 +53,11 @@ class TestToolQuerierImpl:
 
         assert len(result) == 2
         mock_repo.list_filtered.assert_called_once_with(
-            status=ToolStatus.APPROVED, offset=0, limit=1000
+            status=ToolStatus.APPROVED, offset=0, limit=1000,
         )
 
     async def test_list_approved_tools_empty(
-        self, querier: ToolQuerierImpl, mock_repo: AsyncMock
+        self, querier: ToolQuerierImpl, mock_repo: AsyncMock,
     ) -> None:
         mock_repo.list_filtered.return_value = []
 
@@ -66,7 +66,7 @@ class TestToolQuerierImpl:
         assert result == []
 
     async def test_to_approved_tool_info_maps_fields(
-        self, querier: ToolQuerierImpl, mock_repo: AsyncMock
+        self, querier: ToolQuerierImpl, mock_repo: AsyncMock,
     ) -> None:
         tool = _make_tool(
             tool_id=42,
@@ -85,7 +85,7 @@ class TestToolQuerierImpl:
         assert info.server_url == "http://github-mcp.example.com"
 
     async def test_api_tool_maps_endpoint_url(
-        self, querier: ToolQuerierImpl, mock_repo: AsyncMock
+        self, querier: ToolQuerierImpl, mock_repo: AsyncMock,
     ) -> None:
         tool = Tool(
             name="api-tool",
@@ -106,7 +106,7 @@ class TestToolQuerierImpl:
         assert info.method == "POST"
 
     async def test_function_tool_maps_runtime_handler(
-        self, querier: ToolQuerierImpl, mock_repo: AsyncMock
+        self, querier: ToolQuerierImpl, mock_repo: AsyncMock,
     ) -> None:
         tool = Tool(
             name="fn-tool",

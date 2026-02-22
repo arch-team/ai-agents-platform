@@ -91,7 +91,7 @@ class TestTeamExecutionStart:
         ids=["from_running", "from_completed", "from_failed", "from_cancelled"],
     )
     def test_start_from_non_pending_raises(
-        self, setup_status: TeamExecutionStatus
+        self, setup_status: TeamExecutionStatus,
     ) -> None:
         """从非 PENDING 状态调用 start() 抛出 InvalidStateTransitionError。"""
         # Arrange - 创建处于指定状态的 execution

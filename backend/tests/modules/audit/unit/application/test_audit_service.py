@@ -11,7 +11,6 @@ from src.modules.audit.application.dto.audit_log_dto import (
 from src.modules.audit.application.services.audit_service import AuditService
 from src.modules.audit.domain.entities.audit_log import AuditAction, AuditCategory
 from src.modules.audit.domain.exceptions import AuditNotFoundError
-
 from tests.modules.audit.conftest import make_audit_log
 
 

@@ -129,6 +129,12 @@ class Settings(BaseSettings):
     # Bedrock Eval Pipeline 配置
     BEDROCK_EVAL_ROLE_ARN: str = ""  # Bedrock 评估 Job 执行角色 ARN (CDK ComputeStack 创建)
 
+    # SSO / SAML 配置
+    SAML_SP_ENTITY_ID: str = ""  # SP entity ID
+    SAML_SP_PRIVATE_KEY: str = ""  # PEM 格式私钥 (从 Secrets Manager 注入)
+    SAML_SP_CERTIFICATE: str = ""  # PEM 格式证书
+    SAML_IDP_METADATA_URL: str = ""  # IdP metadata URL
+
     # OpenTelemetry 可观测性
     OTEL_EXPORTER_OTLP_ENDPOINT: str = ""  # OTLP 导出端点 (如 http://localhost:4317)
 

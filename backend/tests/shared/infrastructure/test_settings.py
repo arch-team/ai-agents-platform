@@ -204,7 +204,7 @@ class TestSecretsManagerIntegration:
         assert settings.DATABASE_NAME == "sm_db"
         assert settings.DATABASE_HOST == "sm-host.cluster.amazonaws.com"
         mock_fetch_db.assert_called_once_with(
-            "arn:aws:secretsmanager:ap-northeast-1:123:secret:db", "ap-northeast-1"
+            "arn:aws:secretsmanager:ap-northeast-1:123:secret:db", "ap-northeast-1",
         )
 
     @patch("src.shared.infrastructure.secrets_client.fetch_jwt_credentials")
@@ -221,7 +221,7 @@ class TestSecretsManagerIntegration:
         )
         assert settings.JWT_SECRET_KEY.get_secret_value() == "sm-jwt-key-that-is-very-long-and-secure-at-least-32-chars"
         mock_fetch_jwt.assert_called_once_with(
-            "arn:aws:secretsmanager:ap-northeast-1:123:secret:jwt", "ap-northeast-1"
+            "arn:aws:secretsmanager:ap-northeast-1:123:secret:jwt", "ap-northeast-1",
         )
 
     def test_deployed_env_without_arn_uses_env_vars(self) -> None:

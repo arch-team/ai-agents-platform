@@ -9,6 +9,7 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.modules.auth.application.dto.user_dto import UserDTO
+from src.modules.auth.application.services.sso_service import SsoService
 from src.modules.auth.application.services.token_service import decode_access_token
 from src.modules.auth.application.services.user_service import UserService
 from src.modules.auth.domain.exceptions import AuthenticationError, AuthorizationError
@@ -102,3 +103,20 @@ def require_role(*roles: Role) -> Callable[..., Awaitable[UserDTO]]:
         return current_user
 
     return _check_role
+
+
+def get_sso_service(
+    session: Annotated[AsyncSession, Depends(get_db)],
+    settings: Annotated[Settings, Depends(get_settings)],
+) -> SsoService:
+    """创建 SsoService 实例。"""
+    return SsoService(
+        UserRepositoryImpl(session=session),
+        sp_entity_id=settings.SAML_SP_ENTITY_ID,
+        sp_private_key=settings.SAML_SP_PRIVATE_KEY,
+        sp_certificate=settings.SAML_SP_CERTIFICATE,
+        idp_metadata_url=settings.SAML_IDP_METADATA_URL,
+        jwt_secret_key=settings.JWT_SECRET_KEY.get_secret_value(),
+        jwt_algorithm=settings.JWT_ALGORITHM,
+        jwt_expire_minutes=settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES,
+    )

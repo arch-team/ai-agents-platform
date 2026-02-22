@@ -45,7 +45,7 @@ class TestAgentRepositoryImplStructure:
                 "stop_sequences",
                 "runtime_type",
                 "enable_teams",
-            }
+            },
         )
         assert AgentRepositoryImpl._updatable_fields == expected
 
@@ -209,7 +209,7 @@ class TestAgentRepositoryImplQueryMethods:
 
     @pytest.mark.asyncio
     async def test_get_by_name_and_owner_returns_none_when_not_found(
-        self, repo: AgentRepositoryImpl, mock_session: AsyncMock
+        self, repo: AgentRepositoryImpl, mock_session: AsyncMock,
     ) -> None:
         mock_result = MagicMock()
         mock_result.scalar_one_or_none.return_value = None
@@ -220,7 +220,7 @@ class TestAgentRepositoryImplQueryMethods:
 
     @pytest.mark.asyncio
     async def test_get_by_name_and_owner_returns_agent_when_found(
-        self, repo: AgentRepositoryImpl, mock_session: AsyncMock
+        self, repo: AgentRepositoryImpl, mock_session: AsyncMock,
     ) -> None:
         now = datetime.now(UTC)
         mock_model = AgentModel(
@@ -250,7 +250,7 @@ class TestAgentRepositoryImplQueryMethods:
 
     @pytest.mark.asyncio
     async def test_count_by_owner_returns_count(
-        self, repo: AgentRepositoryImpl, mock_session: AsyncMock
+        self, repo: AgentRepositoryImpl, mock_session: AsyncMock,
     ) -> None:
         mock_result = MagicMock()
         mock_result.scalar_one.return_value = 5
@@ -261,20 +261,20 @@ class TestAgentRepositoryImplQueryMethods:
 
     @pytest.mark.asyncio
     async def test_count_by_owner_and_status_returns_count(
-        self, repo: AgentRepositoryImpl, mock_session: AsyncMock
+        self, repo: AgentRepositoryImpl, mock_session: AsyncMock,
     ) -> None:
         mock_result = MagicMock()
         mock_result.scalar_one.return_value = 3
         mock_session.execute.return_value = mock_result
 
         result = await repo.count_by_owner_and_status(
-            owner_id=42, status=AgentStatus.ACTIVE
+            owner_id=42, status=AgentStatus.ACTIVE,
         )
         assert result == 3
 
     @pytest.mark.asyncio
     async def test_list_by_owner_returns_empty_list(
-        self, repo: AgentRepositoryImpl, mock_session: AsyncMock
+        self, repo: AgentRepositoryImpl, mock_session: AsyncMock,
     ) -> None:
         mock_scalars = MagicMock()
         mock_scalars.all.return_value = []
@@ -287,7 +287,7 @@ class TestAgentRepositoryImplQueryMethods:
 
     @pytest.mark.asyncio
     async def test_list_by_owner_and_status_returns_empty_list(
-        self, repo: AgentRepositoryImpl, mock_session: AsyncMock
+        self, repo: AgentRepositoryImpl, mock_session: AsyncMock,
     ) -> None:
         mock_scalars = MagicMock()
         mock_scalars.all.return_value = []
@@ -296,6 +296,6 @@ class TestAgentRepositoryImplQueryMethods:
         mock_session.execute.return_value = mock_result
 
         result = await repo.list_by_owner_and_status(
-            owner_id=42, status=AgentStatus.DRAFT
+            owner_id=42, status=AgentStatus.DRAFT,
         )
         assert result == []

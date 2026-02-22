@@ -1,7 +1,7 @@
 """PydanticEntity 基类测试。"""
 
 import time
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import pytest
 from pydantic import ConfigDict
@@ -29,16 +29,16 @@ class TestPydanticEntityFields:
         assert entity.id == 42
 
     def test_created_at_auto_set(self):
-        before = datetime.now(timezone.utc)
+        before = datetime.now(UTC)
         entity = ConcreteEntity(name="test")
-        after = datetime.now(timezone.utc)
+        after = datetime.now(UTC)
         assert entity.created_at is not None
         assert before <= entity.created_at <= after
 
     def test_updated_at_auto_set(self):
-        before = datetime.now(timezone.utc)
+        before = datetime.now(UTC)
         entity = ConcreteEntity(name="test")
-        after = datetime.now(timezone.utc)
+        after = datetime.now(UTC)
         assert entity.updated_at is not None
         assert before <= entity.updated_at <= after
 

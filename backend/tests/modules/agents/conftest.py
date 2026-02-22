@@ -49,7 +49,7 @@ def agent_service(mock_agent_repo: AsyncMock) -> AgentService:
 def mock_event_bus():
     """Mock event_bus，自动 patch AgentService 中的 event_bus。"""
     with patch(
-        "src.modules.agents.application.services.agent_service.event_bus"
+        "src.modules.agents.application.services.agent_service.event_bus",
     ) as mock_bus:
         mock_bus.publish_async = AsyncMock()
         yield mock_bus

@@ -15,12 +15,12 @@ from src.modules.knowledge.application.dto.knowledge_dto import (
     QueryResponseDTO,
     QueryResultDTO,
 )
-from src.shared.application.dtos import PagedResult
 from src.modules.knowledge.domain.exceptions import (
     KnowledgeBaseNameDuplicateError,
     KnowledgeBaseNotFoundError,
 )
 from src.presentation.api.main import create_app
+from src.shared.application.dtos import PagedResult
 
 
 def _make_user() -> UserDTO:

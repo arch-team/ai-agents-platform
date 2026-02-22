@@ -60,7 +60,7 @@ class TestAgentArchivedEvent:
 class TestAgentUpdatedEvent:
     def test_fields(self) -> None:
         event = AgentUpdatedEvent(
-            agent_id=1, owner_id=10, changed_fields=("name", "description")
+            agent_id=1, owner_id=10, changed_fields=("name", "description"),
         )
         assert event.agent_id == 1
         assert event.owner_id == 10

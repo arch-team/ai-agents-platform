@@ -170,7 +170,7 @@ class TestConversationRepositoryImplQueryMethods:
 
     @pytest.mark.asyncio
     async def test_list_by_user_returns_empty_list(
-        self, repo: ConversationRepositoryImpl, mock_session: AsyncMock
+        self, repo: ConversationRepositoryImpl, mock_session: AsyncMock,
     ) -> None:
         mock_scalars = MagicMock()
         mock_scalars.all.return_value = []
@@ -183,7 +183,7 @@ class TestConversationRepositoryImplQueryMethods:
 
     @pytest.mark.asyncio
     async def test_count_by_user_returns_count(
-        self, repo: ConversationRepositoryImpl, mock_session: AsyncMock
+        self, repo: ConversationRepositoryImpl, mock_session: AsyncMock,
     ) -> None:
         mock_result = MagicMock()
         mock_result.scalar_one.return_value = 5
@@ -194,7 +194,7 @@ class TestConversationRepositoryImplQueryMethods:
 
     @pytest.mark.asyncio
     async def test_count_by_user_with_agent_id_returns_count(
-        self, repo: ConversationRepositoryImpl, mock_session: AsyncMock
+        self, repo: ConversationRepositoryImpl, mock_session: AsyncMock,
     ) -> None:
         mock_result = MagicMock()
         mock_result.scalar_one.return_value = 3

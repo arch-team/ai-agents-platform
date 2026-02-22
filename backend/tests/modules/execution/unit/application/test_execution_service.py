@@ -1,7 +1,8 @@
 """ExecutionService 测试。"""
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 
 from src.modules.execution.application.dto.execution_dto import (
     CreateConversationDTO,
@@ -156,7 +157,7 @@ class TestCreateConversation:
         dto = CreateConversationDTO(agent_id=1, title="我的对话")
 
         with patch(
-            "src.modules.execution.application.services.execution_service.event_bus"
+            "src.modules.execution.application.services.execution_service.event_bus",
         ) as mock_bus:
             mock_bus.publish_async = AsyncMock()
             result = await service.create_conversation(dto, user_id=100)
@@ -182,7 +183,7 @@ class TestCreateConversation:
         dto = CreateConversationDTO(agent_id=1)
 
         with patch(
-            "src.modules.execution.application.services.execution_service.event_bus"
+            "src.modules.execution.application.services.execution_service.event_bus",
         ) as mock_bus:
             mock_bus.publish_async = AsyncMock()
             result = await service.create_conversation(dto, user_id=100)
@@ -238,7 +239,7 @@ class TestSendMessage:
         )
 
         with patch(
-            "src.modules.execution.application.services.execution_service.event_bus"
+            "src.modules.execution.application.services.execution_service.event_bus",
         ) as mock_bus:
             mock_bus.publish_async = AsyncMock()
             result = await service.send_message(1, SendMessageDTO(content="你好"), user_id=100)
@@ -324,7 +325,7 @@ class TestSendMessageStream:
         )
 
         with patch(
-            "src.modules.execution.application.services.execution_service.event_bus"
+            "src.modules.execution.application.services.execution_service.event_bus",
         ) as mock_bus:
             mock_bus.publish_async = AsyncMock()
             stream = await service.send_message_stream(
@@ -395,7 +396,7 @@ class TestSendMessageStream:
         )
 
         with patch(
-            "src.modules.execution.application.services.execution_service.event_bus"
+            "src.modules.execution.application.services.execution_service.event_bus",
         ) as mock_bus:
             mock_bus.publish_async = AsyncMock()
             stream = await service.send_message_stream(
@@ -531,7 +532,7 @@ class TestCompleteConversation:
         service = _make_service(conv_repo=conv_repo)
 
         with patch(
-            "src.modules.execution.application.services.execution_service.event_bus"
+            "src.modules.execution.application.services.execution_service.event_bus",
         ) as mock_bus:
             mock_bus.publish_async = AsyncMock()
             result = await service.complete_conversation(1, user_id=100)
@@ -613,7 +614,7 @@ class TestRAGIntegration:
         )
 
         with patch(
-            "src.modules.execution.application.services.execution_service.event_bus"
+            "src.modules.execution.application.services.execution_service.event_bus",
         ) as mock_bus:
             mock_bus.publish_async = AsyncMock()
             await service.send_message(1, SendMessageDTO(content="你好"), user_id=100)
@@ -672,7 +673,7 @@ class TestRAGIntegration:
         )
 
         with patch(
-            "src.modules.execution.application.services.execution_service.event_bus"
+            "src.modules.execution.application.services.execution_service.event_bus",
         ) as mock_bus:
             mock_bus.publish_async = AsyncMock()
             await service.send_message(1, SendMessageDTO(content="你好"), user_id=100)
@@ -733,7 +734,7 @@ class TestRAGIntegration:
         )
 
         with patch(
-            "src.modules.execution.application.services.execution_service.event_bus"
+            "src.modules.execution.application.services.execution_service.event_bus",
         ) as mock_bus:
             mock_bus.publish_async = AsyncMock()
             stream = await service.send_message_stream(
@@ -843,7 +844,7 @@ class TestAgentRuntimeRouting:
         )
 
         with patch(
-            "src.modules.execution.application.services.execution_service.event_bus"
+            "src.modules.execution.application.services.execution_service.event_bus",
         ) as mock_bus:
             mock_bus.publish_async = AsyncMock()
             result = await service.send_message(1, SendMessageDTO(content="你好"), user_id=100)
@@ -872,7 +873,7 @@ class TestAgentRuntimeRouting:
         )
 
         with patch(
-            "src.modules.execution.application.services.execution_service.event_bus"
+            "src.modules.execution.application.services.execution_service.event_bus",
         ) as mock_bus:
             mock_bus.publish_async = AsyncMock()
             result = await service.send_message(1, SendMessageDTO(content="你好"), user_id=100)
@@ -899,7 +900,7 @@ class TestAgentRuntimeRouting:
         )
 
         with patch(
-            "src.modules.execution.application.services.execution_service.event_bus"
+            "src.modules.execution.application.services.execution_service.event_bus",
         ) as mock_bus:
             mock_bus.publish_async = AsyncMock()
             result = await service.send_message(1, SendMessageDTO(content="你好"), user_id=100)
@@ -937,7 +938,7 @@ class TestAgentRuntimeRouting:
         )
 
         with patch(
-            "src.modules.execution.application.services.execution_service.event_bus"
+            "src.modules.execution.application.services.execution_service.event_bus",
         ) as mock_bus:
             mock_bus.publish_async = AsyncMock()
             stream = await service.send_message_stream(
@@ -986,7 +987,7 @@ class TestAgentRuntimeRouting:
         )
 
         with patch(
-            "src.modules.execution.application.services.execution_service.event_bus"
+            "src.modules.execution.application.services.execution_service.event_bus",
         ) as mock_bus:
             mock_bus.publish_async = AsyncMock()
             stream = await service.send_message_stream(
@@ -1039,7 +1040,7 @@ class TestAgentRuntimeRouting:
         )
 
         with patch(
-            "src.modules.execution.application.services.execution_service.event_bus"
+            "src.modules.execution.application.services.execution_service.event_bus",
         ) as mock_bus:
             mock_bus.publish_async = AsyncMock()
             await service.send_message(1, SendMessageDTO(content="你好"), user_id=100)
@@ -1079,7 +1080,7 @@ class TestAgentRuntimeRouting:
         )
 
         with patch(
-            "src.modules.execution.application.services.execution_service.event_bus"
+            "src.modules.execution.application.services.execution_service.event_bus",
         ) as mock_bus:
             mock_bus.publish_async = AsyncMock()
             result = await service.send_message(1, SendMessageDTO(content="你好"), user_id=100)

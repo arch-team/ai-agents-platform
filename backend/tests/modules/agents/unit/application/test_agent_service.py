@@ -1,7 +1,8 @@
 """AgentService 测试。"""
 
-import pytest
 from unittest.mock import AsyncMock
+
+import pytest
 
 from src.modules.agents.application.dto.agent_dto import (
     CreateAgentDTO,
@@ -19,7 +20,6 @@ from src.shared.domain.exceptions import (
     InvalidStateTransitionError,
     ValidationError,
 )
-
 from tests.modules.agents.conftest import make_agent
 
 
@@ -27,11 +27,11 @@ from tests.modules.agents.conftest import make_agent
 class TestAgentServiceCreate:
     @pytest.mark.asyncio
     async def test_create_agent_success(
-        self, mock_agent_repo: AsyncMock, agent_service: AgentService, mock_event_bus: AsyncMock
+        self, mock_agent_repo: AsyncMock, agent_service: AgentService, mock_event_bus: AsyncMock,
     ) -> None:
         mock_agent_repo.get_by_name_and_owner.return_value = None
         mock_agent_repo.create.side_effect = lambda a: make_agent(
-            name=a.name, description=a.description, owner_id=a.owner_id
+            name=a.name, description=a.description, owner_id=a.owner_id,
         )
 
         dto = CreateAgentDTO(name="新 Agent", description="新描述")
@@ -46,7 +46,7 @@ class TestAgentServiceCreate:
 
     @pytest.mark.asyncio
     async def test_create_agent_duplicate_name_raises(
-        self, mock_agent_repo: AsyncMock, agent_service: AgentService
+        self, mock_agent_repo: AsyncMock, agent_service: AgentService,
     ) -> None:
         mock_agent_repo.get_by_name_and_owner.return_value = make_agent(name="已存在")
 
@@ -59,7 +59,7 @@ class TestAgentServiceCreate:
 
     @pytest.mark.asyncio
     async def test_create_agent_uses_dto_config(
-        self, mock_agent_repo: AsyncMock, agent_service: AgentService, mock_event_bus: AsyncMock
+        self, mock_agent_repo: AsyncMock, agent_service: AgentService, mock_event_bus: AsyncMock,
     ) -> None:
         mock_agent_repo.get_by_name_and_owner.return_value = None
         created_agent: Agent | None = None
@@ -68,7 +68,7 @@ class TestAgentServiceCreate:
             nonlocal created_agent
             created_agent = agent
             return make_agent(
-                name=agent.name, owner_id=agent.owner_id, config=agent.config
+                name=agent.name, owner_id=agent.owner_id, config=agent.config,
             )
 
         mock_agent_repo.create.side_effect = capture_create
@@ -91,7 +91,7 @@ class TestAgentServiceCreate:
 class TestAgentServiceGet:
     @pytest.mark.asyncio
     async def test_get_agent_returns_dto(
-        self, mock_agent_repo: AsyncMock, agent_service: AgentService
+        self, mock_agent_repo: AsyncMock, agent_service: AgentService,
     ) -> None:
         mock_agent_repo.get_by_id.return_value = make_agent()
 
@@ -102,7 +102,7 @@ class TestAgentServiceGet:
 
     @pytest.mark.asyncio
     async def test_get_agent_not_found_raises(
-        self, mock_agent_repo: AsyncMock, agent_service: AgentService
+        self, mock_agent_repo: AsyncMock, agent_service: AgentService,
     ) -> None:
         mock_agent_repo.get_by_id.return_value = None
 
@@ -114,7 +114,7 @@ class TestAgentServiceGet:
 class TestAgentServiceList:
     @pytest.mark.asyncio
     async def test_list_agents_returns_paged_result(
-        self, mock_agent_repo: AsyncMock, agent_service: AgentService
+        self, mock_agent_repo: AsyncMock, agent_service: AgentService,
     ) -> None:
         mock_agent_repo.list_by_owner.return_value = [
             make_agent(agent_id=1, name="A1"),
@@ -131,7 +131,7 @@ class TestAgentServiceList:
 
     @pytest.mark.asyncio
     async def test_list_agents_empty(
-        self, mock_agent_repo: AsyncMock, agent_service: AgentService
+        self, mock_agent_repo: AsyncMock, agent_service: AgentService,
     ) -> None:
         mock_agent_repo.list_by_owner.return_value = []
         mock_agent_repo.count_by_owner.return_value = 0
@@ -143,7 +143,7 @@ class TestAgentServiceList:
 
     @pytest.mark.asyncio
     async def test_list_agents_by_status(
-        self, mock_agent_repo: AsyncMock, agent_service: AgentService
+        self, mock_agent_repo: AsyncMock, agent_service: AgentService,
     ) -> None:
         mock_agent_repo.list_by_owner_and_status.return_value = [
             make_agent(agent_id=1, status=AgentStatus.ACTIVE),
@@ -155,12 +155,12 @@ class TestAgentServiceList:
         assert result.total == 1
         assert len(result.items) == 1
         mock_agent_repo.list_by_owner_and_status.assert_called_once_with(
-            100, AgentStatus.ACTIVE, offset=0, limit=20
+            100, AgentStatus.ACTIVE, offset=0, limit=20,
         )
 
     @pytest.mark.asyncio
     async def test_list_agents_pagination(
-        self, mock_agent_repo: AsyncMock, agent_service: AgentService
+        self, mock_agent_repo: AsyncMock, agent_service: AgentService,
     ) -> None:
         mock_agent_repo.list_by_owner.return_value = [
             make_agent(agent_id=3, name="A3"),
@@ -179,7 +179,7 @@ class TestAgentServiceList:
 class TestAgentServiceUpdate:
     @pytest.mark.asyncio
     async def test_update_draft_agent_success(
-        self, mock_agent_repo: AsyncMock, agent_service: AgentService, mock_event_bus: AsyncMock
+        self, mock_agent_repo: AsyncMock, agent_service: AgentService, mock_event_bus: AsyncMock,
     ) -> None:
         agent = make_agent(status=AgentStatus.DRAFT)
         mock_agent_repo.get_by_id.return_value = agent
@@ -196,7 +196,7 @@ class TestAgentServiceUpdate:
 
     @pytest.mark.asyncio
     async def test_update_not_found_raises(
-        self, mock_agent_repo: AsyncMock, agent_service: AgentService
+        self, mock_agent_repo: AsyncMock, agent_service: AgentService,
     ) -> None:
         mock_agent_repo.get_by_id.return_value = None
 
@@ -207,7 +207,7 @@ class TestAgentServiceUpdate:
 
     @pytest.mark.asyncio
     async def test_update_non_owner_raises(
-        self, mock_agent_repo: AsyncMock, agent_service: AgentService
+        self, mock_agent_repo: AsyncMock, agent_service: AgentService,
     ) -> None:
         mock_agent_repo.get_by_id.return_value = make_agent(owner_id=100)
 
@@ -219,7 +219,7 @@ class TestAgentServiceUpdate:
     @pytest.mark.asyncio
     @pytest.mark.parametrize("status", [AgentStatus.ACTIVE, AgentStatus.ARCHIVED])
     async def test_update_non_draft_agent_raises(
-        self, mock_agent_repo: AsyncMock, agent_service: AgentService, status: AgentStatus
+        self, mock_agent_repo: AsyncMock, agent_service: AgentService, status: AgentStatus,
     ) -> None:
         agent = make_agent(status=status, system_prompt="prompt")
         mock_agent_repo.get_by_id.return_value = agent
@@ -231,7 +231,7 @@ class TestAgentServiceUpdate:
 
     @pytest.mark.asyncio
     async def test_update_partial_fields(
-        self, mock_agent_repo: AsyncMock, agent_service: AgentService, mock_event_bus: AsyncMock
+        self, mock_agent_repo: AsyncMock, agent_service: AgentService, mock_event_bus: AsyncMock,
     ) -> None:
         agent = make_agent(status=AgentStatus.DRAFT)
         mock_agent_repo.get_by_id.return_value = agent
@@ -245,12 +245,12 @@ class TestAgentServiceUpdate:
 
     @pytest.mark.asyncio
     async def test_update_duplicate_name_raises(
-        self, mock_agent_repo: AsyncMock, agent_service: AgentService
+        self, mock_agent_repo: AsyncMock, agent_service: AgentService,
     ) -> None:
         agent = make_agent(status=AgentStatus.DRAFT, name="原始名称")
         mock_agent_repo.get_by_id.return_value = agent
         mock_agent_repo.get_by_name_and_owner.return_value = make_agent(
-            agent_id=2, name="已存在"
+            agent_id=2, name="已存在",
         )
 
         dto = UpdateAgentDTO(name="已存在")
@@ -263,7 +263,7 @@ class TestAgentServiceUpdate:
 class TestAgentServiceDelete:
     @pytest.mark.asyncio
     async def test_delete_draft_agent_success(
-        self, mock_agent_repo: AsyncMock, agent_service: AgentService, mock_event_bus: AsyncMock
+        self, mock_agent_repo: AsyncMock, agent_service: AgentService, mock_event_bus: AsyncMock,
     ) -> None:
         mock_agent_repo.get_by_id.return_value = make_agent(status=AgentStatus.DRAFT)
 
@@ -274,7 +274,7 @@ class TestAgentServiceDelete:
 
     @pytest.mark.asyncio
     async def test_delete_not_found_raises(
-        self, mock_agent_repo: AsyncMock, agent_service: AgentService
+        self, mock_agent_repo: AsyncMock, agent_service: AgentService,
     ) -> None:
         mock_agent_repo.get_by_id.return_value = None
 
@@ -283,10 +283,10 @@ class TestAgentServiceDelete:
 
     @pytest.mark.asyncio
     async def test_delete_active_agent_raises(
-        self, mock_agent_repo: AsyncMock, agent_service: AgentService
+        self, mock_agent_repo: AsyncMock, agent_service: AgentService,
     ) -> None:
         mock_agent_repo.get_by_id.return_value = make_agent(
-            status=AgentStatus.ACTIVE, system_prompt="prompt"
+            status=AgentStatus.ACTIVE, system_prompt="prompt",
         )
 
         with pytest.raises(InvalidStateTransitionError):
@@ -294,7 +294,7 @@ class TestAgentServiceDelete:
 
     @pytest.mark.asyncio
     async def test_delete_non_owner_raises(
-        self, mock_agent_repo: AsyncMock, agent_service: AgentService
+        self, mock_agent_repo: AsyncMock, agent_service: AgentService,
     ) -> None:
         mock_agent_repo.get_by_id.return_value = make_agent(owner_id=100)
 
@@ -306,7 +306,7 @@ class TestAgentServiceDelete:
 class TestAgentServiceActivate:
     @pytest.mark.asyncio
     async def test_activate_draft_agent_success(
-        self, mock_agent_repo: AsyncMock, agent_service: AgentService, mock_event_bus: AsyncMock
+        self, mock_agent_repo: AsyncMock, agent_service: AgentService, mock_event_bus: AsyncMock,
     ) -> None:
         agent = make_agent(status=AgentStatus.DRAFT, system_prompt="你是一个助手")
         mock_agent_repo.get_by_id.return_value = agent
@@ -320,10 +320,10 @@ class TestAgentServiceActivate:
 
     @pytest.mark.asyncio
     async def test_activate_non_draft_raises(
-        self, mock_agent_repo: AsyncMock, agent_service: AgentService
+        self, mock_agent_repo: AsyncMock, agent_service: AgentService,
     ) -> None:
         mock_agent_repo.get_by_id.return_value = make_agent(
-            status=AgentStatus.ACTIVE, system_prompt="prompt"
+            status=AgentStatus.ACTIVE, system_prompt="prompt",
         )
 
         with pytest.raises(InvalidStateTransitionError):
@@ -331,10 +331,10 @@ class TestAgentServiceActivate:
 
     @pytest.mark.asyncio
     async def test_activate_without_system_prompt_raises(
-        self, mock_agent_repo: AsyncMock, agent_service: AgentService
+        self, mock_agent_repo: AsyncMock, agent_service: AgentService,
     ) -> None:
         mock_agent_repo.get_by_id.return_value = make_agent(
-            status=AgentStatus.DRAFT, system_prompt=""
+            status=AgentStatus.DRAFT, system_prompt="",
         )
 
         with pytest.raises(ValidationError, match="系统提示词"):
@@ -342,7 +342,7 @@ class TestAgentServiceActivate:
 
     @pytest.mark.asyncio
     async def test_activate_not_found_raises(
-        self, mock_agent_repo: AsyncMock, agent_service: AgentService
+        self, mock_agent_repo: AsyncMock, agent_service: AgentService,
     ) -> None:
         mock_agent_repo.get_by_id.return_value = None
 
@@ -379,7 +379,7 @@ class TestAgentServiceArchive:
 
     @pytest.mark.asyncio
     async def test_archive_already_archived_raises(
-        self, mock_agent_repo: AsyncMock, agent_service: AgentService
+        self, mock_agent_repo: AsyncMock, agent_service: AgentService,
     ) -> None:
         mock_agent_repo.get_by_id.return_value = make_agent(status=AgentStatus.ARCHIVED)
 
@@ -388,7 +388,7 @@ class TestAgentServiceArchive:
 
     @pytest.mark.asyncio
     async def test_archive_not_found_raises(
-        self, mock_agent_repo: AsyncMock, agent_service: AgentService
+        self, mock_agent_repo: AsyncMock, agent_service: AgentService,
     ) -> None:
         mock_agent_repo.get_by_id.return_value = None
 
@@ -397,7 +397,7 @@ class TestAgentServiceArchive:
 
     @pytest.mark.asyncio
     async def test_archive_non_owner_raises(
-        self, mock_agent_repo: AsyncMock, agent_service: AgentService
+        self, mock_agent_repo: AsyncMock, agent_service: AgentService,
     ) -> None:
         mock_agent_repo.get_by_id.return_value = make_agent(owner_id=100)
 

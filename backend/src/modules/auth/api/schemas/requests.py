@@ -43,3 +43,9 @@ class RefreshTokenRequest(BaseModel):
 
 # 登出请求与 Refresh Token 请求结构完全一致, 复用同一 Schema
 LogoutRequest = RefreshTokenRequest
+
+
+class SsoInitRequest(BaseModel):
+    """SSO 登录发起请求。"""
+
+    return_url: str = Field(description="SSO 登录成功后的回调 URL")

@@ -6,21 +6,21 @@ from unittest.mock import AsyncMock
 import pytest
 from fastapi.testclient import TestClient
 
+from src.modules.auth.api.dependencies import get_current_user
+from src.modules.auth.application.dto.user_dto import UserDTO
 from src.modules.execution.api.dependencies import get_execution_service
 from src.modules.execution.application.dto.execution_dto import (
-    ConversationDTO,
     ConversationDetailDTO,
+    ConversationDTO,
     MessageDTO,
 )
-from src.shared.application.dtos import PagedResult
 from src.modules.execution.domain.exceptions import (
     AgentNotAvailableError,
     ConversationNotActiveError,
     ConversationNotFoundError,
 )
-from src.modules.auth.api.dependencies import get_current_user
-from src.modules.auth.application.dto.user_dto import UserDTO
 from src.presentation.api.main import create_app
+from src.shared.application.dtos import PagedResult
 from src.shared.domain.exceptions import DomainError
 
 
@@ -88,7 +88,7 @@ def mock_user() -> UserDTO:
 
 
 @pytest.fixture
-def app(mock_service: AsyncMock, mock_user: UserDTO):  # noqa: ANN201
+def app(mock_service: AsyncMock, mock_user: UserDTO):
     test_app = create_app()
     test_app.dependency_overrides[get_execution_service] = lambda: mock_service
     test_app.dependency_overrides[get_current_user] = lambda: mock_user
@@ -96,7 +96,7 @@ def app(mock_service: AsyncMock, mock_user: UserDTO):  # noqa: ANN201
 
 
 @pytest.fixture
-def client(app) -> TestClient:  # noqa: ANN001
+def client(app) -> TestClient:
     return TestClient(app)
 
 
@@ -367,22 +367,22 @@ class TestCompleteConversationEndpoint:
 class TestConversationEndpointsStructure:
     """Conversation endpoint route structure tests."""
 
-    def test_conversations_list_endpoint_exists(self, app) -> None:  # noqa: ANN001
+    def test_conversations_list_endpoint_exists(self, app) -> None:
         routes = [r.path for r in app.routes]
         assert "/api/v1/conversations" in routes
 
-    def test_conversations_detail_endpoint_exists(self, app) -> None:  # noqa: ANN001
+    def test_conversations_detail_endpoint_exists(self, app) -> None:
         routes = [r.path for r in app.routes]
         assert "/api/v1/conversations/{conversation_id}" in routes
 
-    def test_messages_endpoint_exists(self, app) -> None:  # noqa: ANN001
+    def test_messages_endpoint_exists(self, app) -> None:
         routes = [r.path for r in app.routes]
         assert "/api/v1/conversations/{conversation_id}/messages" in routes
 
-    def test_messages_stream_endpoint_exists(self, app) -> None:  # noqa: ANN001
+    def test_messages_stream_endpoint_exists(self, app) -> None:
         routes = [r.path for r in app.routes]
         assert "/api/v1/conversations/{conversation_id}/messages/stream" in routes
 
-    def test_complete_endpoint_exists(self, app) -> None:  # noqa: ANN001
+    def test_complete_endpoint_exists(self, app) -> None:
         routes = [r.path for r in app.routes]
         assert "/api/v1/conversations/{conversation_id}/complete" in routes

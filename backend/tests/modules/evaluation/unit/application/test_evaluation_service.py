@@ -16,7 +16,6 @@ from src.modules.evaluation.domain.exceptions import (
 )
 from src.modules.evaluation.domain.value_objects.evaluation_run_status import EvaluationRunStatus
 from src.modules.evaluation.domain.value_objects.test_suite_status import TestSuiteStatus
-
 from tests.modules.evaluation.conftest import (
     make_evaluation_result,
     make_evaluation_run,

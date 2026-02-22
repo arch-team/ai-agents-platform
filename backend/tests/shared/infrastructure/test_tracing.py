@@ -5,9 +5,9 @@ from unittest.mock import MagicMock, patch
 import structlog
 
 from src.shared.infrastructure.tracing import (
-    setup_tracing,
     get_tracer,
     inject_trace_context,
+    setup_tracing,
 )
 
 
@@ -29,7 +29,7 @@ class TestSetupTracing:
             mock_console.assert_called_once()
             mock_processor.assert_called_once_with(mock_console.return_value)
             mock_provider_instance.add_span_processor.assert_called_once_with(
-                mock_processor.return_value
+                mock_processor.return_value,
             )
             mock_trace.set_tracer_provider.assert_called_once_with(mock_provider_instance)
 

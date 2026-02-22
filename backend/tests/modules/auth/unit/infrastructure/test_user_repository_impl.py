@@ -30,7 +30,19 @@ class TestUserRepositoryImplStructure:
         assert UserRepositoryImpl.model_class is UserModel
 
     def test_updatable_fields_defined(self) -> None:
-        expected = frozenset({"name", "role", "is_active", "hashed_password", "failed_login_count", "locked_until", "updated_at"})
+        expected = frozenset(
+            {
+                "name",
+                "role",
+                "is_active",
+                "hashed_password",
+                "failed_login_count",
+                "locked_until",
+                "sso_provider",
+                "sso_subject",
+                "updated_at",
+            },
+        )
         assert UserRepositoryImpl._updatable_fields == expected
 
 
@@ -62,6 +74,8 @@ class TestUserRepositoryImplEntityModelConversion:
             is_active=True,
             failed_login_count=0,
             locked_until=None,
+            sso_provider="INTERNAL",
+            sso_subject=None,
             created_at=now,
             updated_at=now,
         )
@@ -84,7 +98,9 @@ class TestUserRepositoryImplGetByEmail:
 
     @pytest.mark.asyncio
     async def test_get_by_email_returns_none_when_not_found(
-        self, repo: UserRepositoryImpl, mock_session: AsyncMock
+        self,
+        repo: UserRepositoryImpl,
+        mock_session: AsyncMock,
     ) -> None:
         mock_result = MagicMock()
         mock_result.scalar_one_or_none.return_value = None
@@ -95,7 +111,9 @@ class TestUserRepositoryImplGetByEmail:
 
     @pytest.mark.asyncio
     async def test_get_by_email_returns_user_when_found(
-        self, repo: UserRepositoryImpl, mock_session: AsyncMock
+        self,
+        repo: UserRepositoryImpl,
+        mock_session: AsyncMock,
     ) -> None:
         now = datetime.now(UTC)
         mock_model = UserModel(
@@ -107,6 +125,8 @@ class TestUserRepositoryImplGetByEmail:
             is_active=True,
             failed_login_count=0,
             locked_until=None,
+            sso_provider="INTERNAL",
+            sso_subject=None,
             created_at=now,
             updated_at=now,
         )

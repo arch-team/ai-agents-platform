@@ -54,7 +54,7 @@ class TestToolRepositoryImplStructure:
                 "reviewer_id",
                 "review_comment",
                 "reviewed_at",
-            }
+            },
         )
         assert ToolRepositoryImpl._updatable_fields == expected
 
@@ -286,7 +286,7 @@ class TestToolRepositoryImplQueryMethods:
 
     @pytest.mark.asyncio
     async def test_get_by_name_and_creator_returns_none_when_not_found(
-        self, repo: ToolRepositoryImpl, mock_session: AsyncMock
+        self, repo: ToolRepositoryImpl, mock_session: AsyncMock,
     ) -> None:
         mock_result = MagicMock()
         mock_result.scalar_one_or_none.return_value = None
@@ -297,7 +297,7 @@ class TestToolRepositoryImplQueryMethods:
 
     @pytest.mark.asyncio
     async def test_get_by_name_and_creator_returns_tool_when_found(
-        self, repo: ToolRepositoryImpl, mock_session: AsyncMock
+        self, repo: ToolRepositoryImpl, mock_session: AsyncMock,
     ) -> None:
         now = datetime.now(UTC)
         mock_model = ToolModel(
@@ -337,7 +337,7 @@ class TestToolRepositoryImplQueryMethods:
 
     @pytest.mark.asyncio
     async def test_count_by_creator_returns_count(
-        self, repo: ToolRepositoryImpl, mock_session: AsyncMock
+        self, repo: ToolRepositoryImpl, mock_session: AsyncMock,
     ) -> None:
         mock_result = MagicMock()
         mock_result.scalar_one.return_value = 5
@@ -348,7 +348,7 @@ class TestToolRepositoryImplQueryMethods:
 
     @pytest.mark.asyncio
     async def test_count_approved_returns_count(
-        self, repo: ToolRepositoryImpl, mock_session: AsyncMock
+        self, repo: ToolRepositoryImpl, mock_session: AsyncMock,
     ) -> None:
         mock_result = MagicMock()
         mock_result.scalar_one.return_value = 3
@@ -359,7 +359,7 @@ class TestToolRepositoryImplQueryMethods:
 
     @pytest.mark.asyncio
     async def test_list_by_creator_returns_empty_list(
-        self, repo: ToolRepositoryImpl, mock_session: AsyncMock
+        self, repo: ToolRepositoryImpl, mock_session: AsyncMock,
     ) -> None:
         mock_scalars = MagicMock()
         mock_scalars.all.return_value = []
@@ -372,7 +372,7 @@ class TestToolRepositoryImplQueryMethods:
 
     @pytest.mark.asyncio
     async def test_list_approved_returns_empty_list(
-        self, repo: ToolRepositoryImpl, mock_session: AsyncMock
+        self, repo: ToolRepositoryImpl, mock_session: AsyncMock,
     ) -> None:
         mock_scalars = MagicMock()
         mock_scalars.all.return_value = []
@@ -385,7 +385,7 @@ class TestToolRepositoryImplQueryMethods:
 
     @pytest.mark.asyncio
     async def test_list_filtered_returns_empty_list(
-        self, repo: ToolRepositoryImpl, mock_session: AsyncMock
+        self, repo: ToolRepositoryImpl, mock_session: AsyncMock,
     ) -> None:
         mock_scalars = MagicMock()
         mock_scalars.all.return_value = []
@@ -398,13 +398,13 @@ class TestToolRepositoryImplQueryMethods:
 
     @pytest.mark.asyncio
     async def test_count_filtered_returns_count(
-        self, repo: ToolRepositoryImpl, mock_session: AsyncMock
+        self, repo: ToolRepositoryImpl, mock_session: AsyncMock,
     ) -> None:
         mock_result = MagicMock()
         mock_result.scalar_one.return_value = 7
         mock_session.execute.return_value = mock_result
 
         result = await repo.count_filtered(
-            status=ToolStatus.DRAFT, keyword="test", creator_id=1
+            status=ToolStatus.DRAFT, keyword="test", creator_id=1,
         )
         assert result == 7
