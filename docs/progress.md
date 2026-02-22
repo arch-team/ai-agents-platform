@@ -11,12 +11,12 @@
 - **Dev 环境**: 后端 ECS (256 CPU/512 MiB) + 前端 S3 + CORS + Bedrock IAM ✅ | ALB `ai-agents-dev-546356512.us-east-1.elb.amazonaws.com`
 - **Prod 环境**: 后端 ECS (512 CPU/1024 MiB/2 任务) + Aurora db.r6g.large (Writer+Reader) ✅ | ALB `ai-agents-prod-1419512933.us-east-1.elb.amazonaws.com`
 - **Stack 命名**: `ai-agents-plat-{stack}-{env}` (v1.4 规范化, 12 个 Stack 全部重建)
-- **测试**: 后端 2051 测试 + 基础设施 192 测试 + 前端 399 单元测试 = **2642+ 测试**
+- **测试**: 后端 2051 测试 + 基础设施 196 测试 + 前端 399 单元测试 = **2646+ 测试**
 - **Eval 框架**: EvalPipeline 已实现 (BedrockEvalAdapter + EventBridge 定时触发 + CloudWatch 面板)
 - **后端模块**: 10 个 (9 业务 + shared) + evaluation 扩展 | **前端**: 190+ 源文件, FSD 架构, 12 页面
 - **SDK**: claude-agent-sdk 0.1.35 | bedrock-agentcore 1.3.0
 - **环境策略**: Dev (开发+验证) + Prod (生产)，无 Staging (v1.4 简化)
-- **下一步**: **M14 #15 待开始**（CDK SecurityStack SAML/LDAP + 质量验收 + Prod 部署）
+- **下一步**: **M14 全量质量门通过 ✅ → 待 Prod 部署**（#16 进行中）
 
 ## 模块状态
 
@@ -686,8 +686,8 @@ Session 5:  #14 (质量验收) + progress.md 更新
 
 | # | 任务 | 状态 | 依赖 | 参考规范 | 会话 |
 |---|------|:----:|:----:|---------|------|
-| 15 | CDK: `SecurityStack` 新增 SAML IdP 元数据 SSM 参数 + LDAP SG 出站规则（port 389/636）+ Secrets Manager SAML SP 私钥；`ComputeStack` 新增 SSO callback ALB 路由 | 待开始 | #10 | infra 规范 |  |
-| 16 | 质量验收: `ruff` ✅ `mypy` ✅ `pytest` ≥85% ✅ `infra tests` ✅ + Builder 手动 E2E（对话→配置草稿→确认创建）+ M14 Prod 部署 | 待开始 | #1-#15 | `rules/checklist.md` |  |
+| 15 | CDK: `SecurityStack` 新增 SAML IdP 元数据 SSM 参数 + LDAP SG 出站规则（port 389/636）+ Secrets Manager SAML SP 私钥；`ComputeStack` 新增 SSO callback ALB 路由 | 已完成 | #10 | infra 规范 | 2026-02-22 |
+| 16 | 质量验收: `ruff` ✅ `mypy` ✅ `pytest` ≥85% ✅ `infra tests` ✅ + Builder 手动 E2E（对话→配置草稿→确认创建）+ M14 Prod 部署 | 进行中 | #1-#15 | `rules/checklist.md` | 2026-02-22 |
 
 #### M14 并行策略
 

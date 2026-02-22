@@ -1,5 +1,5 @@
 import * as cdk from 'aws-cdk-lib';
-import { Template } from 'aws-cdk-lib/assertions';
+import { Match, Template } from 'aws-cdk-lib/assertions';
 import { SecurityStack } from '../../lib/stacks/security-stack';
 import { createVpcDependency } from '../helpers/test-utils';
 
@@ -93,6 +93,30 @@ describe('SecurityStack', () => {
       expect(attrStack.apiSecurityGroup).toBeDefined();
       expect(attrStack.dbSecurityGroup).toBeDefined();
       expect(attrStack.jwtSecret).toBeDefined();
+    });
+  });
+
+  describe('SAML SSO 资源', () => {
+    it('should create SAML SP secret in Secrets Manager', () => {
+      template.hasResourceProperties('AWS::SecretsManager::Secret', {
+        Name: Match.stringLikeRegexp('saml-sp'),
+        Description: Match.stringLikeRegexp('SAML'),
+      });
+    });
+
+    it('should create SAML IdP metadata SSM parameter', () => {
+      template.hasResourceProperties('AWS::SSM::Parameter', {
+        Name: Match.stringLikeRegexp('saml-idp-metadata-url'),
+        Type: 'String',
+      });
+    });
+
+    it('should output SAML SP secret ARN', () => {
+      template.hasOutput('SamlSpSecretArn', {});
+    });
+
+    it('should output SAML IdP metadata parameter name', () => {
+      template.hasOutput('SamlIdpMetadataParamName', {});
     });
   });
 });

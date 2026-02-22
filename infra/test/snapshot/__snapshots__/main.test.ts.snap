@@ -1198,7 +1198,7 @@ exports[`Snapshot Tests ComputeStack 快照匹配 1`] = `
               "Timeout": 5,
             },
             "Image": {
-              "Fn::Sub": "000000000000.dkr.ecr.us-east-1.\${AWS::URLSuffix}/cdk-hnb659fds-container-assets-000000000000-us-east-1:aa91b4e81a09e2d7d28790f0cf9611d4d92dfe819f4f37315ffde2f56370ed9f",
+              "Fn::Sub": "000000000000.dkr.ecr.us-east-1.\${AWS::URLSuffix}/cdk-hnb659fds-container-assets-000000000000-us-east-1:add45c58d1a373ae3af03289af52909af9048203e52888d079d43788a46115ee",
             },
             "LogConfiguration": {
               "LogDriver": "awslogs",
@@ -3628,6 +3628,18 @@ exports[`Snapshot Tests SecurityStack 快照匹配 1`] = `
         "Ref": "JwtSecretB8834B39",
       },
     },
+    "SamlIdpMetadataParamName": {
+      "Description": "SSM Parameter name for SAML IdP metadata URL",
+      "Value": {
+        "Ref": "SamlIdpMetadataUrl688B0D0D",
+      },
+    },
+    "SamlSpSecretArn": {
+      "Description": "SAML SP private key and certificate secret ARN",
+      "Value": {
+        "Ref": "SamlSpSecret96FA53C8",
+      },
+    },
   },
   "Parameters": {
     "BootstrapVersion": {
@@ -3767,6 +3779,42 @@ exports[`Snapshot Tests SecurityStack 快照匹配 1`] = `
         },
       },
       "Type": "AWS::KMS::Key",
+      "UpdateReplacePolicy": "Delete",
+    },
+    "SamlIdpMetadataUrl688B0D0D": {
+      "Properties": {
+        "Description": "企业 SAML IdP 元数据 URL，用于 SSO 集成",
+        "Name": "/dev/ai-platform/saml-idp-metadata-url",
+        "Tier": "Standard",
+        "Type": "String",
+        "Value": "https://REPLACE_WITH_ACTUAL_IDP_METADATA_URL",
+      },
+      "Type": "AWS::SSM::Parameter",
+    },
+    "SamlSpSecret96FA53C8": {
+      "DeletionPolicy": "Delete",
+      "Metadata": {
+        "cdk_nag": {
+          "rules_to_suppress": [
+            {
+              "id": "AwsSolutions-SMG4",
+              "reason": "SAML SP key rotation is managed via deployment pipeline, not Secrets Manager auto-rotation",
+            },
+          ],
+        },
+      },
+      "Properties": {
+        "Description": "SAML 2.0 SP 私钥和证书 — 用于 SSO 签名和加密",
+        "KmsKeyId": {
+          "Fn::GetAtt": [
+            "KmsKeyF138A6A4",
+            "Arn",
+          ],
+        },
+        "Name": "dev/ai-platform/saml-sp",
+        "SecretString": "{"private_key":"REPLACE_WITH_ACTUAL_PRIVATE_KEY","certificate":"REPLACE_WITH_ACTUAL_CERTIFICATE","entity_id":"https://ai-agents-platform-dev.example.com/sso/metadata"}",
+      },
+      "Type": "AWS::SecretsManager::Secret",
       "UpdateReplacePolicy": "Delete",
     },
     "SecurityGroupsApiSg103453F9": {

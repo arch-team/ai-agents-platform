@@ -2,6 +2,7 @@ import * as cdk from 'aws-cdk-lib';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as kms from 'aws-cdk-lib/aws-kms';
 import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
+import * as ssm from 'aws-cdk-lib/aws-ssm';
 import { NagSuppressions } from 'cdk-nag';
 import { Construct } from 'constructs';
 import { isProd, type BaseStackProps } from '../config';
@@ -22,6 +23,8 @@ export class SecurityStack extends cdk.Stack {
   public readonly dbSecurityGroup: ec2.SecurityGroup;
   /** JWT 签名密钥 (Secrets Manager) */
   public readonly jwtSecret: secretsmanager.Secret;
+  /** SAML SP 私钥和证书 (Secrets Manager) */
+  public readonly samlSpSecret: secretsmanager.Secret;
 
   constructor(scope: Construct, id: string, props: SecurityStackProps) {
     super(scope, id, props);
@@ -61,6 +64,36 @@ export class SecurityStack extends cdk.Stack {
       },
     ]);
 
+    // SAML SP 私钥和证书（占位符，真实密钥由运维团队在部署时通过 AWS Console 或 CLI 替换）
+    this.samlSpSecret = new secretsmanager.Secret(this, 'SamlSpSecret', {
+      secretName: `${envName}/ai-platform/saml-sp`,
+      description: 'SAML 2.0 SP 私钥和证书 — 用于 SSO 签名和加密',
+      secretStringValue: cdk.SecretValue.unsafePlainText(
+        JSON.stringify({
+          private_key: 'REPLACE_WITH_ACTUAL_PRIVATE_KEY',
+          certificate: 'REPLACE_WITH_ACTUAL_CERTIFICATE',
+          entity_id: `https://ai-agents-platform-${envName}.example.com/sso/metadata`,
+        }),
+      ),
+      encryptionKey: this.encryptionKey,
+    });
+
+    NagSuppressions.addResourceSuppressions(this.samlSpSecret, [
+      {
+        id: 'AwsSolutions-SMG4',
+        reason:
+          'SAML SP key rotation is managed via deployment pipeline, not Secrets Manager auto-rotation',
+      },
+    ]);
+
+    // SAML IdP 元数据 URL（非敏感配置，使用 SSM Parameter）
+    const samlIdpMetadataParam = new ssm.StringParameter(this, 'SamlIdpMetadataUrl', {
+      parameterName: `/${envName}/ai-platform/saml-idp-metadata-url`,
+      stringValue: 'https://REPLACE_WITH_ACTUAL_IDP_METADATA_URL',
+      description: '企业 SAML IdP 元数据 URL，用于 SSO 集成',
+      tier: ssm.ParameterTier.STANDARD,
+    });
+
     if (isProd(envName)) {
       new ec2.InterfaceVpcEndpoint(this, 'SecretsManagerEndpoint', {
         vpc,
@@ -75,6 +108,14 @@ export class SecurityStack extends cdk.Stack {
     new cdk.CfnOutput(this, 'JwtSecretArn', {
       value: this.jwtSecret.secretArn,
       description: 'JWT signing secret ARN',
+    });
+    new cdk.CfnOutput(this, 'SamlSpSecretArn', {
+      value: this.samlSpSecret.secretArn,
+      description: 'SAML SP private key and certificate secret ARN',
+    });
+    new cdk.CfnOutput(this, 'SamlIdpMetadataParamName', {
+      value: samlIdpMetadataParam.parameterName,
+      description: 'SSM Parameter name for SAML IdP metadata URL',
     });
   }
 }

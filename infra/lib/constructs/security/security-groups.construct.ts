@@ -11,6 +11,8 @@ export interface SecurityGroupsConstructProps {
 /**
  * Security Groups Construct - 创建平台安全组。
  * @remarks 最小权限原则，仅开放必要端口。
+ *   - API SG: allowAllOutbound=true 覆盖 AWS 服务端点、外部 API 及 LDAP (389/636) 出站（SSO 所需）
+ *   - DB SG: 仅允许 API SG 访问 MySQL 3306
  */
 export class SecurityGroupsConstruct extends Construct {
   /** API 服务安全组 (ECS/Lambda) */
