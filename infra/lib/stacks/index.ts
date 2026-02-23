@@ -11,3 +11,5 @@ export { AgentCoreStack } from './agentcore-stack';
 export type { AgentCoreStackProps } from './agentcore-stack';
 export { MonitoringStack } from './monitoring-stack';
 export type { MonitoringStackProps } from './monitoring-stack';
+export { FrontendStack } from './frontend-stack';
+export type { FrontendStackProps } from './frontend-stack';

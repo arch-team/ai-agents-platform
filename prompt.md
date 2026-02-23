@@ -366,3 +366,8 @@ ai-agents-plat-agentCore-staging
   Session 6:  M12 质量验收 → Phase 4 关闭
 
   建议先做 M12 规划拆解 — 像 M11 一样先分析依赖关系、拆解任务、确定并行策略，再开始执行。要开始吗？
+
+
+  /everything-claude-code:e2e                                                                                  
+  对这个系统中的功能模块进行深入全面的E2E测试，http://ai-agents-platform-frontend-dev-897473.s3-website-us-east 
+  -1.amazonaws.com/，对照vision-mission.md和roadmap.md和progress.md测试功能完整正确无法的实现了   

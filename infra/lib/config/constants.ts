@@ -44,15 +44,16 @@ export function isProd(envName: EnvironmentName): boolean {
 
 /**
  * 获取 CORS 允许的源列表。
- * @remarks Dev 环境包含 localhost 和 S3 静态站点; Prod 仅允许 S3 静态站点
+ * @remarks Dev 环境包含 localhost 和 CloudFront; Prod 仅允许 CloudFront
  */
 export function getCorsAllowedOrigins(envName: EnvironmentName): string[] {
   if (envName === 'prod') {
-    return ['http://ai-agents-platform-frontend-prod-897473.s3-website-us-east-1.amazonaws.com'];
+    return ['https://d1dlap8e3g6mt5.cloudfront.net'];
   }
   return [
     'http://localhost:3000',
-    'http://ai-agents-platform-frontend-dev-897473.s3-website-us-east-1.amazonaws.com',
+    'http://localhost:5173',
+    'https://d2k7ovgb2e4af9.cloudfront.net',
   ];
 }
 

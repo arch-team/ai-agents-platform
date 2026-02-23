@@ -11,6 +11,7 @@ import {
   ComputeStack,
   AgentCoreStack,
   MonitoringStack,
+  FrontendStack,
 } from '../lib/stacks';
 
 const app = new cdk.App();
@@ -108,5 +109,11 @@ const monitoringStack = new MonitoringStack(app, `${prefix}-monitoring-${env}`, 
 monitoringStack.addDependency(databaseStack);
 monitoringStack.addDependency(computeStack);
 monitoringStack.addDependency(securityStack);
+
+// FrontendStack — S3 私有 + CloudFront OAC，独立 Stack，无需依赖其他 Stack
+new FrontendStack(app, `${prefix}-frontend-${env}`, {
+  env: cdkEnv,
+  envName: env,
+});
 
 app.synth();
