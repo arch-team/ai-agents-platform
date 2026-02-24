@@ -49,3 +49,13 @@ class SsoInitRequest(BaseModel):
     """SSO 登录发起请求。"""
 
     return_url: str = Field(description="SSO 登录成功后的回调 URL")
+
+
+class LdapTestRequest(BaseModel):
+    """LDAP 连接测试请求（可选覆盖 Settings 默认值）。"""
+
+    server_url: str | None = Field(default=None, description="LDAP 服务器 URL (如 ldap://ldap.company.com:389)")
+    bind_dn: str | None = Field(default=None, description="绑定 DN")
+    bind_password: str | None = Field(default=None, description="绑定密码")
+    base_dn: str | None = Field(default=None, description="搜索基准 DN")
+    use_tls: bool | None = Field(default=None, description="是否使用 STARTTLS")

@@ -1,5 +1,7 @@
 """SSO 认证服务。"""
 
+from dataclasses import dataclass
+
 import structlog
 from onelogin.saml2.auth import OneLogin_Saml2_Auth
 
@@ -11,6 +13,15 @@ from src.modules.auth.domain.value_objects.sso_provider import SsoProvider
 
 
 logger = structlog.get_logger(__name__)
+
+
+@dataclass(frozen=True)
+class LdapTestResult:
+    """LDAP 连接测试结果。"""
+
+    success: bool
+    message: str
+    details: dict[str, str]
 
 
 class SsoService:
@@ -181,3 +192,92 @@ class SsoService:
             expire_minutes=self._jwt_expire_minutes,
             extra_claims={"role": user.role.value, "sso_provider": user.sso_provider.value},
         )
+
+    async def test_ldap_connection(
+        self,
+        *,
+        server_url: str,
+        bind_dn: str,
+        bind_password: str,
+        base_dn: str,
+        use_tls: bool = False,
+    ) -> LdapTestResult:
+        """测试 LDAP 服务器连接，返回测试结果。
+
+        使用 asyncio.to_thread 包装 ldap3 同步调用。
+
+        Raises:
+            无 — 所有异常转为 LdapTestResult(success=False)
+        """
+        import asyncio
+
+        return await asyncio.to_thread(
+            self._test_ldap_connection_sync,
+            server_url=server_url,
+            bind_dn=bind_dn,
+            bind_password=bind_password,
+            base_dn=base_dn,
+            use_tls=use_tls,
+        )
+
+    @staticmethod
+    def _test_ldap_connection_sync(
+        *,
+        server_url: str,
+        bind_dn: str,
+        bind_password: str,
+        base_dn: str,
+        use_tls: bool = False,
+    ) -> LdapTestResult:
+        """同步 LDAP 连接测试: 连接 → bind → search（在线程池中执行）。"""
+        import ssl
+
+        from ldap3 import ALL, Connection, Server, Tls
+        from ldap3.core.exceptions import LDAPException, LDAPSocketOpenError
+
+        details: dict[str, str] = {
+            "server_url": server_url,
+            "bind_dn": bind_dn,
+            "base_dn": base_dn,
+            "use_tls": str(use_tls),
+        }
+
+        # 1. 创建 Server 连接
+        try:
+            tls_config = Tls(validate=ssl.CERT_NONE) if use_tls else None
+            server = Server(server_url, use_ssl=server_url.startswith("ldaps://"), tls=tls_config, get_info=ALL)
+        except LDAPException as e:
+            return LdapTestResult(success=False, message=f"LDAP 服务器配置错误: {e}", details=details)
+
+        # 2. Bind 认证
+        try:
+            conn = Connection(server, user=bind_dn, password=bind_password, auto_bind=True)
+        except LDAPSocketOpenError:
+            return LdapTestResult(success=False, message="LDAP 服务器不可达, 请检查 URL 和网络连通性", details=details)
+        except LDAPException as e:
+            return LdapTestResult(success=False, message=f"LDAP bind 失败(凭证错误或权限不足): {e}", details=details)
+
+        # 3. STARTTLS (如配置)
+        if use_tls and not server_url.startswith("ldaps://"):
+            try:
+                conn.start_tls()
+            except LDAPException as e:
+                conn.unbind()
+                return LdapTestResult(success=False, message=f"STARTTLS 协商失败: {e}", details=details)
+
+        # 4. Search 验证 (确认搜索权限)
+        try:
+            conn.search(search_base=base_dn, search_filter="(objectClass=*)", size_limit=1)
+            entry_count = len(conn.entries)
+            details["search_result"] = f"找到 {entry_count} 条目"
+        except LDAPException as e:
+            conn.unbind()
+            return LdapTestResult(
+                success=False,
+                message=f"LDAP 搜索失败(权限不足或 base_dn 无效): {e}",
+                details=details,
+            )
+
+        conn.unbind()
+        details["server_info"] = str(server.info.vendor_name) if server.info and server.info.vendor_name else "未知"
+        return LdapTestResult(success=True, message="LDAP 连接测试成功: bind + search 均通过", details=details)

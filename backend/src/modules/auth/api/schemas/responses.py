@@ -32,3 +32,11 @@ class SsoInitResponse(BaseModel):
 
     redirect_url: str
     request_id: str = ""
+
+
+class LdapTestResponse(BaseModel):
+    """LDAP 连接测试响应。"""
+
+    success: bool
+    message: str
+    details: dict[str, str] = {}  # 连接细节 (server_url, bind_dn, base_dn 等)

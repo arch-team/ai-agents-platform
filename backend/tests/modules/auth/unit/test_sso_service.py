@@ -23,7 +23,9 @@ class TestSsoServiceIsConfigured:
 class TestSsoServiceInitSamlLogin:
     @patch("src.modules.auth.application.services.sso_service.OneLogin_Saml2_Auth")
     def test_returns_redirect_url_and_request_id(
-        self, mock_auth_cls: MagicMock, sso_service: SsoService,
+        self,
+        mock_auth_cls: MagicMock,
+        sso_service: SsoService,
     ) -> None:
         # Arrange
         mock_auth = MagicMock()
@@ -39,7 +41,8 @@ class TestSsoServiceInitSamlLogin:
 
         # Act
         redirect_url, request_id = sso_service.init_saml_login(
-            request_data, return_url="https://app.example.com/dashboard",
+            request_data,
+            return_url="https://app.example.com/dashboard",
         )
 
         # Assert
@@ -57,7 +60,10 @@ class TestSsoServiceProcessSamlCallback:
     @pytest.mark.asyncio
     @patch("src.modules.auth.application.services.sso_service.OneLogin_Saml2_Auth")
     async def test_creates_new_user_on_first_login(
-        self, mock_auth_cls: MagicMock, sso_service: SsoService, mock_user_repo: AsyncMock,
+        self,
+        mock_auth_cls: MagicMock,
+        sso_service: SsoService,
+        mock_user_repo: AsyncMock,
     ) -> None:
         # Arrange: SAML 验证成功
         mock_auth = MagicMock()
@@ -93,7 +99,10 @@ class TestSsoServiceProcessSamlCallback:
     @pytest.mark.asyncio
     @patch("src.modules.auth.application.services.sso_service.OneLogin_Saml2_Auth")
     async def test_returns_existing_user_on_subsequent_login(
-        self, mock_auth_cls: MagicMock, sso_service: SsoService, mock_user_repo: AsyncMock,
+        self,
+        mock_auth_cls: MagicMock,
+        sso_service: SsoService,
+        mock_user_repo: AsyncMock,
     ) -> None:
         # Arrange: SAML 验证成功
         mock_auth = MagicMock()
@@ -127,7 +136,9 @@ class TestSsoServiceProcessSamlCallback:
     @pytest.mark.asyncio
     @patch("src.modules.auth.application.services.sso_service.OneLogin_Saml2_Auth")
     async def test_raises_sso_auth_error_on_validation_failure(
-        self, mock_auth_cls: MagicMock, sso_service: SsoService,
+        self,
+        mock_auth_cls: MagicMock,
+        sso_service: SsoService,
     ) -> None:
         # Arrange: SAML 验证失败
         mock_auth = MagicMock()
@@ -145,7 +156,9 @@ class TestSsoServiceProcessSamlCallback:
     @pytest.mark.asyncio
     @patch("src.modules.auth.application.services.sso_service.OneLogin_Saml2_Auth")
     async def test_raises_sso_auth_error_when_not_authenticated(
-        self, mock_auth_cls: MagicMock, sso_service: SsoService,
+        self,
+        mock_auth_cls: MagicMock,
+        sso_service: SsoService,
     ) -> None:
         # Arrange: 无错误但未认证
         mock_auth = MagicMock()
@@ -163,7 +176,9 @@ class TestSsoServiceProcessSamlCallback:
     @pytest.mark.asyncio
     @patch("src.modules.auth.application.services.sso_service.OneLogin_Saml2_Auth")
     async def test_raises_sso_auth_error_when_missing_nameid(
-        self, mock_auth_cls: MagicMock, sso_service: SsoService,
+        self,
+        mock_auth_cls: MagicMock,
+        sso_service: SsoService,
     ) -> None:
         # Arrange: 认证成功但无 NameID
         mock_auth = MagicMock()
@@ -197,3 +212,114 @@ class TestSsoServiceCreateToken:
 
         assert isinstance(token, str)
         assert len(token) > 0
+
+
+LDAP_PARAMS = {
+    "server_url": "ldap://ldap.example.com:389",
+    "bind_dn": "cn=admin,dc=example,dc=com",
+    "bind_password": "secret",
+    "base_dn": "dc=example,dc=com",
+    "use_tls": False,
+}
+
+
+@pytest.mark.unit
+class TestSsoServiceLdapConnectionTest:
+    """LDAP 连接测试 — 通过 mock ldap3 验证三阶段逻辑。"""
+
+    @patch("ldap3.Connection")
+    @patch("ldap3.Server")
+    def test_success_bind_and_search(self, mock_server_cls: MagicMock, mock_conn_cls: MagicMock) -> None:
+        # Arrange
+        mock_server = MagicMock()
+        mock_server.info.vendor_name = "OpenLDAP"
+        mock_server_cls.return_value = mock_server
+
+        mock_conn = MagicMock()
+        mock_conn.entries = [MagicMock()]  # 1 条搜索结果
+        mock_conn_cls.return_value = mock_conn
+
+        # Act
+        result = SsoService._test_ldap_connection_sync(**LDAP_PARAMS)
+
+        # Assert
+        assert result.success is True
+        assert "bind + search 均通过" in result.message
+        assert result.details["server_url"] == "ldap://ldap.example.com:389"
+        mock_conn.search.assert_called_once()
+        mock_conn.unbind.assert_called_once()
+
+    @patch("ldap3.Server")
+    def test_server_unreachable(self, mock_server_cls: MagicMock) -> None:
+        from ldap3.core.exceptions import LDAPSocketOpenError
+
+        mock_server_cls.return_value = MagicMock()
+
+        # Connection 抛出 socket 异常
+        with patch(
+            "ldap3.Connection",
+            side_effect=LDAPSocketOpenError("unreachable"),
+        ):
+            result = SsoService._test_ldap_connection_sync(**LDAP_PARAMS)
+
+        assert result.success is False
+        assert "不可达" in result.message
+
+    @patch("ldap3.Server")
+    def test_bind_failure_bad_credentials(self, mock_server_cls: MagicMock) -> None:
+        from ldap3.core.exceptions import LDAPBindError
+
+        mock_server_cls.return_value = MagicMock()
+
+        with patch(
+            "ldap3.Connection",
+            side_effect=LDAPBindError("invalid credentials"),
+        ):
+            result = SsoService._test_ldap_connection_sync(**LDAP_PARAMS)
+
+        assert result.success is False
+        assert "bind 失败" in result.message
+
+    @patch("ldap3.Connection")
+    @patch("ldap3.Server")
+    def test_search_failure_permission_denied(self, mock_server_cls: MagicMock, mock_conn_cls: MagicMock) -> None:
+        from ldap3.core.exceptions import LDAPOperationResult
+
+        mock_server_cls.return_value = MagicMock()
+        mock_conn = MagicMock()
+        mock_conn.search.side_effect = LDAPOperationResult(result=50, description="insufficientAccessRights")
+        mock_conn_cls.return_value = mock_conn
+
+        result = SsoService._test_ldap_connection_sync(**LDAP_PARAMS)
+
+        assert result.success is False
+        assert "搜索失败" in result.message
+        mock_conn.unbind.assert_called_once()
+
+    @patch("ldap3.Connection")
+    @patch("ldap3.Server")
+    def test_tls_negotiation_failure(self, mock_server_cls: MagicMock, mock_conn_cls: MagicMock) -> None:
+        from ldap3.core.exceptions import LDAPStartTLSError
+
+        mock_server_cls.return_value = MagicMock()
+        mock_conn = MagicMock()
+        mock_conn.start_tls.side_effect = LDAPStartTLSError("TLS failed")
+        mock_conn_cls.return_value = mock_conn
+
+        result = SsoService._test_ldap_connection_sync(**{**LDAP_PARAMS, "use_tls": True})
+
+        assert result.success is False
+        assert "STARTTLS" in result.message
+        mock_conn.unbind.assert_called_once()
+
+    def test_details_always_contain_diagnostic_fields(self) -> None:
+        """即使失败，details 也包含诊断字段。"""
+        from ldap3.core.exceptions import LDAPSocketOpenError
+
+        with patch("ldap3.Server"):
+            with patch("ldap3.Connection", side_effect=LDAPSocketOpenError("fail")):
+                result = SsoService._test_ldap_connection_sync(**LDAP_PARAMS)
+
+        assert "server_url" in result.details
+        assert "bind_dn" in result.details
+        assert "base_dn" in result.details

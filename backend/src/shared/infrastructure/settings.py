@@ -135,6 +135,13 @@ class Settings(BaseSettings):
     SAML_SP_CERTIFICATE: str = ""  # PEM 格式证书
     SAML_IDP_METADATA_URL: str = ""  # IdP metadata URL
 
+    # LDAP 配置
+    LDAP_SERVER_URL: str = ""  # LDAP 服务器 URL (如 ldap://ldap.company.com:389)
+    LDAP_BIND_DN: str = ""  # 绑定 DN (如 cn=admin,dc=company,dc=com)
+    LDAP_BIND_PASSWORD: SecretStr = SecretStr("")  # 绑定密码
+    LDAP_BASE_DN: str = ""  # 搜索基准 DN (如 dc=company,dc=com)
+    LDAP_USE_TLS: bool = False  # 是否使用 STARTTLS
+
     # OpenTelemetry 可观测性
     OTEL_EXPORTER_OTLP_ENDPOINT: str = ""  # OTLP 导出端点 (如 http://localhost:4317)
 

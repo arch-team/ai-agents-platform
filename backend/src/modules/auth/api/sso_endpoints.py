@@ -6,10 +6,13 @@ import structlog
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import Response
 
-from src.modules.auth.api.dependencies import get_sso_service
-from src.modules.auth.api.schemas.requests import SsoInitRequest
-from src.modules.auth.api.schemas.responses import SsoInitResponse, TokenResponse
+from src.modules.auth.api.dependencies import get_sso_service, require_role
+from src.modules.auth.api.schemas.requests import LdapTestRequest, SsoInitRequest
+from src.modules.auth.api.schemas.responses import LdapTestResponse, SsoInitResponse, TokenResponse
 from src.modules.auth.application.services.sso_service import SsoService
+from src.modules.auth.domain.entities.user import User
+from src.modules.auth.domain.value_objects.role import Role
+from src.shared.infrastructure.settings import Settings, get_settings
 
 
 router = APIRouter(prefix="/api/v1/auth/sso", tags=["auth-sso"])
@@ -78,3 +81,32 @@ async def sso_callback(
     )
 
     return TokenResponse(access_token=access_token)  # token_type 默认 "bearer"
+
+
+@router.post("/ldap/test")
+async def sso_ldap_test(
+    body: LdapTestRequest,
+    _current_user: Annotated[User, Depends(require_role(Role.ADMIN))],
+    service: Annotated[SsoService, Depends(get_sso_service)],
+    settings: Annotated[Settings, Depends(get_settings)],
+) -> LdapTestResponse:
+    """测试 LDAP 连接（仅 ADMIN）。请求体可选覆盖 Settings 默认值。"""
+    server_url = body.server_url or settings.LDAP_SERVER_URL
+    bind_dn = body.bind_dn or settings.LDAP_BIND_DN
+    bind_password = body.bind_password or settings.LDAP_BIND_PASSWORD.get_secret_value()
+    base_dn = body.base_dn or settings.LDAP_BASE_DN
+    use_tls = body.use_tls if body.use_tls is not None else settings.LDAP_USE_TLS
+
+    if not server_url:
+        return LdapTestResponse(success=False, message="LDAP 服务器 URL 未配置")
+
+    result = await service.test_ldap_connection(
+        server_url=server_url,
+        bind_dn=bind_dn,
+        bind_password=bind_password,
+        base_dn=base_dn,
+        use_tls=use_tls,
+    )
+
+    logger.info("ldap_test_completed", success=result.success, server_url=server_url)
+    return LdapTestResponse(success=result.success, message=result.message, details=result.details)

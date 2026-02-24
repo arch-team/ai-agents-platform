@@ -6,7 +6,7 @@
 
 - **阶段**: Phase 5 Agent 驱动的企业智能 (18-30 月) — **M14 🔄 进行中**
 - **里程碑**: Phase 4 全闭 ✅ → M13（自动化评估）✅ → Phase 5: M14（Builder MCP + SSO）✅ → **M15（规模运营）**
-- **变更积压**: Phase 2-3: 24/24 ✅ | Phase 4: 19/19 ✅ | AgentCore P3: 5/5 ✅ | Phase 5: 0/5 🔄
+- **变更积压**: Phase 2-3: 24/24 ✅ | Phase 4: 19/19 ✅ | AgentCore P3: 5/5 ✅ | Phase 5: 2/5 🔄
 - **关键发现**: 无当前阻断项
 - **Dev 环境**: 后端 ECS (256 CPU/512 MiB) + 前端 S3 + CORS + Bedrock IAM ✅ | ALB `ai-agents-dev-546356512.us-east-1.elb.amazonaws.com`
 - **Prod 环境**: 后端 ECS (512 CPU/1024 MiB/2 任务) + Aurora db.r6g.large (Writer+Reader) ✅ | ALB `ai-agents-prod-1419512933.us-east-1.elb.amazonaws.com`
@@ -799,19 +799,19 @@ auth SSO (#10-#12)    ── 100% 并行 ──── ┤──► 前端 (#13-#
 
 | 编号 | 变更描述 | 状态 | 依赖 | 来源 | 影响范围 | 参考规范 | 会话 |
 |------|---------|:----:|:----:|------|---------|---------|------|
-| C-S5-1 | `python3-saml3` + `ldap3` 依赖引入（`pyproject.toml` + `uv sync`） | 待开始 | - | Phase 5 季度评审 | backend/pyproject.toml | `rules/sdk-first.md` |  |
-| C-S5-2 | MyPy 存量 20 errors 治理（`# type: ignore` 注释或 stub 安装） | 待开始 | - | Phase 5 季度评审 | shared + modules | `rules/tech-stack.md` |  |
+| C-S5-1 | `python3-saml3` + `ldap3` 依赖引入（`pyproject.toml` + `uv sync`） | 已完成 | - | Phase 5 季度评审 | backend/pyproject.toml | `rules/sdk-first.md` | 2026-02-24 |
+| C-S5-2 | MyPy 存量 20 errors 治理（`# type: ignore` 注释或 stub 安装） | 已完成 | - | Phase 5 季度评审 | shared + modules | `rules/tech-stack.md` | 2026-02-24 |
 | C-S5-3 | Builder SSE 与 execution SSE 并发隔离监控（CloudWatch 指标） | 待开始 | M14 #15 | Phase 5 季度评审 | infra/monitoring | infra 规范 |  |
 | C-S5-4 | LDAP SG 出站规则实际网络地址确认（依赖运维团队） | 待开始 | - | Phase 5 季度评审 | infra/SecurityStack | infra 规范 |  |
 | C-S5-5 | `AdminPage` LDAP 连接测试后端端点（`POST /auth/sso/ldap/test`） | 待开始 | M14 #10 | Phase 5 季度评审 | auth 模块 | `rules/api-design.md` |  |
 
 | 级别 | 数量 | 当前进度 |
 |------|:----:|---------|
-| S1 安全 | 1 (C-S5-1) | 0/1 🔄 |
-| S2 技术债务 | 2 (C-S5-2, C-S5-5) | 0/2 🔄 |
+| S1 安全 | 1 (C-S5-1) | **1/1 ✅** |
+| S2 技术债务 | 2 (C-S5-2, C-S5-5) | 1/2 🔄 |
 | S3 运维 | 1 (C-S5-4) | 0/1 🔄 |
 | S4 监控 | 1 (C-S5-3) | 0/1 🔄 |
-| **合计** | **5** | **0/5 🔄** |
+| **合计** | **5** | **2/5 🔄** |
 
 ---
 
