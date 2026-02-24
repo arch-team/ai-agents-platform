@@ -12,6 +12,7 @@ import {
   AgentCoreStack,
   MonitoringStack,
   FrontendStack,
+  BillingStack,
 } from '../lib/stacks';
 
 const app = new cdk.App();
@@ -114,6 +115,13 @@ monitoringStack.addDependency(securityStack);
 new FrontendStack(app, `${prefix}-frontend-${env}`, {
   env: cdkEnv,
   envName: env,
+});
+
+// BillingStack — AWS Budgets 月度预算告警，独立 Stack，无需依赖其他 Stack
+new BillingStack(app, `${prefix}-billing-${env}`, {
+  env: cdkEnv,
+  envName: env,
+  alertEmail: envConfig.alertEmail,
 });
 
 app.synth();

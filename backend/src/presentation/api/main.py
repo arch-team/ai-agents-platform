@@ -605,6 +605,11 @@ def create_app() -> FastAPI:
         AuditNotFoundError: 404,
         # builder
         BuilderSessionNotFoundError: 404,
+        # billing
+        DepartmentNotFoundError: 404,
+        BudgetNotFoundError: 404,
+        DuplicateDepartmentCodeError: 409,
+        BudgetExceededError: 409,
         # shared — SSE 连接限制
         TooManySSEConnectionsError: 429,
     }
@@ -623,6 +628,7 @@ def create_app() -> FastAPI:
     app.include_router(admin_router)
     app.include_router(sso_router)
     app.include_router(agents_router)
+    app.include_router(billing_router)
     app.include_router(execution_router)
     app.include_router(team_execution_router)
     app.include_router(preview_router)

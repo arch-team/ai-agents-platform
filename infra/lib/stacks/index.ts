@@ -13,3 +13,5 @@ export { MonitoringStack } from './monitoring-stack';
 export type { MonitoringStackProps } from './monitoring-stack';
 export { FrontendStack } from './frontend-stack';
 export type { FrontendStackProps } from './frontend-stack';
+export { BillingStack } from './billing-stack';
+export type { BillingStackProps } from './billing-stack';
