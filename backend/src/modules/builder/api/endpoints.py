@@ -51,18 +51,22 @@ async def generate_config_stream(
     service: ServiceDep,
     current_user: CurrentUserDep,
 ) -> EventSourceResponse:
-    """SSE 流式生成 Agent 配置。"""
+    """SSE 流式生成 Agent 配置 (受 SSEConnectionManager 并发限制)。"""
+    from src.shared.infrastructure.sse_connection_manager import get_sse_manager
+
+    sse_manager = get_sse_manager()
 
     async def event_generator() -> AsyncIterator[ServerSentEvent]:
-        try:
-            async for chunk in service.generate_config_stream(session_id, current_user.id):
-                yield ServerSentEvent(data=json.dumps({"content": chunk, "done": False}))
-            yield ServerSentEvent(data=json.dumps({"content": "", "done": True}))
-        except DomainError as e:
-            yield ServerSentEvent(data=json.dumps({"error": e.message, "done": True}))
-        except Exception:
-            logger.exception("builder_sse_stream_error", session_id=session_id)
-            yield ServerSentEvent(data=json.dumps({"error": "服务内部错误", "done": True}))
+        async with sse_manager.connect(current_user.id):
+            try:
+                async for chunk in service.generate_config_stream(session_id, current_user.id):
+                    yield ServerSentEvent(data=json.dumps({"content": chunk, "done": False}))
+                yield ServerSentEvent(data=json.dumps({"content": "", "done": True}))
+            except DomainError as e:
+                yield ServerSentEvent(data=json.dumps({"error": e.message, "done": True}))
+            except Exception:
+                logger.exception("builder_sse_stream_error", session_id=session_id)
+                yield ServerSentEvent(data=json.dumps({"error": "服务内部错误", "done": True}))
 
     return EventSourceResponse(event_generator())
 

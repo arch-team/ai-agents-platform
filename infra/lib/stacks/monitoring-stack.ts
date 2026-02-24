@@ -289,6 +289,41 @@ export class MonitoringStack extends cdk.Stack {
         width: 12,
       }),
     );
+
+    // SSE 并发连接指标 (C-S5-3 — Builder + Execution SSE 隔离监控)
+    dashboard.addWidgets(
+      new cloudwatch.TextWidget({
+        markdown: '## SSE Connections',
+        width: 24,
+        height: 1,
+      }),
+    );
+    dashboard.addWidgets(
+      new cloudwatch.GraphWidget({
+        title: 'SSE Active Connections',
+        left: [
+          new cloudwatch.Metric({
+            namespace: 'SSEConnections',
+            metricName: 'ActiveConnections',
+            period: METRIC_PERIOD,
+            statistic: 'Maximum',
+          }),
+        ],
+        width: 12,
+      }),
+      new cloudwatch.GraphWidget({
+        title: 'SSE Active Users',
+        left: [
+          new cloudwatch.Metric({
+            namespace: 'SSEConnections',
+            metricName: 'ActiveUsers',
+            period: METRIC_PERIOD,
+            statistic: 'Maximum',
+          }),
+        ],
+        width: 12,
+      }),
+    );
   }
 
   /** CDK Nag 合规规则抑制 */

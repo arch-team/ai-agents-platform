@@ -1198,7 +1198,7 @@ exports[`Snapshot Tests ComputeStack 快照匹配 1`] = `
               "Timeout": 5,
             },
             "Image": {
-              "Fn::Sub": "000000000000.dkr.ecr.us-east-1.\${AWS::URLSuffix}/cdk-hnb659fds-container-assets-000000000000-us-east-1:dc6678e713b8a24c116d84ae982ebfdc0fefceacf5700705aaea716a627616bd",
+              "Fn::Sub": "000000000000.dkr.ecr.us-east-1.\${AWS::URLSuffix}/cdk-hnb659fds-container-assets-000000000000-us-east-1:2a2b174fdec7865e4ee25bed250975c735948b030fb92e1ca48ab57fdcf75557",
             },
             "LogConfiguration": {
               "LogDriver": "awslogs",
@@ -2627,7 +2627,15 @@ exports[`Snapshot Tests MonitoringStack 快照匹配 1`] = `
               {
                 "Ref": "AWS::Region",
               },
-              "","metrics":[["EvalPipeline","JobFailed",{"stat":"Sum"}]],"yAxis":{}}}]}",
+              "","metrics":[["EvalPipeline","JobFailed",{"stat":"Sum"}]],"yAxis":{}}},{"type":"text","width":24,"height":1,"x":0,"y":25,"properties":{"markdown":"## SSE Connections"}},{"type":"metric","width":12,"height":6,"x":0,"y":26,"properties":{"view":"timeSeries","title":"SSE Active Connections","region":"",
+              {
+                "Ref": "AWS::Region",
+              },
+              "","metrics":[["SSEConnections","ActiveConnections",{"stat":"Maximum"}]],"yAxis":{}}},{"type":"metric","width":12,"height":6,"x":12,"y":26,"properties":{"view":"timeSeries","title":"SSE Active Users","region":"",
+              {
+                "Ref": "AWS::Region",
+              },
+              "","metrics":[["SSEConnections","ActiveUsers",{"stat":"Maximum"}]],"yAxis":{}}}]}",
             ],
           ],
         },
