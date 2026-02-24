@@ -32,6 +32,7 @@ class KnowledgeBaseModel(Base):
     bedrock_kb_id: Mapped[str] = mapped_column(String(200), nullable=False, default="")
     s3_prefix: Mapped[str] = mapped_column(String(500), nullable=False, default="")
     error_message: Mapped[str] = mapped_column(String(2000), nullable=False, default="")
+    department_id: Mapped[int | None] = mapped_column(Integer, nullable=True, default=None, index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=utc_now)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime,

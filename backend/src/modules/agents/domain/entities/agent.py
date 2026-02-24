@@ -20,6 +20,7 @@ class Agent(PydanticEntity):
     status: AgentStatus = AgentStatus.DRAFT
     owner_id: int
     config: AgentConfig = Field(default_factory=AgentConfig)
+    department_id: int | None = None  # 所属部门 (允许 NULL, 渐进填充)
 
     def activate(self) -> None:
         """激活 Agent。DRAFT -> ACTIVE，需要 system_prompt 非空。"""

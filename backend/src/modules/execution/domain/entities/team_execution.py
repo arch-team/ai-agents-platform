@@ -24,6 +24,7 @@ class TeamExecution(PydanticEntity):
     output_tokens: int = Field(default=0, ge=0)
     started_at: datetime | None = None
     completed_at: datetime | None = None
+    department_id: int | None = None  # 所属部门 (允许 NULL, 渐进填充)
 
     def start(self) -> None:
         """启动执行。PENDING -> RUNNING。"""

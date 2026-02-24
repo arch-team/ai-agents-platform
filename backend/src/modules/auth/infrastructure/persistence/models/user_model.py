@@ -24,5 +24,6 @@ class UserModel(Base):
     locked_until: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, default=None)
     sso_provider: Mapped[str] = mapped_column(String(20), nullable=False, default="INTERNAL")
     sso_subject: Mapped[str | None] = mapped_column(String(512), nullable=True, default=None)
+    department_id: Mapped[int | None] = mapped_column(Integer, nullable=True, default=None, index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=utc_now)
     updated_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=utc_now, onupdate=utc_now)

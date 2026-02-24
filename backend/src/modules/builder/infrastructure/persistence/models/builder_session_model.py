@@ -30,6 +30,7 @@ class BuilderSessionModel(Base):
         ForeignKey("agents.id"),
         nullable=True,
     )
+    department_id: Mapped[int | None] = mapped_column(Integer, nullable=True, default=None, index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=utc_now)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime,

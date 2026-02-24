@@ -19,6 +19,7 @@ class BuilderSession(PydanticEntity):
     generated_config: dict[str, Any] | None = None
     agent_name: str | None = None
     created_agent_id: int | None = None
+    department_id: int | None = None  # 所属部门 (允许 NULL, 渐进填充)
 
     def start_generation(self) -> None:
         """启动生成。PENDING -> GENERATING。"""

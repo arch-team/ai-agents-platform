@@ -17,6 +17,7 @@ class Conversation(PydanticEntity):
     status: ConversationStatus = ConversationStatus.ACTIVE
     message_count: int = Field(default=0, ge=0)
     total_tokens: int = Field(default=0, ge=0)
+    department_id: int | None = None  # 所属部门 (允许 NULL, 渐进填充)
 
     def _require_active(self, target: str) -> None:
         self._require_status(self.status, ConversationStatus.ACTIVE, target)

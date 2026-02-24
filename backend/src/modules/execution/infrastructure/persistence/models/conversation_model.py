@@ -31,6 +31,7 @@ class ConversationModel(Base):
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="active")
     message_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     total_tokens: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    department_id: Mapped[int | None] = mapped_column(Integer, nullable=True, default=None, index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=utc_now)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime,

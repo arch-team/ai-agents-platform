@@ -26,6 +26,7 @@ class Tool(PydanticEntity):
     reviewed_at: datetime | None = None
     allowed_roles: tuple[str, ...] = ("admin", "developer")
     gateway_target_id: str = ""  # AgentCore Gateway Target ID (MCP_SERVER 审批后填充)
+    department_id: int | None = None  # 所属部门 (允许 NULL, 渐进填充)
 
     def submit(self) -> None:
         """DRAFT -> PENDING_REVIEW。需 name + description + config 完整。"""

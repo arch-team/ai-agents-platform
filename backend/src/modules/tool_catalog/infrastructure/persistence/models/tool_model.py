@@ -47,6 +47,8 @@ class ToolModel(Base):
     # Gateway 同步字段
     gateway_target_id: Mapped[str] = mapped_column(String(200), nullable=False, default="")
 
+    department_id: Mapped[int | None] = mapped_column(Integer, nullable=True, default=None, index=True)
+
     # 审批字段
     reviewer_id: Mapped[int | None] = mapped_column(
         Integer,

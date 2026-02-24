@@ -21,6 +21,7 @@ class User(PydanticEntity):
     locked_until: datetime | None = None
     sso_provider: SsoProvider = SsoProvider.INTERNAL
     sso_subject: str | None = None  # SAML NameID / LDAP DN, SSO 用户唯一标识
+    department_id: int | None = None  # 所属部门 (允许 NULL, 渐进填充)
 
     @property
     def is_locked(self) -> bool:

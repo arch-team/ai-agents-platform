@@ -23,6 +23,7 @@ class KnowledgeBase(PydanticEntity):
     bedrock_kb_id: str = ""
     s3_prefix: str = ""
     error_message: str = ""
+    department_id: int | None = None  # 所属部门 (允许 NULL, 渐进填充)
 
     def activate(self) -> None:
         """激活知识库。CREATING -> ACTIVE。"""
