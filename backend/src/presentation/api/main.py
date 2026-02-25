@@ -22,6 +22,13 @@ from src.modules.auth.domain.exceptions import (
     SsoAuthError,
     SsoNotConfiguredError,
 )
+from src.modules.billing.api.endpoints import router as billing_router
+from src.modules.billing.domain.exceptions import (
+    BudgetExceededError,
+    BudgetNotFoundError,
+    DepartmentNotFoundError,
+    DuplicateDepartmentCodeError,
+)
 from src.modules.builder.api.endpoints import router as builder_router
 from src.modules.builder.domain.exceptions import BuilderSessionNotFoundError
 from src.modules.evaluation.api.endpoints import router as evaluation_router
