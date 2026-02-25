@@ -5,7 +5,7 @@
 ## 当前工作
 
 - **进行中**：（无）
-- **待 Review**：CR-010 BillingPage 前端（PF-011）
+- **待 Review**：CR-011 P95 性能验证（PF-010）
 - **阻塞**：（无）
 
 ## 已完成
@@ -19,9 +19,10 @@
 - ✅ CR-007 BillingStack CDK（2026-02-25 merged）
 - ✅ CR-008 billing 部门预算配额（2026-02-25 merged，DDD 完整模块）
 - ✅ CR-009 billing ROI 报告（2026-02-25 merged，CostExplorer 按部门 tag 聚合）
+- ✅ CR-010 BillingPage 前端（2026-02-25 merged，15 文件 1060 行，411 测试通过）
 
 ## 下一步
 
-**M15 进度 4/6** — PF-007 完成。剩余: PF-011 (BillingPage 前端) + PF-010 (P95 性能验证)。
+**M15 进度 5/6** — 剩余: PF-010 (P95 性能验证)。
 
 <!-- devpace-version: 0.9.0 -->

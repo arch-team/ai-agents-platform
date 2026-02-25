@@ -13,7 +13,7 @@
 | PF-008 | department_id 渐进迁移 | L | CR-006 | ✅ |
 | PF-009 | BillingStack CDK | M | CR-007 | ✅ |
 | PF-010 | P95 性能验证 + 优化 | S | — | ⏳ |
-| PF-011 | 前端 BillingPage | M | — | ⏳ |
+| PF-011 | 前端 BillingPage | M | CR-010 | ✅ |
 
 ## 依赖与风险
 
