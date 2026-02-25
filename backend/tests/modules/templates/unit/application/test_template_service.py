@@ -197,13 +197,12 @@ class TestListTemplates:
     async def test_list_templates_succeeds(self) -> None:
         service, mock_repo = _make_service()
         templates = [make_template(template_id=i) for i in range(3)]
-        mock_repo.search.return_value = templates
-        mock_repo.count_by_search.return_value = 3
+        mock_repo.search_with_total.return_value = (templates, 3)
 
         result = await service.list_templates(page=1, page_size=20)
         assert result.total == 3
         assert len(result.items) == 3
-        mock_repo.count_by_search.assert_called_once_with("", category=None, tags=None)
+        mock_repo.search_with_total.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_list_my_templates_succeeds(self) -> None:

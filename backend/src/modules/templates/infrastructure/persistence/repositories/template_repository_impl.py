@@ -92,7 +92,10 @@ class TemplateRepositoryImpl(PydanticRepository[Template, TemplateModel, int], I
 
     @staticmethod
     def _build_search_conditions(
-        keyword: str, category: TemplateCategory | None, *, published_only: bool = True,
+        keyword: str,
+        category: TemplateCategory | None,
+        *,
+        published_only: bool = True,
     ) -> list[ColumnElement[bool]]:
         """构建搜索查询条件。"""
         conditions: list[ColumnElement[bool]] = []
@@ -172,6 +175,33 @@ class TemplateRepositoryImpl(PydanticRepository[Template, TemplateModel, int], I
     ) -> int:
         conditions = self._build_search_conditions(keyword, category)
         return await self._count_where(*conditions) if conditions else await self.count()
+
+    async def search_with_total(
+        self,
+        keyword: str,
+        *,
+        category: TemplateCategory | None = None,
+        tags: list[str] | None = None,  # noqa: ARG002
+        offset: int = 0,
+        limit: int = 20,
+    ) -> tuple[list[Template], int]:
+        """单次查询同时返回数据和总数 (COUNT OVER 窗口函数, 单次 DB 往返)。"""
+        from sqlalchemy import func as sa_func
+
+        conditions = self._build_search_conditions(keyword, category)
+        # COUNT(*) OVER() 在 LIMIT 之前计算总数, 一次查询同时得到数据和总数
+        total_col = sa_func.count(TemplateModel.id).over().label("_total")
+        stmt = select(TemplateModel, total_col)
+        if conditions:
+            stmt = stmt.where(*conditions)
+        stmt = stmt.offset(offset).limit(limit).order_by(TemplateModel.id.desc())
+        result = await self._session.execute(stmt)
+        rows = result.all()
+        if not rows:
+            return [], 0
+        total: int = rows[0]._total
+        items = [self._to_entity(row[0]) for row in rows]
+        return items, total
 
     async def count_by_creator(self, creator_id: int) -> int:  # noqa: D102
         return await self._count_where(TemplateModel.creator_id == creator_id)

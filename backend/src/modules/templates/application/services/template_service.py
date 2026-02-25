@@ -224,9 +224,14 @@ class TemplateService:
         cat = TemplateCategory(category) if category else None
         kw = keyword or ""
 
-        # SQLAlchemy AsyncSession 不支持同一 session 的并发操作, 必须顺序执行
-        items = await self._repo.search(kw, category=cat, tags=tags, offset=offset, limit=page_size)
-        total = await self._repo.count_by_search(kw, category=cat, tags=tags)
+        # 单次查询同时获取数据和总数 (COUNT OVER 窗口函数优化)
+        items, total = await self._repo.search_with_total(
+            kw,
+            category=cat,
+            tags=tags,
+            offset=offset,
+            limit=page_size,
+        )
 
         return PagedResult(
             items=[self._to_dto(t) for t in items],

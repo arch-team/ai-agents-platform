@@ -171,7 +171,9 @@ class PlatformUser(HttpUser):
     _department_ids: ClassVar[list[int]] = []
 
     def on_start(self) -> None:
-        """用户启动时执行: 登录获取 JWT Token。"""
+        """用户启动时执行: 随机延迟后登录 (避免同时登录触发 Rate Limit)。"""
+        # 错开登录时间: 随机延迟 0~3 秒, 避免 50 用户同时触发 Rate Limiting
+        time.sleep(random.uniform(0, 3))
         self._login()
 
     def _login(self) -> None:
@@ -194,6 +196,8 @@ class PlatformUser(HttpUser):
 
     def _register_and_login(self) -> None:
         """注册新用户后登录 (当预置用户不可用时的降级策略)。"""
+        # 额外错开, 避免注册也被 Rate Limit
+        time.sleep(random.uniform(1, 5))
         email = _random_email()
         password = _random_password()
 
