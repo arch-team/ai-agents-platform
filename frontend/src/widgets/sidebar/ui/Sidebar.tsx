@@ -14,6 +14,7 @@ import {
   ClipboardCheckIcon,
   BuilderIcon,
   SettingsIcon,
+  DollarIcon,
   type IconProps,
 } from '@/shared/ui';
 
@@ -109,6 +110,11 @@ const navGroups: NavGroup[] = [
   {
     title: '系统管理',
     items: [
+      {
+        label: '费用管理',
+        path: '/billing',
+        Icon: DollarIcon,
+      },
       {
         label: '系统设置',
         path: '/admin',

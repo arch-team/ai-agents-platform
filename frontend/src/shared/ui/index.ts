@@ -19,6 +19,7 @@ export {
   ClipboardCheckIcon,
   BuilderIcon,
   SettingsIcon,
+  DollarIcon,
   type IconProps,
 } from './Icons';
 export { StatCard } from './StatCard';

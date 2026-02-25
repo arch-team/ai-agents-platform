@@ -25,6 +25,7 @@ const KnowledgeDetailPage = lazy(() => import('@/pages/knowledge/detail'));
 const TemplateListPage = lazy(() => import('@/pages/templates/list'));
 const TemplateDetailPage = lazy(() => import('@/pages/templates/detail'));
 const BuilderPage = lazy(() => import('@/pages/builder'));
+const BillingPage = lazy(() => import('@/pages/billing'));
 const AdminPage = lazy(() => import('@/pages/admin'));
 const NotFoundPage = lazy(() => import('@/pages/not-found'));
 
@@ -60,6 +61,7 @@ export function AppRoutes() {
             <Route path="/templates" element={<TemplateListPage />} />
             <Route path="/templates/:templateId" element={<TemplateDetailPage />} />
             <Route path="/builder" element={<BuilderPage />} />
+            <Route path="/billing" element={<BillingPage />} />
             <Route path="/admin" element={<AdminPage />} />
           </Route>
         </Route>
