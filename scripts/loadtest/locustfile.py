@@ -15,6 +15,7 @@
   locust -f locustfile.py --host http://localhost:8000
 """
 
+import datetime
 import json
 import logging
 import os
@@ -167,6 +168,7 @@ class PlatformUser(HttpUser):
     # 存储测试过程中创建的资源 ID，供后续操作使用
     _agent_ids: ClassVar[list[int]] = []
     _conversation_ids: ClassVar[list[int]] = []
+    _department_ids: ClassVar[list[int]] = []
 
     def on_start(self) -> None:
         """用户启动时执行: 登录获取 JWT Token。"""
@@ -291,6 +293,46 @@ class PlatformUser(HttpUser):
         self.client.get(
             "/api/v1/insights/summary",
             name="/api/v1/insights/summary [GET]",
+        )
+
+    @task(5)
+    def list_departments(self) -> None:
+        """获取部门列表。"""
+        response = self.client.get(
+            "/api/v1/billing/departments?page=1&page_size=50",
+            name="/api/v1/billing/departments [GET list]",
+        )
+        if response.status_code == 200 and not self._department_ids:
+            data = response.json()
+            for item in data.get("items", []):
+                dept_id = item.get("id")
+                if dept_id and dept_id not in self._department_ids:
+                    self._department_ids.append(dept_id)
+
+    @task(3)
+    def get_department_budgets(self) -> None:
+        """获取部门预算列表。"""
+        if not self._department_ids:
+            return
+        dept_id = random.choice(self._department_ids)
+        self.client.get(
+            f"/api/v1/billing/budgets?department_id={dept_id}&page=1&page_size=20",
+            name="/api/v1/billing/budgets [GET list]",
+        )
+
+    @task(3)
+    def get_department_cost_report(self) -> None:
+        """获取部门成本报告。"""
+        if not self._department_ids:
+            return
+        dept_id = random.choice(self._department_ids)
+        # 查询最近 30 天
+        end = datetime.date.today()
+        start = end - datetime.timedelta(days=30)
+        self.client.get(
+            f"/api/v1/billing/departments/{dept_id}/cost-report"
+            f"?start_date={start.isoformat()}&end_date={end.isoformat()}",
+            name="/api/v1/billing/departments/{id}/cost-report [GET]",
         )
 
     # -----------------------------------------------------------------------
