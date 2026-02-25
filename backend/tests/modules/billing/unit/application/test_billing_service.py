@@ -8,6 +8,7 @@ from src.modules.auth.domain.exceptions import AuthorizationError
 from src.modules.auth.domain.value_objects.role import Role
 from src.modules.billing.application.dto.budget_dto import CreateBudgetDTO, UpdateBudgetDTO
 from src.modules.billing.application.dto.department_dto import CreateDepartmentDTO, UpdateDepartmentDTO
+from src.modules.billing.application.interfaces.cost_service import DepartmentCostReport
 from src.modules.billing.application.services.billing_service import BillingService
 from src.modules.billing.domain.exceptions import (
     BudgetNotFoundError,
@@ -254,3 +255,54 @@ class TestBudgetCRUD:
 
         assert result.budget_amount == 20000.0
         mock_budget_repo.update.assert_called_once()
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+class TestDepartmentCostReport:
+    """Department Cost Report 测试。"""
+
+    async def test_get_department_cost_report_returns_report(
+        self,
+        billing_service_with_cost: BillingService,
+        mock_cost_service: AsyncMock,
+    ) -> None:
+        """测试：获取部门成本报告成功。"""
+        mock_report = DepartmentCostReport(
+            department_id=1,
+            department_code="engineering",
+            department_name="工程部",
+            total_cost=1234.56,
+            budget_amount=10000.0,
+            used_percentage=12.35,
+            daily_costs=(),
+            start_date="2024-01-01",
+            end_date="2024-01-31",
+            currency="USD",
+        )
+        mock_cost_service.get_department_cost_report.return_value = mock_report
+
+        result = await billing_service_with_cost.get_department_cost_report(1, "2024-01-01", "2024-01-31")
+
+        assert result.department_id == 1
+        assert result.total_cost == 1234.56
+        mock_cost_service.get_department_cost_report.assert_called_once_with(1, "2024-01-01", "2024-01-31")
+
+    async def test_get_department_cost_report_raises_when_cost_service_not_injected(
+        self,
+        billing_service: BillingService,
+    ) -> None:
+        """测试：未注入 cost_service 时抛出异常。"""
+        with pytest.raises(ValueError, match="IDepartmentCostService 未注入"):
+            await billing_service.get_department_cost_report(1, "2024-01-01", "2024-01-31")
+
+    async def test_get_department_cost_report_raises_when_department_not_found(
+        self,
+        billing_service_with_cost: BillingService,
+        mock_cost_service: AsyncMock,
+    ) -> None:
+        """测试：部门不存在时抛出 DepartmentNotFoundError。"""
+        mock_cost_service.get_department_cost_report.side_effect = DepartmentNotFoundError(department_id=999)
+
+        with pytest.raises(DepartmentNotFoundError):
+            await billing_service_with_cost.get_department_cost_report(999, "2024-01-01", "2024-01-31")

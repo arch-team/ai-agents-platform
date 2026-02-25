@@ -4,6 +4,7 @@ from src.modules.auth.domain.exceptions import AuthorizationError
 from src.modules.auth.domain.value_objects.role import Role
 from src.modules.billing.application.dto.budget_dto import BudgetDTO, CreateBudgetDTO, UpdateBudgetDTO
 from src.modules.billing.application.dto.department_dto import CreateDepartmentDTO, DepartmentDTO, UpdateDepartmentDTO
+from src.modules.billing.application.interfaces.cost_service import DepartmentCostReport, IDepartmentCostService
 from src.modules.billing.domain.entities.budget import Budget
 from src.modules.billing.domain.events import BudgetCreatedEvent, BudgetExceededEvent, DepartmentCreatedEvent
 from src.modules.billing.domain.exceptions import (
@@ -56,9 +57,15 @@ def _to_budget_dto(budget: Budget) -> BudgetDTO:
 class BillingService:
     """Billing 业务服务，负责部门和预算管理。"""
 
-    def __init__(self, department_repo: IDepartmentRepository, budget_repo: IBudgetRepository) -> None:
+    def __init__(
+        self,
+        department_repo: IDepartmentRepository,
+        budget_repo: IBudgetRepository,
+        cost_service: IDepartmentCostService | None = None,
+    ) -> None:
         self._department_repo = department_repo
         self._budget_repo = budget_repo
+        self._cost_service = cost_service
 
     def _require_admin(self, user_role: str) -> None:
         """要求 ADMIN 角色，否则抛出 AuthorizationError。"""
@@ -297,3 +304,32 @@ class BillingService:
                 ),
             )
             raise BudgetExceededError(department_id, year, month)
+
+    # ── Department Cost Report ──
+
+    async def get_department_cost_report(
+        self,
+        department_id: int,
+        start_date: str,
+        end_date: str,
+    ) -> DepartmentCostReport:
+        """获取部门成本报告 (含 ROI 计算)。
+
+        Args:
+            department_id: 部门 ID
+            start_date: 开始日期 (YYYY-MM-DD)
+            end_date: 结束日期 (YYYY-MM-DD)
+
+        Returns:
+            部门成本报告
+
+        Raises:
+            DepartmentNotFoundError: 部门不存在
+            BudgetNotFoundError: 该部门当月预算不存在
+            ValueError: cost_service 未注入
+        """
+        if self._cost_service is None:
+            msg = "IDepartmentCostService 未注入到 BillingService"
+            raise ValueError(msg)
+
+        return await self._cost_service.get_department_cost_report(department_id, start_date, end_date)

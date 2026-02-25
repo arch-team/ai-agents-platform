@@ -17,6 +17,8 @@ from src.modules.billing.api.schemas.requests import (
 from src.modules.billing.api.schemas.responses import (
     BudgetListResponse,
     BudgetResponse,
+    DepartmentCostPointResponse,
+    DepartmentCostReportResponse,
     DepartmentListResponse,
     DepartmentResponse,
 )
@@ -198,3 +200,38 @@ async def update_budget(
     )
     budget = await service.update_budget(budget_id, dto, current_user.role)
     return _to_budget_response(budget)
+
+
+# ── Department Cost Report 端点 ──
+
+
+@router.get("/departments/{department_id}/cost-report")
+async def get_department_cost_report(
+    department_id: int,
+    service: ServiceDep,
+    _current_user: CurrentUserDep,
+    start_date: Annotated[str, Query(pattern=r"^\d{4}-\d{2}-\d{2}$")],
+    end_date: Annotated[str, Query(pattern=r"^\d{4}-\d{2}-\d{2}$")],
+) -> DepartmentCostReportResponse:
+    """获取部门成本报告。"""
+    report = await service.get_department_cost_report(department_id, start_date, end_date)
+    return DepartmentCostReportResponse(
+        department_id=report.department_id,
+        department_code=report.department_code,
+        department_name=report.department_name,
+        total_cost=report.total_cost,
+        budget_amount=report.budget_amount,
+        used_percentage=report.used_percentage,
+        daily_costs=[
+            DepartmentCostPointResponse(
+                date=point.date,
+                department_code=point.department_code,
+                amount=point.amount,
+                currency=point.currency,
+            )
+            for point in report.daily_costs
+        ],
+        start_date=report.start_date,
+        end_date=report.end_date,
+        currency=report.currency,
+    )

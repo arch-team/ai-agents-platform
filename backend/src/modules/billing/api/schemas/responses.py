@@ -39,3 +39,27 @@ class BudgetResponse(BaseModel):
 
 class BudgetListResponse(PageResponse[BudgetResponse]):
     """预算列表响应。"""
+
+
+class DepartmentCostPointResponse(BaseModel):
+    """部门单日成本数据点响应。"""
+
+    date: str
+    department_code: str
+    amount: float
+    currency: str = "USD"
+
+
+class DepartmentCostReportResponse(BaseModel):
+    """部门成本报告响应。"""
+
+    department_id: int
+    department_code: str
+    department_name: str
+    total_cost: float
+    budget_amount: float
+    used_percentage: float
+    daily_costs: list[DepartmentCostPointResponse]
+    start_date: str
+    end_date: str
+    currency: str = "USD"

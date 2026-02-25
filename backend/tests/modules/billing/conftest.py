@@ -5,6 +5,7 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
+from src.modules.billing.application.interfaces.cost_service import IDepartmentCostService
 from src.modules.billing.application.services.billing_service import BillingService
 from src.modules.billing.domain.entities.budget import Budget
 from src.modules.billing.domain.repositories.budget_repository import IBudgetRepository
@@ -25,11 +26,31 @@ def mock_budget_repo() -> AsyncMock:
 
 
 @pytest.fixture
+def mock_cost_service() -> AsyncMock:
+    """Mock IDepartmentCostService。"""
+    return AsyncMock(spec=IDepartmentCostService)
+
+
+@pytest.fixture
 def billing_service(mock_department_repo: AsyncMock, mock_budget_repo: AsyncMock) -> BillingService:
-    """BillingService 实例（注入 Mock Repo）。"""
+    """BillingService 实例（注入 Mock Repo，不注入 cost_service）。"""
     return BillingService(
         department_repo=mock_department_repo,
         budget_repo=mock_budget_repo,
+    )
+
+
+@pytest.fixture
+def billing_service_with_cost(
+    mock_department_repo: AsyncMock,
+    mock_budget_repo: AsyncMock,
+    mock_cost_service: AsyncMock,
+) -> BillingService:
+    """BillingService 实例（注入 Mock Repo + Mock CostService）。"""
+    return BillingService(
+        department_repo=mock_department_repo,
+        budget_repo=mock_budget_repo,
+        cost_service=mock_cost_service,
     )
 
 
