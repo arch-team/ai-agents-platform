@@ -3,6 +3,7 @@
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+from botocore.exceptions import ClientError
 
 from src.modules.billing.application.interfaces.cost_service import DepartmentCostPoint, DepartmentCostReport
 from src.modules.billing.domain.exceptions import BudgetNotFoundError, DepartmentNotFoundError
@@ -11,6 +12,11 @@ from tests.modules.billing.conftest import make_budget, make_department
 
 
 _PATCH_TARGET = "src.modules.billing.infrastructure.external.department_cost_adapter._get_ce_client"
+
+
+def _make_client_error(code: str = "LimitExceededException", msg: str = "Rate exceeded") -> ClientError:
+    """构造 boto3 ClientError。"""
+    return ClientError(error_response={"Error": {"Code": code, "Message": msg}}, operation_name="GetCostAndUsage")
 
 
 def _make_ce_response(department_code: str = "engineering") -> dict:
@@ -99,7 +105,7 @@ class TestDepartmentCostAdapter:
         mock_budget_repo.get_by_department_month.return_value = make_budget(budget_amount=5000.0)
 
         mock_client = MagicMock()
-        mock_client.get_cost_and_usage.side_effect = RuntimeError("AWS API error")
+        mock_client.get_cost_and_usage.side_effect = _make_client_error()
 
         adapter = DepartmentCostAdapter(department_repo=mock_dept_repo, budget_repo=mock_budget_repo)
 

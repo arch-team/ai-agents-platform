@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING, Any
 
 import boto3
 import structlog
+from botocore.exceptions import BotoCoreError, ClientError
 
 from src.modules.billing.application.interfaces.cost_service import (
     DepartmentCostPoint,
@@ -69,7 +70,7 @@ class DepartmentCostAdapter(IDepartmentCostService):
                 start_date,
                 end_date,
             )
-        except Exception:
+        except (ClientError, BotoCoreError):
             logger.exception(
                 "cost_explorer_api_failed_for_department",
                 department_id=department_id,
