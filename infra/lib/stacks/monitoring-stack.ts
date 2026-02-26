@@ -3,6 +3,8 @@ import * as cloudwatch from 'aws-cdk-lib/aws-cloudwatch';
 import * as cw_actions from 'aws-cdk-lib/aws-cloudwatch-actions';
 import * as ecs from 'aws-cdk-lib/aws-ecs';
 import * as elbv2 from 'aws-cdk-lib/aws-elasticloadbalancingv2';
+import * as events from 'aws-cdk-lib/aws-events';
+import * as events_targets from 'aws-cdk-lib/aws-events-targets';
 import * as kms from 'aws-cdk-lib/aws-kms';
 import * as rds from 'aws-cdk-lib/aws-rds';
 import * as sns from 'aws-cdk-lib/aws-sns';
@@ -78,6 +80,9 @@ export class MonitoringStack extends cdk.Stack {
 
     // CloudWatch Dashboard
     this.createDashboard(cluster, service, loadBalancer, targetGroup, envName);
+
+    // ECS 部署失败 EventBridge 规则 — 自动发送 SNS 告警
+    this.createDeploymentFailureRule(envName);
 
     // CDK Nag 抑制
     this.suppressNagRules(!!encryptionKey);
@@ -324,6 +329,27 @@ export class MonitoringStack extends cdk.Stack {
         width: 12,
       }),
     );
+  }
+
+  /** 创建 ECS 部署失败 EventBridge 规则 */
+  private createDeploymentFailureRule(envName: EnvironmentName): void {
+    new events.Rule(this, 'EcsDeployFailureRule', {
+      ruleName: `${PROJECT_NAME}-${envName}-ecs-deploy-failure`,
+      description: 'ECS 服务部署失败时发送 SNS 告警通知',
+      eventPattern: {
+        source: ['aws.ecs'],
+        detailType: ['ECS Deployment State Change'],
+        detail: {
+          eventType: ['ERROR'],
+        },
+      },
+      targets: [new events_targets.SnsTopic(this.alertTopic, {
+        message: events.RuleTargetInput.fromText(
+          `🚨 ECS 部署失败 [${envName}]\n` +
+          `原因: ${events.EventField.fromPath('$.detail.reason')}`,
+        ),
+      })],
+    });
   }
 
   /** CDK Nag 合规规则抑制 */

@@ -17,6 +17,15 @@ on:
         type: choice
         options: [dev, prod]
         default: dev
+      action:
+        description: '执行动作'
+        type: choice
+        options: [deploy, rollback]
+        default: deploy
+      rollback-commit:
+        description: '回滚目标 commit SHA (仅 action=rollback 时需要)'
+        type: string
+        default: ''
 
 # 同一分支上的新推送取消旧的运行
 concurrency:
@@ -29,31 +38,15 @@ env:
 
 jobs:
   # ============================================================
-  # 质量门控 (部署前必须通过)
+  # 质量门控（调用可复用工作流，部署前必须通过）
   # ============================================================
+  # 回滚时跳过质量门控，直接进入部署流程
   quality-gate:
     name: 质量门控
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: frontend
-    steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-        with:
-          version: ${{ env.PNPM_VERSION }}
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'pnpm'
-          cache-dependency-path: frontend/pnpm-lock.yaml
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm lint
-      - run: pnpm typecheck
-      - run: pnpm test
-      # 仅做构建验证，不保存产物（Dev/Prod 各自用对应 --mode 重新构建）
-      - name: 构建验证 (dev mode)
-        run: pnpm build --mode dev
+    if: github.event.inputs.action != 'rollback'
+    uses: ./.github/workflows/frontend-quality.yml
+    with:
+      build-mode: dev
 
   # ============================================================
   # 部署 — Dev 环境
@@ -61,9 +54,12 @@ jobs:
   deploy-dev:
     name: 部署 Dev
     needs: quality-gate
+    # 回滚时 quality-gate 被跳过（skipped），用 always() 确保本 job 仍可运行
     if: >-
-      (github.event_name == 'push') ||
-      (github.event_name == 'workflow_dispatch' && inputs.environment == 'dev')
+      always() &&
+      (needs.quality-gate.result == 'success' || needs.quality-gate.result == 'skipped') &&
+      ((github.event_name == 'push') ||
+       (github.event_name == 'workflow_dispatch' && inputs.environment == 'dev'))
     runs-on: ubuntu-latest
     environment: dev
     defaults:
@@ -73,7 +69,13 @@ jobs:
       id-token: write
       contents: read
     steps:
+      # 回滚时 checkout 指定 commit，正常部署时 checkout 当前 SHA
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ (github.event.inputs.action == 'rollback' && github.event.inputs.rollback-commit) || github.sha }}
+      - name: 回滚模式提示
+        if: github.event.inputs.action == 'rollback'
+        run: echo "::warning::回滚模式 — 将部署 commit ${{ github.event.inputs.rollback-commit }}"
       - uses: pnpm/action-setup@v4
         with:
           version: ${{ env.PNPM_VERSION }}
@@ -92,6 +94,17 @@ jobs:
           aws-region: us-east-1
       - name: 同步到 Dev S3
         run: aws s3 sync dist/ s3://ai-agents-platform-frontend-dev-897473/ --delete
+      - name: 失效 CloudFront 缓存
+        run: |
+          DIST_ID=$(aws cloudfront list-distributions \
+            --query "DistributionList.Items[?Origins.Items[?contains(DomainName, 'ai-agents-platform-frontend-dev')]].Id" \
+            --output text)
+          if [ -n "$DIST_ID" ] && [ "$DIST_ID" != "None" ]; then
+            aws cloudfront create-invalidation --distribution-id "$DIST_ID" --paths "/*"
+            echo "CloudFront 缓存失效已创建: Distribution $DIST_ID"
+          else
+            echo "::warning::未找到匹配的 CloudFront Distribution，跳过缓存失效"
+          fi
       - name: 验证部署
         run: aws s3 ls s3://ai-agents-platform-frontend-dev-897473/index.html
 
@@ -116,7 +129,13 @@ jobs:
       id-token: write
       contents: read
     steps:
+      # 回滚时 checkout 指定 commit，正常部署时 checkout 当前 SHA
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ (github.event.inputs.action == 'rollback' && github.event.inputs.rollback-commit) || github.sha }}
+      - name: 回滚模式提示
+        if: github.event.inputs.action == 'rollback'
+        run: echo "::warning::回滚模式 — 将部署 commit ${{ github.event.inputs.rollback-commit }}"
       - uses: pnpm/action-setup@v4
         with:
           version: ${{ env.PNPM_VERSION }}
@@ -135,6 +154,17 @@ jobs:
           aws-region: us-east-1
       - name: 同步到 Prod S3
         run: aws s3 sync dist/ s3://ai-agents-platform-frontend-prod-897473/ --delete
+      - name: 失效 CloudFront 缓存
+        run: |
+          DIST_ID=$(aws cloudfront list-distributions \
+            --query "DistributionList.Items[?Origins.Items[?contains(DomainName, 'ai-agents-platform-frontend-prod')]].Id" \
+            --output text)
+          if [ -n "$DIST_ID" ] && [ "$DIST_ID" != "None" ]; then
+            aws cloudfront create-invalidation --distribution-id "$DIST_ID" --paths "/*"
+            echo "CloudFront 缓存失效已创建: Distribution $DIST_ID"
+          else
+            echo "::warning::未找到匹配的 CloudFront Distribution，跳过缓存失效"
+          fi
       - name: 验证部署
         run: |
           STATUS=$(curl -s -o /dev/null -w "%{http_code}" "http://ai-agents-platform-frontend-prod-897473.s3-website-us-east-1.amazonaws.com")

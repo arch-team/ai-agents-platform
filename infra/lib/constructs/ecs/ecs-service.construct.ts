@@ -137,6 +137,11 @@ export class EcsServiceConstruct extends Construct {
       vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
       securityGroups: [this.serviceSecurityGroup],
       assignPublicIp: false,
+      // 部署 CircuitBreaker — 部署失败时自动回滚到上一个稳定版本
+      circuitBreaker: { rollback: true },
+      // 滚动更新参数 — 保证部署期间至少有 100% 健康任务，最多 200%
+      minHealthyPercent: 100,
+      maxHealthyPercent: 200,
     });
 
     // 定时缩放 — Dev 环境非工作时段自动缩减任务数以降低成本

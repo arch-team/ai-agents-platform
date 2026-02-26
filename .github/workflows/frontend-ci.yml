@@ -6,24 +6,13 @@ on:
   pull_request:
     paths: ['frontend/**']
 
+# 同一分支/PR 上的新推送取消旧的运行
+concurrency:
+  group: frontend-ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
+  # 调用可复用工作流执行 lint+typecheck+test+build
   test:
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: frontend
-    steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 9
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: 'pnpm'
-          cache-dependency-path: frontend/pnpm-lock.yaml
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm lint
-      - run: pnpm typecheck
-      - run: pnpm test
-      - run: pnpm build
+    name: 前端质量检查
+    uses: ./.github/workflows/frontend-quality.yml

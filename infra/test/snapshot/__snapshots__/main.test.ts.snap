@@ -1039,8 +1039,15 @@ exports[`Snapshot Tests ComputeStack 快照匹配 1`] = `
             "Enable": false,
             "Rollback": false,
           },
+          "DeploymentCircuitBreaker": {
+            "Enable": true,
+            "Rollback": true,
+          },
           "MaximumPercent": 200,
-          "MinimumHealthyPercent": 50,
+          "MinimumHealthyPercent": 100,
+        },
+        "DeploymentController": {
+          "Type": "ECS",
         },
         "DesiredCount": 1,
         "EnableECSManagedTags": false,
@@ -2415,6 +2422,32 @@ exports[`Snapshot Tests MonitoringStack 快照匹配 1`] = `
       },
       "Type": "AWS::SNS::Topic",
     },
+    "AlertTopicPolicy3376BC02": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sns:Publish",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "events.amazonaws.com",
+              },
+              "Resource": {
+                "Ref": "AlertTopic2720D535",
+              },
+              "Sid": "0",
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "Topics": [
+          {
+            "Ref": "AlertTopic2720D535",
+          },
+        ],
+      },
+      "Type": "AWS::SNS::TopicPolicy",
+    },
     "AuroraConnectionsAlarm320D1F2B": {
       "Properties": {
         "AlarmActions": [
@@ -2676,6 +2709,41 @@ exports[`Snapshot Tests MonitoringStack 快照匹配 1`] = `
         "TreatMissingData": "notBreaching",
       },
       "Type": "AWS::CloudWatch::Alarm",
+    },
+    "EcsDeployFailureRuleE246249E": {
+      "Properties": {
+        "Description": "ECS 服务部署失败时发送 SNS 告警通知",
+        "EventPattern": {
+          "detail": {
+            "eventType": [
+              "ERROR",
+            ],
+          },
+          "detail-type": [
+            "ECS Deployment State Change",
+          ],
+          "source": [
+            "aws.ecs",
+          ],
+        },
+        "Name": "ai-agents-platform-dev-ecs-deploy-failure",
+        "State": "ENABLED",
+        "Targets": [
+          {
+            "Arn": {
+              "Ref": "AlertTopic2720D535",
+            },
+            "Id": "Target0",
+            "InputTransformer": {
+              "InputPathsMap": {
+                "detail-reason": "$.detail.reason",
+              },
+              "InputTemplate": ""🚨 ECS 部署失败 [dev]\\n原因: <detail-reason>"",
+            },
+          },
+        ],
+      },
+      "Type": "AWS::Events::Rule",
     },
     "EcsMemoryAlarmB50C6B61": {
       "Properties": {

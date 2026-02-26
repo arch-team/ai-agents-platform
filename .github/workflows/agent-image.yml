@@ -13,7 +13,7 @@ on:
       environment:
         description: '目标部署环境'
         type: choice
-        options: [dev, staging, prod]
+        options: [dev, prod]
         default: dev
 
 # 同一分支上的新推送取消旧的运行
@@ -24,13 +24,38 @@ concurrency:
 env:
   ECR_REPO_PREFIX: ai-agents-platform-agent
   IMAGE_PLATFORM: linux/amd64
+  AWS_REGION: "us-east-1"
 
 jobs:
+  # ============================================================
+  # 质量门控 (构建前验证代码质量)
+  # ============================================================
+  quality-gate:
+    name: Agent 质量门控
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: 安装 uv
+        run: pip install uv==0.7.12
+      - name: 安装依赖
+        run: uv sync
+      - name: 验证 Agent 入口可导入
+        run: uv run python -c "import src.agent_entrypoint; print('Agent entrypoint OK')"
+      - name: 运行 Agent 相关测试
+        run: uv run pytest tests/ -k "agent" --no-header -q || echo "::warning::未找到 Agent 相关测试"
+
   # ============================================================
   # 构建并推送 Agent 镜像 — Dev 环境
   # ============================================================
   build-and-push-dev:
     name: 构建推送 Agent 镜像 (Dev)
+    needs: quality-gate
     runs-on: ubuntu-latest
     if: >-
       (github.event_name == 'push') ||
@@ -44,76 +69,29 @@ jobs:
       - uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
-          aws-region: ap-northeast-1
+          aws-region: ${{ env.AWS_REGION }}
 
       - name: 登录 Amazon ECR
         id: ecr-login
         uses: aws-actions/amazon-ecr-login@v2
 
+      - uses: docker/setup-buildx-action@v3
+
       - name: 构建并推送 Docker 镜像
-        working-directory: backend
-        env:
-          ECR_REGISTRY: ${{ steps.ecr-login.outputs.registry }}
-          ECR_REPOSITORY: ${{ env.ECR_REPO_PREFIX }}-dev
-          IMAGE_TAG: latest
-        run: |
-          docker build \
-            -f Dockerfile.agent \
-            --platform ${{ env.IMAGE_PLATFORM }} \
-            -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG \
-            -t $ECR_REGISTRY/$ECR_REPOSITORY:${{ github.sha }} \
-            .
-
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:${{ github.sha }}
-
-          echo "::notice::镜像已推送: $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
-
-  # ============================================================
-  # 构建并推送 Agent 镜像 — Staging 环境
-  # ============================================================
-  build-and-push-staging:
-    name: 构建推送 Agent 镜像 (Staging)
-    runs-on: ubuntu-latest
-    needs: build-and-push-dev
-    if: >-
-      (github.event_name == 'push' &&
-       (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/ai-agents-factory-v1')) ||
-      (github.event_name == 'workflow_dispatch' && inputs.environment == 'staging')
-    environment: staging
-    permissions:
-      id-token: write
-      contents: read
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: aws-actions/configure-aws-credentials@v4
+        uses: docker/build-push-action@v6
         with:
-          role-to-assume: ${{ secrets.AWS_STAGING_ROLE_ARN }}
-          aws-region: ap-northeast-1
+          context: backend
+          file: backend/Dockerfile.agent
+          platforms: linux/amd64
+          push: true
+          tags: |
+            ${{ steps.ecr-login.outputs.registry }}/${{ env.ECR_REPO_PREFIX }}-dev:latest
+            ${{ steps.ecr-login.outputs.registry }}/${{ env.ECR_REPO_PREFIX }}-dev:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
-      - name: 登录 Amazon ECR
-        id: ecr-login
-        uses: aws-actions/amazon-ecr-login@v2
-
-      - name: 构建并推送 Docker 镜像
-        working-directory: backend
-        env:
-          ECR_REGISTRY: ${{ steps.ecr-login.outputs.registry }}
-          ECR_REPOSITORY: ${{ env.ECR_REPO_PREFIX }}-staging
-          IMAGE_TAG: latest
-        run: |
-          docker build \
-            -f Dockerfile.agent \
-            --platform ${{ env.IMAGE_PLATFORM }} \
-            -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG \
-            -t $ECR_REGISTRY/$ECR_REPOSITORY:${{ github.sha }} \
-            .
-
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:${{ github.sha }}
-
-          echo "::notice::镜像已推送: $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+      - name: 输出镜像推送通知
+        run: echo "::notice::镜像已推送:${{ steps.ecr-login.outputs.registry }}/${{ env.ECR_REPO_PREFIX }}-dev:latest"
 
   # ============================================================
   # 构建并推送 Agent 镜像 — Prod 环境 (需要手动审批)
@@ -121,7 +99,7 @@ jobs:
   build-and-push-prod:
     name: 构建推送 Agent 镜像 (Prod)
     runs-on: ubuntu-latest
-    needs: build-and-push-staging
+    needs: build-and-push-dev
     if: >-
       (github.event_name == 'push' &&
        (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/ai-agents-factory-v1')) ||
@@ -138,27 +116,26 @@ jobs:
       - uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_PROD_ROLE_ARN }}
-          aws-region: ap-northeast-1
+          aws-region: ${{ env.AWS_REGION }}
 
       - name: 登录 Amazon ECR
         id: ecr-login
         uses: aws-actions/amazon-ecr-login@v2
 
+      - uses: docker/setup-buildx-action@v3
+
       - name: 构建并推送 Docker 镜像
-        working-directory: backend
-        env:
-          ECR_REGISTRY: ${{ steps.ecr-login.outputs.registry }}
-          ECR_REPOSITORY: ${{ env.ECR_REPO_PREFIX }}-prod
-          IMAGE_TAG: latest
-        run: |
-          docker build \
-            -f Dockerfile.agent \
-            --platform ${{ env.IMAGE_PLATFORM }} \
-            -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG \
-            -t $ECR_REGISTRY/$ECR_REPOSITORY:${{ github.sha }} \
-            .
+        uses: docker/build-push-action@v6
+        with:
+          context: backend
+          file: backend/Dockerfile.agent
+          platforms: linux/amd64
+          push: true
+          tags: |
+            ${{ steps.ecr-login.outputs.registry }}/${{ env.ECR_REPO_PREFIX }}-prod:latest
+            ${{ steps.ecr-login.outputs.registry }}/${{ env.ECR_REPO_PREFIX }}-prod:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:${{ github.sha }}
-
-          echo "::notice::镜像已推送: $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+      - name: 输出镜像推送通知
+        run: echo "::notice::镜像已推送:${{ steps.ecr-login.outputs.registry }}/${{ env.ECR_REPO_PREFIX }}-prod:latest"

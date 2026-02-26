@@ -17,48 +17,14 @@ env:
 
 jobs:
   # ============================================================
-  # 代码质量检查 + 单元测试
+  # 代码质量检查 + 单元测试（调用可复用工作流）
   # ============================================================
   lint-and-unit-test:
     name: 代码检查 + 单元测试
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: backend
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-python@v5
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
-
-      # uv 安装 + 依赖缓存
-      - name: 安装 uv
-        run: pip install uv==${{ env.UV_VERSION }}
-
-      - name: 缓存 uv 依赖
-        uses: actions/cache@v4
-        with:
-          path: |
-            backend/.venv
-            ~/.cache/uv
-          key: uv-${{ runner.os }}-py${{ env.PYTHON_VERSION }}-${{ hashFiles('backend/uv.lock') }}
-          restore-keys: |
-            uv-${{ runner.os }}-py${{ env.PYTHON_VERSION }}-
-
-      - name: 安装依赖
-        run: uv sync
-
-      # 代码质量
-      - name: Ruff 代码检查
-        run: uv run ruff check src/
-
-      - name: MyPy 类型检查
-        run: uv run mypy src/
-
-      # 单元测试 (排除集成测试, 阈值低于 deploy 全量的 85%)
-      - name: 运行单元测试
-        run: uv run pytest -m "not integration" --cov=src --cov-fail-under=83
+    uses: ./.github/workflows/backend-quality.yml
+    with:
+      coverage-threshold: 83
+      pytest-marker: 'not integration'
 
   # ============================================================
   # MySQL 集成测试

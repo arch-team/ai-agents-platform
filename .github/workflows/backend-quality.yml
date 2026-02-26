@@ -1,0 +1,70 @@
+# 后端质量检查 — 可复用工作流
+# 被 backend-ci.yml 和 backend-deploy.yml 调用，避免重复定义 ruff+mypy+pytest 步骤
+name: Backend Quality
+
+on:
+  workflow_call:
+    inputs:
+      coverage-threshold:
+        description: 'pytest 覆盖率阈值'
+        type: number
+        default: 85
+      pytest-marker:
+        description: 'pytest marker 过滤 (如 "not integration")，为空时运行全部测试'
+        type: string
+        default: ''
+
+jobs:
+  quality:
+    name: 后端质量检查
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: test_root_password
+          MYSQL_DATABASE: ai_agents_test
+          MYSQL_USER: test_user
+          MYSQL_PASSWORD: test_password
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+    env:
+      DATABASE_URL: "mysql+asyncmy://test_user:test_password@localhost:3306/ai_agents_test"
+      APP_ENV: "test"
+      UV_VERSION: "0.7.12"
+      PYTHON_VERSION: "3.11"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: 安装 uv
+        run: pip install uv==0.7.12
+      - uses: actions/cache@v4
+        with:
+          path: |
+            backend/.venv
+            ~/.cache/uv
+          key: uv-${{ runner.os }}-py3.11-${{ hashFiles('backend/uv.lock') }}
+          restore-keys: |
+            uv-${{ runner.os }}-py3.11-
+      - run: uv sync
+      - name: Ruff 代码检查
+        run: uv run ruff check src/
+      - name: MyPy 类型检查
+        run: uv run mypy src/
+      - name: 运行测试
+        run: |
+          PYTEST_ARGS="--cov=src --cov-fail-under=${{ inputs.coverage-threshold }} -q"
+          if [ -n "${{ inputs.pytest-marker }}" ]; then
+            PYTEST_ARGS="-m \"${{ inputs.pytest-marker }}\" $PYTEST_ARGS"
+          fi
+          uv run pytest $PYTEST_ARGS

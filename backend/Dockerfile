@@ -23,6 +23,7 @@ COPY pyproject.toml uv.lock* ./
 RUN uv sync --no-dev --frozen --no-install-project
 
 # 复制源码和构建所需文件
+COPY scripts/ scripts/
 COPY src/ src/
 COPY migrations/ migrations/
 COPY alembic.ini .
@@ -45,6 +46,7 @@ COPY --from=builder /app/.venv /app/.venv
 COPY --from=builder /app/src /app/src
 COPY --from=builder /app/migrations /app/migrations
 COPY --from=builder /app/alembic.ini /app/alembic.ini
+COPY --from=builder /app/scripts /app/scripts
 
 # 设置 PATH 使用虚拟环境
 # CLAUDE_CODE_USE_BEDROCK: 启用 Bedrock 认证路径 (IAM Role → Bedrock Invoke API)
@@ -63,4 +65,4 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
     CMD python -c "import httpx; r = httpx.get('http://localhost:8000/health'); r.raise_for_status()"
 
 # 启动命令: Alembic 迁移 + Uvicorn
-CMD ["sh", "-c", "alembic upgrade head && uvicorn src.presentation.api.main:app --host 0.0.0.0 --port 8000"]
+CMD ["sh", "-c", "python scripts/migrate_with_lock.py && uvicorn src.presentation.api.main:app --host 0.0.0.0 --port 8000"]

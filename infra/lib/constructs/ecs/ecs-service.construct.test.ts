@@ -111,6 +111,27 @@ describe('EcsServiceConstruct', () => {
         GroupDescription: 'ECS Fargate service security group - ALB ingress only',
       });
     });
+
+    it('应启用部署 CircuitBreaker 自动回滚', () => {
+      template.hasResourceProperties('AWS::ECS::Service', {
+        DeploymentConfiguration: Match.objectLike({
+          DeploymentCircuitBreaker: {
+            Enable: true,
+            Rollback: true,
+          },
+        }),
+      });
+    });
+
+    it('应配置部署滚动更新参数 (minHealthy: 100%, maxHealthy: 200%)', () => {
+      template.hasResourceProperties('AWS::ECS::Service', {
+        DeploymentConfiguration: Match.objectLike({
+          MinimumHealthyPercent: 100,
+          // CloudFormation 中 maxHealthyPercent 映射为 MaximumPercent
+          MaximumPercent: 200,
+        }),
+      });
+    });
   });
 
   describe('自定义参数', () => {

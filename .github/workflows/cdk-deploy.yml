@@ -11,7 +11,7 @@ on:
       environment:
         description: '目标部署环境'
         type: choice
-        options: [dev, staging, prod]
+        options: [dev, prod]
         default: dev
 
 # 同一分支/PR 上的新推送取消旧的运行
@@ -22,6 +22,7 @@ concurrency:
 env:
   NODE_VERSION: "22"
   PNPM_VERSION: "9"
+  AWS_REGION: "us-east-1"
 
 jobs:
   # ============================================================
@@ -86,7 +87,7 @@ jobs:
       - uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
-          aws-region: ap-northeast-1
+          aws-region: ${{ env.AWS_REGION }}
 
       - run: pnpm install --frozen-lockfile
 
@@ -145,7 +146,7 @@ jobs:
       - uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
-          aws-region: ap-northeast-1
+          aws-region: ${{ env.AWS_REGION }}
 
       - run: pnpm install --frozen-lockfile
       - name: 创建前端占位目录
@@ -155,50 +156,11 @@ jobs:
           pnpm cdk list --context env=dev | grep -v frontend | xargs pnpm cdk deploy --context env=dev --require-approval never
 
   # ============================================================
-  # 部署 — Staging 环境 (Dev 成功后自动触发)
-  # ============================================================
-  deploy-staging:
-    name: 部署 Staging
-    needs: deploy-dev
-    if: >-
-      (github.event_name == 'push' &&
-       (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/ai-agents-factory-v1')) ||
-      (github.event_name == 'workflow_dispatch' && inputs.environment == 'staging')
-    runs-on: ubuntu-latest
-    environment: staging
-    defaults:
-      run:
-        working-directory: infra
-    permissions:
-      id-token: write
-      contents: read
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: pnpm/action-setup@v4
-        with:
-          version: ${{ env.PNPM_VERSION }}
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'pnpm'
-          cache-dependency-path: infra/pnpm-lock.yaml
-
-      - uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: ${{ secrets.AWS_STAGING_ROLE_ARN }}
-          aws-region: ap-northeast-1
-
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm cdk deploy --all --context env=staging --require-approval never
-
-  # ============================================================
   # 部署 — Prod 环境 (需要手动审批)
   # ============================================================
   deploy-prod:
     name: 部署 Prod
-    needs: deploy-staging
+    needs: deploy-dev
     if: >-
       (github.event_name == 'push' &&
        (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/ai-agents-factory-v1')) ||
@@ -229,7 +191,7 @@ jobs:
       - uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_PROD_ROLE_ARN }}
-          aws-region: ap-northeast-1
+          aws-region: ${{ env.AWS_REGION }}
 
       - run: pnpm install --frozen-lockfile
       - name: 创建前端占位目录

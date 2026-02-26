@@ -1,0 +1,77 @@
+# 部署失败通知工作流
+# 监听部署相关工作流的完成事件，失败时自动创建 GitHub Issue 通知
+name: Deploy Failure Notification
+
+on:
+  workflow_run:
+    workflows:
+      - "Backend Deploy"
+      - "Frontend Deploy"
+      - "CDK Deploy"
+      - "Agent Image Build & Push"
+    types: [completed]
+
+jobs:
+  notify-failure:
+    name: 部署失败通知
+    runs-on: ubuntu-latest
+    if: github.event.workflow_run.conclusion == 'failure'
+    steps:
+      - name: 收集失败信息
+        id: info
+        run: |
+          echo "workflow=${{ github.event.workflow_run.name }}" >> "$GITHUB_OUTPUT"
+          echo "branch=${{ github.event.workflow_run.head_branch }}" >> "$GITHUB_OUTPUT"
+          echo "commit=${{ github.event.workflow_run.head_sha }}" >> "$GITHUB_OUTPUT"
+          echo "url=${{ github.event.workflow_run.html_url }}" >> "$GITHUB_OUTPUT"
+          echo "actor=${{ github.event.workflow_run.actor.login }}" >> "$GITHUB_OUTPUT"
+
+      - name: 创建 GitHub Issue 通知
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const title = `🚨 部署失败: ${{ steps.info.outputs.workflow }}`;
+            const body = [
+              '## 部署失败通知',
+              '',
+              `| 项目 | 详情 |`,
+              `|------|------|`,
+              `| **工作流** | ${{ steps.info.outputs.workflow }} |`,
+              `| **分支** | ${{ steps.info.outputs.branch }} |`,
+              `| **提交** | \`${{ steps.info.outputs.commit }}\` |`,
+              `| **触发者** | @${{ steps.info.outputs.actor }} |`,
+              `| **运行链接** | [查看详情](${{ steps.info.outputs.url }}) |`,
+              '',
+              '> 由 Deploy Failure Notification 工作流自动创建',
+            ].join('\n');
+
+            // 检查是否已有同名未关闭 Issue（避免重复创建）
+            const { data: issues } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'deploy-failure',
+              per_page: 5,
+            });
+
+            const existing = issues.find(i => i.title === title);
+            if (existing) {
+              // 追加评论而非创建新 Issue
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: existing.number,
+                body: body,
+              });
+              console.log(`已追加评论到 Issue #${existing.number}`);
+            } else {
+              // 创建新 Issue
+              const { data: issue } = await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: title,
+                body: body,
+                labels: ['deploy-failure'],
+              });
+              console.log(`已创建 Issue #${issue.number}`);
+            }
