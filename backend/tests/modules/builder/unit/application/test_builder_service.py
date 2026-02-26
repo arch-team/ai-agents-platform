@@ -70,6 +70,35 @@ class TestBuilderServiceGenerateStream:
         assert mock_session_repo.update.call_count >= 1
 
     @pytest.mark.asyncio
+    async def test_generate_stream_strips_markdown_fences(
+        self,
+        builder_service: BuilderService,
+        mock_session_repo: AsyncMock,
+        mock_llm_service: AsyncMock,
+    ) -> None:
+        """LLM 返回 markdown 代码围栏包裹的 JSON 时应正确解析。"""
+        session = make_builder_session(session_id=1, user_id=100, status=BuilderStatus.PENDING)
+        updated_session = make_builder_session(session_id=1, user_id=100, status=BuilderStatus.GENERATING)
+        mock_session_repo.get_by_id.return_value = session
+        mock_session_repo.update.return_value = updated_session
+
+        fenced_json = "```json\n" + json.dumps(SAMPLE_GENERATED_CONFIG) + "\n```"
+
+        async def mock_generate(_prompt: str) -> AsyncIterator[str]:
+            yield fenced_json
+
+        mock_llm_service.generate_config.return_value = mock_generate(session.prompt)
+
+        chunks: list[str] = []
+        async for chunk in builder_service.generate_config_stream(1, 100):
+            chunks.append(chunk)
+
+        assert len(chunks) == 1
+        # complete_generation 应被调用（说明 JSON 被成功解析）
+        update_calls = mock_session_repo.update.call_args_list
+        assert len(update_calls) >= 2  # start_generation + complete_generation
+
+    @pytest.mark.asyncio
     async def test_generate_stream_not_found_raises(
         self,
         builder_service: BuilderService,

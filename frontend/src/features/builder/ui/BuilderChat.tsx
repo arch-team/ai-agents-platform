@@ -1,6 +1,6 @@
 // Builder 左侧面板 — 提示词输入 + SSE 消息流展示
 
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useState } from 'react';
 
 import { Button, Spinner } from '@/shared/ui';
 
@@ -17,9 +17,17 @@ export function BuilderChat({ hasSession, onSubmit }: BuilderChatProps) {
   const isGenerating = useBuilderIsGenerating();
   const streamContent = useBuilderStreamContent();
   const error = useBuilderError();
+  const [validationError, setValidationError] = useState<string | null>(null);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const streamEndRef = useRef<HTMLDivElement>(null);
+
+  // 会话重置时清空 textarea（uncontrolled ref 不受 store reset 影响）
+  useEffect(() => {
+    if (!hasSession && textareaRef.current) {
+      textareaRef.current.value = '';
+    }
+  }, [hasSession]);
 
   // 流式内容更新时自动滚动到底部
   useEffect(() => {
@@ -31,7 +39,12 @@ export function BuilderChat({ hasSession, onSubmit }: BuilderChatProps) {
   const handleFormSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const prompt = textareaRef.current?.value.trim();
-    if (!prompt || isGenerating) return;
+    if (isGenerating) return;
+    if (!prompt) {
+      setValidationError('请输入 Agent 需求描述');
+      return;
+    }
+    setValidationError(null);
     onSubmit(prompt);
   };
 
@@ -51,8 +64,17 @@ export function BuilderChat({ hasSession, onSubmit }: BuilderChatProps) {
           className="w-full resize-none rounded-lg border border-gray-300 px-3 py-2 text-sm
             focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500
             disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400"
-          aria-describedby={error ? 'builder-error' : undefined}
+          aria-describedby={
+            error ? 'builder-error' : validationError ? 'builder-validation-error' : undefined
+          }
+          aria-invalid={!!validationError}
+          onChange={() => validationError && setValidationError(null)}
         />
+        {validationError && (
+          <p id="builder-validation-error" role="alert" className="mt-1 text-sm text-red-600">
+            {validationError}
+          </p>
+        )}
         {error && (
           <p id="builder-error" role="alert" className="mt-1 text-sm text-red-600">
             {error}

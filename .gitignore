@@ -101,7 +101,7 @@ aws-credentials
 node_modules/
 
 # CDK
-cdk.out/
+cdk.out*/
 .cdk.staging/
 
 # Documentation build

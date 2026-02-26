@@ -54,8 +54,10 @@ class BuilderService:
             chunks.append(chunk)
             yield chunk
 
-        # 尝试解析完整的生成结果
-        full_text = "".join(chunks)
+        # 尝试解析完整的生成结果 (LLM 可能用 markdown 代码围栏包裹 JSON)
+        full_text = "".join(chunks).strip()
+        if full_text.startswith("```"):
+            full_text = full_text.split("\n", 1)[-1].rsplit("```", 1)[0].strip()
         try:
             config = json.loads(full_text)
             name = str(config.get("name", "未命名 Agent"))

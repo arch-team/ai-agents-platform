@@ -29,6 +29,7 @@ export function useConfirmBuilderSession() {
     mutationFn: async (sessionId: number) => {
       const { data } = await apiClient.post<ConfirmBuilderSessionResponse>(
         `/api/v1/builder/sessions/${sessionId}/confirm`,
+        {},
       );
       return data;
     },

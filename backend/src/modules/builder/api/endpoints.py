@@ -61,6 +61,12 @@ async def generate_config_stream(
             try:
                 async for chunk in service.generate_config_stream(session_id, current_user.id):
                     yield ServerSentEvent(data=json.dumps({"content": chunk, "done": False}))
+
+                # 流结束后, 从已保存的会话中获取解析好的 config 发送给前端
+                session_dto = await service.get_session(session_id, current_user.id)
+                if session_dto.generated_config:
+                    yield ServerSentEvent(data=json.dumps({"config": session_dto.generated_config, "done": False}))
+
                 yield ServerSentEvent(data=json.dumps({"content": "", "done": True}))
             except DomainError as e:
                 yield ServerSentEvent(data=json.dumps({"error": e.message, "done": True}))
