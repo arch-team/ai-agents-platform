@@ -150,7 +150,9 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - name: 创建前端占位目录
         run: mkdir -p ../frontend/dist && echo '<html></html>' > ../frontend/dist/index.html
-      - run: pnpm cdk deploy --all --context env=dev --require-approval never
+      # 排除 FrontendStack（由 frontend-deploy.yml 独立部署，避免占位文件覆盖真实构建）
+      - run: |
+          pnpm cdk list --context env=dev | grep -v frontend | xargs pnpm cdk deploy --context env=dev --require-approval never
 
   # ============================================================
   # 部署 — Staging 环境 (Dev 成功后自动触发)
