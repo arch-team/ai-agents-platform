@@ -50,6 +50,9 @@ jobs:
       - run: pnpm lint
       - run: pnpm typecheck
       - run: pnpm test:coverage
+      # FrontendStack 引用 frontend/dist，CI 未构建前端需创建占位
+      - name: 创建前端占位目录
+        run: mkdir -p ../frontend/dist && echo '<html></html>' > ../frontend/dist/index.html
       - run: pnpm cdk synth --context env=${{ inputs.environment || 'dev' }}
 
   # ============================================================
@@ -145,6 +148,8 @@ jobs:
           aws-region: ap-northeast-1
 
       - run: pnpm install --frozen-lockfile
+      - name: 创建前端占位目录
+        run: mkdir -p ../frontend/dist && echo '<html></html>' > ../frontend/dist/index.html
       - run: pnpm cdk deploy --all --context env=dev --require-approval never
 
   # ============================================================
@@ -225,6 +230,8 @@ jobs:
           aws-region: ap-northeast-1
 
       - run: pnpm install --frozen-lockfile
+      - name: 创建前端占位目录
+        run: mkdir -p ../frontend/dist && echo '<html></html>' > ../frontend/dist/index.html
 
       - name: CDK Diff (生产变更确认)
         run: pnpm cdk diff --context env=prod

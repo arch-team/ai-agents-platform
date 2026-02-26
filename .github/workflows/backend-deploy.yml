@@ -106,6 +106,9 @@ jobs:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: us-east-1
       - run: pnpm install --frozen-lockfile
+      # FrontendStack 引用 frontend/dist，CDK synth 需要此目录存在
+      - name: 创建前端占位目录
+        run: mkdir -p ../frontend/dist && echo '<html></html>' > ../frontend/dist/index.html
       # 只部署 compute stack（包含 Docker 镜像构建 + ECS 更新）
       - run: pnpm cdk deploy ai-agents-plat-compute-dev --context env=dev --require-approval never
 
@@ -144,6 +147,8 @@ jobs:
           role-to-assume: ${{ secrets.AWS_PROD_ROLE_ARN }}
           aws-region: us-east-1
       - run: pnpm install --frozen-lockfile
+      - name: 创建前端占位目录
+        run: mkdir -p ../frontend/dist && echo '<html></html>' > ../frontend/dist/index.html
       - name: CDK Diff (生产变更确认)
         run: pnpm cdk diff ai-agents-plat-compute-prod --context env=prod
       - name: 部署到生产环境
