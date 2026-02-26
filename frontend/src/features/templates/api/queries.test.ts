@@ -20,7 +20,7 @@ const mockTemplate: Template = {
   status: 'published',
   creator_id: 1,
   system_prompt: '你是助手',
-  model_id: 'claude-3-5-sonnet',
+  model_id: 'us.anthropic.claude-haiku-4-5-20251001-v1:0',
   temperature: 0.7,
   max_tokens: 4096,
   tool_ids: [],

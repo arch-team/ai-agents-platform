@@ -156,13 +156,13 @@ class TestAgentCoreRuntimeAdapterExecute:
 
         adapter = AgentCoreRuntimeAdapter(
             client=mock_client,
-            default_model_id="us.anthropic.claude-3-5-haiku-20241022-v1:0",
+            default_model_id="us.anthropic.claude-haiku-4-5-20251001-v1:0",
         )
         request = _make_request(model_id="")
         await adapter.execute(request)
 
         call_kwargs = mock_client.invoke_inline_agent.call_args.kwargs
-        assert call_kwargs["foundationModel"] == "us.anthropic.claude-3-5-haiku-20241022-v1:0"
+        assert call_kwargs["foundationModel"] == "us.anthropic.claude-haiku-4-5-20251001-v1:0"
 
 
 # -- execute_stream() 测试 --
@@ -259,7 +259,7 @@ class TestAgentRuntimeModeSwitch:
         mock_settings.AGENT_RUNTIME_MODE = "in_process"
         mock_settings.AWS_REGION = "us-east-1"
         mock_settings.AGENTCORE_MEMORY_ID = ""
-        mock_settings.BEDROCK_DEFAULT_MODEL_ID = "us.anthropic.claude-3-5-haiku-20241022-v1:0"
+        mock_settings.BEDROCK_DEFAULT_MODEL_ID = "us.anthropic.claude-haiku-4-5-20251001-v1:0"
         mock_get_settings.return_value = mock_settings
 
         # 清除 lru_cache
@@ -280,7 +280,7 @@ class TestAgentRuntimeModeSwitch:
         mock_settings.AGENT_RUNTIME_MODE = "agentcore_runtime"
         mock_settings.AWS_REGION = "us-east-1"
         mock_settings.AGENTCORE_MEMORY_ID = ""
-        mock_settings.BEDROCK_DEFAULT_MODEL_ID = "us.anthropic.claude-3-5-haiku-20241022-v1:0"
+        mock_settings.BEDROCK_DEFAULT_MODEL_ID = "us.anthropic.claude-haiku-4-5-20251001-v1:0"
         mock_get_settings.return_value = mock_settings
 
         get_agent_runtime.cache_clear()

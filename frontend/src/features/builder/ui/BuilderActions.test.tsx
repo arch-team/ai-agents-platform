@@ -18,7 +18,7 @@ const mockConfig: AgentConfig = {
   name: '测试 Agent',
   description: '测试描述',
   system_prompt: '测试系统提示词',
-  model_id: 'anthropic.claude-3-5-sonnet-20241022-v2:0',
+  model_id: 'anthropic.us.anthropic.claude-haiku-4-5-20251001-v1:0-20241022-v2:0',
   temperature: 0.7,
   max_tokens: 2048,
 };

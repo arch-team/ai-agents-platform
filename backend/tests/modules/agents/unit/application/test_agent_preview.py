@@ -14,7 +14,7 @@ from src.shared.domain.interfaces.agent_querier import ActiveAgentInfo
 def _make_active_agent_info(
     *,
     agent_id: int = 1,
-    model_id: str = "us.anthropic.claude-3-5-haiku-20241022-v1:0",
+    model_id: str = "us.anthropic.claude-haiku-4-5-20251001-v1:0",
 ) -> ActiveAgentInfo:
     return ActiveAgentInfo(
         id=agent_id, name="test-agent", system_prompt="You are helpful.",
@@ -49,7 +49,7 @@ class TestPreviewAgent:
         )
 
         assert result.content == "你好! 我是一个 AI 助手。"
-        assert result.model_id == "us.anthropic.claude-3-5-haiku-20241022-v1:0"
+        assert result.model_id == "us.anthropic.claude-haiku-4-5-20251001-v1:0"
         assert result.tokens_input == 10
         assert result.tokens_output == 20
         # 验证 max_turns=1

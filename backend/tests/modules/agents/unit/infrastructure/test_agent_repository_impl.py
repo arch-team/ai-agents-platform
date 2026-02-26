@@ -61,7 +61,7 @@ class TestAgentRepositoryImplToEntity:
             system_prompt="你是助手",
             status="draft",
             owner_id=42,
-            model_id="us.anthropic.claude-3-5-haiku-20241022-v1:0",
+            model_id="us.anthropic.claude-haiku-4-5-20251001-v1:0",
             temperature=0.7,
             max_tokens=2048,
             top_p=1.0,
@@ -80,7 +80,7 @@ class TestAgentRepositoryImplToEntity:
         assert entity.system_prompt == "你是助手"
         assert entity.status == AgentStatus.DRAFT
         assert entity.owner_id == 42
-        assert entity.config.model_id == "us.anthropic.claude-3-5-haiku-20241022-v1:0"
+        assert entity.config.model_id == "us.anthropic.claude-haiku-4-5-20251001-v1:0"
         assert entity.config.temperature == 0.7
         assert entity.config.max_tokens == 2048
         assert entity.config.top_p == 1.0
@@ -131,7 +131,7 @@ class TestAgentRepositoryImplToModel:
         assert model.name == "测试 Agent"
         assert model.status == "draft"
         assert model.owner_id == 42
-        assert model.model_id == "us.anthropic.claude-3-5-haiku-20241022-v1:0"
+        assert model.model_id == "us.anthropic.claude-haiku-4-5-20251001-v1:0"
         assert model.stop_sequences == ""
         assert model.runtime_type == "agent"
 
@@ -171,7 +171,7 @@ class TestAgentRepositoryImplGetUpdateData:
         assert data["description"] == "New Desc"
         assert data["system_prompt"] == "New Prompt"
         assert data["status"] == "active"
-        assert data["model_id"] == "us.anthropic.claude-3-5-haiku-20241022-v1:0"
+        assert data["model_id"] == "us.anthropic.claude-haiku-4-5-20251001-v1:0"
         assert data["temperature"] == 0.5
         assert data["max_tokens"] == 1024
         assert data["top_p"] == 1.0
@@ -230,7 +230,7 @@ class TestAgentRepositoryImplQueryMethods:
             system_prompt="",
             status="draft",
             owner_id=42,
-            model_id="us.anthropic.claude-3-5-haiku-20241022-v1:0",
+            model_id="us.anthropic.claude-haiku-4-5-20251001-v1:0",
             temperature=0.7,
             max_tokens=2048,
             top_p=1.0,

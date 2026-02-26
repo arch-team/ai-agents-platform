@@ -7,6 +7,7 @@ import { extractApiError } from '@/shared/lib/extractApiError';
 
 import { useCreateAgent } from '../api/queries';
 import { createAgentSchema, type CreateAgentFormData } from '../lib/validation';
+import { MODEL_OPTIONS } from '../model/constants';
 
 import { AgentFormFields } from './AgentFormFields';
 
@@ -40,7 +41,7 @@ export function AgentCreateForm({ onSuccess, onCancel }: AgentCreateFormProps) {
       name: '',
       description: '',
       system_prompt: templateData?.system_prompt ?? '',
-      model_id: templateData?.model_id ?? 'claude-3-5-sonnet',
+      model_id: templateData?.model_id ?? MODEL_OPTIONS[0].value,
       temperature: templateData?.temperature ?? 0.7,
       max_tokens: templateData?.max_tokens ?? 4096,
     },

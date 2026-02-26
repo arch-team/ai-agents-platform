@@ -19,7 +19,7 @@ def _make_user_dto(*, user_id: int = 1) -> UserDTO:
 
 
 def _make_active_agent_info(
-    *, agent_id: int = 1, model_id: str = "us.anthropic.claude-3-5-haiku-20241022-v1:0",
+    *, agent_id: int = 1, model_id: str = "us.anthropic.claude-haiku-4-5-20251001-v1:0",
 ) -> ActiveAgentInfo:
     return ActiveAgentInfo(
         id=agent_id, name="test-agent", system_prompt="You are helpful.",
@@ -74,7 +74,7 @@ class TestPreviewAgentEndpoint:
         assert response.status_code == 200
         data = response.json()
         assert data["content"] == "你好! 我是 AI 助手。"
-        assert data["model_id"] == "us.anthropic.claude-3-5-haiku-20241022-v1:0"
+        assert data["model_id"] == "us.anthropic.claude-haiku-4-5-20251001-v1:0"
         assert data["tokens_input"] == 15
         assert data["tokens_output"] == 25
 

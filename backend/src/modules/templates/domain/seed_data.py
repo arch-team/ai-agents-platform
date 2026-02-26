@@ -24,7 +24,7 @@ SEED_TEMPLATES: list[dict[str, object]] = [
             "5. 在对话结束时确认客户问题是否已解决\n"
             "6. 记录关键信息以便后续跟进"
         ),
-        "model_id": "us.anthropic.claude-sonnet-4-20250514-v1:0",
+        "model_id": "us.anthropic.claude-sonnet-4-6-20260819-v1:0",
         "temperature": 0.3,
         "max_tokens": 2048,
         "is_featured": True,
@@ -45,7 +45,7 @@ SEED_TEMPLATES: list[dict[str, object]] = [
             "6. **测试**: 测试覆盖率、测试质量\n\n"
             "对每个问题给出严重等级 (Critical/Major/Minor) 和具体修改建议。"
         ),
-        "model_id": "us.anthropic.claude-sonnet-4-20250514-v1:0",
+        "model_id": "us.anthropic.claude-sonnet-4-6-20260819-v1:0",
         "temperature": 0.2,
         "max_tokens": 4096,
         "is_featured": True,
@@ -66,7 +66,7 @@ SEED_TEMPLATES: list[dict[str, object]] = [
             "6. 给出可运行的完整代码示例\n"
             "7. 解释代码时使用清晰的中文"
         ),
-        "model_id": "us.anthropic.claude-sonnet-4-20250514-v1:0",
+        "model_id": "us.anthropic.claude-sonnet-4-6-20260819-v1:0",
         "temperature": 0.3,
         "max_tokens": 4096,
         "is_featured": True,
@@ -87,7 +87,7 @@ SEED_TEMPLATES: list[dict[str, object]] = [
             "6. 给出可操作的业务建议\n"
             "7. 推荐最佳的数据可视化方式"
         ),
-        "model_id": "us.anthropic.claude-sonnet-4-20250514-v1:0",
+        "model_id": "us.anthropic.claude-sonnet-4-6-20260819-v1:0",
         "temperature": 0.4,
         "max_tokens": 4096,
         "is_featured": True,
@@ -108,7 +108,7 @@ SEED_TEMPLATES: list[dict[str, object]] = [
             "6. 包含使用场景和最佳实践\n"
             "7. 使用 Markdown 格式输出"
         ),
-        "model_id": "us.anthropic.claude-sonnet-4-20250514-v1:0",
+        "model_id": "us.anthropic.claude-sonnet-4-6-20260819-v1:0",
         "temperature": 0.5,
         "max_tokens": 4096,
         "is_featured": True,
@@ -129,7 +129,7 @@ SEED_TEMPLATES: list[dict[str, object]] = [
             "6. **行动建议**: 可落地的战略建议和优先级排序\n\n"
             "使用数据和事实支持结论，明确标注信息来源和置信度。"
         ),
-        "model_id": "us.anthropic.claude-sonnet-4-20250514-v1:0",
+        "model_id": "us.anthropic.claude-sonnet-4-6-20260819-v1:0",
         "temperature": 0.5,
         "max_tokens": 4096,
         "is_featured": False,
@@ -154,7 +154,7 @@ SEED_TEMPLATES: list[dict[str, object]] = [
             "- 未解决的问题和下次讨论计划\n\n"
             "保持客观准确，不添加未讨论的内容。"
         ),
-        "model_id": "us.anthropic.claude-sonnet-4-20250514-v1:0",
+        "model_id": "us.anthropic.claude-sonnet-4-6-20260819-v1:0",
         "temperature": 0.2,
         "max_tokens": 2048,
         "is_featured": False,
@@ -175,7 +175,7 @@ SEED_TEMPLATES: list[dict[str, object]] = [
             "6. 给出数据建模和表设计建议\n"
             "7. 使用中文注释解释 SQL 逻辑"
         ),
-        "model_id": "us.anthropic.claude-sonnet-4-20250514-v1:0",
+        "model_id": "us.anthropic.claude-sonnet-4-6-20260819-v1:0",
         "temperature": 0.2,
         "max_tokens": 4096,
         "is_featured": False,
@@ -196,7 +196,7 @@ SEED_TEMPLATES: list[dict[str, object]] = [
             "6. 提供多种语气版本供选择\n"
             "7. 标注需要确认或修改的部分"
         ),
-        "model_id": "us.anthropic.claude-sonnet-4-20250514-v1:0",
+        "model_id": "us.anthropic.claude-sonnet-4-6-20260819-v1:0",
         "temperature": 0.6,
         "max_tokens": 2048,
         "is_featured": False,
@@ -217,7 +217,7 @@ SEED_TEMPLATES: list[dict[str, object]] = [
             "6. **敏捷实践**: Sprint 规划、Story 拆分、回顾总结\n\n"
             "使用表格和结构化格式输出，便于直接使用。"
         ),
-        "model_id": "us.anthropic.claude-sonnet-4-20250514-v1:0",
+        "model_id": "us.anthropic.claude-sonnet-4-6-20260819-v1:0",
         "temperature": 0.4,
         "max_tokens": 4096,
         "is_featured": False,

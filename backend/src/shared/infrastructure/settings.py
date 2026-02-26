@@ -19,14 +19,14 @@ from urllib.parse import quote_plus
 from pydantic import SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-from src.shared.domain.constants import MODEL_CLAUDE_HAIKU_35
+from src.shared.domain.constants import MODEL_CLAUDE_HAIKU_45
 
 
 logger = logging.getLogger(__name__)
 
 # pydantic_settings 字段默认值必须是字面量或简单变量引用;
 # 使用模块级别别名让 Settings 类可以直接引用常量。
-_DEFAULT_MODEL_ID: str = MODEL_CLAUDE_HAIKU_35
+_DEFAULT_MODEL_ID: str = MODEL_CLAUDE_HAIKU_45
 
 
 class Settings(BaseSettings):

@@ -17,7 +17,7 @@ const mockConfig: AgentConfig = {
   name: '客服 Agent',
   description: '处理用户问题的客服助手',
   system_prompt: '你是一个专业的客服代表，需要礼貌地回答用户问题。',
-  model_id: 'anthropic.claude-3-5-sonnet-20241022-v2:0',
+  model_id: 'anthropic.us.anthropic.claude-haiku-4-5-20251001-v1:0-20241022-v2:0',
   temperature: 0.7,
   max_tokens: 2048,
 };

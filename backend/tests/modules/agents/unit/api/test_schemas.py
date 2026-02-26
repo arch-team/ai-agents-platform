@@ -22,7 +22,7 @@ class TestCreateAgentRequest:
         assert req.name == "test-agent"
         assert req.description == ""
         assert req.system_prompt == ""
-        assert req.model_id == "us.anthropic.claude-3-5-haiku-20241022-v1:0"
+        assert req.model_id == "us.anthropic.claude-haiku-4-5-20251001-v1:0"
         assert req.temperature == 0.7
         assert req.max_tokens == 2048
         assert req.runtime_type == "agent"

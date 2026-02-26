@@ -37,7 +37,7 @@ describe('AgentCreateForm', () => {
           status: 'draft',
           owner_id: 1,
           config: {
-            model_id: body.model_id ?? 'claude-3-5-sonnet',
+            model_id: body.model_id ?? 'us.anthropic.claude-haiku-4-5-20251001-v1:0',
             temperature: body.temperature ?? 0.7,
             max_tokens: body.max_tokens ?? 4096,
             top_p: 1,
