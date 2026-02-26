@@ -270,13 +270,13 @@ ignore = [
     "D415",
     # 允许中文全角字符 (中文逗号、顿号等)
     "RUF002",
+    # 允许延迟 import (避免循环依赖 / 减少启动时加载)
+    "PLC0415",
     # 允许 __init__ 缺少 docstring (类级 docstring 已足够)
     "D107",
     # 允许 magic method 缺少 docstring
     "D105",
-    # Python 3.11+ self/cls 类型自动推断，无需显式注解
-    "ANN101",
-    "ANN102",
+    # Python 3.11+ self/cls 类型自动推断 (ANN101/ANN102 已在 ruff >=0.15 中移除)
 ]
 
 # 每个文件的规则覆盖

@@ -66,6 +66,9 @@ jobs:
       (github.event_name == 'workflow_dispatch' && inputs.environment == 'dev')
     runs-on: ubuntu-latest
     environment: dev
+    defaults:
+      run:
+        working-directory: frontend
     permissions:
       id-token: write
       contents: read
@@ -109,6 +112,9 @@ jobs:
     environment:
       name: production
       # GitHub 环境保护规则中配置 required_reviewers
+    defaults:
+      run:
+        working-directory: frontend
     permissions:
       id-token: write
       contents: read

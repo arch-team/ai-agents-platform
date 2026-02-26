@@ -180,7 +180,7 @@ class AuditLogRepositoryImpl(
 
     # ── append-only: 禁止更新和删除 ──
 
-    async def update(self, entity: AuditLog) -> AuditLog:  # noqa: ARG002
+    async def update(self, entity: AuditLog) -> AuditLog:
         """审计日志不支持更新。
 
         Raises:
@@ -189,7 +189,7 @@ class AuditLogRepositoryImpl(
         msg = "audit log is append-only, update not supported"
         raise NotImplementedError(msg)
 
-    async def delete(self, entity_id: int) -> None:  # noqa: ARG002
+    async def delete(self, entity_id: int) -> None:
         """审计日志不支持删除。
 
         Raises:

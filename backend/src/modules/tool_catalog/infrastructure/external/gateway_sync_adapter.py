@@ -38,7 +38,7 @@ class GatewaySyncAdapter:
         import boto3
 
         return cast(
-            _AgentCoreGatewayClient,
+            "_AgentCoreGatewayClient",
             boto3.client("bedrock-agentcore", region_name=self._region),
         )
 
