@@ -1,3 +1,6 @@
+import * as fs from 'node:fs';
+import * as os from 'node:os';
+import * as path from 'node:path';
 import * as cdk from 'aws-cdk-lib';
 import { Match, Template } from 'aws-cdk-lib/assertions';
 import { FrontendStack } from '../../lib/stacks/frontend-stack';
@@ -6,6 +9,16 @@ import { TEST_ENV } from '../helpers/test-utils';
 describe('FrontendStack', () => {
   let template: Template;
   let stack: FrontendStack;
+  let tmpDistDir: string;
+
+  // CI 没有 frontend/dist，创建临时目录作为 BucketDeployment 资产源
+  beforeAll(() => {
+    tmpDistDir = fs.mkdtempSync(path.join(os.tmpdir(), 'frontend-dist-'));
+    fs.writeFileSync(path.join(tmpDistDir, 'index.html'), '<html></html>');
+  });
+  afterAll(() => {
+    fs.rmSync(tmpDistDir, { recursive: true, force: true });
+  });
 
   describe('Dev 环境', () => {
     beforeEach(() => {
@@ -13,6 +26,7 @@ describe('FrontendStack', () => {
       stack = new FrontendStack(app, 'TestFrontendStack', {
         env: TEST_ENV,
         envName: 'dev',
+        frontendDistPath: tmpDistDir,
       });
       template = Template.fromStack(stack);
     });
@@ -126,6 +140,7 @@ describe('FrontendStack', () => {
       const prodStack = new FrontendStack(app, 'ProdFrontendStack', {
         env: TEST_ENV,
         envName: 'prod',
+        frontendDistPath: tmpDistDir,
       });
       const prodTemplate = Template.fromStack(prodStack);
 
@@ -141,6 +156,7 @@ describe('FrontendStack', () => {
       const prodStack = new FrontendStack(app, 'ProdFrontendStack2', {
         env: TEST_ENV,
         envName: 'prod',
+        frontendDistPath: tmpDistDir,
       });
       const prodTemplate = Template.fromStack(prodStack);
 
