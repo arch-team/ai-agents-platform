@@ -11,6 +11,7 @@ from src.modules.agents.api.schemas.responses import (
     AgentListResponse,
     AgentResponse,
 )
+from src.shared.domain.constants import MODEL_CLAUDE_HAIKU_45
 
 
 @pytest.mark.unit
@@ -22,7 +23,7 @@ class TestCreateAgentRequest:
         assert req.name == "test-agent"
         assert req.description == ""
         assert req.system_prompt == ""
-        assert req.model_id == "us.anthropic.claude-haiku-4-5-20251001-v1:0"
+        assert req.model_id == MODEL_CLAUDE_HAIKU_45
         assert req.temperature == 0.7
         assert req.max_tokens == 2048
         assert req.runtime_type == "agent"
@@ -124,7 +125,10 @@ class TestAgentConfigResponse:
 
     def test_valid_response(self) -> None:
         resp = AgentConfigResponse(
-            model_id="test-model", temperature=0.7, max_tokens=2048, top_p=1.0,
+            model_id="test-model",
+            temperature=0.7,
+            max_tokens=2048,
+            top_p=1.0,
             runtime_type="agent",
             enable_teams=False,
         )
@@ -147,8 +151,12 @@ class TestAgentResponse:
             status="draft",
             owner_id=10,
             config=AgentConfigResponse(
-                model_id="model", temperature=0.7, max_tokens=2048, top_p=1.0,
-                runtime_type="agent", enable_teams=False,
+                model_id="model",
+                temperature=0.7,
+                max_tokens=2048,
+                top_p=1.0,
+                runtime_type="agent",
+                enable_teams=False,
             ),
             created_at=now,
             updated_at=now,
@@ -164,7 +172,11 @@ class TestAgentListResponse:
 
     def test_empty_list(self) -> None:
         resp = AgentListResponse(
-            items=[], total=0, page=1, page_size=20, total_pages=0,
+            items=[],
+            total=0,
+            page=1,
+            page_size=20,
+            total_pages=0,
         )
         assert resp.items == []
         assert resp.total == 0
@@ -179,14 +191,22 @@ class TestAgentListResponse:
             status="draft",
             owner_id=1,
             config=AgentConfigResponse(
-                model_id="m", temperature=0.7, max_tokens=2048, top_p=1.0,
-                runtime_type="agent", enable_teams=False,
+                model_id="m",
+                temperature=0.7,
+                max_tokens=2048,
+                top_p=1.0,
+                runtime_type="agent",
+                enable_teams=False,
             ),
             created_at=now,
             updated_at=now,
         )
         resp = AgentListResponse(
-            items=[item], total=1, page=1, page_size=20, total_pages=1,
+            items=[item],
+            total=1,
+            page=1,
+            page_size=20,
+            total_pages=1,
         )
         assert len(resp.items) == 1
         assert resp.total_pages == 1

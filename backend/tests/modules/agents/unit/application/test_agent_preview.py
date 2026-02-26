@@ -8,17 +8,23 @@ from src.modules.auth.application.dto.user_dto import UserDTO
 from src.modules.execution.api.preview_endpoints import PreviewAgentRequest, preview_agent
 from src.modules.execution.application.interfaces.agent_runtime import AgentResponseChunk
 from src.modules.execution.domain.exceptions import AgentNotAvailableError
+from src.shared.domain.constants import MODEL_CLAUDE_HAIKU_45
 from src.shared.domain.interfaces.agent_querier import ActiveAgentInfo
 
 
 def _make_active_agent_info(
     *,
     agent_id: int = 1,
-    model_id: str = "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+    model_id: str = MODEL_CLAUDE_HAIKU_45,
 ) -> ActiveAgentInfo:
     return ActiveAgentInfo(
-        id=agent_id, name="test-agent", system_prompt="You are helpful.",
-        model_id=model_id, temperature=0.7, max_tokens=2048, top_p=1.0,
+        id=agent_id,
+        name="test-agent",
+        system_prompt="You are helpful.",
+        model_id=model_id,
+        temperature=0.7,
+        max_tokens=2048,
+        top_p=1.0,
     )
 
 
@@ -37,7 +43,10 @@ class TestPreviewAgent:
         mock_querier.get_active_agent.return_value = _make_active_agent_info()
         mock_runtime = AsyncMock()
         mock_runtime.execute.return_value = AgentResponseChunk(
-            content="你好! 我是一个 AI 助手。", done=True, input_tokens=10, output_tokens=20,
+            content="你好! 我是一个 AI 助手。",
+            done=True,
+            input_tokens=10,
+            output_tokens=20,
         )
 
         result = await preview_agent(
@@ -49,7 +58,7 @@ class TestPreviewAgent:
         )
 
         assert result.content == "你好! 我是一个 AI 助手。"
-        assert result.model_id == "us.anthropic.claude-haiku-4-5-20251001-v1:0"
+        assert result.model_id == MODEL_CLAUDE_HAIKU_45
         assert result.tokens_input == 10
         assert result.tokens_output == 20
         # 验证 max_turns=1

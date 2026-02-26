@@ -3,13 +3,14 @@
 import pytest
 
 from src.modules.agents.domain.value_objects.agent_config import AgentConfig
+from src.shared.domain.constants import MODEL_CLAUDE_HAIKU_45
 
 
 @pytest.mark.unit
 class TestAgentConfigDefaults:
     def test_default_model_id(self) -> None:
         config = AgentConfig()
-        assert config.model_id == "us.anthropic.claude-haiku-4-5-20251001-v1:0"
+        assert config.model_id == MODEL_CLAUDE_HAIKU_45
 
     def test_default_temperature(self) -> None:
         config = AgentConfig()

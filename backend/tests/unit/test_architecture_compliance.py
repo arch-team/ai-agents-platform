@@ -276,7 +276,7 @@ class TestNoHardcodedModelIds:
     """源码中不应出现绕过 constants.py 的硬编码模型 ID (防止模型升级遗漏)。"""
 
     # 合法包含模型 ID 字面量的文件（常量定义 + 种子数据配置）
-    _ALLOWED_FILES: set[str] = {"constants.py", "seed_data.py"}
+    _ALLOWED_FILES: set[str] = {"constants.py"}
 
     def test_source_files_use_model_constants(self):
         """源码中不应硬编码 Bedrock 模型 ID，应引用 constants.py 常量。"""

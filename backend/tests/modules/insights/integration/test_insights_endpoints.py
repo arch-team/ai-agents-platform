@@ -18,6 +18,7 @@ from src.modules.insights.domain.exceptions import (
 )
 from src.presentation.api.main import create_app
 from src.shared.application.dtos import PagedResult
+from src.shared.domain.constants import MODEL_CLAUDE_SONNET_46
 
 
 def _now() -> datetime:
@@ -35,7 +36,7 @@ def _make_record_dto(record_id: int = 1) -> UsageRecordDTO:
         user_id=1,
         agent_id=5,
         conversation_id=100,
-        model_id="us.anthropic.claude-sonnet-4-6-20260819-v1:0",
+        model_id=MODEL_CLAUDE_SONNET_46,
         tokens_input=1000,
         tokens_output=500,
         estimated_cost=0.0105,
@@ -77,7 +78,10 @@ class TestListUsageRecordsEndpoint:
 
     def test_list_success(self, client: TestClient, mock_service: AsyncMock) -> None:
         mock_service.list_usage_records.return_value = PagedResult(
-            items=[_make_record_dto()], total=1, page=1, page_size=20,
+            items=[_make_record_dto()],
+            total=1,
+            page=1,
+            page_size=20,
         )
         resp = client.get("/api/v1/insights/usage-records")
         assert resp.status_code == 200
@@ -87,7 +91,10 @@ class TestListUsageRecordsEndpoint:
 
     def test_list_with_pagination(self, client: TestClient, mock_service: AsyncMock) -> None:
         mock_service.list_usage_records.return_value = PagedResult(
-            items=[], total=0, page=2, page_size=10,
+            items=[],
+            total=0,
+            page=2,
+            page_size=10,
         )
         resp = client.get("/api/v1/insights/usage-records?page=2&page_size=10")
         assert resp.status_code == 200
@@ -97,11 +104,16 @@ class TestListUsageRecordsEndpoint:
         assert resp.status_code == 422
 
     def test_non_admin_forced_user_filter(
-        self, client: TestClient, mock_service: AsyncMock,
+        self,
+        client: TestClient,
+        mock_service: AsyncMock,
     ) -> None:
         """非 ADMIN 用户请求时，user_id 被强制为当前用户 ID。"""
         mock_service.list_usage_records.return_value = PagedResult(
-            items=[], total=0, page=1, page_size=20,
+            items=[],
+            total=0,
+            page=1,
+            page_size=20,
         )
         # 即使传入 user_id=99, 非 admin 用户也应被强制过滤为自己的 id
         resp = client.get("/api/v1/insights/usage-records?user_id=99")
@@ -111,11 +123,16 @@ class TestListUsageRecordsEndpoint:
         assert call_kwargs.kwargs["user_id"] == 1
 
     def test_admin_can_filter_any_user(
-        self, admin_client: TestClient, mock_service: AsyncMock,
+        self,
+        admin_client: TestClient,
+        mock_service: AsyncMock,
     ) -> None:
         """ADMIN 用户可以按任意 user_id 过滤。"""
         mock_service.list_usage_records.return_value = PagedResult(
-            items=[], total=0, page=1, page_size=20,
+            items=[],
+            total=0,
+            page=1,
+            page_size=20,
         )
         resp = admin_client.get("/api/v1/insights/usage-records?user_id=99")
         assert resp.status_code == 200
@@ -166,20 +183,29 @@ class TestUsageSummaryEndpoint:
 
     def test_summary_with_date_filter(self, client: TestClient, mock_service: AsyncMock) -> None:
         mock_service.get_usage_summary.return_value = UsageSummaryDTO(
-            total_tokens=0, total_cost=0.0, conversation_count=0, record_count=0, period="all",
+            total_tokens=0,
+            total_cost=0.0,
+            conversation_count=0,
+            record_count=0,
+            period="all",
         )
         resp = client.get(
-            "/api/v1/insights/usage-summary"
-            "?start_date=2025-01-01T00:00:00Z&end_date=2025-06-01T00:00:00Z",
+            "/api/v1/insights/usage-summary?start_date=2025-01-01T00:00:00Z&end_date=2025-06-01T00:00:00Z",
         )
         assert resp.status_code == 200
 
     def test_summary_non_admin_forced_user(
-        self, client: TestClient, mock_service: AsyncMock,
+        self,
+        client: TestClient,
+        mock_service: AsyncMock,
     ) -> None:
         """非 ADMIN 用户的 usage-summary 请求被强制过滤为自己。"""
         mock_service.get_usage_summary.return_value = UsageSummaryDTO(
-            total_tokens=0, total_cost=0.0, conversation_count=0, record_count=0, period="all",
+            total_tokens=0,
+            total_cost=0.0,
+            conversation_count=0,
+            record_count=0,
+            period="all",
         )
         resp = client.get("/api/v1/insights/usage-summary?user_id=99")
         assert resp.status_code == 200

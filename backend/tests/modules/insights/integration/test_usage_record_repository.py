@@ -13,6 +13,7 @@ from src.modules.insights.domain.entities.usage_record import UsageRecord
 from src.modules.insights.infrastructure.persistence.repositories.usage_record_repository_impl import (
     UsageRecordRepositoryImpl,
 )
+from src.shared.domain.constants import MODEL_CLAUDE_SONNET_46
 
 
 # -- Fixture --
@@ -35,7 +36,7 @@ def _make_record(
     user_id: int = 1,
     agent_id: int = 1,
     conversation_id: int | None = 1,
-    model_id: str = "us.anthropic.claude-sonnet-4-6-20260819-v1:0",
+    model_id: str = MODEL_CLAUDE_SONNET_46,
     tokens_input: int = 1000,
     tokens_output: int = 500,
     estimated_cost: float = 0.0105,
@@ -112,7 +113,7 @@ class TestUsageRecordRepositoryGetById:
         found = await repo.get_by_id(created.id)  # type: ignore[arg-type]
         assert found is not None
         assert found.id == created.id
-        assert found.model_id == "us.anthropic.claude-sonnet-4-6-20260819-v1:0"
+        assert found.model_id == MODEL_CLAUDE_SONNET_46
 
     @pytest.mark.asyncio
     async def test_get_by_id_not_found(
@@ -251,18 +252,33 @@ class TestUsageRecordRepositoryAggregatedStats:
         session: AsyncSession,
     ) -> None:
         """验证聚合统计返回正确的 total_tokens, total_cost, conversation_count。"""
-        await repo.create(_make_record(
-            user_id=1, conversation_id=1,
-            tokens_input=1000, tokens_output=500, estimated_cost=0.01,
-        ))
-        await repo.create(_make_record(
-            user_id=1, conversation_id=2,
-            tokens_input=2000, tokens_output=1000, estimated_cost=0.02,
-        ))
-        await repo.create(_make_record(
-            user_id=1, conversation_id=2,
-            tokens_input=500, tokens_output=200, estimated_cost=0.005,
-        ))
+        await repo.create(
+            _make_record(
+                user_id=1,
+                conversation_id=1,
+                tokens_input=1000,
+                tokens_output=500,
+                estimated_cost=0.01,
+            ),
+        )
+        await repo.create(
+            _make_record(
+                user_id=1,
+                conversation_id=2,
+                tokens_input=2000,
+                tokens_output=1000,
+                estimated_cost=0.02,
+            ),
+        )
+        await repo.create(
+            _make_record(
+                user_id=1,
+                conversation_id=2,
+                tokens_input=500,
+                tokens_output=200,
+                estimated_cost=0.005,
+            ),
+        )
         await session.commit()
 
         stats = await repo.get_aggregated_stats(user_id=1)

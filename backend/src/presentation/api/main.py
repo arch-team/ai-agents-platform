@@ -433,13 +433,14 @@ async def _seed_default_admin() -> None:
 
 
 async def _seed_default_templates() -> None:
-    """启动时 seed 预置模板（幂等：已存在则跳过）。"""
+    """启动时 seed 预置模板（幂等：已存在则同步 config，不存在则创建）。"""
     import structlog
 
     from src.modules.auth.infrastructure.persistence.repositories.user_repository_impl import UserRepositoryImpl
     from src.modules.templates.application.dto.template_dto import CreateTemplateDTO
     from src.modules.templates.application.services.template_service import TemplateService
     from src.modules.templates.domain.seed_data import SEED_TEMPLATES
+    from src.modules.templates.domain.value_objects.template_config import TemplateConfig
     from src.modules.templates.infrastructure.persistence.repositories.template_repository_impl import (
         TemplateRepositoryImpl,
     )
@@ -462,11 +463,34 @@ async def _seed_default_templates() -> None:
             service = TemplateService(template_repo=template_repo)
 
             seeded = 0
+            synced = 0
             for tpl_raw in SEED_TEMPLATES:
                 tpl: dict[str, object] = tpl_raw
                 name = str(tpl["name"])
+                seed_model_id = str(tpl["model_id"])
+                seed_temperature = float(str(tpl["temperature"]))
+                seed_max_tokens = int(str(tpl["max_tokens"]))
+
                 existing = await template_repo.get_by_name(name)
                 if existing is not None:
+                    # upsert: 同步 model_id / temperature / max_tokens, 防止模型升级后 DB 滞后
+                    cfg = existing.config
+                    if (
+                        cfg.model_id != seed_model_id
+                        or cfg.temperature != seed_temperature
+                        or cfg.max_tokens != seed_max_tokens
+                    ):
+                        existing.config = TemplateConfig(
+                            system_prompt=cfg.system_prompt,
+                            model_id=seed_model_id,
+                            temperature=seed_temperature,
+                            max_tokens=seed_max_tokens,
+                            tool_ids=list(cfg.tool_ids),
+                            knowledge_base_ids=list(cfg.knowledge_base_ids),
+                        )
+                        existing.touch()
+                        await template_repo.update(existing)
+                        synced += 1
                     continue
 
                 dto = CreateTemplateDTO(
@@ -474,9 +498,9 @@ async def _seed_default_templates() -> None:
                     description=str(tpl["description"]),
                     category=str(tpl["category"]),
                     system_prompt=str(tpl["system_prompt"]),
-                    model_id=str(tpl["model_id"]),
-                    temperature=float(str(tpl["temperature"])),
-                    max_tokens=int(str(tpl["max_tokens"])),
+                    model_id=seed_model_id,
+                    temperature=seed_temperature,
+                    max_tokens=seed_max_tokens,
                     tags=[str(t) for t in list(tpl["tags"])],  # type: ignore[call-overload]
                 )
                 created_dto = await service.create_template(dto, current_user_id=admin.id)
@@ -493,9 +517,9 @@ async def _seed_default_templates() -> None:
 
                 seeded += 1
 
-            if seeded > 0:
+            if seeded > 0 or synced > 0:
                 await session.commit()
-                log.info("default_templates_seeded", count=seeded)
+                log.info("default_templates_seeded", created=seeded, synced=synced)
             else:
                 log.info("default_templates_already_exist")
         except Exception:

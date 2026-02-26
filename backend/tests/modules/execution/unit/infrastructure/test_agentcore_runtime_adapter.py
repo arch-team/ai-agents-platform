@@ -12,6 +12,7 @@ from src.modules.execution.application.interfaces import (
 from src.modules.execution.infrastructure.external.agentcore_runtime_adapter import (
     AgentCoreRuntimeAdapter,
 )
+from src.shared.domain.constants import MODEL_CLAUDE_HAIKU_45, MODEL_CLAUDE_SONNET_46
 from src.shared.domain.exceptions import DomainError
 
 
@@ -121,7 +122,8 @@ class TestAgentCoreRuntimeAdapterExecute:
         """DomainError 直接透传，不被二次包装。"""
         mock_client = MagicMock()
         mock_client.invoke_inline_agent.side_effect = DomainError(
-            message="配额超限", code="QUOTA_EXCEEDED",
+            message="配额超限",
+            code="QUOTA_EXCEEDED",
         )
 
         adapter = AgentCoreRuntimeAdapter(client=mock_client)
@@ -139,14 +141,14 @@ class TestAgentCoreRuntimeAdapterExecute:
         request = _make_request(
             prompt="测试提示词",
             system_prompt="你是助手",
-            model_id="us.anthropic.claude-sonnet-4-6-20260819-v1:0",
+            model_id=MODEL_CLAUDE_SONNET_46,
         )
         await adapter.execute(request)
 
         call_kwargs = mock_client.invoke_inline_agent.call_args.kwargs
         # 验证关键参数
         assert call_kwargs["inputText"] == "测试提示词"
-        assert call_kwargs["foundationModel"] == "us.anthropic.claude-sonnet-4-6-20260819-v1:0"
+        assert call_kwargs["foundationModel"] == MODEL_CLAUDE_SONNET_46
         assert call_kwargs["instruction"] == "你是助手"
 
     async def test_execute_uses_default_model_when_empty(self):
@@ -156,13 +158,13 @@ class TestAgentCoreRuntimeAdapterExecute:
 
         adapter = AgentCoreRuntimeAdapter(
             client=mock_client,
-            default_model_id="us.anthropic.claude-haiku-4-5-20251001-v1:0",
+            default_model_id=MODEL_CLAUDE_HAIKU_45,
         )
         request = _make_request(model_id="")
         await adapter.execute(request)
 
         call_kwargs = mock_client.invoke_inline_agent.call_args.kwargs
-        assert call_kwargs["foundationModel"] == "us.anthropic.claude-haiku-4-5-20251001-v1:0"
+        assert call_kwargs["foundationModel"] == MODEL_CLAUDE_HAIKU_45
 
 
 # -- execute_stream() 测试 --
@@ -259,7 +261,7 @@ class TestAgentRuntimeModeSwitch:
         mock_settings.AGENT_RUNTIME_MODE = "in_process"
         mock_settings.AWS_REGION = "us-east-1"
         mock_settings.AGENTCORE_MEMORY_ID = ""
-        mock_settings.BEDROCK_DEFAULT_MODEL_ID = "us.anthropic.claude-haiku-4-5-20251001-v1:0"
+        mock_settings.BEDROCK_DEFAULT_MODEL_ID = MODEL_CLAUDE_HAIKU_45
         mock_get_settings.return_value = mock_settings
 
         # 清除 lru_cache
@@ -280,7 +282,7 @@ class TestAgentRuntimeModeSwitch:
         mock_settings.AGENT_RUNTIME_MODE = "agentcore_runtime"
         mock_settings.AWS_REGION = "us-east-1"
         mock_settings.AGENTCORE_MEMORY_ID = ""
-        mock_settings.BEDROCK_DEFAULT_MODEL_ID = "us.anthropic.claude-haiku-4-5-20251001-v1:0"
+        mock_settings.BEDROCK_DEFAULT_MODEL_ID = MODEL_CLAUDE_HAIKU_45
         mock_get_settings.return_value = mock_settings
 
         get_agent_runtime.cache_clear()

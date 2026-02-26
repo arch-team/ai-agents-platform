@@ -7,10 +7,13 @@ import pytest
 from src.modules.agents.domain import Agent, AgentConfig, AgentStatus, IAgentRepository
 from src.modules.agents.infrastructure import AgentQuerierImpl
 from src.shared.domain import ActiveAgentInfo, IAgentQuerier
+from src.shared.domain.constants import MODEL_CLAUDE_HAIKU_45
 
 
 def _make_agent(
-    *, status: AgentStatus = AgentStatus.ACTIVE, agent_id: int = 1,
+    *,
+    status: AgentStatus = AgentStatus.ACTIVE,
+    agent_id: int = 1,
 ) -> Agent:
     return Agent(
         id=agent_id,
@@ -20,7 +23,7 @@ def _make_agent(
         status=status,
         owner_id=1,
         config=AgentConfig(
-            model_id="us.anthropic.claude-haiku-4-5-20251001-v1:0",
+            model_id=MODEL_CLAUDE_HAIKU_45,
             temperature=0.7,
             max_tokens=2048,
             top_p=1.0,
@@ -47,7 +50,7 @@ class TestAgentQuerierImpl:
         assert isinstance(result, ActiveAgentInfo)
         assert result.id == 1
         assert result.system_prompt == "You are helpful."
-        assert result.model_id == "us.anthropic.claude-haiku-4-5-20251001-v1:0"
+        assert result.model_id == MODEL_CLAUDE_HAIKU_45
 
     @pytest.mark.asyncio
     async def test_get_active_agent_not_found(self) -> None:

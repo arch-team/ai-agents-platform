@@ -13,6 +13,7 @@ from src.modules.auth.api.dependencies import get_current_user
 from src.modules.auth.application.dto.user_dto import UserDTO
 from src.presentation.api.main import create_app
 from src.shared.application.dtos import PagedResult
+from src.shared.domain.constants import MODEL_CLAUDE_HAIKU_45
 from src.shared.domain.exceptions import InvalidStateTransitionError, ValidationError
 
 
@@ -35,7 +36,7 @@ def _make_agent_dto(
     system_prompt: str = "You are helpful.",
     status: str = "draft",
     owner_id: int = 1,
-    model_id: str = "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+    model_id: str = MODEL_CLAUDE_HAIKU_45,
     temperature: float = 0.7,
     max_tokens: int = 2048,
     top_p: float = 1.0,
@@ -102,7 +103,7 @@ class TestCreateAgentEndpoint:
         assert data["name"] == "test-agent"
         assert data["status"] == "draft"
         assert "config" in data
-        assert data["config"]["model_id"] == "us.anthropic.claude-haiku-4-5-20251001-v1:0"
+        assert data["config"]["model_id"] == MODEL_CLAUDE_HAIKU_45
         mock_service.create_agent.assert_called_once()
 
     def test_create_duplicate_name(self, client: TestClient, mock_service: AsyncMock) -> None:

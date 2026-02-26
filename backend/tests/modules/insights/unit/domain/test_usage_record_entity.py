@@ -6,6 +6,7 @@ import pytest
 
 from src.modules.insights.domain.entities.usage_record import UsageRecord
 from src.shared.domain.base_entity import PydanticEntity
+from src.shared.domain.constants import MODEL_CLAUDE_SONNET_46
 
 
 @pytest.mark.unit
@@ -17,7 +18,7 @@ class TestUsageRecordCreation:
             user_id=1,
             agent_id=2,
             conversation_id=100,
-            model_id="us.anthropic.claude-sonnet-4-6-20260819-v1:0",
+            model_id=MODEL_CLAUDE_SONNET_46,
             tokens_input=1000,
             tokens_output=500,
             estimated_cost=0.0105,
@@ -25,7 +26,7 @@ class TestUsageRecordCreation:
         assert record.user_id == 1
         assert record.agent_id == 2
         assert record.conversation_id == 100
-        assert record.model_id == "us.anthropic.claude-sonnet-4-6-20260819-v1:0"
+        assert record.model_id == MODEL_CLAUDE_SONNET_46
         assert record.tokens_input == 1000
         assert record.tokens_output == 500
         assert record.estimated_cost == 0.0105
@@ -37,7 +38,7 @@ class TestUsageRecordCreation:
             user_id=1,
             agent_id=2,
             conversation_id=100,
-            model_id="us.anthropic.claude-sonnet-4-6-20260819-v1:0",
+            model_id=MODEL_CLAUDE_SONNET_46,
             tokens_input=500,
             tokens_output=200,
             estimated_cost=0.005,

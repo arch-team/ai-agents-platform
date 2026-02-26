@@ -8,6 +8,8 @@ from typing import TYPE_CHECKING
 import httpx
 import pytest
 
+from src.shared.domain.constants import MODEL_CLAUDE_HAIKU_45
+
 
 if TYPE_CHECKING:
     from tests.e2e.conftest import ResourceTracker
@@ -37,7 +39,7 @@ class TestAgentCRUDLifecycle:
                 "name": f"E2E Agent {_SUFFIX}",
                 "description": "E2E 自动化测试创建",
                 "system_prompt": "你是一个测试助手。",
-                "model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+                "model_id": MODEL_CLAUDE_HAIKU_45,
             },
         )
         assert resp.status_code == 201, f"创建 Agent 失败: {resp.text}"
@@ -116,7 +118,7 @@ class TestAgentDeleteDraft:
                 "name": f"E2E Del {_SUFFIX}",
                 "description": "创建后立即删除",
                 "system_prompt": "test",
-                "model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+                "model_id": MODEL_CLAUDE_HAIKU_45,
             },
         )
         assert create_resp.status_code == 201

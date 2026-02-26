@@ -6,10 +6,13 @@ import pytest
 
 from src.modules.agents.domain import Agent, AgentConfig, AgentStatus, IAgentRepository
 from src.modules.agents.infrastructure import AgentQuerierImpl
+from src.shared.domain.constants import MODEL_CLAUDE_HAIKU_45
 
 
 def _make_agent(
-    *, status: AgentStatus = AgentStatus.ACTIVE, agent_id: int = 1,
+    *,
+    status: AgentStatus = AgentStatus.ACTIVE,
+    agent_id: int = 1,
 ) -> Agent:
     return Agent(
         id=agent_id,
@@ -19,7 +22,7 @@ def _make_agent(
         status=status,
         owner_id=1,
         config=AgentConfig(
-            model_id="us.anthropic.claude-haiku-4-5-20251001-v1:0",
+            model_id=MODEL_CLAUDE_HAIKU_45,
             temperature=0.7,
             max_tokens=2048,
             top_p=1.0,

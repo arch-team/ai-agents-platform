@@ -2,6 +2,7 @@
 
 import pytest
 
+from src.shared.domain.constants import MODEL_CLAUDE_HAIKU_45
 from src.shared.domain.interfaces import ActiveAgentInfo, IAgentQuerier
 
 
@@ -14,7 +15,7 @@ class TestActiveAgentInfo:
             id=1,
             name="Test Agent",
             system_prompt="You are helpful.",
-            model_id="us.anthropic.claude-haiku-4-5-20251001-v1:0",
+            model_id=MODEL_CLAUDE_HAIKU_45,
             temperature=0.7,
             max_tokens=2048,
             top_p=1.0,
@@ -22,7 +23,7 @@ class TestActiveAgentInfo:
         assert info.id == 1
         assert info.name == "Test Agent"
         assert info.system_prompt == "You are helpful."
-        assert info.model_id == "us.anthropic.claude-haiku-4-5-20251001-v1:0"
+        assert info.model_id == MODEL_CLAUDE_HAIKU_45
         assert info.temperature == 0.7
         assert info.max_tokens == 2048
         assert info.top_p == 1.0
@@ -105,7 +106,9 @@ class TestIAgentQuerier:
     def test_has_abstract_method(self) -> None:
         assert hasattr(IAgentQuerier, "get_active_agent")
         assert getattr(
-            IAgentQuerier.get_active_agent, "__isabstractmethod__", False,
+            IAgentQuerier.get_active_agent,
+            "__isabstractmethod__",
+            False,
         )
 
     def test_concrete_implementation(self) -> None:
@@ -113,7 +116,8 @@ class TestIAgentQuerier:
 
         class ConcreteQuerier(IAgentQuerier):
             async def get_active_agent(
-                self, agent_id: int,
+                self,
+                agent_id: int,
             ) -> ActiveAgentInfo | None:
                 return None
 

@@ -14,6 +14,7 @@ from src.modules.agents.infrastructure.persistence.models.agent_model import Age
 from src.modules.agents.infrastructure.persistence.repositories.agent_repository_impl import (
     AgentRepositoryImpl,
 )
+from src.shared.domain.constants import MODEL_CLAUDE_HAIKU_45
 from src.shared.infrastructure.pydantic_repository import PydanticRepository
 
 
@@ -61,7 +62,7 @@ class TestAgentRepositoryImplToEntity:
             system_prompt="你是助手",
             status="draft",
             owner_id=42,
-            model_id="us.anthropic.claude-haiku-4-5-20251001-v1:0",
+            model_id=MODEL_CLAUDE_HAIKU_45,
             temperature=0.7,
             max_tokens=2048,
             top_p=1.0,
@@ -80,7 +81,7 @@ class TestAgentRepositoryImplToEntity:
         assert entity.system_prompt == "你是助手"
         assert entity.status == AgentStatus.DRAFT
         assert entity.owner_id == 42
-        assert entity.config.model_id == "us.anthropic.claude-haiku-4-5-20251001-v1:0"
+        assert entity.config.model_id == MODEL_CLAUDE_HAIKU_45
         assert entity.config.temperature == 0.7
         assert entity.config.max_tokens == 2048
         assert entity.config.top_p == 1.0
@@ -131,7 +132,7 @@ class TestAgentRepositoryImplToModel:
         assert model.name == "测试 Agent"
         assert model.status == "draft"
         assert model.owner_id == 42
-        assert model.model_id == "us.anthropic.claude-haiku-4-5-20251001-v1:0"
+        assert model.model_id == MODEL_CLAUDE_HAIKU_45
         assert model.stop_sequences == ""
         assert model.runtime_type == "agent"
 
@@ -171,7 +172,7 @@ class TestAgentRepositoryImplGetUpdateData:
         assert data["description"] == "New Desc"
         assert data["system_prompt"] == "New Prompt"
         assert data["status"] == "active"
-        assert data["model_id"] == "us.anthropic.claude-haiku-4-5-20251001-v1:0"
+        assert data["model_id"] == MODEL_CLAUDE_HAIKU_45
         assert data["temperature"] == 0.5
         assert data["max_tokens"] == 1024
         assert data["top_p"] == 1.0
@@ -209,7 +210,9 @@ class TestAgentRepositoryImplQueryMethods:
 
     @pytest.mark.asyncio
     async def test_get_by_name_and_owner_returns_none_when_not_found(
-        self, repo: AgentRepositoryImpl, mock_session: AsyncMock,
+        self,
+        repo: AgentRepositoryImpl,
+        mock_session: AsyncMock,
     ) -> None:
         mock_result = MagicMock()
         mock_result.scalar_one_or_none.return_value = None
@@ -220,7 +223,9 @@ class TestAgentRepositoryImplQueryMethods:
 
     @pytest.mark.asyncio
     async def test_get_by_name_and_owner_returns_agent_when_found(
-        self, repo: AgentRepositoryImpl, mock_session: AsyncMock,
+        self,
+        repo: AgentRepositoryImpl,
+        mock_session: AsyncMock,
     ) -> None:
         now = datetime.now(UTC)
         mock_model = AgentModel(
@@ -230,7 +235,7 @@ class TestAgentRepositoryImplQueryMethods:
             system_prompt="",
             status="draft",
             owner_id=42,
-            model_id="us.anthropic.claude-haiku-4-5-20251001-v1:0",
+            model_id=MODEL_CLAUDE_HAIKU_45,
             temperature=0.7,
             max_tokens=2048,
             top_p=1.0,
@@ -250,7 +255,9 @@ class TestAgentRepositoryImplQueryMethods:
 
     @pytest.mark.asyncio
     async def test_count_by_owner_returns_count(
-        self, repo: AgentRepositoryImpl, mock_session: AsyncMock,
+        self,
+        repo: AgentRepositoryImpl,
+        mock_session: AsyncMock,
     ) -> None:
         mock_result = MagicMock()
         mock_result.scalar_one.return_value = 5
@@ -261,20 +268,25 @@ class TestAgentRepositoryImplQueryMethods:
 
     @pytest.mark.asyncio
     async def test_count_by_owner_and_status_returns_count(
-        self, repo: AgentRepositoryImpl, mock_session: AsyncMock,
+        self,
+        repo: AgentRepositoryImpl,
+        mock_session: AsyncMock,
     ) -> None:
         mock_result = MagicMock()
         mock_result.scalar_one.return_value = 3
         mock_session.execute.return_value = mock_result
 
         result = await repo.count_by_owner_and_status(
-            owner_id=42, status=AgentStatus.ACTIVE,
+            owner_id=42,
+            status=AgentStatus.ACTIVE,
         )
         assert result == 3
 
     @pytest.mark.asyncio
     async def test_list_by_owner_returns_empty_list(
-        self, repo: AgentRepositoryImpl, mock_session: AsyncMock,
+        self,
+        repo: AgentRepositoryImpl,
+        mock_session: AsyncMock,
     ) -> None:
         mock_scalars = MagicMock()
         mock_scalars.all.return_value = []
@@ -287,7 +299,9 @@ class TestAgentRepositoryImplQueryMethods:
 
     @pytest.mark.asyncio
     async def test_list_by_owner_and_status_returns_empty_list(
-        self, repo: AgentRepositoryImpl, mock_session: AsyncMock,
+        self,
+        repo: AgentRepositoryImpl,
+        mock_session: AsyncMock,
     ) -> None:
         mock_scalars = MagicMock()
         mock_scalars.all.return_value = []
@@ -296,6 +310,7 @@ class TestAgentRepositoryImplQueryMethods:
         mock_session.execute.return_value = mock_result
 
         result = await repo.list_by_owner_and_status(
-            owner_id=42, status=AgentStatus.DRAFT,
+            owner_id=42,
+            status=AgentStatus.DRAFT,
         )
         assert result == []

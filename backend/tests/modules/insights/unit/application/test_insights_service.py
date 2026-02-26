@@ -16,6 +16,7 @@ from src.modules.insights.domain.exceptions import (
     UsageRecordNotFoundError,
 )
 from src.shared.application.dtos import PagedResult
+from src.shared.domain.constants import MODEL_CLAUDE_SONNET_46
 from tests.modules.insights.conftest import make_usage_record
 
 
@@ -36,7 +37,7 @@ class TestRecordUsage:
             user_id=10,
             agent_id=5,
             conversation_id=100,
-            model_id="us.anthropic.claude-sonnet-4-6-20260819-v1:0",
+            model_id=MODEL_CLAUDE_SONNET_46,
             tokens_input=1000,
             tokens_output=500,
         )
