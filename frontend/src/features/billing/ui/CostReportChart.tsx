@@ -73,7 +73,9 @@ export function CostReportChart({ departmentId, dateRange }: CostReportChartProp
             <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
             <XAxis dataKey="date" tick={{ fontSize: 12 }} />
             <YAxis tick={{ fontSize: 12 }} tickFormatter={(v: number) => `$${v}`} />
-            <Tooltip formatter={(value: number) => [`$${value.toFixed(2)}`, '成本']} />
+            <Tooltip
+              formatter={(value: number | undefined) => [`$${(value ?? 0).toFixed(2)}`, '成本']}
+            />
             <Legend />
             <Line
               type="monotone"
