@@ -35,7 +35,7 @@ def _make_record(
     user_id: int = 1,
     agent_id: int = 1,
     conversation_id: int | None = 1,
-    model_id: str = "anthropic.claude-sonnet-4-20250514",
+    model_id: str = "us.anthropic.claude-sonnet-4-6-20260819-v1:0",
     tokens_input: int = 1000,
     tokens_output: int = 500,
     estimated_cost: float = 0.0105,
@@ -112,7 +112,7 @@ class TestUsageRecordRepositoryGetById:
         found = await repo.get_by_id(created.id)  # type: ignore[arg-type]
         assert found is not None
         assert found.id == created.id
-        assert found.model_id == "anthropic.claude-sonnet-4-20250514"
+        assert found.model_id == "us.anthropic.claude-sonnet-4-6-20260819-v1:0"
 
     @pytest.mark.asyncio
     async def test_get_by_id_not_found(

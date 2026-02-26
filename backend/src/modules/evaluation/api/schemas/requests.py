@@ -2,6 +2,8 @@
 
 from pydantic import BaseModel, Field
 
+from src.shared.domain.constants import MODEL_CLAUDE_HAIKU_45
+
 
 class CreateTestSuiteRequest(BaseModel):
     """创建测试集请求。"""
@@ -36,4 +38,4 @@ class CreateEvaluationRunRequest(BaseModel):
 class TriggerPipelineRequest(BaseModel):
     """触发 Eval Pipeline 请求。"""
 
-    model_ids: list[str] = ["us.anthropic.claude-haiku-4-20250514-v1:0"]
+    model_ids: list[str] = [MODEL_CLAUDE_HAIKU_45]

@@ -8,6 +8,7 @@ import pytest
 import src.modules.evaluation.infrastructure.external.bedrock_eval_adapter as adapter_module
 from src.modules.evaluation.application.interfaces.eval_service import EvalJobResult
 from src.modules.evaluation.infrastructure.external.bedrock_eval_adapter import BedrockEvalAdapter
+from src.shared.domain.constants import MODEL_CLAUDE_HAIKU_45
 
 
 @pytest.fixture
@@ -29,7 +30,7 @@ class TestBedrockEvalAdapter:
         }
         result = await adapter.create_eval_job(
             "测试套件",
-            ["us.anthropic.claude-haiku-4-20250514-v1:0"],
+            [MODEL_CLAUDE_HAIKU_45],
             [{"input": "q", "expected": "a"}],
         )
         assert result == "test-job-001"

@@ -4,6 +4,8 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any
 
+from src.shared.domain.constants import MODEL_CLAUDE_HAIKU_45
+
 
 @dataclass
 class TriggerPipelineDTO:
@@ -11,7 +13,7 @@ class TriggerPipelineDTO:
 
     suite_id: int
     agent_id: int
-    model_ids: list[str] = field(default_factory=lambda: ["us.anthropic.claude-haiku-4-20250514-v1:0"])
+    model_ids: list[str] = field(default_factory=lambda: [MODEL_CLAUDE_HAIKU_45])
     trigger: str = "manual"
 
 

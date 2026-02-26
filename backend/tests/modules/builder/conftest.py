@@ -10,6 +10,7 @@ from src.modules.builder.application.services.builder_service import BuilderServ
 from src.modules.builder.domain.entities.builder_session import BuilderSession
 from src.modules.builder.domain.repositories.builder_session_repository import IBuilderSessionRepository
 from src.modules.builder.domain.value_objects.builder_status import BuilderStatus
+from src.shared.domain.constants import MODEL_CLAUDE_SONNET_46
 from src.shared.domain.interfaces.agent_creator import IAgentCreator
 
 
@@ -40,7 +41,7 @@ SAMPLE_GENERATED_CONFIG: dict[str, Any] = {
     "name": "代码审查助手",
     "description": "帮助审查代码质量的 AI Agent",
     "system_prompt": "你是一个专业的代码审查助手",
-    "model_id": "anthropic.claude-sonnet-4-20250514",
+    "model_id": MODEL_CLAUDE_SONNET_46,
     "temperature": 0.7,
     "max_tokens": 4096,
 }

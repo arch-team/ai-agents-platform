@@ -60,11 +60,7 @@ def _get_python_files(directory: pathlib.Path) -> list[pathlib.Path]:
     """Get all Python files in directory, excluding __init__.py and __pycache__."""
     if not directory.exists():
         return []
-    return [
-        f
-        for f in directory.rglob("*.py")
-        if f.name != "__init__.py" and "__pycache__" not in str(f)
-    ]
+    return [f for f in directory.rglob("*.py") if f.name != "__init__.py" and "__pycache__" not in str(f)]
 
 
 # 禁止在 Domain 层出现的外部框架导入
@@ -95,8 +91,7 @@ class TestCleanArchitectureLayers:
                 imports = _get_imports(py_file)
                 for imp in imports:
                     assert "infrastructure" not in imp, (
-                        f"{py_file.relative_to(_BACKEND_ROOT)} "
-                        f"imports infrastructure: {imp}"
+                        f"{py_file.relative_to(_BACKEND_ROOT)} imports infrastructure: {imp}"
                     )
 
     def test_domain_layer_does_not_import_presentation(self):
@@ -110,8 +105,7 @@ class TestCleanArchitectureLayers:
                 imports = _get_imports(py_file)
                 for imp in imports:
                     assert "presentation" not in imp, (
-                        f"{py_file.relative_to(_BACKEND_ROOT)} "
-                        f"imports presentation layer: {imp}"
+                        f"{py_file.relative_to(_BACKEND_ROOT)} imports presentation layer: {imp}"
                     )
 
     def test_domain_layer_does_not_import_api(self):
@@ -125,10 +119,7 @@ class TestCleanArchitectureLayers:
                 imports = _get_imports(py_file)
                 for imp in imports:
                     parts = imp.split(".")
-                    assert "api" not in parts[:2], (
-                        f"{py_file.relative_to(_BACKEND_ROOT)} "
-                        f"imports API layer: {imp}"
-                    )
+                    assert "api" not in parts[:2], f"{py_file.relative_to(_BACKEND_ROOT)} imports API layer: {imp}"
 
     def test_domain_layer_does_not_import_application(self):
         """Domain layer must not import Application layer."""
@@ -141,8 +132,7 @@ class TestCleanArchitectureLayers:
                 imports = _get_imports(py_file)
                 for imp in imports:
                     assert ".application." not in imp, (
-                        f"{py_file.relative_to(_BACKEND_ROOT)} "
-                        f"imports application layer: {imp}"
+                        f"{py_file.relative_to(_BACKEND_ROOT)} imports application layer: {imp}"
                     )
 
 
@@ -162,8 +152,7 @@ class TestModuleDomainLayerIsolation:
                 for imp in imports:
                     root_module = imp.split(".")[0]
                     assert root_module not in _FORBIDDEN_DOMAIN_IMPORTS, (
-                        f"{py_file.relative_to(_BACKEND_ROOT)} "
-                        f"imports forbidden framework: {imp}"
+                        f"{py_file.relative_to(_BACKEND_ROOT)} imports forbidden framework: {imp}"
                     )
 
     def test_module_domain_does_not_import_other_module(self):
@@ -183,8 +172,7 @@ class TestModuleDomainLayerIsolation:
                     if imp.startswith("src.modules."):
                         imported_module = imp.split(".")[2]
                         assert imported_module == module_name, (
-                            f"{py_file.relative_to(_BACKEND_ROOT)} "
-                            f"imports other module: {imp}"
+                            f"{py_file.relative_to(_BACKEND_ROOT)} imports other module: {imp}"
                         )
 
     def test_shared_domain_has_no_business_logic_imports(self):
@@ -194,8 +182,7 @@ class TestModuleDomainLayerIsolation:
             imports = _get_imports(py_file)
             for imp in imports:
                 assert not imp.startswith("src.modules."), (
-                    f"{py_file.relative_to(_BACKEND_ROOT)} "
-                    f"imports business module: {imp}"
+                    f"{py_file.relative_to(_BACKEND_ROOT)} imports business module: {imp}"
                 )
 
 
@@ -211,8 +198,7 @@ class TestModuleApplicationLayerDependencies:
                 imports = _get_imports(py_file)
                 for imp in imports:
                     assert ".infrastructure." not in imp, (
-                        f"{py_file.relative_to(_BACKEND_ROOT)} "
-                        f"imports infrastructure: {imp}"
+                        f"{py_file.relative_to(_BACKEND_ROOT)} imports infrastructure: {imp}"
                     )
 
     def test_application_does_not_import_presentation(self):
@@ -222,13 +208,9 @@ class TestModuleApplicationLayerDependencies:
             for py_file in _get_python_files(app_dir):
                 imports = _get_imports(py_file)
                 for imp in imports:
-                    assert ".api." not in imp, (
-                        f"{py_file.relative_to(_BACKEND_ROOT)} "
-                        f"imports API layer: {imp}"
-                    )
+                    assert ".api." not in imp, f"{py_file.relative_to(_BACKEND_ROOT)} imports API layer: {imp}"
                     assert "presentation" not in imp, (
-                        f"{py_file.relative_to(_BACKEND_ROOT)} "
-                        f"imports presentation layer: {imp}"
+                        f"{py_file.relative_to(_BACKEND_ROOT)} imports presentation layer: {imp}"
                     )
 
 
@@ -253,8 +235,7 @@ class TestModuleApiLayerAuthDependency:
                     if imp.startswith("src.modules."):
                         imported_module = imp.split(".")[2]
                         assert imported_module in (module_name, "auth"), (
-                            f"{py_file.relative_to(_BACKEND_ROOT)} "
-                            f"imports other module: {imp}"
+                            f"{py_file.relative_to(_BACKEND_ROOT)} imports other module: {imp}"
                         )
 
 
@@ -287,9 +268,36 @@ class TestCrossModuleCommunication:
         for module_a, module_a_deps in deps.items():
             for module_b in module_a_deps:
                 if module_b in deps:
-                    assert module_a not in deps[module_b], (
-                        f"Circular dependency: {module_a} <-> {module_b}"
-                    )
+                    assert module_a not in deps[module_b], f"Circular dependency: {module_a} <-> {module_b}"
+
+
+@pytest.mark.unit
+class TestNoHardcodedModelIds:
+    """源码中不应出现绕过 constants.py 的硬编码模型 ID (防止模型升级遗漏)。"""
+
+    # 合法包含模型 ID 字面量的文件（常量定义 + 种子数据配置）
+    _ALLOWED_FILES: set[str] = {"constants.py", "seed_data.py"}
+
+    def test_source_files_use_model_constants(self):
+        """源码中不应硬编码 Bedrock 模型 ID，应引用 constants.py 常量。"""
+        violations: list[str] = []
+        for py_file in _get_python_files(_SRC_ROOT):
+            if py_file.name in self._ALLOWED_FILES:
+                continue
+            try:
+                source = py_file.read_text(encoding="utf-8")
+                tree = ast.parse(source, filename=str(py_file))
+            except SyntaxError:
+                continue
+            for node in ast.walk(tree):
+                if isinstance(node, ast.Constant) and isinstance(node.value, str):
+                    if "anthropic.claude-" in node.value:
+                        rel_path = py_file.relative_to(_BACKEND_ROOT)
+                        line = getattr(node, "lineno", "?")
+                        violations.append(f"  {rel_path}:{line} → {node.value!r}")
+        assert not violations, (
+            "以下文件包含硬编码的模型 ID，请改用 src.shared.domain.constants 中的常量:\n" + "\n".join(violations)
+        )
 
 
 @pytest.mark.unit

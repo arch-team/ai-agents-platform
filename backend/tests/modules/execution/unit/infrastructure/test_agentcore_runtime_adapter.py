@@ -139,14 +139,14 @@ class TestAgentCoreRuntimeAdapterExecute:
         request = _make_request(
             prompt="测试提示词",
             system_prompt="你是助手",
-            model_id="us.anthropic.claude-sonnet-4-20250514-v1:0",
+            model_id="us.anthropic.claude-sonnet-4-6-20260819-v1:0",
         )
         await adapter.execute(request)
 
         call_kwargs = mock_client.invoke_inline_agent.call_args.kwargs
         # 验证关键参数
         assert call_kwargs["inputText"] == "测试提示词"
-        assert call_kwargs["foundationModel"] == "us.anthropic.claude-sonnet-4-20250514-v1:0"
+        assert call_kwargs["foundationModel"] == "us.anthropic.claude-sonnet-4-6-20260819-v1:0"
         assert call_kwargs["instruction"] == "你是助手"
 
     async def test_execute_uses_default_model_when_empty(self):

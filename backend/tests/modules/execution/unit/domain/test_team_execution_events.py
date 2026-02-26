@@ -52,13 +52,13 @@ class TestTeamExecutionCompletedEvent:
             user_id=10,
             input_tokens=100,
             output_tokens=200,
-            model_id="anthropic.claude-sonnet-4-20250514",
+            model_id="us.anthropic.claude-sonnet-4-6-20260819-v1:0",
         )
         assert event.execution_id == 1
         assert event.user_id == 10
         assert event.input_tokens == 100
         assert event.output_tokens == 200
-        assert event.model_id == "anthropic.claude-sonnet-4-20250514"
+        assert event.model_id == "us.anthropic.claude-sonnet-4-6-20260819-v1:0"
 
     def test_inherits_domain_event(self) -> None:
         assert issubclass(TeamExecutionCompletedEvent, DomainEvent)

@@ -10,6 +10,7 @@ from src.modules.evaluation.domain.value_objects.pipeline_status import Pipeline
 from src.modules.evaluation.infrastructure.persistence.repositories.eval_pipeline_repository_impl import (
     EvalPipelineRepositoryImpl,
 )
+from src.shared.domain.constants import MODEL_CLAUDE_HAIKU_45
 
 
 def make_pipeline() -> EvalPipeline:
@@ -18,7 +19,7 @@ def make_pipeline() -> EvalPipeline:
         suite_id=1,
         agent_id=1,
         trigger="manual",
-        model_ids=["us.anthropic.claude-haiku-4-20250514-v1:0"],
+        model_ids=[MODEL_CLAUDE_HAIKU_45],
     )
 
 

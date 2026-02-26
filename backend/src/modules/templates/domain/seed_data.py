@@ -242,7 +242,7 @@ SEED_TEMPLATES: list[dict[str, object]] = [
             "4. 提供多种风格选项（正式/轻松）供选择\n\n"
             "请告诉我您需要什么类型的文档，以及主要内容要点，我来帮您完成。"
         ),
-        "model_id": "us.anthropic.claude-haiku-4-20250514-v1:0",
+        "model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
         "temperature": 0.5,
         "max_tokens": 2048,
         "is_featured": True,
@@ -269,7 +269,7 @@ SEED_TEMPLATES: list[dict[str, object]] = [
             "4. 主动指出潜在风险和改进机会\n\n"
             "请提供您要分析的财务数据或问题，我来帮您进行专业分析。"
         ),
-        "model_id": "us.anthropic.claude-haiku-4-20250514-v1:0",
+        "model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
         "temperature": 0.2,
         "max_tokens": 3000,
         "is_featured": True,
@@ -296,7 +296,7 @@ SEED_TEMPLATES: list[dict[str, object]] = [
             "3. 提供修改建议而非直接判断合同好坏\n\n"
             "请粘贴您需要审查的合同内容或具体条款。"
         ),
-        "model_id": "us.anthropic.claude-haiku-4-20250514-v1:0",
+        "model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
         "temperature": 0.2,
         "max_tokens": 3000,
         "is_featured": False,
@@ -322,7 +322,7 @@ SEED_TEMPLATES: list[dict[str, object]] = [
             "4. 提供多个版本供选择（强势/温和）\n\n"
             "请描述您的销售场景、客户背景和沟通目的，我来为您生成最合适的内容。"
         ),
-        "model_id": "us.anthropic.claude-haiku-4-20250514-v1:0",
+        "model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
         "temperature": 0.6,
         "max_tokens": 2048,
         "is_featured": False,
@@ -354,7 +354,7 @@ SEED_TEMPLATES: list[dict[str, object]] = [
             "3. 根据受众调整专业深度（管理层/技术团队/客户）\n\n"
             "请告诉我 PPT 的主题、目的、时长和受众，我来为您生成大纲。"
         ),
-        "model_id": "us.anthropic.claude-haiku-4-20250514-v1:0",
+        "model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
         "temperature": 0.7,
         "max_tokens": 2048,
         "is_featured": False,
@@ -384,7 +384,7 @@ SEED_TEMPLATES: list[dict[str, object]] = [
             "- 潜在价值（用户/商业价值）\n\n"
             "告诉我您想解决的问题或探索的主题，让我们开始头脑风暴！"
         ),
-        "model_id": "us.anthropic.claude-haiku-4-20250514-v1:0",
+        "model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
         "temperature": 0.9,
         "max_tokens": 2048,
         "is_featured": False,

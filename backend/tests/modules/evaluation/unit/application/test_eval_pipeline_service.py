@@ -17,6 +17,7 @@ from src.modules.evaluation.domain.exceptions import (
 from src.modules.evaluation.domain.repositories.eval_pipeline_repository import IEvalPipelineRepository
 from src.modules.evaluation.domain.repositories.test_case_repository import ITestCaseRepository
 from src.modules.evaluation.domain.repositories.test_suite_repository import ITestSuiteRepository
+from src.shared.domain.constants import MODEL_CLAUDE_HAIKU_45
 from tests.modules.evaluation.conftest import make_test_case, make_test_suite
 
 
@@ -26,7 +27,7 @@ def make_pipeline_entity(*, pipeline_id: int = 1) -> EvalPipeline:
         suite_id=1,
         agent_id=1,
         trigger="manual",
-        model_ids=["us.anthropic.claude-haiku-4-20250514-v1:0"],
+        model_ids=[MODEL_CLAUDE_HAIKU_45],
     )
     object.__setattr__(pipeline, "id", pipeline_id)
     object.__setattr__(pipeline, "created_at", datetime.now(UTC))

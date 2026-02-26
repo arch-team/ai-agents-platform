@@ -36,7 +36,7 @@ class TestRecordUsage:
             user_id=10,
             agent_id=5,
             conversation_id=100,
-            model_id="anthropic.claude-sonnet-4-20250514",
+            model_id="us.anthropic.claude-sonnet-4-6-20260819-v1:0",
             tokens_input=1000,
             tokens_output=500,
         )

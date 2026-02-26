@@ -11,6 +11,7 @@ from claude_agent_sdk import query
 from claude_agent_sdk.types import ClaudeAgentOptions, ResultMessage
 
 from src.modules.builder.application.interfaces.builder_llm_service import IBuilderLLMService
+from src.shared.domain.constants import AGENT_DEFAULT_MODEL_ID
 from src.shared.domain.exceptions import DomainError
 
 
@@ -23,7 +24,7 @@ _SYSTEM_PROMPT = (
     '  "name": "Agent 名称",\n'
     '  "description": "Agent 描述",\n'
     '  "system_prompt": "Agent 的系统提示词",\n'
-    '  "model_id": "anthropic.claude-sonnet-4-20250514",\n'
+    f'  "model_id": "{AGENT_DEFAULT_MODEL_ID}",\n'
     '  "temperature": 0.7,\n'
     '  "max_tokens": 4096\n'
     "}"

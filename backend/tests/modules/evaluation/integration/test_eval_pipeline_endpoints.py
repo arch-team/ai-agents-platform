@@ -11,6 +11,7 @@ from src.modules.auth.application.dto.user_dto import UserDTO
 from src.modules.evaluation.api.dependencies import get_eval_pipeline_service
 from src.modules.evaluation.application.dto.pipeline_dto import EvalPipelineDTO
 from src.presentation.api.main import create_app
+from src.shared.domain.constants import MODEL_CLAUDE_HAIKU_45
 
 
 def _now() -> datetime:
@@ -28,7 +29,7 @@ def _make_pipeline_dto(pipeline_id: int = 1) -> EvalPipelineDTO:
         suite_id=1,
         agent_id=1,
         trigger="manual",
-        model_ids=["us.anthropic.claude-haiku-4-20250514-v1:0"],
+        model_ids=[MODEL_CLAUDE_HAIKU_45],
         status="completed",
         bedrock_job_id="job-001",
         score_summary={"accuracy": 0.9},
@@ -61,7 +62,7 @@ class TestTriggerEvalPipelineEndpoint:
         mock_pipeline_service.trigger.return_value = _make_pipeline_dto()
         response = client.post(
             "/api/v1/eval-suites/1/pipelines",
-            json={"model_ids": ["us.anthropic.claude-haiku-4-20250514-v1:0"]},
+            json={"model_ids": [MODEL_CLAUDE_HAIKU_45]},
         )
         assert response.status_code == 201
         assert response.json()["id"] == 1

@@ -9,6 +9,7 @@ from src.modules.insights.domain.entities.usage_record import UsageRecord
 from src.modules.insights.domain.repositories.usage_record_repository import (
     IUsageRecordRepository,
 )
+from src.shared.domain.constants import MODEL_CLAUDE_SONNET_46
 
 
 def make_usage_record(
@@ -17,7 +18,7 @@ def make_usage_record(
     user_id: int = 10,
     agent_id: int = 5,
     conversation_id: int | None = 100,
-    model_id: str = "anthropic.claude-sonnet-4-20250514",
+    model_id: str = MODEL_CLAUDE_SONNET_46,
     tokens_input: int = 1000,
     tokens_output: int = 500,
     estimated_cost: float = 0.0105,

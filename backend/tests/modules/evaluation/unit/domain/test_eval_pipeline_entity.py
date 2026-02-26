@@ -4,6 +4,7 @@ import pytest
 
 from src.modules.evaluation.domain.entities.eval_pipeline import EvalPipeline
 from src.modules.evaluation.domain.value_objects.pipeline_status import PipelineStatus
+from src.shared.domain.constants import MODEL_CLAUDE_HAIKU_45
 from src.shared.domain.exceptions import InvalidStateTransitionError
 
 
@@ -18,7 +19,7 @@ def make_pipeline(
         suite_id=suite_id,
         agent_id=agent_id,
         trigger=trigger,
-        model_ids=model_ids or ["us.anthropic.claude-haiku-4-20250514-v1:0"],
+        model_ids=model_ids or [MODEL_CLAUDE_HAIKU_45],
     )
 
 
