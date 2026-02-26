@@ -4,19 +4,19 @@
 
 ## 当前状态
 
-- **阶段**: Phase 5 Agent 驱动的企业智能 (18-30 月) — **M14 🔄 进行中**
-- **里程碑**: Phase 4 全闭 ✅ → M13（自动化评估）✅ → Phase 5: M14（Builder MCP + SSO）✅ → **M15（规模运营）**
+- **阶段**: Phase 5 Agent 驱动的企业智能 (18-30 月) — **M15 ✅ 已完成，Phase 5 验收待执行**
+- **里程碑**: Phase 4 全闭 ✅ → M13（自动化评估）✅ → M14（Builder MCP + SSO）✅ → M15（规模运营）✅ → **Phase 5 验收**
 - **变更积压**: Phase 2-3: 24/24 ✅ | Phase 4: 19/19 ✅ | AgentCore P3: 5/5 ✅ | Phase 5: 5/5 ✅
 - **关键发现**: 无当前阻断项
 - **Dev 环境**: 后端 ECS (256 CPU/512 MiB) + 前端 S3 + CORS + Bedrock IAM ✅ | ALB `ai-agents-dev-546356512.us-east-1.elb.amazonaws.com`
 - **Prod 环境**: 后端 ECS (512 CPU/1024 MiB/2 任务) + Aurora db.r6g.large (Writer+Reader) ✅ | ALB `ai-agents-prod-1419512933.us-east-1.elb.amazonaws.com`
-- **Stack 命名**: `ai-agents-plat-{stack}-{env}` (v1.4 规范化, 12 个 Stack 全部重建)
-- **测试**: 后端 2051 测试 + 基础设施 196 测试 + 前端 399 单元测试 = **2646+ 测试**
+- **Stack 命名**: `ai-agents-plat-{stack}-{env}` (v1.4 规范化, 13 个 Stack)
+- **测试**: 后端 2063+ 测试 + 基础设施 217+ 测试 + 前端 411+ 单元测试 = **2691+ 测试**
 - **Eval 框架**: EvalPipeline 已实现 (BedrockEvalAdapter + EventBridge 定时触发 + CloudWatch 面板)
-- **后端模块**: 10 个 (9 业务 + shared) + evaluation 扩展 | **前端**: 190+ 源文件, FSD 架构, 12 页面
+- **后端模块**: 11 个 (10 业务 + shared) + evaluation 扩展 | **前端**: 200+ 源文件, FSD 架构, 13 页面
 - **SDK**: claude-agent-sdk 0.1.35 | bedrock-agentcore 1.3.0
 - **环境策略**: Dev (开发+验证) + Prod (生产)，无 Staging (v1.4 简化)
-- **下一步**: **M14 全部完成 ✅ Prod 已验证**。下一个里程碑：M15 规模运营
+- **下一步**: **M15 全部完成 ✅ + Prod 已部署验证**。下一步：Phase 5 季度评审 + roadmap 更新
 
 ## 模块状态
 
@@ -54,6 +54,15 @@
 | ~~`marketplace`~~ | 移除 | - | ADR-007: 内部平台无需市场机制 |
 | ~~`analytics`~~ | 降级 | - | ADR-007: 合并为 insights 增强 |
 
+### Phase 5
+
+| 模块 | 状态 | 分支 | 备注 |
+|------|:----:|------|------|
+| `evaluation` 扩展 | 已完成 | ai-agents-factory-v1 | M13: EvalPipeline + BedrockEvalAdapter + EventBridge 定时触发 + CloudWatch 质量面板 |
+| `builder` | 已完成 | ai-agents-factory-v1 | M14: 对话式 Agent Builder (MCP 驱动), ClaudeBuilderAdapter, SSE 流式, 3 端点 |
+| `auth` SSO 扩展 | 已完成 | ai-agents-factory-v1 | M14: SAML 2.0 SP (python3-saml3) + LDAP (ldap3), SsoService, 3 SSO 端点 |
+| `billing` | 已完成 | ai-agents-factory-v1 | M15: Department CRUD + Budget 管理 + ROI 报告 (CostExplorer), DDD 四层, 10 端点 |
+
 ## 基础设施
 
 | CDK Stack | Dev | Prod | 备注 |
@@ -64,6 +73,7 @@
 | ai-agents-plat-agentcore-{env} | ✅ | ✅ | ECR + Runtime (2 AZ) + Gateway (MCP), Cognito |
 | ai-agents-plat-compute-{env} | ✅ | ✅ | ECS Fargate + ALB (HTTP:80); Dev: 256CPU/512MiB/1任务; Prod: 512CPU/1024MiB/2任务 |
 | ai-agents-plat-monitoring-{env} | ✅ | ✅ | CloudWatch Alarms + Dashboard + SNS 告警 |
+| ai-agents-plat-billing-{env} | ✅ | ✅ | AWS Budgets 月度告警 (Dev $100, Prod $1000), CloudWatch 成本 Widget |
 
 ---
 
@@ -708,6 +718,32 @@ auth SSO (#10-#12)    ── 100% 并行 ──── ┤──► 前端 (#13-#
 | builder→agents 跨模块 | 直接依赖（DTO 边界解耦） | Builder 是 agents 创建入口，强依赖合理，无需 IAgentQuerier 抽象 |
 | SSO 交付范围 | SAML 必须，LDAP 可选 | 降低 R3 风险（LDAP 企业配置复杂度）|
 
+### M15: 规模运营 — billing + 部门隔离 + ROI 报告 (Phase 5C, 第 7-10 月) — ✅ 已完成
+
+> 交付物: `billing` 新模块（Department CRUD + Budget 管理 + ROI 报告）+ `BillingStack` CDK + 前端 BillingPage + P95 性能验证
+> 验收标准: 每部门独立成本视图；非 LLM 端点 P95 < 300ms；ruff + mypy + pytest ≥85% 全通过
+> 实施方式: devpace 工作流 (CR-006 ~ CR-011, 6 个 CR, Agent Teams 并行)
+
+#### 后端 + CDK + 前端（CR-006 ~ CR-011）
+
+| CR | 任务 | 状态 | 依赖 | 参考规范 | 会话 |
+|----|------|:----:|:----:|---------|------|
+| CR-006 | `department_id` 渐进迁移 — agents/tool_catalog/knowledge/execution/builder 5 模块 19 文件 | 已完成 | - | `rules/architecture.md` | 2026-02-24 |
+| CR-007 | `BillingStack` CDK — AWS Budgets 月度告警 + CloudWatch 成本 Widget | 已完成 | - | infra 规范 | 2026-02-24 |
+| CR-008 | `billing` DDD 模块 — Department CRUD + Budget 管理 + 预算超限告警 (10 端点, 32 文件) | 已完成 | CR-006 | `rules/architecture.md` §5 DDD | 2026-02-24 |
+| CR-009 | billing ROI 报告 — CostExplorer 按部门 tag 聚合 + DepartmentCostAdapter | 已完成 | CR-008 | `rules/sdk-first.md` | 2026-02-25 |
+| CR-010 | 前端 `BillingPage` — 部门管理 + 预算管理 + 成本报告图表 (15 文件, 1060 行) | 已完成 | CR-008, CR-009 | FSD 架构 | 2026-02-25 |
+| CR-011 | P95 性能验证 — locust 扩展 billing 端点 + templates COUNT OVER 优化 | 已完成 | CR-008 | `rules/checklist.md` | 2026-02-25 |
+
+#### M15 关键设计决策
+
+| 决策 | 选择 | 理由 |
+|------|------|------|
+| department_id 迁移策略 | 渐进式 (nullable, 反范式冗余) | 避免全量迁移阻断，支撑 billing 按部门过滤 |
+| billing 成本数据源 | AWS Cost Explorer (真实账单) | 平台 estimated_cost 已弃用，直接使用 AWS 真实数据 |
+| BillingStack 告警 | AWS Budgets (月度) | 原生成本管理，无需自建监控 |
+| templates 慢查询优化 | COUNT(*) OVER() 窗口函数 | 单次查询替代 count + select 两次查询 |
+
 ---
 
 ## 变更积压 (Change Backlog)
@@ -975,9 +1011,9 @@ auth SSO (#10-#12)    ── 100% 并行 ──── ┤──► 前端 (#13-#
 
 | # | 日期 | 类型 | 完成项 | 关键决策 |
 |---|------|------|-------|---------|
+| 60 | 2026-02-26 | M15 全闭 + Prod 部署 | **M15 6/6 CR merged** + devpace状态补齐; **Prod部署**: compute(新镜像)+agentcore(IAM收窄)+billing(新Stack) 3个Stack部署完成; ECS 2/2 COMPLETED; health✅ ready✅ billing路由✅; 质量门: 2739测试全通过(ruff+mypy+pytest+jest+vitest) | Prod部署需Docker daemon; CDK并发锁(cdk.out)不支持parallel deploy; Phase 5验收指标需Prod认证数据 |
 | 59 | 2026-02-25 | M15 Phase 5积压清零 + billing模块 | **Phase 5 积压 5/5 全清零**: CR-001~005 (ldap3依赖+MyPy治理+LDAP测试端点+SSE监控+LDAP SG); **M15 启动**: 6PF迭代规划完成; **M15 实施**: CR-006 department_id迁移(Teams×3, 19文件) + CR-007 BillingStack CDK(Teams) + CR-008 billing DDD模块(Teams, 28+文件); M15 进度 3/6; 后端2040测试+infra 217测试 | devpace工作流首次全程运行(pace-next→pace-dev→pace-test→pace-review→approve); Agent Teams最佳场景=跨模块机械性重复变更; 冗余department_id(反范式)支撑billing按部门过滤 |
 | 58 | 2026-02-23 | M14 Dev+Prod 部署验证 | **Dev验证**: 12/12✅; **发现并修复**: asyncio.gather共享session并发Bug(7文件12处); **Prod部署+验证**: 全量8/8✅ | asyncio.gather在同一AsyncSession上不可并发=必须顺序await |
 | 57 | 2026-02-22 | M14 后端+前端+CDK 全闭 | **M14 #1-#16 全部完成**: builder模块+auth SAML扩展+前端3页面+CDK SecurityStack; 质量门: ruff✅ mypy✅ 2051后端✅ 196infra✅ 399前端✅ | IAgentCreator接口解决builder→agents架构合规; providers.py是唯一Composition Root |
 | 56 | 2026-02-22 | M14 启动 + Phase 5 季度评审 | Phase 5 季度评审完成; M14 三路并行启动 | SAML必须/LDAP可选; builder→agents直接依赖(DTO解耦) |
-| 55 | 2026-02-22 | M13 全闭 + Agent Teams 并行 | 3路并行: CDK Eval面板+EvalPipeline视图+模板功能; 修复工具目录3个Bug; E2E 96%通过 | Agent Teams: 3个独立代码路径可真正并行 |
 
