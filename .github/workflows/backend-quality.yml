@@ -10,9 +10,9 @@ on:
         type: number
         default: 85
       pytest-marker:
-        description: 'pytest marker 过滤 (如 "not integration")，为空时运行全部测试'
+        description: 'pytest marker 过滤 (如 "not integration and not e2e")，为空时默认排除 E2E'
         type: string
-        default: ''
+        default: 'not e2e'
 
 jobs:
   quality:

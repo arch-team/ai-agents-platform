@@ -127,16 +127,25 @@ class TestToolGatewayLifecycle:
         admin_headers: dict[str, str],
     ) -> None:
         """已审批工具出现在审批列表中。"""
-        resp = http.get(
-            "/api/v1/tools/approved",
-            headers=admin_headers,
-        )
-        assert resp.status_code == 200
-        body = resp.json()
-
         tool_id = TestToolGatewayLifecycle._tool_id
-        ids = [item["id"] for item in body["items"]]
-        assert tool_id in ids
+
+        # 使用大 page_size 并遍历分页，确保找到新创建的工具
+        ids: list[int] = []
+        page = 1
+        while True:
+            resp = http.get(
+                "/api/v1/tools/approved",
+                headers=admin_headers,
+                params={"page": page, "page_size": 100},
+            )
+            assert resp.status_code == 200
+            body = resp.json()
+            ids.extend(item["id"] for item in body["items"])
+            if tool_id in ids or page >= body.get("total_pages", 1):
+                break
+            page += 1
+
+        assert tool_id in ids, f"tool {tool_id} 不在审批列表中 (共 {len(ids)} 个: {ids[:10]}...)"
 
     def test_06_deprecate_clears_gateway(
         self,

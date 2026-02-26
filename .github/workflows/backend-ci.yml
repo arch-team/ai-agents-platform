@@ -24,7 +24,7 @@ jobs:
     uses: ./.github/workflows/backend-quality.yml
     with:
       coverage-threshold: 83
-      pytest-marker: 'not integration'
+      pytest-marker: 'not integration and not e2e'
 
   # ============================================================
   # MySQL 集成测试

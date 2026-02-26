@@ -108,7 +108,9 @@ GitHubOIDCProvider:
 
 ### 3.3 IAM Role 权限策略
 
-Role 需要以下权限用于 CDK 部署:
+Role 需要以下权限:
+
+**CDK 部署权限** (backend-deploy / cdk-deploy):
 
 ```json
 {
@@ -124,6 +126,61 @@ Role 需要以下权限用于 CDK 部署:
 ```
 
 > CDK Bootstrap 会创建 `cdk-*` 角色。确保已在目标账号执行 `cdk bootstrap`。
+
+**前端部署附加权限** (frontend-deploy):
+
+前端部署直接调用 S3 和 CloudFront API（不通过 CDK），需要额外的权限策略:
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "FrontendS3Deploy",
+      "Effect": "Allow",
+      "Action": ["s3:PutObject", "s3:DeleteObject", "s3:ListBucket", "s3:GetObject"],
+      "Resource": [
+        "arn:aws:s3:::ai-agents-platform-frontend-*",
+        "arn:aws:s3:::ai-agents-platform-frontend-*/*"
+      ]
+    },
+    {
+      "Sid": "CloudFrontInvalidation",
+      "Effect": "Allow",
+      "Action": ["cloudfront:ListDistributions", "cloudfront:CreateInvalidation"],
+      "Resource": "*"
+    }
+  ]
+}
+```
+
+添加此策略的 AWS CLI 命令:
+
+```bash
+# Dev 角色 (替换 <ROLE_NAME> 为实际角色名)
+aws iam put-role-policy \
+  --role-name <ROLE_NAME> \
+  --policy-name FrontendDeployPolicy \
+  --policy-document '{
+    "Version": "2012-10-17",
+    "Statement": [
+      {
+        "Sid": "FrontendS3Deploy",
+        "Effect": "Allow",
+        "Action": ["s3:PutObject", "s3:DeleteObject", "s3:ListBucket", "s3:GetObject"],
+        "Resource": ["arn:aws:s3:::ai-agents-platform-frontend-*", "arn:aws:s3:::ai-agents-platform-frontend-*/*"]
+      },
+      {
+        "Sid": "CloudFrontInvalidation",
+        "Effect": "Allow",
+        "Action": ["cloudfront:ListDistributions", "cloudfront:CreateInvalidation"],
+        "Resource": "*"
+      }
+    ]
+  }'
+```
+
+> Prod 角色需要同样的策略。`cloudfront:CreateInvalidation` 不支持资源级限制，必须使用 `"*"`。
 
 ---
 
