@@ -17,6 +17,19 @@ import {
   TEST_VPC_CIDR,
 } from '../helpers/test-utils';
 
+/**
+ * Docker asset hash 随 backend/ 文件变更而变化，导致 CI/本地快照不一致。
+ * 将 container-assets hash 标准化后再做快照比较。
+ */
+function normalizeDockerHashes(template: Record<string, unknown>): Record<string, unknown> {
+  const json = JSON.stringify(template);
+  const normalized = json.replace(
+    /container-assets-[^:]+:[a-f0-9]{64}/g,
+    'container-assets-NORMALIZED:DOCKER_HASH',
+  );
+  return JSON.parse(normalized) as Record<string, unknown>;
+}
+
 describe('Snapshot Tests', () => {
   it('NetworkStack 快照匹配', () => {
     const app = new cdk.App();
@@ -79,7 +92,8 @@ describe('Snapshot Tests', () => {
       envName: 'dev',
     });
 
-    expect(Template.fromStack(stack).toJSON()).toMatchSnapshot();
+    // Docker asset hash 标准化，避免 backend/ 文件变更导致快照失败
+    expect(normalizeDockerHashes(Template.fromStack(stack).toJSON())).toMatchSnapshot();
   });
 
   it('AgentCoreStack 快照匹配', () => {
