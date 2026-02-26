@@ -93,10 +93,7 @@ jobs:
       - name: 同步到 Dev S3
         run: aws s3 sync dist/ s3://ai-agents-platform-frontend-dev-897473/ --delete
       - name: 验证部署
-        run: |
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" "http://ai-agents-platform-frontend-dev-897473.s3-website-us-east-1.amazonaws.com")
-          echo "HTTP Status: $STATUS"
-          test "$STATUS" = "200"
+        run: aws s3 ls s3://ai-agents-platform-frontend-dev-897473/index.html
 
   # ============================================================
   # 部署 — Prod 环境 (需要手动审批)

@@ -3,7 +3,7 @@ node_modules/
 
 # CDK 输出
 cdk.out/
-cdk.context.json
+# cdk.context.json 需要提交 — CDK 推荐实践，避免 synth 时 AWS API 查找
 
 # TypeScript 编译输出
 *.js
