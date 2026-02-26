@@ -63,8 +63,8 @@ jobs:
         run: uv run mypy src/
       - name: 运行测试
         run: |
-          PYTEST_ARGS="--cov=src --cov-fail-under=${{ inputs.coverage-threshold }} -q"
           if [ -n "${{ inputs.pytest-marker }}" ]; then
-            PYTEST_ARGS="-m \"${{ inputs.pytest-marker }}\" $PYTEST_ARGS"
+            uv run pytest -m "${{ inputs.pytest-marker }}" --cov=src --cov-fail-under=${{ inputs.coverage-threshold }} -q
+          else
+            uv run pytest --cov=src --cov-fail-under=${{ inputs.coverage-threshold }} -q
           fi
-          uv run pytest $PYTEST_ARGS
