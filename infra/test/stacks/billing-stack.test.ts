@@ -135,13 +135,9 @@ describe('BillingStack', () => {
       template = Template.fromStack(stack);
     });
 
-    it('未提供邮箱时应创建空订阅列表', () => {
+    it('未提供邮箱时不创建通知配置', () => {
       template.hasResourceProperties('AWS::Budgets::Budget', {
-        NotificationsWithSubscribers: Match.arrayWith([
-          Match.objectLike({
-            Subscribers: [],
-          }),
-        ]),
+        NotificationsWithSubscribers: Match.absent(),
       });
     });
   });

@@ -21,7 +21,8 @@
       "dev": {
         "account": "897473508751",
         "region": "us-east-1",
-        "vpcCidr": "10.0.0.0/16"
+        "vpcCidr": "10.0.0.0/16",
+        "alertEmail": "platform-team@example.com"
       },
       "prod": {
         "account": "897473508751",

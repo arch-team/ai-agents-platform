@@ -26,10 +26,18 @@ export class BillingStack extends cdk.Stack {
     // 根据环境设置预算限额
     const budgetLimit = envName === 'prod' ? 1000 : 100;
 
-    // 构建告警订阅配置
-    const subscribers: budgets.CfnBudget.SubscriberProperty[] = alertEmail
-      ? [{ address: alertEmail, subscriptionType: 'EMAIL' }]
-      : [];
+    // 构建告警订阅配置 (alertEmail 未配置时不创建通知，避免 AWS Budgets API 空 subscribers 错误)
+    const notificationsWithSubscribers = alertEmail
+      ? [80, 100, 120].map((threshold) => ({
+          notification: {
+            notificationType: threshold <= 100 ? 'ACTUAL' : 'FORECASTED',
+            comparisonOperator: 'GREATER_THAN',
+            threshold,
+            thresholdType: 'PERCENTAGE',
+          },
+          subscribers: [{ address: alertEmail, subscriptionType: 'EMAIL' }],
+        }))
+      : undefined;
 
     // 创建月度预算告警
     this.budget = new budgets.CfnBudget(this, 'MonthlyBudget', {
@@ -42,38 +50,7 @@ export class BillingStack extends cdk.Stack {
           unit: 'USD',
         },
       },
-      notificationsWithSubscribers: [
-        // 80% 实际成本告警
-        {
-          notification: {
-            notificationType: 'ACTUAL',
-            comparisonOperator: 'GREATER_THAN',
-            threshold: 80,
-            thresholdType: 'PERCENTAGE',
-          },
-          subscribers,
-        },
-        // 100% 实际成本告警
-        {
-          notification: {
-            notificationType: 'ACTUAL',
-            comparisonOperator: 'GREATER_THAN',
-            threshold: 100,
-            thresholdType: 'PERCENTAGE',
-          },
-          subscribers,
-        },
-        // 120% 预测成本告警
-        {
-          notification: {
-            notificationType: 'FORECASTED',
-            comparisonOperator: 'GREATER_THAN',
-            threshold: 120,
-            thresholdType: 'PERCENTAGE',
-          },
-          subscribers,
-        },
-      ],
+      notificationsWithSubscribers,
     });
 
     // CDK Nag 抑制
