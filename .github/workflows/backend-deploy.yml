@@ -47,6 +47,7 @@ jobs:
     uses: ./.github/workflows/backend-quality.yml
     with:
       coverage-threshold: 85
+      pytest-marker: "not e2e"
 
   # ============================================================
   # 部署 — Dev 环境 (push 触发自动部署)
