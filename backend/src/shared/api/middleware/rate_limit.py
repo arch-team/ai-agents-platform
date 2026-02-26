@@ -49,6 +49,6 @@ def setup_rate_limiting(app: FastAPI) -> None:
     app.state.limiter = limiter
     app.add_exception_handler(
         RateLimitExceeded,
-        _custom_rate_limit_handler,
+        _custom_rate_limit_handler,  # type: ignore[arg-type]
     )
     app.add_middleware(SlowAPIMiddleware)

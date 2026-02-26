@@ -58,6 +58,18 @@ class ITemplateRepository(IRepository[Template, int]):
         """搜索模板。"""
 
     @abstractmethod
+    async def search_with_total(
+        self,
+        keyword: str,
+        *,
+        category: TemplateCategory | None = None,
+        tags: list[str] | None = None,
+        offset: int = 0,
+        limit: int = 20,
+    ) -> tuple[list[Template], int]:
+        """单次查询同时返回数据和总数 (窗口函数优化)。"""
+
+    @abstractmethod
     async def count_by_search(
         self,
         keyword: str,
