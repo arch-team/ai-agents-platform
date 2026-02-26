@@ -11,6 +11,9 @@ on:
       - "Agent Image Build & Push"
     types: [completed]
 
+permissions:
+  issues: write
+
 jobs:
   notify-failure:
     name: 部署失败通知

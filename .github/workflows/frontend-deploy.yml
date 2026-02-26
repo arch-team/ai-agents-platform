@@ -95,6 +95,7 @@ jobs:
       - name: 同步到 Dev S3
         run: aws s3 sync dist/ s3://ai-agents-platform-frontend-dev-897473/ --delete
       - name: 失效 CloudFront 缓存
+        continue-on-error: true
         run: |
           DIST_ID=$(aws cloudfront list-distributions \
             --query "DistributionList.Items[?Origins.Items[?contains(DomainName, 'ai-agents-platform-frontend-dev')]].Id" \
@@ -155,6 +156,7 @@ jobs:
       - name: 同步到 Prod S3
         run: aws s3 sync dist/ s3://ai-agents-platform-frontend-prod-897473/ --delete
       - name: 失效 CloudFront 缓存
+        continue-on-error: true
         run: |
           DIST_ID=$(aws cloudfront list-distributions \
             --query "DistributionList.Items[?Origins.Items[?contains(DomainName, 'ai-agents-platform-frontend-prod')]].Id" \
