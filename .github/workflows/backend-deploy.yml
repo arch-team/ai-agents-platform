@@ -101,11 +101,13 @@ jobs:
   # ============================================================
   deploy-prod:
     name: 部署 Prod
-    needs: deploy-dev
+    needs: [quality-gate, deploy-dev]
     if: >-
-      (github.event_name == 'push' &&
-       (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/ai-agents-factory-v1')) ||
-      (github.event_name == 'workflow_dispatch' && inputs.environment == 'prod')
+      always() &&
+      (needs.quality-gate.result == 'success' || needs.quality-gate.result == 'skipped') &&
+      ((github.event_name == 'push' &&
+        (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/ai-agents-factory-v1')) ||
+       (github.event_name == 'workflow_dispatch' && inputs.environment == 'prod'))
     runs-on: ubuntu-latest
     environment:
       name: production
