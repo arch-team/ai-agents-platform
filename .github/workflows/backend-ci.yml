@@ -56,9 +56,9 @@ jobs:
       - name: MyPy 类型检查
         run: uv run mypy src/
 
-      # 单元测试 (排除集成测试)
+      # 单元测试 (排除集成测试, 阈值低于 deploy 全量的 85%)
       - name: 运行单元测试
-        run: uv run pytest -m "not integration" --cov=src --cov-fail-under=85
+        run: uv run pytest -m "not integration" --cov=src --cov-fail-under=83
 
   # ============================================================
   # MySQL 集成测试
