@@ -4,19 +4,20 @@
 
 ## 当前状态
 
-- **阶段**: Phase 5 Agent 驱动的企业智能 (18-30 月) — **M15 ✅ 已完成，Phase 5 验收待执行**
-- **里程碑**: Phase 4 全闭 ✅ → M13（自动化评估）✅ → M14（Builder MCP + SSO）✅ → M15（规模运营）✅ → **Phase 5 验收**
+- **阶段**: Phase 5 Agent 驱动的企业智能 (18-30 月) — **Phase 5 验收完成 ✅ (代码质量门控通过，运营指标待 Prod 数据)**
+- **里程碑**: Phase 4 全闭 ✅ → M13（自动化评估）✅ → M14（Builder MCP + SSO）✅ → M15（规模运营）✅ → **Phase 5 验收 ✅**
 - **变更积压**: Phase 2-3: 24/24 ✅ | Phase 4: 19/19 ✅ | AgentCore P3: 5/5 ✅ | Phase 5: 5/5 ✅
 - **关键发现**: 无当前阻断项
 - **Dev 环境**: 后端 ECS (256 CPU/512 MiB) + 前端 S3 + CORS + Bedrock IAM ✅ | ALB `ai-agents-dev-546356512.us-east-1.elb.amazonaws.com`
 - **Prod 环境**: 后端 ECS (512 CPU/1024 MiB/2 任务) + Aurora db.r6g.large (Writer+Reader) ✅ | ALB `ai-agents-prod-1419512933.us-east-1.elb.amazonaws.com`
 - **Stack 命名**: `ai-agents-plat-{stack}-{env}` (v1.4 规范化, 13 个 Stack)
-- **测试**: 后端 2063+ 测试 + 基础设施 217+ 测试 + 前端 411+ 单元测试 = **2691+ 测试**
+- **测试**: 后端 2071+ 测试 + 基础设施 217+ 测试 + 前端 411+ 单元测试 = **2699+ 测试**
 - **Eval 框架**: EvalPipeline 已实现 (BedrockEvalAdapter + EventBridge 定时触发 + CloudWatch 面板)
 - **后端模块**: 11 个 (10 业务 + shared) + evaluation 扩展 | **前端**: 200+ 源文件, FSD 架构, 13 页面
 - **SDK**: claude-agent-sdk 0.1.35 | bedrock-agentcore 1.3.0
 - **环境策略**: Dev (开发+验证) + Prod (生产)，无 Staging (v1.4 简化)
-- **下一步**: **M15 全部完成 ✅ + Prod 已部署验证**。下一步：Phase 5 季度评审 + roadmap 更新
+- **Phase 5 验收结果**: ruff ✅ | mypy 462 文件 ✅ | pytest 2071 passed / 88.29% 覆盖率 ✅ | 4 模块架构合规 ✅
+- **下一步**: Roadmap v1.7 更新 — 规划 Phase 6 方向或运营指标冲刺
 
 ## 模块状态
 
@@ -1011,9 +1012,9 @@ auth SSO (#10-#12)    ── 100% 并行 ──── ┤──► 前端 (#13-#
 
 | # | 日期 | 类型 | 完成项 | 关键决策 |
 |---|------|------|-------|---------|
+| 61 | 2026-02-27 | Phase 5 验收 | **Phase 5 验收执行**: ruff✅ mypy(462文件)✅ pytest(2071passed/88.29%覆盖率)✅ 4模块架构合规✅; **未提交变更处理**: ClaudeAgentAdapter CLIConnectionError重试增强已提交; **运营指标**: 需Prod认证数据(自助创建率/WAA/SLA/Eval覆盖) | 运营指标无法本地验证, 需Prod数据收集后单独评审; Phase 5代码质量门控全部达标 |
 | 60 | 2026-02-26 | M15 全闭 + Prod 部署 | **M15 6/6 CR merged** + devpace状态补齐; **Prod部署**: compute(新镜像)+agentcore(IAM收窄)+billing(新Stack) 3个Stack部署完成; ECS 2/2 COMPLETED; health✅ ready✅ billing路由✅; 质量门: 2739测试全通过(ruff+mypy+pytest+jest+vitest) | Prod部署需Docker daemon; CDK并发锁(cdk.out)不支持parallel deploy; Phase 5验收指标需Prod认证数据 |
 | 59 | 2026-02-25 | M15 Phase 5积压清零 + billing模块 | **Phase 5 积压 5/5 全清零**: CR-001~005 (ldap3依赖+MyPy治理+LDAP测试端点+SSE监控+LDAP SG); **M15 启动**: 6PF迭代规划完成; **M15 实施**: CR-006 department_id迁移(Teams×3, 19文件) + CR-007 BillingStack CDK(Teams) + CR-008 billing DDD模块(Teams, 28+文件); M15 进度 3/6; 后端2040测试+infra 217测试 | devpace工作流首次全程运行(pace-next→pace-dev→pace-test→pace-review→approve); Agent Teams最佳场景=跨模块机械性重复变更; 冗余department_id(反范式)支撑billing按部门过滤 |
 | 58 | 2026-02-23 | M14 Dev+Prod 部署验证 | **Dev验证**: 12/12✅; **发现并修复**: asyncio.gather共享session并发Bug(7文件12处); **Prod部署+验证**: 全量8/8✅ | asyncio.gather在同一AsyncSession上不可并发=必须顺序await |
 | 57 | 2026-02-22 | M14 后端+前端+CDK 全闭 | **M14 #1-#16 全部完成**: builder模块+auth SAML扩展+前端3页面+CDK SecurityStack; 质量门: ruff✅ mypy✅ 2051后端✅ 196infra✅ 399前端✅ | IAgentCreator接口解决builder→agents架构合规; providers.py是唯一Composition Root |
-| 56 | 2026-02-22 | M14 启动 + Phase 5 季度评审 | Phase 5 季度评审完成; M14 三路并行启动 | SAML必须/LDAP可选; builder→agents直接依赖(DTO解耦) |
 
