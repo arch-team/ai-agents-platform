@@ -150,7 +150,9 @@ class TestCreateConversation:
 
         conv_repo = AsyncMock(spec=IConversationRepository)
         conv_repo.create.side_effect = lambda c: _make_conversation(
-            title=c.title, agent_id=c.agent_id, user_id=c.user_id,
+            title=c.title,
+            agent_id=c.agent_id,
+            user_id=c.user_id,
         )
 
         service = _make_service(conv_repo=conv_repo, agent_querier=agent_querier)
@@ -176,7 +178,9 @@ class TestCreateConversation:
 
         conv_repo = AsyncMock(spec=IConversationRepository)
         conv_repo.create.side_effect = lambda c: _make_conversation(
-            title=c.title, agent_id=c.agent_id, user_id=c.user_id,
+            title=c.title,
+            agent_id=c.agent_id,
+            user_id=c.user_id,
         )
 
         service = _make_service(conv_repo=conv_repo, agent_querier=agent_querier)
@@ -249,7 +253,7 @@ class TestSendMessage:
         assert result.token_count == 30
         assert msg_repo.create.call_count == 2  # 用户消息 + 助手消息
         llm_client.invoke.assert_called_once()
-        conv_repo.update.assert_called_once()
+        assert conv_repo.update.call_count == 2  # _prepare_for_send(用户) + send_message(助手)
 
     @pytest.mark.asyncio
     async def test_send_message_conversation_not_found(self) -> None:
@@ -309,6 +313,7 @@ class TestSendMessageStream:
                 yield LLMStreamChunk(content="你好")
                 yield LLMStreamChunk(content="！")
                 yield LLMStreamChunk(done=True, input_tokens=10, output_tokens=20)
+
             return _gen()
 
         llm_client = AsyncMock(spec=ILLMClient)
@@ -329,7 +334,9 @@ class TestSendMessageStream:
         ) as mock_bus:
             mock_bus.publish_async = AsyncMock()
             stream = await service.send_message_stream(
-                1, SendMessageDTO(content="你好"), user_id=100,
+                1,
+                SendMessageDTO(content="你好"),
+                user_id=100,
             )
 
             chunks: list[StreamChunk] = []
@@ -346,7 +353,8 @@ class TestSendMessageStream:
 
         # 验证更新调用
         msg_repo.update.assert_called_once()
-        conv_repo.update.assert_called_once()
+        # conv_repo.update 被调用 2 次: _prepare_for_send(用户消息) + _finalize_stream(助手消息)
+        assert conv_repo.update.call_count == 2
 
     @pytest.mark.asyncio
     async def test_stream_post_write_uses_independent_repos(self) -> None:
@@ -367,6 +375,7 @@ class TestSendMessageStream:
             async def _gen():  # type: ignore[no-untyped-def]
                 yield LLMStreamChunk(content="回复")
                 yield LLMStreamChunk(done=True, input_tokens=5, output_tokens=10)
+
             return _gen()
 
         llm_client = AsyncMock(spec=ILLMClient)
@@ -400,19 +409,22 @@ class TestSendMessageStream:
         ) as mock_bus:
             mock_bus.publish_async = AsyncMock()
             stream = await service.send_message_stream(
-                1, SendMessageDTO(content="你好"), user_id=100,
+                1,
+                SendMessageDTO(content="你好"),
+                user_id=100,
             )
 
             chunks: list[StreamChunk] = []
             async for chunk in stream:
                 chunks.append(chunk)
 
-        # 验证: stream repos 执行了写操作
+        # 验证: stream repos 执行了写操作（助手消息 + 对话统计）
         stream_msg_repo.update.assert_called_once()
         stream_conv_repo.update.assert_called_once()
-        # 验证: DI repos 的 update 未被调用
+        # 验证: DI conv_repo 在 _prepare_for_send 中被调用 1 次（用户消息计数）
+        di_conv_repo.update.assert_called_once()
+        # 验证: DI msg_repo 的 update 未被调用（消息更新走 stream repo）
         di_msg_repo.update.assert_not_called()
-        di_conv_repo.update.assert_not_called()
 
     @pytest.mark.asyncio
     async def test_send_message_stream_conversation_not_found(self) -> None:
@@ -423,7 +435,9 @@ class TestSendMessageStream:
 
         with pytest.raises(ConversationNotFoundError):
             await service.send_message_stream(
-                999, SendMessageDTO(content="你好"), user_id=100,
+                999,
+                SendMessageDTO(content="你好"),
+                user_id=100,
             )
 
 
@@ -514,10 +528,14 @@ class TestListConversations:
 
         assert result.total == 1
         conv_repo.list_by_user.assert_called_once_with(
-            100, agent_id=5, offset=0, limit=20,
+            100,
+            agent_id=5,
+            offset=0,
+            limit=20,
         )
         conv_repo.count_by_user.assert_called_once_with(
-            100, agent_id=5,
+            100,
+            agent_id=5,
         )
 
 
@@ -710,6 +728,7 @@ class TestRAGIntegration:
             async def _gen():  # type: ignore[no-untyped-def]
                 yield LLMStreamChunk(content="回复")
                 yield LLMStreamChunk(done=True, input_tokens=5, output_tokens=10)
+
             return _gen()
 
         llm_client = AsyncMock(spec=ILLMClient)
@@ -738,7 +757,9 @@ class TestRAGIntegration:
         ) as mock_bus:
             mock_bus.publish_async = AsyncMock()
             stream = await service.send_message_stream(
-                1, SendMessageDTO(content="你好"), user_id=100,
+                1,
+                SendMessageDTO(content="你好"),
+                user_id=100,
             )
 
             events: list[str] = []
@@ -942,7 +963,9 @@ class TestAgentRuntimeRouting:
         ) as mock_bus:
             mock_bus.publish_async = AsyncMock()
             stream = await service.send_message_stream(
-                1, SendMessageDTO(content="你好"), user_id=100,
+                1,
+                SendMessageDTO(content="你好"),
+                user_id=100,
             )
 
             chunks: list[StreamChunk] = []
@@ -973,6 +996,7 @@ class TestAgentRuntimeRouting:
             async def _gen():  # type: ignore[no-untyped-def]
                 yield LLMStreamChunk(content="LLM 流式")
                 yield LLMStreamChunk(done=True, input_tokens=8, output_tokens=12)
+
             return _gen()
 
         llm_client.invoke_stream.side_effect = _mock_llm_stream
@@ -991,7 +1015,9 @@ class TestAgentRuntimeRouting:
         ) as mock_bus:
             mock_bus.publish_async = AsyncMock()
             stream = await service.send_message_stream(
-                1, SendMessageDTO(content="你好"), user_id=100,
+                1,
+                SendMessageDTO(content="你好"),
+                user_id=100,
             )
 
             chunks: list[StreamChunk] = []

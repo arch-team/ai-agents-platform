@@ -184,9 +184,8 @@ class ExecutionService:
         )
         created_assistant_msg = await self._message_repo.create(assistant_message)
 
-        # 更新对话统计
-        ctx.conversation.add_message_count(token_count=0)  # 用户消息
-        ctx.conversation.add_message_count(token_count=total_tokens)
+        # 更新对话统计 (用户消息计数已在 _prepare_for_send 中完成)
+        ctx.conversation.add_message_count(token_count=total_tokens)  # 助手消息
         await self._conversation_repo.update(ctx.conversation)
 
         if ctx.created_user_msg.id is None or created_assistant_msg.id is None:
@@ -290,8 +289,8 @@ class ExecutionService:
         try:
             assistant_msg.content = collected_content
             assistant_msg.token_count = total_tokens
-            conversation.add_message_count(token_count=0)  # 用户消息
-            conversation.add_message_count(token_count=total_tokens)
+            # 用户消息计数已在 _prepare_for_send 中完成, 此处仅更新助手消息
+            conversation.add_message_count(token_count=total_tokens)  # 助手消息
 
             # 使用流专用 repos 写入 (由 API 层通过独立 session 创建, 避免 DI session 已关闭)
             await self._stream_msg_repo.update(assistant_msg)
@@ -558,13 +557,16 @@ class ExecutionService:
         if agent_info is None:
             raise AgentNotAvailableError(conversation.agent_id)
 
-        # 创建用户消息
+        # 创建用户消息并立即更新 message_count
+        # 在此处 (而非响应成功后) 更新计数, 确保 SSE 流失败时用户消息计数仍正确
         user_message = Message(
             conversation_id=conversation_id,
             role=MessageRole.USER,
             content=content,
         )
         created_user_msg = await self._message_repo.create(user_message)
+        conversation.add_message_count(token_count=0)
+        await self._conversation_repo.update(conversation)
 
         # 加载消息历史 → 滑动窗口截取 → 构建 LLM 上下文
         history = await self._message_repo.list_by_conversation(conversation_id)
