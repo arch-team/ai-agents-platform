@@ -196,6 +196,10 @@ class Settings(BaseSettings):
             if jwt_secret == "changeme" or len(jwt_secret) < 32:  # noqa: S105
                 msg = "JWT_SECRET_KEY 在非开发环境下不能使用默认值且长度不得少于 32 字符"
                 raise ValueError(msg)
+            admin_pwd = self.DEFAULT_ADMIN_PASSWORD.get_secret_value()
+            if admin_pwd == "Admin@2026!":  # noqa: S105
+                msg = "DEFAULT_ADMIN_PASSWORD 在非开发环境下不能使用默认值, 请通过环境变量配置"
+                raise ValueError(msg)
         # CORS 校验: 禁止通配符 (防止 allow_credentials=True + allow_origins=["*"])
         if "*" in self.CORS_ALLOWED_ORIGINS:
             msg = "CORS_ALLOWED_ORIGINS 不允许包含通配符 '*'"

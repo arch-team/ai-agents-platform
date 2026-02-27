@@ -23,7 +23,7 @@ from src.modules.evaluation.domain.repositories.test_case_repository import ITes
 from src.modules.evaluation.domain.repositories.test_suite_repository import ITestSuiteRepository
 from src.modules.evaluation.domain.value_objects.test_suite_status import TestSuiteStatus
 from src.shared.application.dtos import PagedResult
-from src.shared.application.ownership import get_or_raise
+from src.shared.application.ownership import check_ownership, get_or_raise
 from src.shared.domain.event_bus import event_bus
 
 
@@ -157,9 +157,15 @@ class EvaluationService:
         )
         return self._to_run_dto(updated_run)
 
-    async def get_run(self, run_id: int) -> EvaluationRunDTO:
-        """获取评估运行详情。"""
+    async def get_run(self, run_id: int, current_user_id: int) -> EvaluationRunDTO:
+        """获取评估运行详情。
+
+        Raises:
+            EvaluationRunNotFoundError: 运行不存在
+            ForbiddenError: 无权访问此运行
+        """
         run = await get_or_raise(self._run_repo, run_id, EvaluationRunNotFoundError, run_id)
+        check_ownership(run, current_user_id, owner_field="user_id")
         return self._to_run_dto(run)
 
     async def list_runs(
@@ -189,12 +195,19 @@ class EvaluationService:
     async def get_results(
         self,
         run_id: int,
+        current_user_id: int,
         *,
         page: int = 1,
         page_size: int = 20,
     ) -> PagedResult[EvaluationResultDTO]:
-        """获取评估运行的结果列表。"""
-        await get_or_raise(self._run_repo, run_id, EvaluationRunNotFoundError, run_id)
+        """获取评估运行的结果列表。
+
+        Raises:
+            EvaluationRunNotFoundError: 运行不存在
+            ForbiddenError: 无权访问此运行
+        """
+        run = await get_or_raise(self._run_repo, run_id, EvaluationRunNotFoundError, run_id)
+        check_ownership(run, current_user_id, owner_field="user_id")
         offset = (page - 1) * page_size
         # SQLAlchemy AsyncSession 不支持同一 session 的并发操作, 必须顺序执行
         results = await self._result_repo.list_by_run(run_id, offset=offset, limit=page_size)

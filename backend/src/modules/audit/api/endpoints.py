@@ -18,8 +18,8 @@ from src.modules.audit.application.dto.audit_log_dto import AuditLogDTO
 from src.modules.audit.application.services.audit_service import AuditService
 from src.modules.auth.api.dependencies import require_role
 from src.modules.auth.application.dto.user_dto import UserDTO
-from src.modules.auth.domain.value_objects.role import Role
 from src.shared.api.schemas import calc_total_pages
+from src.shared.domain.value_objects.role import Role
 
 
 router = APIRouter(prefix="/api/v1/audit-logs", tags=["audit"])

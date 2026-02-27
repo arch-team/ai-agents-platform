@@ -17,7 +17,6 @@ from src.modules.auth.api.endpoints import router as auth_router
 from src.modules.auth.domain.exceptions import (
     AccountLockedError,
     AuthenticationError,
-    AuthorizationError,
     InvalidRefreshTokenError,
     SsoAuthError,
     SsoNotConfiguredError,
@@ -77,7 +76,7 @@ from src.presentation.api.routes.health import router as health_router
 from src.presentation.api.routes.stats import router as stats_router
 from src.shared.api.exception_handlers import register_exception_handlers, register_status_mapping
 from src.shared.api.middleware.rate_limit import setup_rate_limiting
-from src.shared.domain.exceptions import TooManySSEConnectionsError
+from src.shared.domain.exceptions import AuthorizationError, TooManySSEConnectionsError
 from src.shared.infrastructure.database import init_db
 from src.shared.infrastructure.logging import setup_logging
 from src.shared.infrastructure.settings import get_settings
@@ -396,8 +395,8 @@ async def _seed_default_admin() -> None:
 
     from src.modules.auth.application.services.password_service import hash_password
     from src.modules.auth.domain.entities.user import User
-    from src.modules.auth.domain.value_objects.role import Role
     from src.modules.auth.infrastructure.persistence.repositories.user_repository_impl import UserRepositoryImpl
+    from src.shared.domain.value_objects.role import Role
     from src.shared.infrastructure.database import get_session_factory
 
     log = structlog.get_logger(__name__)

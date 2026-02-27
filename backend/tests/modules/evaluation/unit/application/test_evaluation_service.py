@@ -46,7 +46,9 @@ class TestRunEvaluation:
         created_run = make_evaluation_run(status=EvaluationRunStatus.PENDING)
         started_run = make_evaluation_run(status=EvaluationRunStatus.RUNNING)
         completed_run = make_evaluation_run(
-            status=EvaluationRunStatus.COMPLETED, passed_cases=2, score=1.0,
+            status=EvaluationRunStatus.COMPLETED,
+            passed_cases=2,
+            score=1.0,
         )
         mock_run_repo.create.return_value = created_run
         mock_run_repo.update.side_effect = [started_run, completed_run]
@@ -95,7 +97,7 @@ class TestGetRun:
         mock_run_repo: AsyncMock,
     ) -> None:
         mock_run_repo.get_by_id.return_value = make_evaluation_run()
-        result = await eval_service.get_run(1)
+        result = await eval_service.get_run(1, 100)
         assert isinstance(result, EvaluationRunDTO)
         assert result.id == 1
 
@@ -107,7 +109,20 @@ class TestGetRun:
     ) -> None:
         mock_run_repo.get_by_id.return_value = None
         with pytest.raises(EvaluationRunNotFoundError):
-            await eval_service.get_run(999)
+            await eval_service.get_run(999, 100)
+
+    @pytest.mark.asyncio
+    async def test_other_user_forbidden(
+        self,
+        eval_service: EvaluationService,
+        mock_run_repo: AsyncMock,
+    ) -> None:
+        """非所有者访问 evaluation run 时应抛出 ForbiddenError。"""
+        from src.shared.domain.exceptions import ForbiddenError
+
+        mock_run_repo.get_by_id.return_value = make_evaluation_run(user_id=100)
+        with pytest.raises(ForbiddenError):
+            await eval_service.get_run(1, 999)
 
 
 @pytest.mark.unit
@@ -152,7 +167,7 @@ class TestGetResults:
         mock_run_repo.get_by_id.return_value = make_evaluation_run()
         mock_result_repo.list_by_run.return_value = [make_evaluation_result()]
         mock_result_repo.count_by_run.return_value = 1
-        result = await eval_service.get_results(1)
+        result = await eval_service.get_results(1, 100)
         assert len(result.items) == 1
         assert result.items[0].score == 0.8
 
@@ -164,4 +179,4 @@ class TestGetResults:
     ) -> None:
         mock_run_repo.get_by_id.return_value = None
         with pytest.raises(EvaluationRunNotFoundError):
-            await eval_service.get_results(999)
+            await eval_service.get_results(999, 100)

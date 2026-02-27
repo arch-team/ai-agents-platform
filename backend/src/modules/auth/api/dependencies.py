@@ -12,14 +12,15 @@ from src.modules.auth.application.dto.user_dto import UserDTO
 from src.modules.auth.application.services.sso_service import SsoService
 from src.modules.auth.application.services.token_service import decode_access_token
 from src.modules.auth.application.services.user_service import UserService
-from src.modules.auth.domain.exceptions import AuthenticationError, AuthorizationError
-from src.modules.auth.domain.value_objects.role import Role
+from src.modules.auth.domain.exceptions import AuthenticationError
 from src.modules.auth.infrastructure.persistence.repositories.refresh_token_repository_impl import (
     RefreshTokenRepositoryImpl,
 )
 from src.modules.auth.infrastructure.persistence.repositories.user_repository_impl import (
     UserRepositoryImpl,
 )
+from src.shared.domain.exceptions import AuthorizationError
+from src.shared.domain.value_objects.role import Role
 from src.shared.infrastructure.database import get_db
 from src.shared.infrastructure.settings import Settings, get_settings
 

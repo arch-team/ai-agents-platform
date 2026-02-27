@@ -599,58 +599,45 @@ class ExecutionService:
         truncated = self._truncate_messages(history, max_tokens=self._context_window.max_message_tokens)
         llm_messages = [LLMMessage(role=m.role.value, content=m.content) for m in truncated]
 
-        # RAG 上下文注入: 将检索结果附加到 system prompt
-        # 降级: IKnowledgeQuerier 异常时跳过 RAG 注入, 不阻塞对话
+        # RAG + Memory 并行检索: 两者互不依赖, 使用 asyncio.gather 并行执行
+        # 降级: 任一检索异常时跳过注入, 不阻塞对话
         system_prompt = agent_info.system_prompt
-        if agent_info.knowledge_base_id and self._knowledge_querier:
+
+        async def _retrieve_rag() -> list[Any]:
+            if not (agent_info.knowledge_base_id and self._knowledge_querier):
+                return []
             with tracer.start_as_current_span(
                 "rag.retrieve",
-                attributes={
-                    "rag.knowledge_base_id": str(agent_info.knowledge_base_id),
-                    "rag.top_k": 5,
-                },
+                attributes={"rag.knowledge_base_id": str(agent_info.knowledge_base_id), "rag.top_k": 5},
             ):
                 try:
-                    rag_results = await self._knowledge_querier.retrieve(
-                        agent_info.knowledge_base_id,
-                        content,
-                        top_k=5,
-                    )
+                    return await self._knowledge_querier.retrieve(agent_info.knowledge_base_id, content, top_k=5)
                 except Exception:
-                    logger.warning(
-                        "knowledge_querier_degraded",
-                        knowledge_base_id=agent_info.knowledge_base_id,
-                    )
-                    rag_results = []
-            if rag_results:
-                rag_context = "\n\n".join(f"[参考文档] {r.content}" for r in rag_results)
-                system_prompt = f"{system_prompt}\n\n## 知识库参考资料\n\n{rag_context}"
+                    logger.warning("knowledge_querier_degraded", knowledge_base_id=agent_info.knowledge_base_id)
+                    return []
 
-        # 长期记忆注入: 从 AgentCore Memory 检索相关记忆作为上下文补充
-        if agent_info.enable_memory and self._memory_adapter is not None:
+        async def _recall_memory() -> list[Any]:
+            if not (agent_info.enable_memory and self._memory_adapter is not None):
+                return []
             with tracer.start_as_current_span(
                 "memory.recall",
-                attributes={
-                    "memory.agent_id": str(agent_info.id),
-                    "memory.top_k": 5,
-                },
+                attributes={"memory.agent_id": str(agent_info.id), "memory.top_k": 5},
             ):
                 try:
-                    memories = await self._memory_adapter.recall_memory(
-                        agent_info.id,
-                        content,
-                        max_results=5,
-                    )
-                    if memories:
-                        memory_context = "\n\n".join(f"[长期记忆 - {m.topic}] {m.content}" for m in memories)
-                        system_prompt = f"{system_prompt}\n\n## 长期记忆\n\n{memory_context}"
-                        logger.info(
-                            "memory_injected",
-                            agent_id=agent_info.id,
-                            memory_count=len(memories),
-                        )
+                    return await self._memory_adapter.recall_memory(agent_info.id, content, max_results=5)
                 except Exception:
                     logger.exception("memory_recall_failed", agent_id=agent_info.id)
+                    return []
+
+        rag_results, memories = await asyncio.gather(_retrieve_rag(), _recall_memory())
+
+        if rag_results:
+            rag_context = "\n\n".join(f"[参考文档] {r.content}" for r in rag_results)
+            system_prompt = f"{system_prompt}\n\n## 知识库参考资料\n\n{rag_context}"
+        if memories:
+            memory_context = "\n\n".join(f"[长期记忆 - {m.topic}] {m.content}" for m in memories)
+            system_prompt = f"{system_prompt}\n\n## 长期记忆\n\n{memory_context}"
+            logger.info("memory_injected", agent_id=agent_info.id, memory_count=len(memories))
 
         return _SendContext(
             conversation=conversation,

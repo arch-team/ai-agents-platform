@@ -9,8 +9,9 @@ from pydantic import SecretStr
 from src.modules.auth.api.dependencies import get_current_user, get_user_service, require_role
 from src.modules.auth.application.dto.user_dto import UserDTO
 from src.modules.auth.application.services.token_service import create_access_token
-from src.modules.auth.domain.exceptions import AuthenticationError, AuthorizationError
+from src.modules.auth.domain.exceptions import AuthenticationError
 from src.modules.auth.domain.value_objects.role import Role
+from src.shared.domain.exceptions import AuthorizationError
 from src.shared.infrastructure.settings import Settings
 
 
@@ -75,7 +76,9 @@ class TestGetCurrentUser:
         mock_service.get_user.return_value = expected_user
 
         result = await get_current_user(
-            credentials=credentials, service=mock_service, settings=settings,
+            credentials=credentials,
+            service=mock_service,
+            settings=settings,
         )
 
         assert result.id == 42
@@ -93,7 +96,9 @@ class TestGetCurrentUser:
 
         with pytest.raises(AuthenticationError, match="无效的认证令牌"):
             await get_current_user(
-                credentials=credentials, service=mock_service, settings=settings,
+                credentials=credentials,
+                service=mock_service,
+                settings=settings,
             )
 
     @pytest.mark.asyncio
@@ -109,7 +114,9 @@ class TestGetCurrentUser:
 
         with pytest.raises(AuthenticationError, match="账户已停用"):
             await get_current_user(
-                credentials=credentials, service=mock_service, settings=settings,
+                credentials=credentials,
+                service=mock_service,
+                settings=settings,
             )
 
     @pytest.mark.asyncio
@@ -123,7 +130,9 @@ class TestGetCurrentUser:
 
         with pytest.raises(AuthenticationError, match="用户不存在"):
             await get_current_user(
-                credentials=credentials, service=mock_service, settings=settings,
+                credentials=credentials,
+                service=mock_service,
+                settings=settings,
             )
 
 

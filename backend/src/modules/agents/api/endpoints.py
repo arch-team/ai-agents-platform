@@ -16,8 +16,8 @@ from src.modules.agents.application.services.agent_service import AgentService
 from src.modules.agents.domain.value_objects.agent_status import AgentStatus
 from src.modules.auth.api.dependencies import get_current_user, require_role
 from src.modules.auth.application.dto.user_dto import UserDTO
-from src.modules.auth.domain.value_objects.role import Role
 from src.shared.api.schemas import calc_total_pages
+from src.shared.domain.value_objects.role import Role
 
 
 router = APIRouter(prefix="/api/v1/agents", tags=["agents"])

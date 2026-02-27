@@ -1,11 +1,6 @@
-"""用户角色值对象。"""
+"""用户角色值对象 — 规范定义位于 shared/domain/value_objects/role.py。"""
 
-from enum import StrEnum
+from src.shared.domain.value_objects.role import Role
 
 
-class Role(StrEnum):
-    """用户角色枚举。"""
-
-    ADMIN = "admin"
-    DEVELOPER = "developer"
-    VIEWER = "viewer"
+__all__ = ["Role"]

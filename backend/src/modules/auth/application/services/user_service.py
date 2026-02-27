@@ -310,9 +310,8 @@ class UserService:
             EntityNotFoundError: 用户不存在
             AuthorizationError: 不能修改自己的角色
         """
-        from src.modules.auth.domain.exceptions import AuthorizationError
-        from src.modules.auth.domain.value_objects.role import Role
-        from src.shared.domain.exceptions import EntityNotFoundError
+        from src.shared.domain.exceptions import AuthorizationError, EntityNotFoundError
+        from src.shared.domain.value_objects.role import Role
 
         if dto.user_id == operator_id:
             msg = "不能修改自己的角色"

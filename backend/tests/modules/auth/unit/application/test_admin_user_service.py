@@ -11,12 +11,11 @@ from src.modules.auth.application.dto.user_dto import (
 )
 from src.modules.auth.domain.entities.user import User
 from src.modules.auth.domain.exceptions import (
-    AuthorizationError,
     UserAlreadyExistsError,
 )
 from src.modules.auth.domain.repositories.user_repository import IUserRepository
-from src.modules.auth.domain.value_objects.role import Role
-from src.shared.domain.exceptions import EntityNotFoundError
+from src.shared.domain.exceptions import AuthorizationError, EntityNotFoundError
+from src.shared.domain.value_objects.role import Role
 
 from .conftest import make_service, make_user
 

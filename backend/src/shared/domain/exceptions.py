@@ -17,6 +17,13 @@ class ForbiddenError(DomainError):
         super().__init__(message=message, code=code)
 
 
+class AuthorizationError(DomainError):
+    """授权失败 — 跨模块共享定义 (对应 HTTP 403)。"""
+
+    def __init__(self, message: str = "权限不足") -> None:
+        super().__init__(message=message, code="FORBIDDEN")
+
+
 class EntityNotFoundError(DomainError):
     """实体未找到异常 (对应 HTTP 404)。"""
 

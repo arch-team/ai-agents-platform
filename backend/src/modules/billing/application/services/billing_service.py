@@ -1,7 +1,5 @@
 """Billing 应用服务。"""
 
-from src.modules.auth.domain.exceptions import AuthorizationError
-from src.modules.auth.domain.value_objects.role import Role
 from src.modules.billing.application.dto.budget_dto import BudgetDTO, CreateBudgetDTO, UpdateBudgetDTO
 from src.modules.billing.application.dto.department_dto import CreateDepartmentDTO, DepartmentDTO, UpdateDepartmentDTO
 from src.modules.billing.application.interfaces.cost_service import DepartmentCostReport, IDepartmentCostService
@@ -18,39 +16,37 @@ from src.modules.billing.domain.repositories.department_repository import IDepar
 from src.shared.application.dtos import PagedResult
 from src.shared.domain.entities.department import Department
 from src.shared.domain.event_bus import event_bus
+from src.shared.domain.exceptions import AuthorizationError
+from src.shared.domain.value_objects.role import Role
 
 
 def _to_department_dto(dept: Department) -> DepartmentDTO:
     """Department -> DepartmentDTO。"""
-    assert dept.id is not None
-    assert dept.created_at is not None
-    assert dept.updated_at is not None
+    id_, created_at, updated_at = dept.require_persisted()
     return DepartmentDTO(
-        id=dept.id,
+        id=id_,
         name=dept.name,
         code=dept.code,
         description=dept.description,
         is_active=dept.is_active,
-        created_at=dept.created_at,
-        updated_at=dept.updated_at,
+        created_at=created_at,
+        updated_at=updated_at,
     )
 
 
 def _to_budget_dto(budget: Budget) -> BudgetDTO:
     """Budget -> BudgetDTO。"""
-    assert budget.id is not None
-    assert budget.created_at is not None
-    assert budget.updated_at is not None
+    id_, created_at, updated_at = budget.require_persisted()
     return BudgetDTO(
-        id=budget.id,
+        id=id_,
         department_id=budget.department_id,
         year=budget.year,
         month=budget.month,
         budget_amount=budget.budget_amount,
         used_amount=budget.used_amount,
         alert_threshold=budget.alert_threshold,
-        created_at=budget.created_at,
-        updated_at=budget.updated_at,
+        created_at=created_at,
+        updated_at=updated_at,
     )
 
 

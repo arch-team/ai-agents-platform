@@ -4,10 +4,9 @@ import pytest
 
 from src.modules.auth.domain.exceptions import (
     AuthenticationError,
-    AuthorizationError,
     UserAlreadyExistsError,
 )
-from src.shared.domain.exceptions import DomainError, DuplicateEntityError
+from src.shared.domain.exceptions import AuthorizationError, DomainError, DuplicateEntityError
 
 
 @pytest.mark.unit

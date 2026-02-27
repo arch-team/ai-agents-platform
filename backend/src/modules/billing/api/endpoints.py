@@ -6,7 +6,6 @@ from fastapi import APIRouter, Depends, Query, status
 
 from src.modules.auth.api.dependencies import get_current_user, require_role
 from src.modules.auth.application.dto.user_dto import UserDTO
-from src.modules.auth.domain.value_objects.role import Role
 from src.modules.billing.api.dependencies import get_billing_service
 from src.modules.billing.api.schemas.requests import (
     CreateBudgetRequest,
@@ -26,6 +25,7 @@ from src.modules.billing.application.dto.budget_dto import BudgetDTO, CreateBudg
 from src.modules.billing.application.dto.department_dto import CreateDepartmentDTO, DepartmentDTO, UpdateDepartmentDTO
 from src.modules.billing.application.services.billing_service import BillingService
 from src.shared.api.schemas import calc_total_pages
+from src.shared.domain.value_objects.role import Role
 
 
 router = APIRouter(prefix="/api/v1/billing", tags=["billing"])

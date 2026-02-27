@@ -7,10 +7,10 @@ from fastapi.testclient import TestClient
 
 from src.modules.auth.api.dependencies import get_current_user, get_user_service
 from src.modules.auth.application.dto.user_dto import UserDTO, UserListDTO
-from src.modules.auth.domain.exceptions import AuthorizationError, UserAlreadyExistsError
+from src.modules.auth.domain.exceptions import UserAlreadyExistsError
 from src.presentation.api.main import create_app
 from src.shared.api.middleware.rate_limit import limiter
-from src.shared.domain.exceptions import EntityNotFoundError
+from src.shared.domain.exceptions import AuthorizationError, EntityNotFoundError
 
 
 def _make_admin_dto(*, user_id: int = 1) -> UserDTO:

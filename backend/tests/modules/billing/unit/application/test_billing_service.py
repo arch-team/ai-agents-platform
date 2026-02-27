@@ -4,8 +4,6 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from src.modules.auth.domain.exceptions import AuthorizationError
-from src.modules.auth.domain.value_objects.role import Role
 from src.modules.billing.application.dto.budget_dto import CreateBudgetDTO, UpdateBudgetDTO
 from src.modules.billing.application.dto.department_dto import CreateDepartmentDTO, UpdateDepartmentDTO
 from src.modules.billing.application.interfaces.cost_service import DepartmentCostReport
@@ -15,6 +13,8 @@ from src.modules.billing.domain.exceptions import (
     DepartmentNotFoundError,
     DuplicateDepartmentCodeError,
 )
+from src.shared.domain.exceptions import AuthorizationError
+from src.shared.domain.value_objects.role import Role
 from tests.modules.billing.conftest import make_budget, make_department
 
 

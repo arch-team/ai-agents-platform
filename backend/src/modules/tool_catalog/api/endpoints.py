@@ -6,7 +6,6 @@ from fastapi import APIRouter, Depends, Query, status
 
 from src.modules.auth.api.dependencies import get_current_user, require_role
 from src.modules.auth.application.dto.user_dto import UserDTO
-from src.modules.auth.domain.value_objects.role import Role
 from src.modules.tool_catalog.api.dependencies import get_tool_service
 from src.modules.tool_catalog.api.schemas.requests import CreateToolRequest, RejectToolRequest, UpdateToolRequest
 from src.modules.tool_catalog.api.schemas.responses import ToolConfigResponse, ToolListResponse, ToolResponse
@@ -16,6 +15,7 @@ from src.modules.tool_catalog.domain.value_objects.tool_status import ToolStatus
 from src.modules.tool_catalog.domain.value_objects.tool_type import ToolType
 from src.shared.api.schemas import calc_total_pages
 from src.shared.application.dtos import PagedResult
+from src.shared.domain.value_objects.role import Role
 
 
 router = APIRouter(prefix="/api/v1/tools", tags=["tools"])

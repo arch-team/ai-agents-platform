@@ -239,9 +239,13 @@ async def list_evaluation_runs(
 
 
 @run_router.get("/{run_id}")
-async def get_evaluation_run(run_id: int, service: EvalServiceDep) -> EvaluationRunResponse:
+async def get_evaluation_run(
+    run_id: int,
+    service: EvalServiceDep,
+    current_user: CurrentUserDep,
+) -> EvaluationRunResponse:
     """获取评估运行详情。"""
-    result = await service.get_run(run_id)
+    result = await service.get_run(run_id, current_user.id)
     return _to_run_response(result)
 
 
@@ -249,11 +253,12 @@ async def get_evaluation_run(run_id: int, service: EvalServiceDep) -> Evaluation
 async def get_evaluation_results(
     run_id: int,
     service: EvalServiceDep,
+    current_user: CurrentUserDep,
     page: Annotated[int, Query(ge=1)] = 1,
     page_size: Annotated[int, Query(ge=1, le=100)] = 20,
 ) -> EvaluationResultListResponse:
     """获取评估运行的结果列表。"""
-    paged = await service.get_results(run_id, page=page, page_size=page_size)
+    paged = await service.get_results(run_id, current_user.id, page=page, page_size=page_size)
     return EvaluationResultListResponse(
         items=[_to_result_response(r) for r in paged.items],
         total=paged.total,

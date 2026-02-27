@@ -101,6 +101,7 @@ class TestSettingsValidation:
         settings = Settings(
             APP_ENV="production",
             JWT_SECRET_KEY=SecretStr("a-very-strong-secret-key-that-is-at-least-32-chars-long"),
+            DEFAULT_ADMIN_PASSWORD=SecretStr("Pr0d@Secure#2026!"),
             _env_file=None,
         )
         assert settings.APP_ENV == "production"
@@ -198,6 +199,7 @@ class TestSecretsManagerIntegration:
             AWS_REGION="ap-northeast-1",
             DB_SECRET_ARN="arn:aws:secretsmanager:ap-northeast-1:123:secret:db",
             JWT_SECRET_KEY=SecretStr("a-very-strong-secret-key-that-is-at-least-32-chars-long"),
+            DEFAULT_ADMIN_PASSWORD=SecretStr("Pr0d@Secure#2026!"),
             _env_file=None,
         )
         assert settings.DATABASE_USER == "sm_user"
@@ -219,6 +221,7 @@ class TestSecretsManagerIntegration:
             APP_ENV="production",
             AWS_REGION="ap-northeast-1",
             JWT_SECRET_ARN="arn:aws:secretsmanager:ap-northeast-1:123:secret:jwt",
+            DEFAULT_ADMIN_PASSWORD=SecretStr("Pr0d@Secure#2026!"),
             _env_file=None,
         )
         assert settings.JWT_SECRET_KEY.get_secret_value() == "sm-jwt-key-that-is-very-long-and-secure-at-least-32-chars"
@@ -235,6 +238,7 @@ class TestSecretsManagerIntegration:
             DATABASE_PASSWORD=SecretStr("ecs_password"),
             DATABASE_NAME="ecs_db",
             JWT_SECRET_KEY=SecretStr("a-very-strong-secret-key-that-is-at-least-32-chars-long"),
+            DEFAULT_ADMIN_PASSWORD=SecretStr("Pr0d@Secure#2026!"),
             _env_file=None,
         )
         assert settings.DATABASE_USER == "ecs_user"
@@ -261,6 +265,7 @@ class TestSecretsManagerIntegration:
             DATABASE_HOST="original-host",
             DB_SECRET_ARN="arn:db",
             JWT_SECRET_KEY=SecretStr("a-very-strong-secret-key-that-is-at-least-32-chars-long"),
+            DEFAULT_ADMIN_PASSWORD=SecretStr("Pr0d@Secure#2026!"),
             _env_file=None,
         )
         assert settings.DATABASE_HOST == "original-host"

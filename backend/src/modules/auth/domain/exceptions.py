@@ -26,13 +26,6 @@ class AccountLockedError(DomainError):
         super().__init__(message="账户已锁定, 请稍后再试", code="ACCOUNT_LOCKED")
 
 
-class AuthorizationError(DomainError):
-    """授权失败。"""
-
-    def __init__(self, message: str = "权限不足") -> None:
-        super().__init__(message=message, code="FORBIDDEN")
-
-
 class InvalidRefreshTokenError(DomainError):
     """Refresh Token 无效或已过期。"""
 
