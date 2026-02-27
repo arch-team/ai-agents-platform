@@ -37,12 +37,12 @@ describe('BuilderPreview', () => {
     expect(screen.getByText('正在生成 Agent 配置，请稍候…')).toBeInTheDocument();
   });
 
-  it('有配置时展示 Agent 名称', () => {
+  it('有配置时展示可编辑的 Agent 名称', () => {
     useBuilderStore.setState({ generatedConfig: mockConfig });
 
     render(<BuilderPreview />);
 
-    expect(screen.getByText('客服 Agent')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('客服 Agent')).toBeInTheDocument();
   });
 
   it('有配置时展示描述', () => {

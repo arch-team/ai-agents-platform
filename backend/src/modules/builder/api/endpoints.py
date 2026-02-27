@@ -80,12 +80,12 @@ async def generate_config_stream(
 @router.post("/sessions/{session_id}/confirm")
 async def confirm_builder_session(
     session_id: int,
-    request: ConfirmBuilderRequest,  # noqa: ARG001 — 预留扩展字段
+    request: ConfirmBuilderRequest,
     service: ServiceDep,
     current_user: CurrentUserDep,
 ) -> BuilderSessionResponse:
     """确认创建 Agent。"""
-    result = await service.confirm_session(session_id, current_user.id)
+    result = await service.confirm_session(session_id, current_user.id, name_override=request.name_override)
     return _to_response(result)
 
 

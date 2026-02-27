@@ -11,9 +11,11 @@ interface BuilderChatProps {
   hasSession: boolean;
   /** 提交提示词回调 */
   onSubmit: (prompt: string) => void;
+  /** 取消生成回调（可选，传入时生成中显示取消按钮） */
+  onAbort?: () => void;
 }
 
-export function BuilderChat({ hasSession, onSubmit }: BuilderChatProps) {
+export function BuilderChat({ hasSession, onSubmit, onAbort }: BuilderChatProps) {
   const isGenerating = useBuilderIsGenerating();
   const streamContent = useBuilderStreamContent();
   const error = useBuilderError();
@@ -88,6 +90,11 @@ export function BuilderChat({ hasSession, onSubmit }: BuilderChatProps) {
         >
           {isGenerating ? '生成中…' : hasSession ? '重新生成' : '开始生成'}
         </Button>
+        {isGenerating && onAbort && (
+          <Button type="button" variant="outline" onClick={onAbort} className="mt-2 w-full">
+            取消生成
+          </Button>
+        )}
       </form>
 
       {/* SSE 消息流展示区 */}

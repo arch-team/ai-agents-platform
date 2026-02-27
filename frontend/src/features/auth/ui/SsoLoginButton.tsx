@@ -19,9 +19,9 @@ export function SsoLoginButton() {
         className="w-full"
         onClick={handleClick}
         loading={ssoInit.isPending}
-        aria-label="通过企业 SSO 登录"
+        aria-label="通过企业单点登录"
       >
-        企业 SSO 登录
+        企业单点登录
       </Button>
 
       {/* SSO 初始化失败时显示错误信息 */}

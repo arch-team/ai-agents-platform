@@ -1,5 +1,7 @@
 // Billing API 类型定义
 
+import type { PageResponse } from '@/shared/types';
+
 // ── Department ──
 
 export interface Department {
@@ -12,13 +14,7 @@ export interface Department {
   updated_at: string;
 }
 
-export interface DepartmentListResponse {
-  items: Department[];
-  total: number;
-  page: number;
-  page_size: number;
-  total_pages: number;
-}
+export type DepartmentListResponse = PageResponse<Department>;
 
 export interface CreateDepartmentRequest {
   name: string;
@@ -46,13 +42,7 @@ export interface Budget {
   updated_at: string;
 }
 
-export interface BudgetListResponse {
-  items: Budget[];
-  total: number;
-  page: number;
-  page_size: number;
-  total_pages: number;
-}
+export type BudgetListResponse = PageResponse<Budget>;
 
 export interface CreateBudgetRequest {
   department_id: number;
@@ -91,7 +81,5 @@ export interface DepartmentCostReport {
 
 // ── 查询参数 ──
 
-export interface DateRangeParams {
-  start_date: string;
-  end_date: string;
-}
+// DateRangeParams 已移至 @/shared/types，此处重导出以保持向后兼容
+export type { DateRangeParams } from '@/shared/types';

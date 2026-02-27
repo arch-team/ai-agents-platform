@@ -1,10 +1,7 @@
 // Insights API 类型定义
 
-// 时间范围查询参数
-export interface DateRangeParams {
-  start_date: string;
-  end_date: string;
-}
+// DateRangeParams 已移至 @/shared/types，此处重导出以保持向后兼容
+export type { DateRangeParams } from '@/shared/types';
 
 // Token 消耗归因项
 export interface CostBreakdownItem {

@@ -67,7 +67,13 @@ class BuilderService:
         except (json.JSONDecodeError, TypeError) as e:
             log.warning("builder_generation_parse_failed", session_id=session_id, error=str(e))
 
-    async def confirm_session(self, session_id: int, user_id: int) -> BuilderSessionDTO:
+    async def confirm_session(
+        self,
+        session_id: int,
+        user_id: int,
+        *,
+        name_override: str | None = None,
+    ) -> BuilderSessionDTO:
         """确认会话并创建 Agent。
 
         Raises:
@@ -93,8 +99,9 @@ class BuilderService:
 
         # 从生成的配置构造跨模块 CreateAgentRequest
         config = session.generated_config
+        agent_name = name_override or str(config.get("name", session.agent_name or "未命名 Agent"))
         create_request = CreateAgentRequest(
-            name=str(config.get("name", session.agent_name or "未命名 Agent")),
+            name=agent_name,
             description=str(config.get("description", "")),
             system_prompt=str(config.get("system_prompt", "")),
             model_id=str(config.get("model_id", "")),
@@ -103,10 +110,9 @@ class BuilderService:
         )
 
         agent_info = await self._agent_creator.create_agent(create_request, user_id)
-        agent_dto = agent_info
-        session.confirm_creation(agent_dto.id)
+        session.confirm_creation(agent_info.id)
         updated = await self._session_repo.update(session)
-        log.info("builder_session_confirmed", session_id=session_id, agent_id=agent_dto.id)
+        log.info("builder_session_confirmed", session_id=session_id, agent_id=agent_info.id)
         return BuilderSessionDTO.from_entity(updated)
 
     async def get_session(self, session_id: int, user_id: int) -> BuilderSessionDTO:

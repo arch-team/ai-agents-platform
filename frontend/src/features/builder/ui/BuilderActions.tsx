@@ -11,7 +11,7 @@ import {
 
 interface BuilderActionsProps {
   /** 确认创建 Agent 回调 */
-  onConfirm: (sessionId: number) => void;
+  onConfirm: (sessionId: number, nameOverride?: string) => void;
   /** 取消重置回调 */
   onCancel: () => void;
 }
@@ -36,7 +36,7 @@ export function BuilderActions({ onConfirm, onCancel }: BuilderActionsProps) {
       </Button>
       <Button
         onClick={() => {
-          if (sessionId !== null) onConfirm(sessionId);
+          if (sessionId !== null) onConfirm(sessionId, generatedConfig?.name || undefined);
         }}
         disabled={!canConfirm}
         loading={isConfirming}

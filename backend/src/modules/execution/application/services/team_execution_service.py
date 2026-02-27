@@ -275,7 +275,7 @@ class TeamExecutionService:
             if bg_close is not None:
                 await bg_close()
 
-    async def _do_execute(
+    async def _do_execute(  # noqa: PLR0911
         self,
         execution_id: int,
         dto: CreateTeamExecutionDTO,
@@ -292,10 +292,30 @@ class TeamExecutionService:
                 return
 
             # 更新状态为 RUNNING
-            execution.start()
-            await exec_repo.update(execution)
-            if commit_fn is not None:
-                await commit_fn()
+            try:
+                execution.start()
+                await exec_repo.update(execution)
+                if commit_fn is not None:
+                    await commit_fn()
+            except asyncio.CancelledError:
+                logger.info("团队执行已取消", execution_id=execution_id)
+                return
+            except Exception as exc:
+                # 安全网: start 阶段失败时, 尝试将 PENDING 标记为 FAILED
+                logger.exception("团队执行启动失败", execution_id=execution_id)
+                try:
+                    execution = await exec_repo.get_by_id(execution_id)
+                    if execution is not None and execution.status not in _TERMINAL_STATUSES:
+                        error_msg = self._format_execution_error(exc)
+                        if execution.status == TeamExecutionStatus.PENDING:
+                            execution.start()
+                        execution.fail(error_msg)
+                        await exec_repo.update(execution)
+                        if commit_fn is not None:
+                            await commit_fn()
+                except Exception:
+                    logger.exception("标记执行失败时出错", execution_id=execution_id)
+                return
 
             if execution.id is None:
                 return
@@ -441,7 +461,9 @@ class TeamExecutionService:
             if last_error is not None:
                 error_msg = self._format_execution_error(last_error)
                 execution = await exec_repo.get_by_id(execution_id)
-                if execution is not None and execution.status == TeamExecutionStatus.RUNNING:
+                if execution is not None and execution.status not in _TERMINAL_STATUSES:
+                    if execution.status == TeamExecutionStatus.PENDING:
+                        execution.start()
                     execution.fail(error_msg)
                     await exec_repo.update(execution)
                     if commit_fn is not None:

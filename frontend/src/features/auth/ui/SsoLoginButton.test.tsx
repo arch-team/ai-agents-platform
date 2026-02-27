@@ -32,10 +32,10 @@ afterEach(() => {
 });
 
 describe('SsoLoginButton', () => {
-  it('应渲染"企业 SSO 登录"按钮', () => {
+  it('应渲染"企业单点登录"按钮', () => {
     renderWithProviders(<SsoLoginButton />);
 
-    expect(screen.getByRole('button', { name: /企业 SSO 登录/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /企业单点登录/ })).toBeInTheDocument();
   });
 
   it('点击按钮后触发 SSO init 并跳转到 redirect_url', async () => {
@@ -48,7 +48,7 @@ describe('SsoLoginButton', () => {
     const user = userEvent.setup();
     renderWithProviders(<SsoLoginButton />);
 
-    await user.click(screen.getByRole('button', { name: /企业 SSO 登录/ }));
+    await user.click(screen.getByRole('button', { name: /企业单点登录/ }));
 
     await waitFor(() => {
       expect(mockLocationHref).toHaveBeenCalledWith('https://sso.example.com/login');
@@ -65,7 +65,7 @@ describe('SsoLoginButton', () => {
     const user = userEvent.setup();
     renderWithProviders(<SsoLoginButton />);
 
-    await user.click(screen.getByRole('button', { name: /企业 SSO 登录/ }));
+    await user.click(screen.getByRole('button', { name: /企业单点登录/ }));
 
     await waitFor(() => {
       expect(screen.getByRole('alert')).toBeInTheDocument();
@@ -100,11 +100,11 @@ describe('SsoLoginButton', () => {
     );
 
     // 点击后不 await 完成
-    await user.click(screen.getByRole('button', { name: /企业 SSO 登录/ }));
+    await user.click(screen.getByRole('button', { name: /企业单点登录/ }));
 
     // 请求发出后按钮应进入 disabled 状态
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: /企业 SSO 登录/ })).toBeDisabled();
+      expect(screen.getByRole('button', { name: /企业单点登录/ })).toBeDisabled();
     });
 
     // 释放挂起请求

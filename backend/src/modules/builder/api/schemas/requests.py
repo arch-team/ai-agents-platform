@@ -10,4 +10,6 @@ class TriggerBuilderRequest(BaseModel):
 
 
 class ConfirmBuilderRequest(BaseModel):
-    """确认创建 Agent 请求（预留扩展字段）。"""
+    """确认创建 Agent 请求。"""
+
+    name_override: str | None = Field(default=None, max_length=200, description="覆盖 Agent 名称")

@@ -25,7 +25,7 @@ export default function BuilderPage() {
 
   const createSession = useCreateBuilderSession();
   const confirmSession = useConfirmBuilderSession();
-  const { startGeneration } = useBuilderStream(token);
+  const { startGeneration, abort } = useBuilderStream(token);
 
   /**
    * 用户提交提示词时：
@@ -48,10 +48,10 @@ export default function BuilderPage() {
    * 确认创建 Agent：
    * 调用确认接口，成功后跳转到新 Agent 详情页
    */
-  const handleConfirm = async (sid: number) => {
+  const handleConfirm = async (sid: number, nameOverride?: string) => {
     setConfirming(true);
     try {
-      const result = await confirmSession.mutateAsync(sid);
+      const result = await confirmSession.mutateAsync({ sessionId: sid, nameOverride });
       navigate(`/agents/${result.created_agent_id}`);
     } catch (err) {
       setError(extractApiError(err, '创建 Agent 失败，请重试'));
@@ -76,7 +76,11 @@ export default function BuilderPage() {
       <div className="flex flex-1 overflow-hidden">
         {/* 左侧：提示词输入 + SSE 消息流（5/12） */}
         <div className="w-5/12 border-r border-gray-200 overflow-hidden">
-          <BuilderChat hasSession={!!sessionId} onSubmit={(p) => void handleSubmit(p)} />
+          <BuilderChat
+            hasSession={!!sessionId}
+            onSubmit={(p) => void handleSubmit(p)}
+            onAbort={abort}
+          />
         </div>
 
         {/* 右侧：Agent 配置预览（7/12） */}
@@ -86,7 +90,10 @@ export default function BuilderPage() {
       </div>
 
       {/* 底部操作栏 */}
-      <BuilderActions onConfirm={(sid) => void handleConfirm(sid)} onCancel={handleCancel} />
+      <BuilderActions
+        onConfirm={(sid, nameOverride) => void handleConfirm(sid, nameOverride)}
+        onCancel={handleCancel}
+      />
     </div>
   );
 }

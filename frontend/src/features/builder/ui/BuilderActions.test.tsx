@@ -72,7 +72,7 @@ describe('BuilderActions', () => {
 
     await user.click(screen.getByRole('button', { name: '确认创建 Agent' }));
 
-    expect(handleConfirm).toHaveBeenCalledWith(42);
+    expect(handleConfirm).toHaveBeenCalledWith(42, mockConfig.name);
   });
 
   it('点击取消按钮触发 onCancel', async () => {

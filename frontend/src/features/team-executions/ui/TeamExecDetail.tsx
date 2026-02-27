@@ -96,11 +96,11 @@ export function TeamExecDetail({ executionId, onStartStream }: TeamExecDetailPro
         </div>
 
         {/* 执行结果 */}
-        {execution.result && (
+        {execution.status === 'completed' && (
           <div className="mt-3">
             <p className="text-sm font-medium text-gray-500">执行结果</p>
             <p className="mt-1 whitespace-pre-wrap rounded-md bg-green-50 p-3 text-sm text-gray-700">
-              {execution.result}
+              {execution.result || '执行已完成，无文本输出'}
             </p>
           </div>
         )}

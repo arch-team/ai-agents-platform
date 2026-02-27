@@ -1,10 +1,15 @@
 // Builder 右侧面板 — 实时 Agent 配置预览
 
-import { useBuilderGeneratedConfig, useBuilderIsGenerating } from '../model/store';
+import {
+  useBuilderGeneratedConfig,
+  useBuilderIsGenerating,
+  useBuilderActions,
+} from '../model/store';
 
 export function BuilderPreview() {
   const config = useBuilderGeneratedConfig();
   const isGenerating = useBuilderIsGenerating();
+  const { setGeneratedConfig } = useBuilderActions();
 
   // 尚无配置时的占位内容
   if (!config) {
@@ -30,14 +35,23 @@ export function BuilderPreview() {
       <h2 className="mb-4 text-lg font-semibold text-gray-900">Agent 配置预览</h2>
 
       <div className="space-y-4">
-        {/* Agent 名称 */}
+        {/* Agent 名称（可编辑） */}
         <div>
-          <label className="block text-xs font-medium uppercase tracking-wide text-gray-500">
-            Agent 名称
+          <label
+            htmlFor="builder-agent-name"
+            className="block text-xs font-medium uppercase tracking-wide text-gray-500"
+          >
+            Agent 名称 <span className="normal-case text-blue-500">（可编辑）</span>
           </label>
-          <p className="mt-1 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-900">
-            {config.name || '（未设置）'}
-          </p>
+          <input
+            id="builder-agent-name"
+            type="text"
+            value={config.name || ''}
+            onChange={(e) => setGeneratedConfig({ ...config, name: e.target.value })}
+            className="mt-1 w-full rounded-lg border border-blue-300 bg-white px-3 py-2 text-sm text-gray-900
+                       focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            placeholder="输入 Agent 名称"
+          />
         </div>
 
         {/* 描述 */}

@@ -26,14 +26,20 @@ export function useConfirmBuilderSession() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (sessionId: number) => {
+    mutationFn: async ({
+      sessionId,
+      nameOverride,
+    }: {
+      sessionId: number;
+      nameOverride?: string;
+    }) => {
       const { data } = await apiClient.post<ConfirmBuilderSessionResponse>(
         `/api/v1/builder/sessions/${sessionId}/confirm`,
-        {},
+        { name_override: nameOverride },
       );
       return data;
     },
-    onSuccess: (_data, sessionId) => {
+    onSuccess: (_data, { sessionId }) => {
       // 刷新该会话的缓存
       void queryClient.invalidateQueries({ queryKey: builderKeys.session(sessionId) });
     },
