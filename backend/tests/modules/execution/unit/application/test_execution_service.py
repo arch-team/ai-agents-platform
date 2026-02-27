@@ -253,7 +253,7 @@ class TestSendMessage:
         assert result.token_count == 30
         assert msg_repo.create.call_count == 2  # 用户消息 + 助手消息
         llm_client.invoke.assert_called_once()
-        assert conv_repo.update.call_count == 2  # _prepare_for_send(用户) + send_message(助手)
+        conv_repo.update.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_send_message_conversation_not_found(self) -> None:
@@ -353,8 +353,7 @@ class TestSendMessageStream:
 
         # 验证更新调用
         msg_repo.update.assert_called_once()
-        # conv_repo.update 被调用 2 次: _prepare_for_send(用户消息) + _finalize_stream(助手消息)
-        assert conv_repo.update.call_count == 2
+        conv_repo.update.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_stream_post_write_uses_independent_repos(self) -> None:
@@ -418,13 +417,12 @@ class TestSendMessageStream:
             async for chunk in stream:
                 chunks.append(chunk)
 
-        # 验证: stream repos 执行了写操作（助手消息 + 对话统计）
+        # 验证: stream repos 执行了写操作
         stream_msg_repo.update.assert_called_once()
         stream_conv_repo.update.assert_called_once()
-        # 验证: DI conv_repo 在 _prepare_for_send 中被调用 1 次（用户消息计数）
-        di_conv_repo.update.assert_called_once()
-        # 验证: DI msg_repo 的 update 未被调用（消息更新走 stream repo）
+        # 验证: DI repos 的 update 未被调用 (流路径全部走 stream repos)
         di_msg_repo.update.assert_not_called()
+        di_conv_repo.update.assert_not_called()
 
     @pytest.mark.asyncio
     async def test_send_message_stream_conversation_not_found(self) -> None:

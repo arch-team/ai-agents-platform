@@ -184,7 +184,8 @@ class ExecutionService:
         )
         created_assistant_msg = await self._message_repo.create(assistant_message)
 
-        # 更新对话统计 (用户消息计数已在 _prepare_for_send 中完成)
+        # 更新对话统计 (同步路径: DI session 内一次性更新, 无死锁风险)
+        ctx.conversation.add_message_count(token_count=0)  # 用户消息
         ctx.conversation.add_message_count(token_count=total_tokens)  # 助手消息
         await self._conversation_repo.update(ctx.conversation)
 
@@ -235,15 +236,21 @@ class ExecutionService:
             total_input_tokens = 0
             total_output_tokens = 0
 
-            # 根据 runtime_type 路由到对应的流式迭代器 (需 await 协程获取迭代器)
-            source = await self._create_agent_stream(ctx) if use_agent else await self._create_llm_stream(ctx)
-            async for chunk in source:
-                if chunk.content:
-                    collected_content += chunk.content
-                    yield StreamChunk(content=chunk.content)
-                if chunk.done:
-                    total_input_tokens = chunk.input_tokens
-                    total_output_tokens = chunk.output_tokens
+            try:
+                # 根据 runtime_type 路由到对应的流式迭代器 (需 await 协程获取迭代器)
+                source = await self._create_agent_stream(ctx) if use_agent else await self._create_llm_stream(ctx)
+                async for chunk in source:
+                    if chunk.content:
+                        collected_content += chunk.content
+                        yield StreamChunk(content=chunk.content)
+                    if chunk.done:
+                        total_input_tokens = chunk.input_tokens
+                        total_output_tokens = chunk.output_tokens
+            except Exception:
+                # 流失败: 通过 stream_session 补偿更新用户消息计数
+                # (DI session 在 SSE 期间不可用, 必须用独立 session)
+                await self._compensate_user_message_count(ctx.conversation, conversation_id)
+                raise
 
             # 流后 DB 写操作: 使用独立 session, 避免 DI session 已关闭的问题
             total_tokens = total_input_tokens + total_output_tokens
@@ -289,7 +296,7 @@ class ExecutionService:
         try:
             assistant_msg.content = collected_content
             assistant_msg.token_count = total_tokens
-            # 用户消息计数已在 _prepare_for_send 中完成, 此处仅更新助手消息
+            conversation.add_message_count(token_count=0)  # 用户消息
             conversation.add_message_count(token_count=total_tokens)  # 助手消息
 
             # 使用流专用 repos 写入 (由 API 层通过独立 session 创建, 避免 DI session 已关闭)
@@ -314,6 +321,27 @@ class ExecutionService:
             raise
         finally:
             # 确保 stream session 关闭, 避免连接泄漏
+            if self._stream_session_close:
+                await self._stream_session_close()
+
+    async def _compensate_user_message_count(
+        self,
+        conversation: Conversation,
+        conversation_id: int,
+    ) -> None:
+        """流失败时补偿更新用户消息计数 (通过 stream_session)。
+
+        SSE 流期间 DI session 不可用, 必须通过独立的 stream_session 更新。
+        best-effort: 补偿失败不阻塞异常传播。
+        """
+        try:
+            conversation.add_message_count(token_count=0)
+            await self._stream_conv_repo.update(conversation)
+            if self._stream_session_commit:
+                await self._stream_session_commit()
+        except Exception:
+            logger.warning("compensate_user_message_count_failed", conversation_id=conversation_id)
+        finally:
             if self._stream_session_close:
                 await self._stream_session_close()
 
@@ -557,16 +585,14 @@ class ExecutionService:
         if agent_info is None:
             raise AgentNotAvailableError(conversation.agent_id)
 
-        # 创建用户消息并立即更新 message_count
-        # 在此处 (而非响应成功后) 更新计数, 确保 SSE 流失败时用户消息计数仍正确
+        # 创建用户消息 (message_count 在 _finalize_stream 中统一更新,
+        # 流失败时由 _generate 异常处理路径通过 stream_session 补偿更新)
         user_message = Message(
             conversation_id=conversation_id,
             role=MessageRole.USER,
             content=content,
         )
         created_user_msg = await self._message_repo.create(user_message)
-        conversation.add_message_count(token_count=0)
-        await self._conversation_repo.update(conversation)
 
         # 加载消息历史 → 滑动窗口截取 → 构建 LLM 上下文
         history = await self._message_repo.list_by_conversation(conversation_id)
