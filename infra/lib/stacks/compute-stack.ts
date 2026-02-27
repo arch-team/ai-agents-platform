@@ -177,6 +177,16 @@ export class ComputeStack extends cdk.Stack {
       }),
     );
 
+    // 授权 ECS Task Role 调用 AgentCore Runtime (agentcore_runtime 模式: Agent 执行托管)
+    if (props.agentcoreRuntimeArn) {
+      ecsConstruct.service.taskDefinition.taskRole.addToPrincipalPolicy(
+        new iam.PolicyStatement({
+          actions: ['bedrock-agentcore:InvokeAgentRuntime'],
+          resources: [props.agentcoreRuntimeArn],
+        }),
+      );
+    }
+
     // 授权 ECS Task Role 调用 Bedrock Eval API (M13 评估 Pipeline 所需)
     ecsConstruct.service.taskDefinition.taskRole.addToPrincipalPolicy(
       new iam.PolicyStatement({
