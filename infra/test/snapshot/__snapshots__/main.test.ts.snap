@@ -1215,10 +1215,6 @@ exports[`Snapshot Tests ComputeStack 快照匹配 1`] = `
             "Image": {
               "Fn::Sub": "000000000000.dkr.ecr.us-east-1.\${AWS::URLSuffix}/cdk-hnb659fds-container-assets-NORMALIZED:DOCKER_HASH",
             },
-            "LinuxParameters": {
-              "Capabilities": {},
-              "InitProcessEnabled": true,
-            },
             "LogConfiguration": {
               "LogDriver": "awslogs",
               "Options": {
