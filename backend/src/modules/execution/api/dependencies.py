@@ -55,11 +55,16 @@ def get_agent_runtime() -> IAgentRuntime:
             AgentCoreRuntimeAdapter,
         )
 
-        client = boto3.client("bedrock-agent-runtime", region_name=settings.AWS_REGION)
-        return AgentCoreRuntimeAdapter(
-            client=client,
-            default_model_id=settings.BEDROCK_DEFAULT_MODEL_ID,
-        )
+        if not settings.AGENTCORE_RUNTIME_ARN:
+            import logging
+
+            logging.getLogger(__name__).warning("AGENTCORE_RUNTIME_ARN 未配置, 降级到 in_process")
+        else:
+            client = boto3.client("bedrock-agentcore", region_name=settings.AWS_REGION)
+            return AgentCoreRuntimeAdapter(
+                client=client,
+                runtime_arn=settings.AGENTCORE_RUNTIME_ARN,
+            )
 
     # 默认: in_process 模式
     return ClaudeAgentAdapter()
@@ -123,14 +128,12 @@ async def get_team_execution_service(
     agent_runtime = get_agent_runtime()
     settings = get_settings()
 
-    def _bg_repo_factory() -> (
-        tuple[
-            TeamExecutionRepositoryImpl,
-            TeamExecutionLogRepositoryImpl,
-            Callable[[], Awaitable[None]],
-            Callable[[], Awaitable[None]],
-        ]
-    ):
+    def _bg_repo_factory() -> tuple[
+        TeamExecutionRepositoryImpl,
+        TeamExecutionLogRepositoryImpl,
+        Callable[[], Awaitable[None]],
+        Callable[[], Awaitable[None]],
+    ]:
         """为后台任务创建独立 session 的 repos。"""
         bg_session = get_session_factory()()
         return (
