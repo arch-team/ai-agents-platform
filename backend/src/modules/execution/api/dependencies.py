@@ -60,7 +60,11 @@ def get_agent_runtime() -> IAgentRuntime:
 
             logging.getLogger(__name__).warning("AGENTCORE_RUNTIME_ARN 未配置, 降级到 in_process")
         else:
-            client = boto3.client("bedrock-agentcore", region_name=settings.AWS_REGION)
+            from botocore.config import Config
+
+            # Agent Loop 可能运行数分钟, 增加 read timeout (默认 60s 不够)
+            agentcore_config = Config(read_timeout=600, connect_timeout=10, retries={"max_attempts": 0})
+            client = boto3.client("bedrock-agentcore", region_name=settings.AWS_REGION, config=agentcore_config)
             return AgentCoreRuntimeAdapter(
                 client=client,
                 runtime_arn=settings.AGENTCORE_RUNTIME_ARN,
