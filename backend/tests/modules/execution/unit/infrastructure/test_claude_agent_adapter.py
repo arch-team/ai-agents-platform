@@ -66,10 +66,12 @@ class TestClaudeAgentAdapterStructure:
 class TestClaudeAgentAdapterExecute:
     @patch("src.modules.execution.infrastructure.external.claude_agent_adapter.query")
     async def test_execute_normal_response(self, mock_query):
-        mock_query.return_value = _async_iter([
-            {"type": "text", "content": "你好！"},
-            {"type": "text", "content": "有什么可以帮助你？", "usage": {"input_tokens": 10, "output_tokens": 20}},
-        ])
+        mock_query.return_value = _async_iter(
+            [
+                {"type": "text", "content": "你好！"},
+                {"type": "text", "content": "有什么可以帮助你？", "usage": {"input_tokens": 10, "output_tokens": 20}},
+            ],
+        )
 
         adapter = ClaudeAgentAdapter()
         result = await adapter.execute(_make_request())
@@ -173,10 +175,12 @@ class TestClaudeAgentAdapterExecute:
 class TestClaudeAgentAdapterExecuteStream:
     @patch("src.modules.execution.infrastructure.external.claude_agent_adapter.query")
     async def test_stream_multi_chunk_response(self, mock_query):
-        mock_query.return_value = _async_iter([
-            {"type": "text", "content": "第一段"},
-            {"type": "text", "content": "第二段", "usage": {"input_tokens": 5, "output_tokens": 15}},
-        ])
+        mock_query.return_value = _async_iter(
+            [
+                {"type": "text", "content": "第一段"},
+                {"type": "text", "content": "第二段", "usage": {"input_tokens": 5, "output_tokens": 15}},
+            ],
+        )
 
         adapter = ClaudeAgentAdapter()
         chunks = []
@@ -221,10 +225,12 @@ class TestClaudeAgentAdapterExecuteStream:
 
     @patch("src.modules.execution.infrastructure.external.claude_agent_adapter.query")
     async def test_stream_accumulates_usage(self, mock_query):
-        mock_query.return_value = _async_iter([
-            {"type": "text", "content": "A", "usage": {"input_tokens": 3, "output_tokens": 5}},
-            {"type": "text", "content": "B", "usage": {"input_tokens": 2, "output_tokens": 4}},
-        ])
+        mock_query.return_value = _async_iter(
+            [
+                {"type": "text", "content": "A", "usage": {"input_tokens": 3, "output_tokens": 5}},
+                {"type": "text", "content": "B", "usage": {"input_tokens": 2, "output_tokens": 4}},
+            ],
+        )
 
         adapter = ClaudeAgentAdapter()
         chunks = []
