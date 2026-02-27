@@ -182,7 +182,7 @@ export class ComputeStack extends cdk.Stack {
       ecsConstruct.service.taskDefinition.taskRole.addToPrincipalPolicy(
         new iam.PolicyStatement({
           actions: ['bedrock-agentcore:InvokeAgentRuntime'],
-          resources: [props.agentcoreRuntimeArn],
+          resources: [props.agentcoreRuntimeArn, `${props.agentcoreRuntimeArn}/*`],
         }),
       );
     }
