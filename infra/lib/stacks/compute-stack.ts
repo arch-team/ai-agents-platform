@@ -119,6 +119,9 @@ export class ComputeStack extends cdk.Stack {
         // Claude Agent SDK 所需: 启用 Bedrock 后端 (替代 Anthropic 直接 API)
         // 依赖链: Python → claude-agent-sdk → Claude Code CLI (Node.js) → Bedrock Invoke API
         CLAUDE_CODE_USE_BEDROCK: '1',
+        // Agent 运行时模式: agentcore_runtime 使用 Bedrock invoke_inline_agent API
+        // (绕过 bundled CLI 进程兼容性问题, 直接通过 boto3 HTTP 调用)
+        AGENT_RUNTIME_MODE: 'agentcore_runtime',
       },
       secrets: {
         // Aurora Secret JSON fields: host, port, username, password, dbname, engine

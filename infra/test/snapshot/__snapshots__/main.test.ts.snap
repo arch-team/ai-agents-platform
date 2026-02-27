@@ -1192,6 +1192,10 @@ exports[`Snapshot Tests ComputeStack 快照匹配 1`] = `
                 "Name": "CLAUDE_CODE_USE_BEDROCK",
                 "Value": "1",
               },
+              {
+                "Name": "AGENT_RUNTIME_MODE",
+                "Value": "agentcore_runtime",
+              },
             ],
             "Essential": true,
             "HealthCheck": {
