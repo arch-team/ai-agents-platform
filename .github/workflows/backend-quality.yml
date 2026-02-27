@@ -48,7 +48,7 @@ jobs:
           python-version: ${{ env.PYTHON_VERSION }}
       - name: 安装 uv
         run: pip install uv==${{ env.UV_VERSION }}
-      - uses: actions/cache@v4
+      - uses: actions/cache@v5
         with:
           path: |
             backend/.venv
