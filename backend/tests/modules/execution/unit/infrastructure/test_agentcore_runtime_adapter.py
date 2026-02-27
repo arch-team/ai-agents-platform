@@ -149,7 +149,10 @@ class TestAgentCoreRuntimeAdapterExecute:
         # 验证关键参数
         assert call_kwargs["inputText"] == "测试提示词"
         assert call_kwargs["foundationModel"] == MODEL_CLAUDE_SONNET_46
-        assert call_kwargs["instruction"] == "你是助手"
+        # instruction 短于 40 字符时会被 pad (invoke_inline_agent 最低要求)
+        assert call_kwargs["instruction"].startswith("你是助手")
+        assert len(call_kwargs["instruction"]) >= 40
+        assert "sessionId" in call_kwargs
 
     async def test_execute_uses_default_model_when_empty(self):
         """model_id 为空时使用默认模型。"""

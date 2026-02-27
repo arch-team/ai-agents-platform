@@ -6,6 +6,7 @@ invoke_inline_agent API，仅做配置映射 + 异常转换。
 依赖链: Python → boto3 → Bedrock AgentCore Runtime API (invoke_inline_agent)
 """
 
+import uuid
 from collections.abc import AsyncIterator
 from typing import Any, Protocol
 
@@ -105,15 +106,23 @@ class AgentCoreRuntimeAdapter(IAgentRuntime):
 
         yield AgentResponseChunk(done=True)
 
+    _MIN_INSTRUCTION_LEN = 40
+
     def _build_invoke_params(self, request: AgentRequest) -> dict[str, Any]:
         """构建 invoke_inline_agent 请求参数。"""
         model_id = request.model_id or self._default_model_id
+        instruction = request.system_prompt or "You are a helpful assistant."
+        # invoke_inline_agent 要求 instruction 最少 40 字符
+        if len(instruction) < self._MIN_INSTRUCTION_LEN:
+            instruction = instruction.ljust(self._MIN_INSTRUCTION_LEN)
 
         params: dict[str, Any] = {
             "foundationModel": model_id,
             "inputText": request.prompt,
-            "instruction": request.system_prompt or "You are a helpful assistant.",
+            "instruction": instruction,
             "enableTrace": False,
+            # sessionId 是必填参数, 用于管理对话状态
+            "sessionId": uuid.uuid4().hex[:12],
         }
 
         return params
