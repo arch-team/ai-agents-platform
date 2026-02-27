@@ -8,6 +8,7 @@ SDK-First: 薄封装层，直接委托 claude_agent_sdk.query()，
 
 import asyncio
 import ipaddress
+import random
 from collections.abc import AsyncIterator, Callable, Coroutine
 from typing import Any
 from urllib.parse import urlparse
@@ -20,7 +21,13 @@ from claude_agent_sdk import (
     create_sdk_mcp_server,
     query,
 )
-from claude_agent_sdk._errors import CLIConnectionError, CLINotFoundError, ProcessError
+from claude_agent_sdk._errors import (
+    CLIConnectionError,
+    CLIJSONDecodeError,
+    CLINotFoundError,
+    MessageParseError,
+    ProcessError,
+)
 
 from src.modules.execution.application.interfaces import (
     AgentRequest,
@@ -41,16 +48,23 @@ from src.shared.domain.exceptions import DomainError
 
 logger = structlog.get_logger(__name__)
 
-# CLI 连接重试: CLIConnectionError (进程未就绪) 自动重试
-_CLI_MAX_RETRIES = 2
-_CLI_RETRY_DELAY_S = 1.0
+# CLI 连接重试: CLIConnectionError / CLIJSONDecodeError (pipe 中断) 自动重试
+_CLI_MAX_RETRIES = 3
+_CLI_BASE_DELAY_S = 0.5
+
+
+def _cli_retry_delay(attempt: int) -> float:
+    """指数退避 + jitter: attempt=1→~0.5s, 2→~1s, 3→~2s"""
+    base: float = _CLI_BASE_DELAY_S * (2 ** (attempt - 1))
+    jitter: float = random.uniform(0, base * 0.3)  # noqa: S311
+    return base + jitter
 
 
 def _is_retryable_cli_error(exc: BaseException) -> bool:
-    """CLIConnectionError 可重试, CLINotFoundError 不可重试, ExceptionGroup 递归检查。"""
+    """CLIConnectionError/CLIJSONDecodeError/MessageParseError 可重试, CLINotFoundError 不可重试。"""
     if isinstance(exc, CLINotFoundError):
         return False
-    if isinstance(exc, CLIConnectionError):
+    if isinstance(exc, (CLIConnectionError, CLIJSONDecodeError, MessageParseError)):
         return True
     if isinstance(exc, BaseExceptionGroup):
         return any(_is_retryable_cli_error(e) for e in exc.exceptions)
@@ -116,7 +130,7 @@ class ClaudeAgentAdapter(IAgentRuntime):
         for attempt in range(_CLI_MAX_RETRIES + 1):
             if attempt > 0:
                 logger.info("cli_connection_retry", attempt=attempt, max_retries=_CLI_MAX_RETRIES)
-                await asyncio.sleep(_CLI_RETRY_DELAY_S * attempt)
+                await asyncio.sleep(_cli_retry_delay(attempt))
 
             options = self._build_options(request)
             content_parts: list[str] = []
@@ -132,6 +146,8 @@ class ClaudeAgentAdapter(IAgentRuntime):
                     input_tokens += msg_input
                     output_tokens += msg_output
             except DomainError:
+                raise
+            except asyncio.CancelledError:
                 raise
             except ProcessError as e:
                 if e.stderr:
@@ -169,10 +185,7 @@ class ClaudeAgentAdapter(IAgentRuntime):
             code="AGENT_SDK_ERROR",
         ) from last_err
 
-    async def execute_stream(  # type: ignore[override]
-        self,
-        request: AgentRequest,
-    ) -> AsyncIterator[AgentResponseChunk]:
+    async def execute_stream(self, request: AgentRequest) -> AsyncIterator[AgentResponseChunk]:
         """流式执行 Agent，逐条 yield 响应片段。"""
         options = self._build_options(request)
         return self._stream_messages(request.prompt, options)
@@ -188,7 +201,7 @@ class ClaudeAgentAdapter(IAgentRuntime):
         for attempt in range(_CLI_MAX_RETRIES + 1):
             if attempt > 0:
                 logger.info("cli_connection_retry_stream", attempt=attempt)
-                await asyncio.sleep(_CLI_RETRY_DELAY_S * attempt)
+                await asyncio.sleep(_cli_retry_delay(attempt))
 
             input_tokens = 0
             output_tokens = 0
@@ -204,6 +217,8 @@ class ClaudeAgentAdapter(IAgentRuntime):
                     input_tokens += msg_input
                     output_tokens += msg_output
             except DomainError:
+                raise
+            except asyncio.CancelledError:
                 raise
             except ProcessError as e:
                 if not has_content:

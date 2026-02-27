@@ -69,6 +69,10 @@ const agentCoreStack = new AgentCoreStack(app, `${prefix}-agentcore-${env}`, {
 });
 agentCoreStack.addDependency(networkStack);
 
+// Agent 运行时模式: 从 CDK Context 读取，默认 'agentcore_runtime'
+// 用法: cdk deploy --context agentRuntimeMode=in_process (切换到本地 CLI 模式)
+const agentRuntimeMode = app.node.tryGetContext('agentRuntimeMode') ?? 'agentcore_runtime';
+
 const computeStack = new ComputeStack(app, `${prefix}-compute-${env}`, {
   env: cdkEnv,
   vpc: networkStack.vpc,
@@ -87,6 +91,8 @@ const computeStack = new ComputeStack(app, `${prefix}-compute-${env}`, {
   ...(isProd(env) && {
     desiredCount: 2,
   }),
+  // Agent 运行时模式: 通过 CDK Context 配置化 (默认 agentcore_runtime)
+  agentRuntimeMode,
   // AgentCore Runtime ARN (agentcore_runtime 模式: Agent 执行托管在 AgentCore 独立容器中)
   agentcoreRuntimeArn: agentCoreStack.runtimeArn,
   // Dev: 非工作时段 (UTC 12:00 = 北京 20:00) 缩减到 0，工作时段 (UTC 00:00 = 北京 08:00) 恢复到 1

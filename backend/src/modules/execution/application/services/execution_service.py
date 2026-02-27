@@ -22,7 +22,6 @@ from src.modules.execution.application.interfaces.agent_runtime import (
     AgentResponseChunk,
     AgentTool,
     IAgentRuntime,
-    resolve_stream,
 )
 from src.modules.execution.application.interfaces.llm_client import (
     ILLMClient,
@@ -496,7 +495,7 @@ class ExecutionService:
             raise ValueError(msg)
         tools = await self._get_agent_tools()
         request = self._build_agent_request(ctx, tools)
-        return await resolve_stream(self._agent_runtime, request)
+        return await self._agent_runtime.execute_stream(request)
 
     async def _create_llm_stream(self, ctx: _SendContext) -> AsyncIterator[LLMStreamChunk]:
         """创建 LLM 降级路径的流式迭代器。"""

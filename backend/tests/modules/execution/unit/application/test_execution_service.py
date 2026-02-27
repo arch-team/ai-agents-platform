@@ -1,6 +1,6 @@
 """ExecutionService 测试。"""
 
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
@@ -940,9 +940,9 @@ class TestAgentRuntimeRouting:
             yield AgentResponseChunk(content="回复")
             yield AgentResponseChunk(done=True, input_tokens=12, output_tokens=18)
 
-        # execute_stream 是普通方法（非 async），返回 AsyncIterator
+        # execute_stream 是 async def，返回 AsyncIterator
         agent_runtime = AsyncMock(spec=IAgentRuntime)
-        agent_runtime.execute_stream = MagicMock(return_value=_agent_gen())
+        agent_runtime.execute_stream.return_value = _agent_gen()
 
         tool_querier = AsyncMock(spec=IToolQuerier)
         tool_querier.list_approved_tools.return_value = []

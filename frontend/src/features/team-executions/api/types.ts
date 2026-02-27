@@ -9,7 +9,12 @@ export interface TeamExecution {
   prompt: string;
   status: TeamExecutionStatus;
   result: string | null;
-  error: string | null;
+  error_message: string | null;
+  conversation_id: string | null;
+  input_tokens: number | null;
+  output_tokens: number | null;
+  started_at: string | null;
+  completed_at: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -18,7 +23,7 @@ export interface TeamExecutionLog {
   id: number;
   execution_id: number;
   sequence: number;
-  agent_name: string;
+  log_type: string;
   content: string;
   created_at: string;
 }
@@ -27,7 +32,7 @@ export interface TeamExecutionSSEChunk {
   id?: number;
   sequence?: number;
   content: string;
-  agent_name?: string;
+  log_type?: string;
   done?: boolean;
   error?: string;
 }

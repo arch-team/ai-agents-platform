@@ -25,6 +25,7 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     container_name: aiagents-backend
+    init: true  # 注入 tini, 回收 CLI 子进程
     environment:
       APP_ENV: development
       APP_DEBUG: "true"

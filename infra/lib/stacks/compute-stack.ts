@@ -49,6 +49,8 @@ export interface ComputeStackProps extends BaseStackProps {
   readonly desiredCount?: number;
   /** AgentCore Runtime ARN — agentcore_runtime 模式必需 @default '' */
   readonly agentcoreRuntimeArn?: string;
+  /** Agent 运行时模式: in_process (本地 CLI) / agentcore_runtime (AgentCore 托管) @default 'in_process' */
+  readonly agentRuntimeMode?: string;
   /** 定时缩放配置 — Dev 环境非工作时段自动缩减 ECS 任务数 @default undefined (不启用定时缩放) */
   readonly scheduledScaling?: ScheduledScalingConfig;
 }
@@ -121,8 +123,8 @@ export class ComputeStack extends cdk.Stack {
         // Claude Agent SDK 所需: 启用 Bedrock 后端 (替代 Anthropic 直接 API)
         // 依赖链: Python → claude-agent-sdk → Claude Code CLI (Node.js) → Bedrock Invoke API
         CLAUDE_CODE_USE_BEDROCK: '1',
-        // Agent 运行时模式: in_process (本地 CLI) / agentcore_runtime (AgentCore 托管)
-        AGENT_RUNTIME_MODE: 'agentcore_runtime',
+        // Agent 运行时模式: in_process (本地 CLI) / agentcore_runtime (AgentCore 托管)，通过 Props 配置化
+        AGENT_RUNTIME_MODE: props.agentRuntimeMode ?? 'in_process',
         // AgentCore Runtime ARN (agentcore_runtime 模式必需)
         AGENTCORE_RUNTIME_ARN: props.agentcoreRuntimeArn ?? '',
       },

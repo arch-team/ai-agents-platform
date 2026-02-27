@@ -108,12 +108,18 @@ export class EcsServiceConstruct extends Construct {
       memoryLimitMiB,
     });
 
+    // 注入 tini 作为 PID 1, 回收 CLI 僵尸子进程 + 正确传播 SIGTERM
+    const linuxParameters = new ecs.LinuxParameters(this, 'LinuxParams', {
+      initProcessEnabled: true,
+    });
+
     taskDefinition.addContainer('ApiContainer', {
       image: containerImage,
       containerName: 'api',
       portMappings: [{ containerPort }],
       environment,
       secrets,
+      linuxParameters,
       logging: ecs.LogDrivers.awsLogs({
         logGroup,
         streamPrefix: 'api',

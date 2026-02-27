@@ -162,7 +162,8 @@ class TestAgentCoreRuntimeAdapterExecuteStream:
         mock_client.invoke_agent_runtime.return_value = _make_runtime_response(content="回复内容")
 
         adapter = AgentCoreRuntimeAdapter(client=mock_client, runtime_arn=_TEST_RUNTIME_ARN)
-        chunks = [chunk async for chunk in adapter.execute_stream(_make_request())]
+        stream = await adapter.execute_stream(_make_request())
+        chunks = [chunk async for chunk in stream]
 
         assert len(chunks) == 2
         assert chunks[0].content == "回复内容"
@@ -174,7 +175,8 @@ class TestAgentCoreRuntimeAdapterExecuteStream:
         mock_client.invoke_agent_runtime.return_value = _make_runtime_response(content="")
 
         adapter = AgentCoreRuntimeAdapter(client=mock_client, runtime_arn=_TEST_RUNTIME_ARN)
-        chunks = [chunk async for chunk in adapter.execute_stream(_make_request())]
+        stream = await adapter.execute_stream(_make_request())
+        chunks = [chunk async for chunk in stream]
 
         assert len(chunks) == 1
         assert chunks[0].done is True
@@ -186,7 +188,8 @@ class TestAgentCoreRuntimeAdapterExecuteStream:
 
         adapter = AgentCoreRuntimeAdapter(client=mock_client, runtime_arn=_TEST_RUNTIME_ARN)
         with pytest.raises(DomainError, match="Agent 服务暂时不可用"):
-            async for _ in adapter.execute_stream(_make_request()):
+            stream = await adapter.execute_stream(_make_request())
+            async for _ in stream:
                 pass
 
 

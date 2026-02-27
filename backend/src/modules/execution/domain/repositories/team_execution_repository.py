@@ -4,6 +4,7 @@ from abc import abstractmethod
 
 from src.modules.execution.domain.entities.team_execution import TeamExecution
 from src.modules.execution.domain.entities.team_execution_log import TeamExecutionLog
+from src.modules.execution.domain.value_objects.team_execution_status import TeamExecutionStatus
 from src.shared.domain.repositories import IRepository
 
 
@@ -30,6 +31,9 @@ class ITeamExecutionRepository(IRepository[TeamExecution, int]):
 
     @abstractmethod
     async def count_by_user(self, user_id: int) -> int: ...  # noqa: D102
+
+    @abstractmethod
+    async def list_by_statuses(self, statuses: list[TeamExecutionStatus]) -> list[TeamExecution]: ...  # noqa: D102
 
 
 class ITeamExecutionLogRepository(IRepository[TeamExecutionLog, int]):

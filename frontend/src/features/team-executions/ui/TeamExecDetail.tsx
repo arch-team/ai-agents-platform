@@ -17,7 +17,7 @@ function toDisplayLogs(logs: TeamExecutionLog[]): StreamLogEntry[] {
   return logs.map((log) => ({
     sequence: log.sequence,
     content: log.content,
-    agentName: log.agent_name,
+    logType: log.log_type,
   }));
 }
 
@@ -106,9 +106,9 @@ export function TeamExecDetail({ executionId, onStartStream }: TeamExecDetailPro
         )}
 
         {/* 错误信息 */}
-        {execution.error && (
+        {execution.error_message && (
           <div className="mt-3">
-            <ErrorMessage error={execution.error} />
+            <ErrorMessage error={execution.error_message} />
           </div>
         )}
       </div>
@@ -132,7 +132,7 @@ export function TeamExecDetail({ executionId, onStartStream }: TeamExecDetailPro
               <LogEntry
                 key={`${log.sequence}-${index}`}
                 sequence={log.sequence}
-                agentName={log.agentName}
+                logType={log.logType}
                 content={log.content}
               />
             ))}
@@ -153,18 +153,18 @@ export function TeamExecDetail({ executionId, onStartStream }: TeamExecDetailPro
 // 日志条目子组件
 interface LogEntryProps {
   sequence: number;
-  agentName: string;
+  logType: string;
   content: string;
 }
 
-function LogEntry({ sequence, agentName, content }: LogEntryProps) {
+function LogEntry({ sequence, logType, content }: LogEntryProps) {
   return (
     <Card className="!p-3">
       <div className="mb-1 flex items-center gap-2">
         <span className="text-xs font-mono text-gray-400">#{sequence}</span>
-        {agentName && (
+        {logType && (
           <span className="rounded bg-purple-100 px-1.5 py-0.5 text-xs font-medium text-purple-700">
-            {agentName}
+            {logType}
           </span>
         )}
       </div>

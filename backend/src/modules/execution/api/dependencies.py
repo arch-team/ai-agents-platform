@@ -56,9 +56,9 @@ def get_agent_runtime() -> IAgentRuntime:
         )
 
         if not settings.AGENTCORE_RUNTIME_ARN:
-            import logging
+            import structlog
 
-            logging.getLogger(__name__).warning("AGENTCORE_RUNTIME_ARN 未配置, 降级到 in_process")
+            structlog.get_logger(__name__).warning("AGENTCORE_RUNTIME_ARN 未配置, 降级到 in_process")
         else:
             from botocore.config import Config
 
@@ -155,5 +155,6 @@ async def get_team_execution_service(
         gateway_url=settings.AGENTCORE_GATEWAY_URL,
         max_turns=settings.TEAM_EXECUTION_MAX_TURNS,
         timeout_seconds=settings.TEAM_EXECUTION_TIMEOUT_SECONDS,
+        max_concurrent=settings.TEAM_EXECUTION_MAX_CONCURRENT,
         bg_repo_factory=_bg_repo_factory,
     )

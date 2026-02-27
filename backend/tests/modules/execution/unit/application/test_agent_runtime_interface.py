@@ -1,5 +1,6 @@
 """IAgentRuntime 接口测试。"""
 
+from collections.abc import AsyncIterator
 from unittest.mock import AsyncMock
 
 import pytest
@@ -60,7 +61,10 @@ class TestAgentRuntimeDataStructures:
 
     def test_agent_response_chunk_done(self) -> None:
         chunk = AgentResponseChunk(
-            content="完成", done=True, input_tokens=100, output_tokens=200,
+            content="完成",
+            done=True,
+            input_tokens=100,
+            output_tokens=200,
         )
         assert chunk.done is True
         assert chunk.input_tokens == 100
@@ -74,7 +78,10 @@ class TestAgentRuntimeMock:
     async def test_mock_agent_runtime_execute(self) -> None:
         mock_runtime = AsyncMock(spec=IAgentRuntime)
         mock_runtime.execute.return_value = AgentResponseChunk(
-            content="修复完成", done=True, input_tokens=50, output_tokens=100,
+            content="修复完成",
+            done=True,
+            input_tokens=50,
+            output_tokens=100,
         )
 
         request = AgentRequest(prompt="修复 bug")
@@ -93,15 +100,16 @@ class TestAgentRuntimeMock:
 
         mock_runtime = AsyncMock(spec=IAgentRuntime)
 
-        async def mock_stream(_request: AgentRequest):
+        async def _gen() -> AsyncIterator[AgentResponseChunk]:
             for c in chunks:
                 yield c
 
-        mock_runtime.execute_stream = mock_stream
+        mock_runtime.execute_stream.return_value = _gen()
 
         request = AgentRequest(prompt="分析代码")
         collected = []
-        async for chunk in mock_runtime.execute_stream(request):
+        stream = await mock_runtime.execute_stream(request)
+        async for chunk in stream:
             collected.append(chunk)
 
         assert len(collected) == 3

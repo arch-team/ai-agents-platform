@@ -131,42 +131,49 @@ async def _handle_tools_call(
     tool_name = params.get("name", "")
     arguments: dict[str, Any] = params.get("arguments", {})
 
-    if tool_name == "save_memory":
-        record_id = await adapter.save_memory(
-            agent_id=arguments["agent_id"],
-            content=arguments["content"],
-            topic=arguments["topic"],
-        )
-        return _make_response(
-            request_id,
-            {
-                "content": [{"type": "text", "text": record_id or "memory_save_skipped"}],
-            },
-        )
+    try:
+        if tool_name == "save_memory":
+            record_id = await adapter.save_memory(
+                agent_id=arguments["agent_id"],
+                content=arguments["content"],
+                topic=arguments["topic"],
+            )
+            return _make_response(
+                request_id,
+                {
+                    "content": [{"type": "text", "text": record_id or "memory_save_skipped"}],
+                },
+            )
 
-    if tool_name == "recall_memory":
-        items = await adapter.recall_memory(
-            agent_id=arguments["agent_id"],
-            query=arguments["query"],
-            max_results=arguments.get("max_results", 5),
-        )
-        results = [
-            {
-                "memory_id": item.memory_id,
-                "content": item.content,
-                "topic": item.topic,
-                "relevance_score": item.relevance_score,
-            }
-            for item in items
-        ]
-        return _make_response(
-            request_id,
-            {
-                "content": [{"type": "text", "text": json.dumps(results, ensure_ascii=False)}],
-            },
-        )
+        if tool_name == "recall_memory":
+            items = await adapter.recall_memory(
+                agent_id=arguments["agent_id"],
+                query=arguments["query"],
+                max_results=arguments.get("max_results", 5),
+            )
+            results = [
+                {
+                    "memory_id": item.memory_id,
+                    "content": item.content,
+                    "topic": item.topic,
+                    "relevance_score": item.relevance_score,
+                }
+                for item in items
+            ]
+            return _make_response(
+                request_id,
+                {
+                    "content": [{"type": "text", "text": json.dumps(results, ensure_ascii=False)}],
+                },
+            )
 
-    return _make_error(request_id, -32601, f"未知工具: {tool_name}")
+        return _make_error(request_id, -32601, f"未知工具: {tool_name}")
+    except KeyError as e:
+        logger.warning("tools_call_missing_param", tool=tool_name, missing_key=str(e))
+        return _make_error(request_id, -32602, f"缺少必需参数: {e}")
+    except Exception:
+        logger.exception("tools_call_unexpected_error", tool=tool_name)
+        return _make_error(request_id, -32603, f"工具 {tool_name} 执行失败")
 
 
 async def handle_message(
@@ -205,9 +212,9 @@ async def run_stdio_loop(adapter: MemoryAdapter) -> None:
     """
     reader = asyncio.StreamReader()
     protocol = asyncio.StreamReaderProtocol(reader)
-    await asyncio.get_event_loop().connect_read_pipe(lambda: protocol, sys.stdin)
+    loop = asyncio.get_running_loop()
+    await loop.connect_read_pipe(lambda: protocol, sys.stdin)
 
-    loop = asyncio.get_event_loop()
     write_transport, _ = await loop.connect_write_pipe(
         asyncio.Protocol,
         sys.stdout,
@@ -215,25 +222,32 @@ async def run_stdio_loop(adapter: MemoryAdapter) -> None:
 
     logger.info("memory_mcp_server_started")
 
-    while True:
-        line = await reader.readline()
-        if not line:
-            break
+    try:
+        while True:
+            line = await reader.readline()
+            if not line:
+                break
 
-        line_str = line.decode("utf-8").strip()
-        if not line_str:
-            continue
+            line_str = line.decode("utf-8").strip()
+            if not line_str:
+                continue
 
-        try:
-            message = json.loads(line_str)
-        except json.JSONDecodeError:
-            logger.warning("invalid_json_rpc", raw=line_str[:200])
-            continue
+            try:
+                message = json.loads(line_str)
+            except json.JSONDecodeError:
+                logger.warning("invalid_json_rpc", raw=line_str[:200])
+                continue
 
-        response = await handle_message(message, adapter)
-        if response is not None:
-            output = json.dumps(response, ensure_ascii=False) + "\n"
-            write_transport.write(output.encode("utf-8"))
+            response = await handle_message(message, adapter)
+            if response is not None:
+                output = json.dumps(response, ensure_ascii=False) + "\n"
+                try:
+                    write_transport.write(output.encode("utf-8"))
+                except (BrokenPipeError, ConnectionResetError, OSError):
+                    logger.warning("write_pipe_broken")
+                    break
+    finally:
+        write_transport.close()
 
 
 def main() -> None:

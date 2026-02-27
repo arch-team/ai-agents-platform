@@ -112,6 +112,41 @@ describe('ComputeStack', () => {
       });
     });
 
+    it('AGENT_RUNTIME_MODE 默认为 in_process', () => {
+      // beforeEach 未传 agentRuntimeMode，应使用默认值 'in_process'
+      template.hasResourceProperties('AWS::ECS::TaskDefinition', {
+        ContainerDefinitions: Match.arrayWith([
+          Match.objectLike({
+            Environment: Match.arrayWith([
+              Match.objectLike({ Name: 'AGENT_RUNTIME_MODE', Value: 'in_process' }),
+            ]),
+          }),
+        ]),
+      });
+    });
+
+    it('AGENT_RUNTIME_MODE 应从 Props 读取配置值', () => {
+      const app = new cdk.App();
+      const deps = createCrossStackComputeDependencies(app);
+
+      const customStack = new ComputeStack(app, 'TestComputeStackCustomMode', {
+        ...deps,
+        envName: 'dev',
+        agentRuntimeMode: 'agentcore_runtime',
+      });
+      const customTemplate = Template.fromStack(customStack);
+
+      customTemplate.hasResourceProperties('AWS::ECS::TaskDefinition', {
+        ContainerDefinitions: Match.arrayWith([
+          Match.objectLike({
+            Environment: Match.arrayWith([
+              Match.objectLike({ Name: 'AGENT_RUNTIME_MODE', Value: 'agentcore_runtime' }),
+            ]),
+          }),
+        ]),
+      });
+    });
+
     it('容器应注入 Secrets Manager 凭证', () => {
       template.hasResourceProperties('AWS::ECS::TaskDefinition', {
         ContainerDefinitions: Match.arrayWith([

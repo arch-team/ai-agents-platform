@@ -40,7 +40,7 @@ export function useTeamExecutionStream(token: string | null) {
             appendLog({
               sequence: chunk.sequence ?? 0,
               content: chunk.content,
-              agentName: chunk.agent_name ?? '',
+              logType: chunk.log_type ?? '',
             });
           }
 

@@ -13,7 +13,6 @@ from src.modules.execution.application.dto.team_execution_dto import (
 from src.modules.execution.application.interfaces.agent_runtime import (
     AgentRequest,
     IAgentRuntime,
-    resolve_stream,
 )
 from src.modules.execution.domain.entities.team_execution import TeamExecution
 from src.modules.execution.domain.entities.team_execution_log import TeamExecutionLog
@@ -42,9 +41,6 @@ from src.shared.domain.interfaces.agent_querier import ActiveAgentInfo, IAgentQu
 
 logger = structlog.get_logger(__name__)
 
-_SEMAPHORE_MAX_CONCURRENT = 3  # 最多同时运行的团队执行数量
-_team_execution_semaphore = asyncio.Semaphore(_SEMAPHORE_MAX_CONCURRENT)
-
 # 团队执行终态集合 (stream_logs / cancel 判断用)
 _TERMINAL_STATUSES = frozenset(
     {
@@ -68,6 +64,7 @@ class TeamExecutionService:
         gateway_url: str = "",
         max_turns: int = 200,
         timeout_seconds: int = 1800,
+        max_concurrent: int = 3,
         bg_repo_factory: Callable[
             [],
             tuple[
@@ -86,6 +83,7 @@ class TeamExecutionService:
         self._gateway_url = gateway_url
         self._max_turns = max_turns
         self._timeout_seconds = timeout_seconds
+        self._semaphore = asyncio.Semaphore(max_concurrent)
         # 后台任务用独立 session 的 repo 工厂
         self._bg_repo_factory = bg_repo_factory
         # 后台任务追踪 (execution_id -> asyncio.Task)
@@ -286,7 +284,7 @@ class TeamExecutionService:
         commit_fn: Callable[[], Awaitable[None]] | None,
     ) -> None:
         """实际执行逻辑（使用传入的 repo）。"""
-        async with _team_execution_semaphore:
+        async with self._semaphore:
             execution = await exec_repo.get_by_id(execution_id)
             if execution is None or execution.status == TeamExecutionStatus.CANCELLED:
                 return
@@ -352,7 +350,7 @@ class TeamExecutionService:
                     )
 
                     # 带超时的流式执行
-                    stream = await resolve_stream(self._agent_runtime, request)
+                    stream = await self._agent_runtime.execute_stream(request)
                     async with asyncio.timeout(self._timeout_seconds):
                         async for chunk in stream:
                             if chunk.content:

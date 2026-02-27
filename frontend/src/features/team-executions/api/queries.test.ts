@@ -19,7 +19,12 @@ const mockExecution: TeamExecution = {
   prompt: '测试执行',
   status: 'completed',
   result: '执行完成',
-  error: null,
+  error_message: null,
+  conversation_id: null,
+  input_tokens: null,
+  output_tokens: null,
+  started_at: null,
+  completed_at: null,
   created_at: '2025-01-01T00:00:00Z',
   updated_at: '2025-01-01T01:00:00Z',
 };
@@ -52,7 +57,7 @@ describe('team-executions API hooks', () => {
             id: 1,
             execution_id: 1,
             sequence: 1,
-            agent_name: 'Agent-1',
+            log_type: 'Agent-1',
             content: '开始执行任务',
             created_at: '2025-01-01T00:00:00Z',
           },
@@ -118,7 +123,7 @@ describe('team-executions API hooks', () => {
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
       expect(result.current.data).toHaveLength(1);
-      expect(result.current.data?.[0].agent_name).toBe('Agent-1');
+      expect(result.current.data?.[0].log_type).toBe('Agent-1');
     });
 
     it('id 为 null 时不应发起请求', () => {

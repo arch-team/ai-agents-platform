@@ -46,9 +46,13 @@ class AgentCoreRuntimeAdapter(IAgentRuntime):
     {
         "prompt": "用户消息",
         "system_prompt": "系统提示词",
+        "model_id": "claude-sonnet-4-20250514",
         "gateway_url": "AgentCore Gateway MCP 端点",
         "allowed_tools": ["mcp__gateway__*"],
         "max_turns": 20,
+        "cwd": "/workspace",
+        "enable_teams": false,
+        "memory_id": "agentcore-memory-id",
     }
 
     响应格式:
@@ -89,19 +93,19 @@ class AgentCoreRuntimeAdapter(IAgentRuntime):
 
         return self._parse_response(response)
 
-    async def execute_stream(
-        self,
-        request: AgentRequest,
-    ) -> AsyncIterator[AgentResponseChunk]:
+    async def execute_stream(self, request: AgentRequest) -> AsyncIterator[AgentResponseChunk]:
         """流式执行 Agent。
 
         当前 AgentCore Runtime invoke API 为同步调用,
         先获取完整结果再逐段 yield 模拟流式效果。
         后续可升级为真流式 (AgentCore Runtime 原生 streaming)。
         """
+        return self._generate_stream(request)
+
+    async def _generate_stream(self, request: AgentRequest) -> AsyncIterator[AgentResponseChunk]:
+        """内部流式生成器: 同步调用后分段 yield。"""
         chunk = await self.execute(request)
 
-        # 将完整内容分段 yield 模拟流式
         content = chunk.content
         if content:
             yield AgentResponseChunk(content=content)
@@ -113,15 +117,28 @@ class AgentCoreRuntimeAdapter(IAgentRuntime):
         )
 
     def _build_payload(self, request: AgentRequest) -> dict[str, Any]:
-        """构建 agent_entrypoint.py 期望的 payload 格式。"""
+        """构建 agent_entrypoint.py 期望的 payload 格式。
+
+        与 ClaudeAgentAdapter._build_options() 参数集保持对齐:
+        prompt, system_prompt, model_id, max_turns, cwd, gateway_url,
+        allowed_tools, enable_teams, memory_id。
+        """
         payload: dict[str, Any] = {
             "prompt": request.prompt,
             "system_prompt": request.system_prompt,
             "max_turns": request.max_turns,
         }
 
+        if request.model_id:
+            payload["model_id"] = request.model_id
         if request.gateway_url:
             payload["gateway_url"] = request.gateway_url
+        if request.cwd:
+            payload["cwd"] = request.cwd
+        if request.enable_teams:
+            payload["enable_teams"] = True
+        if request.memory_id:
+            payload["memory_id"] = request.memory_id
 
         # 工具白名单
         allowed_tools: list[str] = []
@@ -130,6 +147,10 @@ class AgentCoreRuntimeAdapter(IAgentRuntime):
                 allowed_tools.append(f"mcp__gateway__{tool.name}")
             elif tool.tool_type in ("api", "function"):
                 allowed_tools.append(f"mcp__platform-tools__{tool.name}")
+        # Memory 工具白名单 (与 ClaudeAgentAdapter 对齐)
+        if request.memory_id:
+            allowed_tools.append("mcp__memory__save_memory")
+            allowed_tools.append("mcp__memory__recall_memory")
         if allowed_tools:
             payload["allowed_tools"] = allowed_tools
 

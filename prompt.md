@@ -371,3 +371,27 @@ ai-agents-plat-agentCore-staging
   /everything-claude-code:e2e                                                                                  
   对这个系统中的功能模块进行深入全面的E2E测试，http://ai-agents-platform-frontend-dev-897473.s3-website-us-east 
   -1.amazonaws.com/，对照vision-mission.md和roadmap.md和progress.md测试功能完整正确无法的实现了   
+
+/everything-claude-code:e2e 对当前系统部署的Dev的真实环境：https://d2k7ovgb2e4af9.cloudfront.net/中的Agent构建器、团队执行这个两个功能模块，执行全面深入的E2E测试
+
+
+使用code-simplifier:code-simplifier帮我优化当前项目中的代码，当前目录下有多个子项目，请启用Agent Teams，对不同的项目从不同的维度进行代码优化
+
+
+
+  in_process (当前有问题的):
+    Python → claude_agent_sdk.query()
+           → 启动 bundled CLI 子进程 (Node.js SEA ELF)
+           → CLI 内部调用 Bedrock InvokeModel API
+           → CLI 通过 stdin/stdout pipe 返回结果给 Python
+           ❌ pipe 通信在 ECS 容器中不稳定
+
+  agentcore_runtime (正在切换到的):
+    Python → boto3.client("bedrock-agent-runtime")
+           → HTTP POST invoke_inline_agent API
+           → Bedrock 服务端执行 Agent Loop
+           → HTTP 响应返回结果
+           ✅ 纯 HTTP 调用, 无子进程依赖
+
+
+本项目为 claude-agent-sdk → Claude Code CLI  →Bedrock Invoke API 构建的Agent提供了两张运行时，一是采用AWS ECS来部署，一种是采用 AWS AgentCore Runtime；分析一下当前系统中对这这两种模式的支持的架构设计有什么可以优化的地方。以满足架构设计原则。同时两种方式一直还存在功能无法正常使用的问题，需要同步修复，保证这两种模式都能正常运行。团队执行功能正常运行

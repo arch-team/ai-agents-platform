@@ -1194,7 +1194,7 @@ exports[`Snapshot Tests ComputeStack 快照匹配 1`] = `
               },
               {
                 "Name": "AGENT_RUNTIME_MODE",
-                "Value": "agentcore_runtime",
+                "Value": "in_process",
               },
               {
                 "Name": "AGENTCORE_RUNTIME_ARN",
@@ -1214,6 +1214,10 @@ exports[`Snapshot Tests ComputeStack 快照匹配 1`] = `
             },
             "Image": {
               "Fn::Sub": "000000000000.dkr.ecr.us-east-1.\${AWS::URLSuffix}/cdk-hnb659fds-container-assets-NORMALIZED:DOCKER_HASH",
+            },
+            "LinuxParameters": {
+              "Capabilities": {},
+              "InitProcessEnabled": true,
             },
             "LogConfiguration": {
               "LogDriver": "awslogs",

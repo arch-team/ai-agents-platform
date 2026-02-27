@@ -30,6 +30,12 @@ RUN uv sync --no-dev --frozen
 # -- Stage 2: Runtime --
 FROM public.ecr.aws/docker/library/python:3.12-slim AS runtime
 
+# Claude Agent SDK bundled CLI (Node.js SEA ELF) 运行时依赖
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libstdc++6 \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
 # 安全: 非 root 用户运行
 RUN groupadd --gid 1000 appuser && \
     useradd --uid 1000 --gid 1000 --create-home appuser

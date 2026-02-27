@@ -132,6 +132,18 @@ describe('EcsServiceConstruct', () => {
         }),
       });
     });
+
+    it('应启用 init 进程防止僵尸子进程', () => {
+      template.hasResourceProperties('AWS::ECS::TaskDefinition', {
+        ContainerDefinitions: Match.arrayWith([
+          Match.objectLike({
+            LinuxParameters: Match.objectLike({
+              InitProcessEnabled: true,
+            }),
+          }),
+        ]),
+      });
+    });
   });
 
   describe('自定义参数', () => {

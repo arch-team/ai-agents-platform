@@ -3,7 +3,7 @@
 export interface StreamLogEntry {
   sequence: number;
   content: string;
-  agentName: string;
+  logType: string;
 }
 
 export interface TeamExecState {

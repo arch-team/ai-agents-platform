@@ -8,6 +8,7 @@ from src.modules.execution.domain.repositories.team_execution_repository import 
     ITeamExecutionLogRepository,
     ITeamExecutionRepository,
 )
+from src.modules.execution.domain.value_objects.team_execution_status import TeamExecutionStatus
 from src.modules.execution.infrastructure.persistence.models.team_execution_log_model import (
     TeamExecutionLogModel,
 )
@@ -73,6 +74,15 @@ class TeamExecutionRepositoryImpl(
 
     async def count_by_user(self, user_id: int) -> int:  # noqa: D102
         return await self._count_where(TeamExecutionModel.user_id == user_id)
+
+    async def list_by_statuses(  # noqa: D102
+        self,
+        statuses: list[TeamExecutionStatus],
+    ) -> list[TeamExecution]:
+        status_values = [s.value for s in statuses]
+        stmt = select(TeamExecutionModel).where(TeamExecutionModel.status.in_(status_values))
+        result = await self._session.execute(stmt)
+        return [self._to_entity(m) for m in result.scalars().all()]
 
 
 class TeamExecutionLogRepositoryImpl(

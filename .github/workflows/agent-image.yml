@@ -26,7 +26,7 @@ concurrency:
 
 env:
   ECR_REPO_PREFIX: ai-agents-platform-agent
-  IMAGE_PLATFORM: linux/amd64
+  IMAGE_PLATFORM: linux/arm64
   AWS_REGION: "us-east-1"
 
 jobs:
@@ -85,7 +85,7 @@ jobs:
         with:
           context: backend
           file: backend/Dockerfile.agent
-          platforms: linux/amd64
+          platforms: linux/arm64
           push: true
           tags: |
             ${{ steps.ecr-login.outputs.registry }}/${{ env.ECR_REPO_PREFIX }}-dev:latest
@@ -132,7 +132,7 @@ jobs:
         with:
           context: backend
           file: backend/Dockerfile.agent
-          platforms: linux/amd64
+          platforms: linux/arm64
           push: true
           tags: |
             ${{ steps.ecr-login.outputs.registry }}/${{ env.ECR_REPO_PREFIX }}-prod:latest

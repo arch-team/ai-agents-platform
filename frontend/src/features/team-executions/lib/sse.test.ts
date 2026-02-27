@@ -33,8 +33,8 @@ describe('team-executions streamSSE', () => {
 
   it('应该正确解析 SSE 日志数据块', async () => {
     const mockStream = createMockStream([
-      'data: {"content": "开始任务", "agent_name": "Agent-1", "sequence": 1}\n\n',
-      'data: {"content": "处理中...", "agent_name": "Agent-1", "sequence": 2}\n\n',
+      'data: {"content": "开始任务", "log_type": "Agent-1", "sequence": 1}\n\n',
+      'data: {"content": "处理中...", "log_type": "Agent-1", "sequence": 2}\n\n',
       'data: {"content": "", "done": true}\n\n',
     ]);
 
@@ -49,8 +49,8 @@ describe('team-executions streamSSE', () => {
     }
 
     expect(chunks).toHaveLength(3);
-    expect(chunks[0]).toEqual({ content: '开始任务', agent_name: 'Agent-1', sequence: 1 });
-    expect(chunks[1]).toEqual({ content: '处理中...', agent_name: 'Agent-1', sequence: 2 });
+    expect(chunks[0]).toEqual({ content: '开始任务', log_type: 'Agent-1', sequence: 1 });
+    expect(chunks[1]).toEqual({ content: '处理中...', log_type: 'Agent-1', sequence: 2 });
     expect(chunks[2]).toEqual({ content: '', done: true });
   });
 
@@ -134,7 +134,7 @@ describe('team-executions streamSSE', () => {
 
   it('应该忽略无法解析 JSON 的行', async () => {
     const mockStream = createMockStream([
-      'data: {"content": "有效", "agent_name": "Agent-1"}\n\n',
+      'data: {"content": "有效", "log_type": "Agent-1"}\n\n',
       'data: invalid-json\n\n',
       'data: {"content": "", "done": true}\n\n',
     ]);
@@ -150,14 +150,14 @@ describe('team-executions streamSSE', () => {
     }
 
     expect(chunks).toHaveLength(2);
-    expect(chunks[0]).toEqual({ content: '有效', agent_name: 'Agent-1' });
+    expect(chunks[0]).toEqual({ content: '有效', log_type: 'Agent-1' });
     expect(chunks[1]).toEqual({ content: '', done: true });
   });
 
   it('应该处理跨块的数据', async () => {
     const mockStream = createMockStream([
       'data: {"content": "开',
-      '始", "agent_name": "Agent-1"}\n\ndata: {"content": "", "done": true}\n\n',
+      '始", "log_type": "Agent-1"}\n\ndata: {"content": "", "done": true}\n\n',
     ]);
 
     vi.spyOn(globalThis, 'fetch').mockResolvedValue({
@@ -171,7 +171,7 @@ describe('team-executions streamSSE', () => {
     }
 
     expect(chunks).toHaveLength(2);
-    expect(chunks[0]).toEqual({ content: '开始', agent_name: 'Agent-1' });
+    expect(chunks[0]).toEqual({ content: '开始', log_type: 'Agent-1' });
     expect(chunks[1]).toEqual({ content: '', done: true });
   });
 });

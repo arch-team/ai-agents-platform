@@ -1,6 +1,6 @@
 """Querier 降级测试 — 验证 Querier 异常时 ExecutionService 不崩溃, 继续执行。"""
 
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
@@ -174,7 +174,7 @@ class TestToolQuerierDegradation:
             yield AgentResponseChunk(done=True, input_tokens=5, output_tokens=10)
 
         agent_runtime = AsyncMock(spec=IAgentRuntime)
-        agent_runtime.execute_stream = MagicMock(return_value=_agent_gen())
+        agent_runtime.execute_stream.return_value = _agent_gen()
 
         tool_querier = AsyncMock(spec=IToolQuerier)
         tool_querier.list_approved_tools.side_effect = ConnectionError("网络不可达")

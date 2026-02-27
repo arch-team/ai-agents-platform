@@ -526,6 +526,41 @@ async def _seed_default_templates() -> None:
             log.exception("default_templates_seed_failed")
 
 
+async def _recover_zombie_executions() -> None:
+    """启动时将 RUNNING/PENDING 的团队执行标记为 FAILED（ECS 重启恢复）。"""
+    import structlog
+
+    from src.modules.execution.domain.value_objects.team_execution_status import TeamExecutionStatus
+    from src.modules.execution.infrastructure.persistence.repositories.team_execution_repository_impl import (
+        TeamExecutionRepositoryImpl,
+    )
+    from src.shared.infrastructure.database import get_session_factory
+
+    log = structlog.get_logger(__name__)
+    session_factory = get_session_factory()
+
+    async with session_factory() as session:
+        try:
+            repo = TeamExecutionRepositoryImpl(session=session)
+            zombies = await repo.list_by_statuses(
+                [TeamExecutionStatus.PENDING, TeamExecutionStatus.RUNNING],
+            )
+            if not zombies:
+                return
+
+            for execution in zombies:
+                if execution.status == TeamExecutionStatus.PENDING:
+                    execution.start()
+                execution.fail("服务重启, 执行中断")
+                await repo.update(execution)
+
+            await session.commit()
+            log.info("zombie_executions_recovered", count=len(zombies))
+        except Exception:
+            await session.rollback()
+            log.exception("zombie_executions_recovery_failed")
+
+
 @asynccontextmanager
 async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
     """应用生命周期: 启动时初始化数据库、日志、追踪和事件订阅。"""
@@ -561,6 +596,7 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
     _log.info("templates_seed_starting")
     await _seed_default_templates()
     _log.info("templates_seed_done")
+    await _recover_zombie_executions()
     yield
 
 
