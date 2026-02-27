@@ -36,6 +36,8 @@ const networkStack = new NetworkStack(app, `${prefix}-network-${env}`, {
   env: cdkEnv,
   vpcCidr: envConfig.vpcCidr,
   envName: env,
+  // Prod: 每 AZ 一个 NAT Gateway (高可用); Dev: 1 个 (默认, 节省成本)
+  ...(isProd(env) && { natGateways: 3 }),
 });
 
 const securityStack = new SecurityStack(app, `${prefix}-security-${env}`, {
@@ -69,11 +71,12 @@ const computeStack = new ComputeStack(app, `${prefix}-compute-${env}`, {
   encryptionKeyArn: securityStack.encryptionKey.keyArn,
   jwtSecretArn: securityStack.jwtSecret.secretArn,
   envName: env,
-  // Dev/Prod 均需 1024 MiB: claude-agent-sdk bundled CLI 运行时需要 >512 MiB (OOM SIGKILL 修复)
-  memoryLimitMiB: 1024,
-  // Prod: 512 CPU / 2 任务; Dev: 256 CPU (默认) / 1 任务 (默认)
+  // Claude Agent SDK bundled CLI 需要充足 CPU/内存运行 Agent Loop
+  // Dev: 1024 CPU + 2048 MiB (CLI 子进程 + Python 主进程 + DB 连接)
+  // Prod: 1024 CPU + 2048 MiB + 2 任务
+  cpu: 1024,
+  memoryLimitMiB: 2048,
   ...(isProd(env) && {
-    cpu: 512,
     desiredCount: 2,
   }),
   // Dev: 非工作时段 (UTC 12:00 = 北京 20:00) 缩减到 0，工作时段 (UTC 00:00 = 北京 08:00) 恢复到 1
