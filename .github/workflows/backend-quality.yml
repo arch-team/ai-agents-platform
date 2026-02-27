@@ -40,22 +40,22 @@ jobs:
       DATABASE_URL: "mysql+asyncmy://test_user:test_password@localhost:3306/ai_agents_test"
       APP_ENV: "test"
       UV_VERSION: "0.7.12"
-      PYTHON_VERSION: "3.11"
+      PYTHON_VERSION: "3.12"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: ${{ env.PYTHON_VERSION }}
       - name: 安装 uv
-        run: pip install uv==0.7.12
+        run: pip install uv==${{ env.UV_VERSION }}
       - uses: actions/cache@v4
         with:
           path: |
             backend/.venv
             ~/.cache/uv
-          key: uv-${{ runner.os }}-py3.11-${{ hashFiles('backend/uv.lock') }}
+          key: uv-${{ runner.os }}-py${{ env.PYTHON_VERSION }}-${{ hashFiles('backend/uv.lock') }}
           restore-keys: |
-            uv-${{ runner.os }}-py3.11-
+            uv-${{ runner.os }}-py${{ env.PYTHON_VERSION }}-
       - run: uv sync
       - name: Ruff 代码检查
         run: uv run ruff check src/

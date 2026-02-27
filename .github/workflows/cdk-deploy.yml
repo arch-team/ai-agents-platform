@@ -14,6 +14,9 @@ on:
         options: [dev, prod]
         default: dev
 
+# 最小权限原则: 默认无权限, 各 job 按需声明
+permissions: {}
+
 # 同一分支/PR 上的新推送取消旧的运行
 concurrency:
   group: cdk-deploy-${{ github.ref }}
