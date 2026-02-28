@@ -95,7 +95,8 @@ const computeStack = new ComputeStack(app, `${prefix}-compute-${env}`, {
   agentRuntimeMode,
   // AgentCore Runtime ARN (agentcore_runtime 模式: Agent 执行托管在 AgentCore 独立容器中)
   agentcoreRuntimeArn: agentCoreStack.runtimeArn,
-  // AgentCore Gateway Cognito 认证参数 (M16: Agent 工具绑定)
+  // AgentCore Gateway 参数 (M16: Agent 工具绑定)
+  agentcoreGatewayUrl: agentCoreStack.gatewayUrl,
   gatewayTokenEndpoint: agentCoreStack.gatewayTokenEndpoint,
   gatewayCognitoClientId: agentCoreStack.gatewayCognitoClientId,
   // Gateway Client Secret (手动创建在 Secrets Manager，CDK 不管理 Secret 值)

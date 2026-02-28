@@ -29,7 +29,7 @@ def _make_request(**overrides: object) -> AgentRequest:
 
 
 def _make_runtime_response(content: str = "你好!", input_tokens: int = 10, output_tokens: int = 20) -> dict:
-    """构建 invoke_agent_runtime 的模拟响应。"""
+    """构建 invoke_agent_runtime 的模拟响应 (旧格式 body: JSON string)。"""
     return {
         "body": json.dumps(
             {
@@ -39,6 +39,17 @@ def _make_runtime_response(content: str = "你好!", input_tokens: int = 10, out
             },
         ),
     }
+
+
+def _make_streaming_response(content: str = "你好!", input_tokens: int = 10, output_tokens: int = 20) -> dict:
+    """构建 invoke_agent_runtime 的模拟响应 (新 SDK 格式 response: StreamingBody)。"""
+    import io
+
+    body_bytes = json.dumps(
+        {"content": content, "input_tokens": input_tokens, "output_tokens": output_tokens},
+    ).encode("utf-8")
+    streaming_body = io.BytesIO(body_bytes)
+    return {"response": streaming_body, "statusCode": 200, "runtimeSessionId": "test-session"}
 
 
 # -- 结构测试 --
@@ -78,6 +89,22 @@ class TestAgentCoreRuntimeAdapterExecute:
         assert result.input_tokens == 15
         assert result.output_tokens == 25
         mock_client.invoke_agent_runtime.assert_called_once()
+
+    async def test_execute_streaming_body_response(self) -> None:
+        """新 SDK 格式: 从 response StreamingBody 解析内容。"""
+        mock_client = MagicMock()
+        mock_client.invoke_agent_runtime.return_value = _make_streaming_response(
+            content="来自 StreamingBody",
+            input_tokens=5,
+            output_tokens=12,
+        )
+
+        adapter = AgentCoreRuntimeAdapter(client=mock_client, runtime_arn=_TEST_RUNTIME_ARN)
+        result = await adapter.execute(_make_request())
+
+        assert result.content == "来自 StreamingBody"
+        assert result.input_tokens == 5
+        assert result.output_tokens == 12
 
     async def test_execute_empty_response(self) -> None:
         """空响应: content 为空字符串。"""

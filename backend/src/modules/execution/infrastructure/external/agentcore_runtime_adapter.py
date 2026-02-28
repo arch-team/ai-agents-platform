@@ -158,15 +158,20 @@ class AgentCoreRuntimeAdapter(IAgentRuntime):
 
     @staticmethod
     def _parse_response(response: dict[str, Any]) -> AgentResponseChunk:
-        """解析 AgentCore Runtime 返回的响应。"""
-        # invoke_agent_runtime 返回格式: {"body": ..., "statusCode": ...}
-        body = response.get("body", response)
+        """解析 AgentCore Runtime 返回的响应。
 
-        # body 可能是 JSON 字符串或 dict
-        if isinstance(body, str):
-            body = json.loads(body)
-        elif hasattr(body, "read"):
+        bedrock-agentcore SDK invoke_agent_runtime 返回格式:
+        {"response": StreamingBody, "statusCode": 200, "runtimeSessionId": "...", ...}
+        StreamingBody 内容: {"content": "...", "input_tokens": N, "output_tokens": N}
+        """
+        # SDK 返回 "response" (StreamingBody) 或旧版 "body"
+        body = response.get("response") or response.get("body") or response
+
+        # StreamingBody → bytes → JSON
+        if hasattr(body, "read"):
             body = json.loads(body.read())
+        elif isinstance(body, (bytes, bytearray)) or isinstance(body, str):
+            body = json.loads(body)
 
         content = str(body.get("content", ""))
         input_tokens = int(body.get("input_tokens", 0))

@@ -1233,6 +1233,10 @@ exports[`Snapshot Tests ComputeStack 快照匹配 1`] = `
                 "Name": "GATEWAY_SCOPES",
                 "Value": "",
               },
+              {
+                "Name": "AGENTCORE_GATEWAY_URL",
+                "Value": "",
+              },
             ],
             "Essential": true,
             "HealthCheck": {

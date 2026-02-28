@@ -59,6 +59,8 @@ export interface ComputeStackProps extends BaseStackProps {
   readonly gatewayCognitoClientId?: string;
   /** AgentCore Gateway Cognito Client Secret ARN (Secrets Manager) @default undefined */
   readonly gatewayClientSecretArn?: string;
+  /** AgentCore Gateway MCP 端点 URL @default '' */
+  readonly agentcoreGatewayUrl?: string;
 }
 
 /**
@@ -137,6 +139,8 @@ export class ComputeStack extends cdk.Stack {
         AGENTCORE_GATEWAY_TOKEN_ENDPOINT: props.gatewayTokenEndpoint ?? '',
         GATEWAY_CLIENT_ID: props.gatewayCognitoClientId ?? '',
         GATEWAY_SCOPES: '', // AgentCore Gateway 默认 scopes
+        // AgentCore Gateway MCP 端点 URL (Agent 执行时连接 MCP 工具)
+        AGENTCORE_GATEWAY_URL: props.agentcoreGatewayUrl ?? '',
       },
       secrets: {
         // Aurora Secret JSON fields: host, port, username, password, dbname, engine
