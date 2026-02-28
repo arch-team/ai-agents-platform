@@ -885,6 +885,10 @@ exports[`Snapshot Tests ComputeStack 快照匹配 1`] = `
             "Key": "deletion_protection.enabled",
             "Value": "false",
           },
+          {
+            "Key": "idle_timeout.timeout_seconds",
+            "Value": "120",
+          },
         ],
         "Name": "ai-agents-dev",
         "Scheme": "internet-facing",

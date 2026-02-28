@@ -20,11 +20,18 @@ describe('AlbConstruct', () => {
       template = Template.fromStack(stack);
     });
 
-    it('应创建 Application Load Balancer (internet-facing)', () => {
+    it('应创建 Application Load Balancer (internet-facing, 120s idle timeout)', () => {
       template.hasResourceProperties('AWS::ElasticLoadBalancingV2::LoadBalancer', {
         Scheme: 'internet-facing',
         Type: 'application',
         Name: 'ai-agents-dev',
+      });
+      template.hasResource('AWS::ElasticLoadBalancingV2::LoadBalancer', {
+        Properties: {
+          LoadBalancerAttributes: Match.arrayWith([
+            Match.objectLike({ Key: 'idle_timeout.timeout_seconds', Value: '120' }),
+          ]),
+        },
       });
     });
 

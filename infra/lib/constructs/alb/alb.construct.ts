@@ -75,6 +75,8 @@ export class AlbConstruct extends Construct {
       internetFacing: true,
       loadBalancerName: `ai-agents-${envName}`,
       securityGroup: this.albSecurityGroup,
+      // Agent 执行经 AgentCore Runtime，冷启动可达 60s+，同步端点需足够 idle timeout
+      idleTimeout: cdk.Duration.seconds(120),
     });
 
     this.targetGroup = new elbv2.ApplicationTargetGroup(this, 'TargetGroup', {
