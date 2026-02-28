@@ -2,7 +2,7 @@
 
 from datetime import datetime
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class AgentConfigResponse(BaseModel):
@@ -14,6 +14,7 @@ class AgentConfigResponse(BaseModel):
     top_p: float
     runtime_type: str
     enable_teams: bool
+    tool_ids: list[int] = Field(default_factory=list)
 
 
 class AgentResponse(BaseModel):

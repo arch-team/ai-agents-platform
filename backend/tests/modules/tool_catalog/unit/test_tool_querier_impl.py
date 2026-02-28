@@ -9,6 +9,7 @@ from src.modules.tool_catalog.domain.value_objects.tool_config import ToolConfig
 from src.modules.tool_catalog.domain.value_objects.tool_status import ToolStatus
 from src.modules.tool_catalog.domain.value_objects.tool_type import ToolType
 from src.modules.tool_catalog.infrastructure.services.tool_querier_impl import ToolQuerierImpl
+from src.shared.domain.interfaces.agent_querier import ActiveAgentInfo
 
 
 def _make_tool(
@@ -44,7 +45,9 @@ class TestToolQuerierImpl:
         return ToolQuerierImpl(tool_repository=mock_repo)
 
     async def test_list_approved_tools_returns_approved_only(
-        self, querier: ToolQuerierImpl, mock_repo: AsyncMock,
+        self,
+        querier: ToolQuerierImpl,
+        mock_repo: AsyncMock,
     ) -> None:
         tools = [_make_tool(tool_id=1, name="tool-a"), _make_tool(tool_id=2, name="tool-b")]
         mock_repo.list_filtered.return_value = tools
@@ -53,11 +56,15 @@ class TestToolQuerierImpl:
 
         assert len(result) == 2
         mock_repo.list_filtered.assert_called_once_with(
-            status=ToolStatus.APPROVED, offset=0, limit=1000,
+            status=ToolStatus.APPROVED,
+            offset=0,
+            limit=1000,
         )
 
     async def test_list_approved_tools_empty(
-        self, querier: ToolQuerierImpl, mock_repo: AsyncMock,
+        self,
+        querier: ToolQuerierImpl,
+        mock_repo: AsyncMock,
     ) -> None:
         mock_repo.list_filtered.return_value = []
 
@@ -66,7 +73,9 @@ class TestToolQuerierImpl:
         assert result == []
 
     async def test_to_approved_tool_info_maps_fields(
-        self, querier: ToolQuerierImpl, mock_repo: AsyncMock,
+        self,
+        querier: ToolQuerierImpl,
+        mock_repo: AsyncMock,
     ) -> None:
         tool = _make_tool(
             tool_id=42,
@@ -85,7 +94,9 @@ class TestToolQuerierImpl:
         assert info.server_url == "http://github-mcp.example.com"
 
     async def test_api_tool_maps_endpoint_url(
-        self, querier: ToolQuerierImpl, mock_repo: AsyncMock,
+        self,
+        querier: ToolQuerierImpl,
+        mock_repo: AsyncMock,
     ) -> None:
         tool = Tool(
             name="api-tool",
@@ -106,7 +117,9 @@ class TestToolQuerierImpl:
         assert info.method == "POST"
 
     async def test_function_tool_maps_runtime_handler(
-        self, querier: ToolQuerierImpl, mock_repo: AsyncMock,
+        self,
+        querier: ToolQuerierImpl,
+        mock_repo: AsyncMock,
     ) -> None:
         tool = Tool(
             name="fn-tool",
@@ -125,3 +138,106 @@ class TestToolQuerierImpl:
         assert info.tool_type == "function"
         assert info.runtime == "python3.12"
         assert info.handler == "index.handler"
+
+
+def _make_active_agent_info(*, agent_id: int = 1, tool_ids: tuple[int, ...] = ()) -> ActiveAgentInfo:
+    """创建测试用 ActiveAgentInfo。"""
+    return ActiveAgentInfo(
+        id=agent_id,
+        name="test-agent",
+        system_prompt="",
+        model_id="test",
+        temperature=0.7,
+        max_tokens=1024,
+        top_p=1.0,
+        tool_ids=tool_ids,
+    )
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio(loop_scope="class")
+class TestListToolsForAgent:
+    """list_tools_for_agent 测试。"""
+
+    @pytest.fixture
+    def mock_repo(self) -> AsyncMock:
+        return AsyncMock()
+
+    @pytest.fixture
+    def mock_agent_querier(self) -> AsyncMock:
+        return AsyncMock()
+
+    @pytest.fixture
+    def querier(self, mock_repo: AsyncMock, mock_agent_querier: AsyncMock) -> ToolQuerierImpl:
+        return ToolQuerierImpl(tool_repository=mock_repo, agent_querier=mock_agent_querier)
+
+    async def test_returns_bound_approved_tools(
+        self,
+        querier: ToolQuerierImpl,
+        mock_repo: AsyncMock,
+        mock_agent_querier: AsyncMock,
+    ) -> None:
+        """Agent 绑定 3 个工具，其中 2 个 APPROVED → 返回 2 个。"""
+        mock_agent_querier.get_active_agent.return_value = _make_active_agent_info(tool_ids=(1, 2, 3))
+        mock_repo.list_by_ids_and_status.return_value = [
+            _make_tool(tool_id=1, name="tool-a"),
+            _make_tool(tool_id=2, name="tool-b"),
+        ]
+
+        result = await querier.list_tools_for_agent(agent_id=1)
+
+        assert len(result) == 2
+        mock_repo.list_by_ids_and_status.assert_called_once_with(
+            tool_ids=[1, 2, 3],
+            status=ToolStatus.APPROVED,
+        )
+
+    async def test_empty_tool_ids_returns_empty(
+        self,
+        querier: ToolQuerierImpl,
+        mock_repo: AsyncMock,
+        mock_agent_querier: AsyncMock,
+    ) -> None:
+        """Agent 未绑定工具 → 返回空列表，不查询 ToolRepository。"""
+        mock_agent_querier.get_active_agent.return_value = _make_active_agent_info(tool_ids=())
+
+        result = await querier.list_tools_for_agent(agent_id=1)
+
+        assert result == []
+        mock_repo.list_by_ids_and_status.assert_not_called()
+
+    async def test_agent_not_found_returns_empty(
+        self,
+        querier: ToolQuerierImpl,
+        mock_repo: AsyncMock,
+        mock_agent_querier: AsyncMock,
+    ) -> None:
+        """Agent 不存在或非 ACTIVE → 返回空列表。"""
+        mock_agent_querier.get_active_agent.return_value = None
+
+        result = await querier.list_tools_for_agent(agent_id=999)
+
+        assert result == []
+        mock_repo.list_by_ids_and_status.assert_not_called()
+
+    async def test_no_agent_querier_returns_empty(self, mock_repo: AsyncMock) -> None:
+        """未注入 agent_querier → 返回空列表（向后兼容）。"""
+        querier = ToolQuerierImpl(tool_repository=mock_repo, agent_querier=None)
+
+        result = await querier.list_tools_for_agent(agent_id=1)
+
+        assert result == []
+
+    async def test_all_tools_deprecated_returns_empty(
+        self,
+        querier: ToolQuerierImpl,
+        mock_repo: AsyncMock,
+        mock_agent_querier: AsyncMock,
+    ) -> None:
+        """Agent 绑定的工具全部被 DEPRECATED → list_by_ids_and_status 返回空。"""
+        mock_agent_querier.get_active_agent.return_value = _make_active_agent_info(tool_ids=(10, 11))
+        mock_repo.list_by_ids_and_status.return_value = []
+
+        result = await querier.list_tools_for_agent(agent_id=1)
+
+        assert result == []

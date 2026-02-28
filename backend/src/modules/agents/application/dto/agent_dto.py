@@ -1,6 +1,6 @@
 """Agent 相关 DTO。"""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 
 from src.shared.domain.constants import (
@@ -24,6 +24,7 @@ class CreateAgentDTO:
     max_tokens: int = AGENT_DEFAULT_MAX_TOKENS
     runtime_type: str = AGENT_DEFAULT_RUNTIME_TYPE
     enable_teams: bool = AGENT_DEFAULT_ENABLE_TEAMS
+    tool_ids: list[int] = field(default_factory=list)
 
 
 @dataclass
@@ -38,6 +39,7 @@ class UpdateAgentDTO:
     max_tokens: int | None = None
     runtime_type: str | None = None
     enable_teams: bool | None = None
+    tool_ids: list[int] | None = None
 
 
 @dataclass
@@ -58,3 +60,4 @@ class AgentDTO:
     enable_teams: bool
     created_at: datetime
     updated_at: datetime
+    tool_ids: list[int] = field(default_factory=list)

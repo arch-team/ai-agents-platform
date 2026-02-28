@@ -42,6 +42,7 @@ def _to_response(dto: AgentDTO) -> AgentResponse:
             top_p=dto.top_p,
             runtime_type=dto.runtime_type,
             enable_teams=dto.enable_teams,
+            tool_ids=dto.tool_ids,
         ),
         created_at=dto.created_at,
         updated_at=dto.updated_at,

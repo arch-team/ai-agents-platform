@@ -128,6 +128,7 @@ def _make_service(
     knowledge_querier: AsyncMock | None = None,
     agent_runtime: AsyncMock | None = None,
     tool_querier: AsyncMock | None = None,
+    gateway_auth: AsyncMock | None = None,
 ) -> ExecutionService:
     return ExecutionService(
         conversation_repo=conv_repo or AsyncMock(spec=IConversationRepository),
@@ -138,6 +139,7 @@ def _make_service(
         knowledge_querier=knowledge_querier,
         agent_runtime=agent_runtime,
         tool_querier=tool_querier,
+        gateway_auth=gateway_auth,
     )
 
 
@@ -1115,3 +1117,132 @@ class TestAgentRuntimeRouting:
         call_args = agent_runtime.execute.call_args
         request = call_args.args[0]
         assert request.tools == []
+
+
+@pytest.mark.unit
+class TestGatewayAuth:
+    """Gateway 认证集成测试。"""
+
+    @pytest.mark.asyncio
+    async def test_mcp_tools_trigger_gateway_auth(self) -> None:
+        """有 mcp_server 工具时, 调用 gateway_auth 获取 Token 并传递到 AgentRequest。"""
+        conv_repo, msg_repo, agent_querier, llm_client = _setup_basic_mocks(runtime_type="agent")
+
+        agent_runtime = AsyncMock(spec=IAgentRuntime)
+        agent_runtime.execute.return_value = AgentResponseChunk(
+            content="带工具回复",
+            done=True,
+            input_tokens=10,
+            output_tokens=20,
+        )
+
+        tool_querier = AsyncMock(spec=IToolQuerier)
+        tool_querier.list_tools_for_agent.return_value = [
+            _make_approved_tool(tool_type="mcp_server", name="gateway_tool"),
+        ]
+
+        from src.modules.execution.application.interfaces.gateway_auth import IGatewayAuthService
+
+        gateway_auth = AsyncMock(spec=IGatewayAuthService)
+        gateway_auth.get_bearer_token.return_value = "cognito-access-token"
+
+        service = _make_service(
+            conv_repo=conv_repo,
+            msg_repo=msg_repo,
+            llm_client=llm_client,
+            agent_querier=agent_querier,
+            agent_runtime=agent_runtime,
+            tool_querier=tool_querier,
+            gateway_auth=gateway_auth,
+        )
+
+        with patch(
+            "src.modules.execution.application.services.execution_service.event_bus",
+        ) as mock_bus:
+            mock_bus.publish_async = AsyncMock()
+            await service.send_message(1, SendMessageDTO(content="你好"), user_id=100)
+
+        gateway_auth.get_bearer_token.assert_called_once()
+        request = agent_runtime.execute.call_args.args[0]
+        assert request.gateway_auth_token == "cognito-access-token"
+
+    @pytest.mark.asyncio
+    async def test_no_mcp_tools_skips_gateway_auth(self) -> None:
+        """无 mcp_server 工具时, 不调用 gateway_auth。"""
+        conv_repo, msg_repo, agent_querier, llm_client = _setup_basic_mocks(runtime_type="agent")
+
+        agent_runtime = AsyncMock(spec=IAgentRuntime)
+        agent_runtime.execute.return_value = AgentResponseChunk(
+            content="无 MCP 回复",
+            done=True,
+            input_tokens=5,
+            output_tokens=10,
+        )
+
+        tool_querier = AsyncMock(spec=IToolQuerier)
+        tool_querier.list_tools_for_agent.return_value = [
+            _make_approved_tool(tool_type="api", name="api_tool"),
+        ]
+
+        from src.modules.execution.application.interfaces.gateway_auth import IGatewayAuthService
+
+        gateway_auth = AsyncMock(spec=IGatewayAuthService)
+        gateway_auth.get_bearer_token.return_value = "should-not-be-used"
+
+        service = _make_service(
+            conv_repo=conv_repo,
+            msg_repo=msg_repo,
+            llm_client=llm_client,
+            agent_querier=agent_querier,
+            agent_runtime=agent_runtime,
+            tool_querier=tool_querier,
+            gateway_auth=gateway_auth,
+        )
+
+        with patch(
+            "src.modules.execution.application.services.execution_service.event_bus",
+        ) as mock_bus:
+            mock_bus.publish_async = AsyncMock()
+            await service.send_message(1, SendMessageDTO(content="你好"), user_id=100)
+
+        # gateway_auth 不应被调用（无 mcp_server 工具）
+        gateway_auth.get_bearer_token.assert_not_called()
+        request = agent_runtime.execute.call_args.args[0]
+        assert request.gateway_auth_token == ""
+
+    @pytest.mark.asyncio
+    async def test_gateway_auth_none_degrades_gracefully(self) -> None:
+        """gateway_auth 为 None 时, AgentRequest.gateway_auth_token 为空。"""
+        conv_repo, msg_repo, agent_querier, llm_client = _setup_basic_mocks(runtime_type="agent")
+
+        agent_runtime = AsyncMock(spec=IAgentRuntime)
+        agent_runtime.execute.return_value = AgentResponseChunk(
+            content="降级回复",
+            done=True,
+            input_tokens=5,
+            output_tokens=10,
+        )
+
+        tool_querier = AsyncMock(spec=IToolQuerier)
+        tool_querier.list_tools_for_agent.return_value = [
+            _make_approved_tool(tool_type="mcp_server", name="gateway_tool"),
+        ]
+
+        service = _make_service(
+            conv_repo=conv_repo,
+            msg_repo=msg_repo,
+            llm_client=llm_client,
+            agent_querier=agent_querier,
+            agent_runtime=agent_runtime,
+            tool_querier=tool_querier,
+            gateway_auth=None,
+        )
+
+        with patch(
+            "src.modules.execution.application.services.execution_service.event_bus",
+        ) as mock_bus:
+            mock_bus.publish_async = AsyncMock()
+            await service.send_message(1, SendMessageDTO(content="你好"), user_id=100)
+
+        request = agent_runtime.execute.call_args.args[0]
+        assert request.gateway_auth_token == ""

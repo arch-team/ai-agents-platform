@@ -483,7 +483,7 @@ Phase 3 核心依赖项 **全部就绪**：
 
 | 顺序 | 模块 | 职责 | 依赖 |
 |:----:|------|------|------|
-| M16 | `memory` (新建) | AgentCore Memory CRUD + 短期/长期记忆分区 + Memory×Knowledge 联动 RAG | AgentCore Memory API + 现有 IMemoryService 接口 |
+| M16 | `agents` + `tool_catalog` | Agent-Tool 绑定 (tool_ids) + Memory CRUD | IToolQuerier, IAgentQuerier |
 | M17 | `execution` 协作扩展 | 智能编排引擎 + 协作模式 (Hierarchical/Pipeline) + 动态角色分配 | M16 (跨团队知识共享需 Memory) + Agent Teams |
 | M18 | `tool_catalog` 智能扩展 | 工具推荐引擎 + Agent 自主工具选择 + 工具调用分析面板 | insights 模块 (调用数据) + tool_catalog |
 
@@ -499,7 +499,7 @@ Phase 3 核心依赖项 **全部就绪**：
 
 | 里程碑 | 时间窗口 | 核心交付 | 状态 | 验收指标 |
 |--------|:-------:|---------|:----:|---------|
-| **M16: Agent 记忆系统** | 第 1-4 月 | Memory CRUD API + CDK 部署 + 短期/长期分区 + Memory×KB 联动 | 待开始 | 跨会话记忆召回成功率 ≥80% |
+| **M16: Agent 工具绑定 + Memory** | 第 1-4 月 | Agent-Tool 绑定 + Memory CRUD + Memory MCP | 进行中 | Agent 工具执行成功率 >=90% |
 | **M17: 智能协作引擎** | 第 5-8 月 | 协作模式扩展 + 任务自动分解 + 动态角色分配 | 待开始 | 复杂任务自动分解准确率 ≥70% |
 | **M18: 工具智能化** | 第 9-12 月 | 工具推荐引擎 + 自主工具选择 + 调用分析面板 | 待开始 | 工具推荐采纳率 ≥60% |
 | **Phase 6 验收** | 第 12 月末 | 季度评审 + 全量质量门控 | 待开始 | 综合验收标准全部达标 |

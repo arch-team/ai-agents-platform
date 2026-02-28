@@ -4,6 +4,9 @@ from src.modules.execution.application.interfaces.agent_runtime import (
     AgentTool,
     IAgentRuntime,
 )
+from src.modules.execution.application.interfaces.gateway_auth import (
+    IGatewayAuthService,
+)
 from src.modules.execution.application.interfaces.llm_client import (
     ILLMClient,
     LLMMessage,
@@ -21,6 +24,7 @@ __all__ = [
     "AgentResponseChunk",
     "AgentTool",
     "IAgentRuntime",
+    "IGatewayAuthService",
     "ILLMClient",
     "IMemoryService",
     "LLMMessage",

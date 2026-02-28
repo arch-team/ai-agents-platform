@@ -56,6 +56,7 @@ class AgentService:
                 max_tokens=dto.max_tokens,
                 runtime_type=dto.runtime_type,
                 enable_teams=dto.enable_teams,
+                tool_ids=tuple(dto.tool_ids),
             ),
         )
         created = await self._repository.create(agent)
@@ -151,12 +152,16 @@ class AgentService:
                 changed_fields.append(field)
 
         # 重建 AgentConfig (frozen 值对象, 任一字段变化需整体替换)
-        config_overrides: dict[str, str | float | int] = {}
+        config_overrides: dict[str, object] = {}
         for field in ("model_id", "temperature", "max_tokens", "runtime_type", "enable_teams"):
             value = getattr(dto, field)
             if value is not None:
                 config_overrides[field] = value
                 changed_fields.append(field)
+
+        if dto.tool_ids is not None:
+            config_overrides["tool_ids"] = tuple(dto.tool_ids)
+            changed_fields.append("tool_ids")
 
         if config_overrides:
             agent.config = replace(agent.config, **config_overrides)  # type: ignore[arg-type]
@@ -277,4 +282,5 @@ class AgentService:
             enable_teams=agent.config.enable_teams,
             created_at=created_at,
             updated_at=updated_at,
+            tool_ids=list(agent.config.tool_ids),
         )

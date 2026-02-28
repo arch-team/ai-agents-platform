@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.modules.execution.application.dto.execution_dto import ContextWindowConfig
 from src.modules.execution.application.interfaces.agent_runtime import IAgentRuntime
+from src.modules.execution.application.interfaces.gateway_auth import IGatewayAuthService
 from src.modules.execution.application.services.execution_service import ExecutionService
 from src.modules.execution.application.services.team_execution_service import TeamExecutionService
 from src.modules.execution.domain.repositories.conversation_repository import IConversationRepository
@@ -31,6 +32,25 @@ from src.shared.domain.interfaces.knowledge_querier import IKnowledgeQuerier
 from src.shared.domain.interfaces.tool_querier import IToolQuerier
 from src.shared.infrastructure.database import get_db, get_session_factory
 from src.shared.infrastructure.settings import get_settings
+
+
+@lru_cache
+def get_gateway_auth() -> IGatewayAuthService | None:
+    """创建 Gateway 认证服务单例（Cognito Client Credentials Grant）。
+
+    AGENTCORE_GATEWAY_TOKEN_ENDPOINT 未配置时返回 None（降级: 跳过 Gateway MCP 认证）。
+    """
+    settings = get_settings()
+    if not settings.AGENTCORE_GATEWAY_TOKEN_ENDPOINT:
+        return None
+    from src.modules.execution.infrastructure.external.cognito_gateway_auth import CognitoGatewayAuthService
+
+    return CognitoGatewayAuthService(
+        token_endpoint=settings.AGENTCORE_GATEWAY_TOKEN_ENDPOINT,
+        client_id=settings.GATEWAY_CLIENT_ID,
+        client_secret=settings.GATEWAY_CLIENT_SECRET.get_secret_value(),
+        scopes=settings.GATEWAY_SCOPES,
+    )
 
 
 @lru_cache
@@ -90,6 +110,7 @@ async def get_execution_service(
     message_repo = MessageRepositoryImpl(session=session)
     llm_client = get_bedrock_client()
     agent_runtime = get_agent_runtime()
+    gateway_auth = get_gateway_auth()
 
     # 为流后 DB 写操作创建独立 session 的 repos
     stream_session = get_session_factory()()
@@ -130,6 +151,7 @@ async def get_execution_service(
         knowledge_querier=knowledge_querier,
         agent_runtime=agent_runtime,
         tool_querier=tool_querier,
+        gateway_auth=gateway_auth,
         gateway_url=settings.AGENTCORE_GATEWAY_URL,
         context_window=context_window,
         stream_session_commit=stream_session.commit,

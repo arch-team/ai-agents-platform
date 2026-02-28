@@ -62,3 +62,8 @@ class IToolRepository(IRepository[Tool, int]):
         keyword: str | None = None,
         creator_id: int | None = None,
     ) -> int: ...
+
+    @abstractmethod
+    async def list_by_ids_and_status(self, tool_ids: list[int], status: ToolStatus) -> list[Tool]:
+        """按 ID 列表和状态批量查询工具。"""
+        ...

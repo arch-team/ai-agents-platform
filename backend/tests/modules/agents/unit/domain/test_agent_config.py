@@ -32,6 +32,10 @@ class TestAgentConfigDefaults:
         config = AgentConfig()
         assert config.runtime_type == "agent"
 
+    def test_default_tool_ids(self) -> None:
+        config = AgentConfig()
+        assert config.tool_ids == ()
+
 
 @pytest.mark.unit
 class TestAgentConfigCustom:
@@ -57,6 +61,10 @@ class TestAgentConfigCustom:
         config = AgentConfig(runtime_type="agent")
         assert config.runtime_type == "agent"
 
+    def test_custom_tool_ids(self) -> None:
+        config = AgentConfig(tool_ids=(1, 2, 3))
+        assert config.tool_ids == (1, 2, 3)
+
 
 @pytest.mark.unit
 class TestAgentConfigImmutability:
@@ -70,6 +78,11 @@ class TestAgentConfigImmutability:
         with pytest.raises(AttributeError):
             config.model_id = "new-model"  # type: ignore[misc]
 
+    def test_frozen_cannot_set_tool_ids(self) -> None:
+        config = AgentConfig()
+        with pytest.raises(AttributeError):
+            config.tool_ids = (1, 2)  # type: ignore[misc]
+
 
 @pytest.mark.unit
 class TestAgentConfigEquality:
@@ -81,4 +94,9 @@ class TestAgentConfigEquality:
     def test_different_configs(self) -> None:
         config1 = AgentConfig(temperature=0.5)
         config2 = AgentConfig(temperature=0.9)
+        assert config1 != config2
+
+    def test_different_tool_ids(self) -> None:
+        config1 = AgentConfig(tool_ids=(1,))
+        config2 = AgentConfig(tool_ids=(2,))
         assert config1 != config2

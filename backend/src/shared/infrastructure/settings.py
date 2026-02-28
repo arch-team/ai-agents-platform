@@ -75,6 +75,12 @@ class Settings(BaseSettings):
     AGENTCORE_IDENTITY_POOL_ID: str = ""  # AgentCore Identity Pool ID (可选)
     AGENTCORE_RUNTIME_ARN: str = ""  # AgentCore Runtime ARN (agentcore_runtime 模式必需)
 
+    # Gateway Cognito 认证 (Client Credentials Grant)
+    AGENTCORE_GATEWAY_TOKEN_ENDPOINT: str = ""  # Cognito /oauth2/token 端点
+    GATEWAY_CLIENT_ID: str = ""  # Cognito App Client ID
+    GATEWAY_CLIENT_SECRET: SecretStr = SecretStr("")  # Cognito App Client Secret
+    GATEWAY_SCOPES: str = ""  # OAuth2 Scopes (空格分隔)
+
     # Agent 运行时模式: in_process (本地 Claude Agent SDK) / agentcore_runtime (AgentCore Runtime 托管)
     AGENT_RUNTIME_MODE: str = "in_process"
 

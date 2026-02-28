@@ -4,8 +4,8 @@
 
 ## 当前状态
 
-- **阶段**: Phase 5 Agent 驱动的企业智能 (18-30 月) — **Phase 5 验收完成 ✅ (代码质量门控通过，运营指标待 Prod 数据)**
-- **里程碑**: Phase 4 全闭 ✅ → M13（自动化评估）✅ → M14（Builder MCP + SSO）✅ → M15（规模运营）✅ → **Phase 5 验收 ✅**
+- **阶段**: Phase 6 平台智能化 (30-42 月) — **M16 进行中**
+- **里程碑**: Phase 5 验收 ✅ → **M16 (Agent 工具绑定 + Memory) 进行中**
 - **变更积压**: Phase 2-3: 24/24 ✅ | Phase 4: 19/19 ✅ | AgentCore P3: 5/5 ✅ | Phase 5: 5/5 ✅
 - **关键发现**: 无当前阻断项
 - **Dev 环境**: 后端 ECS (256 CPU/512 MiB) + 前端 S3 + CORS + Bedrock IAM ✅ | ALB `ai-agents-dev-546356512.us-east-1.elb.amazonaws.com`
@@ -17,7 +17,7 @@
 - **SDK**: claude-agent-sdk 0.1.35 | bedrock-agentcore 1.3.0
 - **环境策略**: Dev (开发+验证) + Prod (生产)，无 Staging (v1.4 简化)
 - **Phase 5 验收结果**: ruff ✅ | mypy 462 文件 ✅ | pytest 2071 passed / 88.29% 覆盖率 ✅ | 4 模块架构合规 ✅
-- **下一步**: Roadmap v1.7 更新 — 规划 Phase 6 方向或运营指标冲刺
+- **下一步**: M16 #1 Agent-Tool 绑定数据模型
 
 ## 模块状态
 
@@ -63,6 +63,13 @@
 | `builder` | 已完成 | ai-agents-factory-v1 | M14: 对话式 Agent Builder (MCP 驱动), ClaudeBuilderAdapter, SSE 流式, 3 端点 |
 | `auth` SSO 扩展 | 已完成 | ai-agents-factory-v1 | M14: SAML 2.0 SP (python3-saml3) + LDAP (ldap3), SsoService, 3 SSO 端点 |
 | `billing` | 已完成 | ai-agents-factory-v1 | M15: Department CRUD + Budget 管理 + ROI 报告 (CostExplorer), DDD 四层, 10 端点 |
+
+### Phase 6 (平台智能化)
+
+| 模块 | 状态 | 分支 | 备注 |
+|------|:----:|------|------|
+| `agents` (工具绑定扩展) | 进行中 | ai-agents-factory-v1 | tool_ids + Gateway 认证 |
+| `memory` | 待开始 | - | AgentCore Memory 集成 |
 
 ## 基础设施
 
@@ -745,6 +752,25 @@ auth SSO (#10-#12)    ── 100% 并行 ──── ┤──► 前端 (#13-#
 | BillingStack 告警 | AWS Budgets (月度) | 原生成本管理，无需自建监控 |
 | templates 慢查询优化 | COUNT(*) OVER() 窗口函数 | 单次查询替代 count + select 两次查询 |
 
+### M16: Agent 工具绑定 + Memory (Phase 6) — 进行中
+
+> 交付物: Agent 可配置工具 + Gateway 认证闭环 + Memory CRUD
+> 验收标准: ruff + mypy + pytest 全通过, E2E 工具对话成功率 >=90%
+
+| # | 任务 | 状态 | 依赖 | 参考规范 | 会话 |
+|---|------|:----:|------|---------|------|
+| 1 | AgentConfig 新增 tool_ids + Alembic 迁移 | 进行中 | - | architecture.md, adr-014 | 2026-02-28 |
+| 2 | Agent API/DTO 支持 tool_ids CRUD | 进行中 | #1 | api-design.md | 2026-02-28 |
+| 3 | ActiveAgentInfo 新增 tool_ids + AgentQuerierImpl 映射 | 进行中 | #1 | architecture.md | 2026-02-28 |
+| 4 | ToolQuerierImpl.list_tools_for_agent 基于 Agent.tool_ids 查询 | 待开始 | #3 | sdk-first.md | |
+| 5 | IToolRepository.list_by_ids_and_status 批量查询 | 待开始 | #4 | testing.md | |
+| 6 | IGatewayAuthService + CognitoGatewayAuthService | 进行中 | #4 | security.md, sdk-first.md | 2026-02-28 |
+| 7 | ExecutionService 集成 gateway_auth | 进行中 | #6 | adr-014 | 2026-02-28 |
+| 8 | Settings 新增 Gateway Cognito 配置 + DI 组装 | 进行中 | #6 | security.md | 2026-02-28 |
+| 9 | CDK: Cognito Secret 管理 + CfnOutput + ECS 注入 | 进行中 | #8 | deployment.md | 2026-02-28 |
+| 10 | 前端: AgentFormFields 工具选择 UI + 角色分流 | 待开始 | #2 | - | |
+| 11 | E2E 验证: Agent 绑定工具 → 对话 → Gateway MCP 连接成功 | 待开始 | #9, #10 | testing.md | |
+
 ---
 
 ## 变更积压 (Change Backlog)
@@ -1012,9 +1038,9 @@ auth SSO (#10-#12)    ── 100% 并行 ──── ┤──► 前端 (#13-#
 
 | # | 日期 | 类型 | 完成项 | 关键决策 |
 |---|------|------|-------|---------|
+| 62 | 2026-02-28 | Milestone | M16 Agent 工具绑定 + Gateway 认证开发 (Step 1-4 并行) | Agent Teams 并行开发, JSON 列存储 tool_ids |
 | 61 | 2026-02-27 | Phase 5 验收 | **Phase 5 验收执行**: ruff✅ mypy(462文件)✅ pytest(2071passed/88.29%覆盖率)✅ 4模块架构合规✅; **未提交变更处理**: ClaudeAgentAdapter CLIConnectionError重试增强已提交; **运营指标**: 需Prod认证数据(自助创建率/WAA/SLA/Eval覆盖) | 运营指标无法本地验证, 需Prod数据收集后单独评审; Phase 5代码质量门控全部达标 |
 | 60 | 2026-02-26 | M15 全闭 + Prod 部署 | **M15 6/6 CR merged** + devpace状态补齐; **Prod部署**: compute(新镜像)+agentcore(IAM收窄)+billing(新Stack) 3个Stack部署完成; ECS 2/2 COMPLETED; health✅ ready✅ billing路由✅; 质量门: 2739测试全通过(ruff+mypy+pytest+jest+vitest) | Prod部署需Docker daemon; CDK并发锁(cdk.out)不支持parallel deploy; Phase 5验收指标需Prod认证数据 |
 | 59 | 2026-02-25 | M15 Phase 5积压清零 + billing模块 | **Phase 5 积压 5/5 全清零**: CR-001~005 (ldap3依赖+MyPy治理+LDAP测试端点+SSE监控+LDAP SG); **M15 启动**: 6PF迭代规划完成; **M15 实施**: CR-006 department_id迁移(Teams×3, 19文件) + CR-007 BillingStack CDK(Teams) + CR-008 billing DDD模块(Teams, 28+文件); M15 进度 3/6; 后端2040测试+infra 217测试 | devpace工作流首次全程运行(pace-next→pace-dev→pace-test→pace-review→approve); Agent Teams最佳场景=跨模块机械性重复变更; 冗余department_id(反范式)支撑billing按部门过滤 |
 | 58 | 2026-02-23 | M14 Dev+Prod 部署验证 | **Dev验证**: 12/12✅; **发现并修复**: asyncio.gather共享session并发Bug(7文件12处); **Prod部署+验证**: 全量8/8✅ | asyncio.gather在同一AsyncSession上不可并发=必须顺序await |
-| 57 | 2026-02-22 | M14 后端+前端+CDK 全闭 | **M14 #1-#16 全部完成**: builder模块+auth SAML扩展+前端3页面+CDK SecurityStack; 质量门: ruff✅ mypy✅ 2051后端✅ 196infra✅ 399前端✅ | IAgentCreator接口解决builder→agents架构合规; providers.py是唯一Composition Root |
 

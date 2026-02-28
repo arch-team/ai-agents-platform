@@ -54,6 +54,8 @@ class AgentModel(Base):
         nullable=False,
         default=AGENT_DEFAULT_ENABLE_TEAMS,
     )
+    # JSON 序列化的 list[int], 存储绑定的 Tool ID 列表
+    tool_ids: Mapped[str] = mapped_column(Text, nullable=False, default="[]")
 
     department_id: Mapped[int | None] = mapped_column(Integer, nullable=True, default=None, index=True)
 

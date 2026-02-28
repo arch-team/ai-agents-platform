@@ -70,9 +70,11 @@ async def get_agent_creator(
 async def get_tool_querier(
     session: Annotated[AsyncSession, Depends(get_db)],
 ) -> IToolQuerier:
-    """创建 IToolQuerier 实例。"""
+    """创建 IToolQuerier 实例，注入 AgentQuerier 实现 Agent 级别工具过滤。"""
     tool_repo = ToolRepositoryImpl(session=session)
-    return ToolQuerierImpl(tool_repository=tool_repo)
+    agent_repo = AgentRepositoryImpl(session=session)
+    agent_querier = AgentQuerierImpl(agent_repository=agent_repo)
+    return ToolQuerierImpl(tool_repository=tool_repo, agent_querier=agent_querier)
 
 
 async def get_knowledge_querier(

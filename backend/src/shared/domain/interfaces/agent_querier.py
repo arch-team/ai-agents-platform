@@ -22,6 +22,7 @@ class ActiveAgentInfo:
     stop_sequences: tuple[str, ...] = ()
     runtime_type: str = "agent"
     enable_teams: bool = False
+    tool_ids: tuple[int, ...] = ()
     enable_memory: bool = False
     knowledge_base_id: int | None = None
 

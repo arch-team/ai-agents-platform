@@ -44,6 +44,10 @@ export class AgentCoreStack extends cdk.Stack {
   public readonly runtime: Runtime;
   /** AgentCore Gateway 实例 */
   public readonly gateway: Gateway;
+  /** Gateway Cognito Token Endpoint URL (OAuth2 Client Credentials) */
+  public readonly gatewayTokenEndpoint: string;
+  /** Gateway Cognito User Pool Client ID */
+  public readonly gatewayCognitoClientId: string;
 
   constructor(scope: Construct, id: string, props: AgentCoreStackProps) {
     super(scope, id, props);
@@ -113,6 +117,10 @@ export class AgentCoreStack extends cdk.Stack {
 
     this.gatewayUrl = this.gateway.gatewayUrl ?? '';
 
+    // Gateway Cognito 认证参数 (L2 Construct 自动创建的 Cognito User Pool)
+    this.gatewayTokenEndpoint = this.gateway.tokenEndpointUrl ?? '';
+    this.gatewayCognitoClientId = this.gateway.userPoolClient?.userPoolClientId ?? '';
+
     // 4. CDK Nag 抑制
     this.suppressNagRules();
 
@@ -128,6 +136,14 @@ export class AgentCoreStack extends cdk.Stack {
     new cdk.CfnOutput(this, 'EcrRepositoryUri', {
       value: this.ecrRepository.repositoryUri,
       description: 'Agent container image repository URI',
+    });
+    new cdk.CfnOutput(this, 'GatewayTokenEndpoint', {
+      value: this.gatewayTokenEndpoint,
+      description: 'AgentCore Gateway Cognito Token Endpoint (OAuth2 Client Credentials)',
+    });
+    new cdk.CfnOutput(this, 'GatewayCognitoClientId', {
+      value: this.gatewayCognitoClientId,
+      description: 'AgentCore Gateway Cognito User Pool Client ID',
     });
   }
 

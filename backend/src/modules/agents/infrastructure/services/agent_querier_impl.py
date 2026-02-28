@@ -58,4 +58,5 @@ class AgentQuerierImpl(IAgentQuerier):
             stop_sequences=agent.config.stop_sequences,
             runtime_type=agent.config.runtime_type,
             enable_teams=agent.config.enable_teams,
+            tool_ids=agent.config.tool_ids,
         )

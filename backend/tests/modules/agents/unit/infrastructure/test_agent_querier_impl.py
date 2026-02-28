@@ -107,6 +107,31 @@ class TestAgentQuerierImpl:
         assert result.runtime_type == "agent"
 
     @pytest.mark.asyncio
+    async def test_maps_tool_ids(self) -> None:
+        agent = _make_agent()
+        agent.config = AgentConfig(tool_ids=(10, 20, 30))
+        repo = AsyncMock(spec=IAgentRepository)
+        repo.get_by_id.return_value = agent
+        querier = AgentQuerierImpl(agent_repository=repo)
+
+        result = await querier.get_active_agent(1)
+
+        assert result is not None
+        assert result.tool_ids == (10, 20, 30)
+
+    @pytest.mark.asyncio
+    async def test_maps_empty_tool_ids(self) -> None:
+        agent = _make_agent()
+        repo = AsyncMock(spec=IAgentRepository)
+        repo.get_by_id.return_value = agent
+        querier = AgentQuerierImpl(agent_repository=repo)
+
+        result = await querier.get_active_agent(1)
+
+        assert result is not None
+        assert result.tool_ids == ()
+
+    @pytest.mark.asyncio
     async def test_maps_runtime_type(self) -> None:
         agent = _make_agent()
         agent.config = AgentConfig(runtime_type="basic")

@@ -81,6 +81,18 @@ class TestCreateAgentRequest:
         with pytest.raises(ValidationError, match="runtime_type"):
             CreateAgentRequest(name="test", runtime_type="invalid")
 
+    def test_tool_ids_default_empty(self) -> None:
+        req = CreateAgentRequest(name="test")
+        assert req.tool_ids == []
+
+    def test_tool_ids_with_values(self) -> None:
+        req = CreateAgentRequest(name="test", tool_ids=[1, 2, 3])
+        assert req.tool_ids == [1, 2, 3]
+
+    def test_tool_ids_exceeds_max_length_raises(self) -> None:
+        with pytest.raises(ValidationError, match="tool_ids"):
+            CreateAgentRequest(name="test", tool_ids=list(range(51)))
+
 
 @pytest.mark.unit
 class TestUpdateAgentRequest:
@@ -118,6 +130,18 @@ class TestUpdateAgentRequest:
         with pytest.raises(ValidationError, match="runtime_type"):
             UpdateAgentRequest(runtime_type="invalid")
 
+    def test_update_tool_ids_default_none(self) -> None:
+        req = UpdateAgentRequest()
+        assert req.tool_ids is None
+
+    def test_update_tool_ids_with_values(self) -> None:
+        req = UpdateAgentRequest(tool_ids=[5, 10])
+        assert req.tool_ids == [5, 10]
+
+    def test_update_tool_ids_exceeds_max_length_raises(self) -> None:
+        with pytest.raises(ValidationError, match="tool_ids"):
+            UpdateAgentRequest(tool_ids=list(range(51)))
+
 
 @pytest.mark.unit
 class TestAgentConfigResponse:
@@ -135,6 +159,19 @@ class TestAgentConfigResponse:
         assert resp.model_id == "test-model"
         assert resp.top_p == 1.0
         assert resp.runtime_type == "agent"
+        assert resp.tool_ids == []
+
+    def test_response_with_tool_ids(self) -> None:
+        resp = AgentConfigResponse(
+            model_id="test-model",
+            temperature=0.7,
+            max_tokens=2048,
+            top_p=1.0,
+            runtime_type="agent",
+            enable_teams=False,
+            tool_ids=[1, 2, 3],
+        )
+        assert resp.tool_ids == [1, 2, 3]
 
 
 @pytest.mark.unit

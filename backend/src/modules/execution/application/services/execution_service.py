@@ -23,6 +23,7 @@ from src.modules.execution.application.interfaces.agent_runtime import (
     AgentTool,
     IAgentRuntime,
 )
+from src.modules.execution.application.interfaces.gateway_auth import IGatewayAuthService
 from src.modules.execution.application.interfaces.llm_client import (
     ILLMClient,
     LLMMessage,
@@ -98,6 +99,7 @@ class ExecutionService:
         context_window: ContextWindowConfig | None = None,
         stream_session_commit: AsyncCallback | None = None,
         stream_session_close: AsyncCallback | None = None,
+        gateway_auth: IGatewayAuthService | None = None,
         memory_adapter: IMemoryService | None = None,
         memory_id: str = "",
         stats_repo_factory: Callable[
@@ -118,6 +120,7 @@ class ExecutionService:
         self._agent_runtime = agent_runtime
         self._tool_querier = tool_querier
         self._gateway_url = gateway_url
+        self._gateway_auth = gateway_auth
         self._memory_adapter = memory_adapter
         self._memory_id = memory_id
         self._context_window = context_window or ContextWindowConfig()
@@ -490,7 +493,8 @@ class ExecutionService:
             },
         ):
             tools = await self._get_agent_tools(ctx.agent_info.id)
-            request = self._build_agent_request(ctx, tools)
+            gateway_auth_token = await self._get_gateway_auth_token(tools)
+            request = self._build_agent_request(ctx, tools, gateway_auth_token=gateway_auth_token)
             response = await self._agent_runtime.execute(request)
             total_tokens = response.input_tokens + response.output_tokens
             return response.content, total_tokens
@@ -522,7 +526,8 @@ class ExecutionService:
             msg = "Agent runtime 未配置"
             raise ValueError(msg)
         tools = await self._get_agent_tools(ctx.agent_info.id)
-        request = self._build_agent_request(ctx, tools)
+        gateway_auth_token = await self._get_gateway_auth_token(tools)
+        request = self._build_agent_request(ctx, tools, gateway_auth_token=gateway_auth_token)
         return await self._agent_runtime.execute_stream(request)
 
     async def _create_llm_stream(self, ctx: _SendContext) -> AsyncIterator[LLMStreamChunk]:
@@ -582,7 +587,22 @@ class ExecutionService:
             config=config,
         )
 
-    def _build_agent_request(self, ctx: _SendContext, tools: list[AgentTool]) -> AgentRequest:
+    async def _get_gateway_auth_token(self, tools: list[AgentTool]) -> str:
+        """获取 Gateway 认证 Token（仅当存在 mcp_server 工具且 gateway_auth 已配置时）。"""
+        if self._gateway_auth is None:
+            return ""
+        has_mcp_tools = any(t.tool_type == "mcp_server" for t in tools)
+        if not has_mcp_tools:
+            return ""
+        return await self._gateway_auth.get_bearer_token()
+
+    def _build_agent_request(
+        self,
+        ctx: _SendContext,
+        tools: list[AgentTool],
+        *,
+        gateway_auth_token: str = "",
+    ) -> AgentRequest:
         """构建 AgentRequest。"""
         return AgentRequest(
             prompt=ctx.created_user_msg.content,
@@ -593,6 +613,7 @@ class ExecutionService:
             temperature=ctx.agent_info.temperature,
             max_tokens=ctx.agent_info.max_tokens,
             gateway_url=self._gateway_url,
+            gateway_auth_token=gateway_auth_token,
             enable_teams=ctx.agent_info.enable_teams,
             memory_id=self._memory_id if ctx.agent_info.enable_memory else "",
         )

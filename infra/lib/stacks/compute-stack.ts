@@ -53,6 +53,12 @@ export interface ComputeStackProps extends BaseStackProps {
   readonly agentRuntimeMode?: string;
   /** 定时缩放配置 — Dev 环境非工作时段自动缩减 ECS 任务数 @default undefined (不启用定时缩放) */
   readonly scheduledScaling?: ScheduledScalingConfig;
+  /** AgentCore Gateway Cognito Token Endpoint URL @default '' */
+  readonly gatewayTokenEndpoint?: string;
+  /** AgentCore Gateway Cognito User Pool Client ID @default '' */
+  readonly gatewayCognitoClientId?: string;
+  /** AgentCore Gateway Cognito Client Secret ARN (Secrets Manager) @default undefined */
+  readonly gatewayClientSecretArn?: string;
 }
 
 /**
@@ -127,6 +133,10 @@ export class ComputeStack extends cdk.Stack {
         AGENT_RUNTIME_MODE: props.agentRuntimeMode ?? 'in_process',
         // AgentCore Runtime ARN (agentcore_runtime 模式必需)
         AGENTCORE_RUNTIME_ARN: props.agentcoreRuntimeArn ?? '',
+        // AgentCore Gateway Cognito 认证参数 (M16: Agent 工具绑定)
+        AGENTCORE_GATEWAY_TOKEN_ENDPOINT: props.gatewayTokenEndpoint ?? '',
+        GATEWAY_CLIENT_ID: props.gatewayCognitoClientId ?? '',
+        GATEWAY_SCOPES: '', // AgentCore Gateway 默认 scopes
       },
       secrets: {
         // Aurora Secret JSON fields: host, port, username, password, dbname, engine
@@ -135,6 +145,18 @@ export class ComputeStack extends cdk.Stack {
         DATABASE_NAME: ecs.Secret.fromSecretsManager(databaseSecret, 'dbname'),
         // JWT Secret — 独立管理，从 SecurityStack 的 Secrets Manager 注入
         JWT_SECRET_KEY: ecs.Secret.fromSecretsManager(jwtSecret, 'secret_key'),
+        // Gateway Cognito Client Secret (M16: Agent 工具绑定，条件性注入)
+        ...(props.gatewayClientSecretArn
+          ? {
+              GATEWAY_CLIENT_SECRET: ecs.Secret.fromSecretsManager(
+                secretsmanager.Secret.fromSecretCompleteArn(
+                  this,
+                  'GatewayClientSecret',
+                  props.gatewayClientSecretArn,
+                ),
+              ),
+            }
+          : {}),
       },
     });
 

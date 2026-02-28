@@ -76,11 +76,17 @@
 ├── 跨 Agent 协作编排
 └── 业务级可观测性仪表盘
 
-第三阶段: Agent 驱动的企业智能（18 → 36 个月）🔄 进行中 (Phase 5)
+第三阶段: Agent 驱动的企业智能（18 → 36 个月）✅ 已完成 (Phase 5)
 ├── 5A 自动化评估 Pipeline（Bedrock Model Evaluation）← M13 ✅
-├── 5B 对话式 Agent Builder（Claude MCP + SSO/LDAP）← M14
-├── 5C 多租户规模运营（AWS Cost Explorer + billing）← M15
+├── 5B 对话式 Agent Builder（Claude MCP + SSO/LDAP）← M14 ✅
+├── 5C 多租户规模运营（AWS Cost Explorer + billing）← M15 ✅
 └── Agent 生态系统（企业知识图谱 + 跨系统集成）
+
+第四阶段: 平台智能化（30 → 42 个月）🔄 进行中 (Phase 6)
+├── M16: Agent 工具绑定 — Agent 可配置专属工具集，Gateway MCP 认证闭环
+├── M17: 协作智能 — 多 Agent 编排 (Hierarchical/Pipeline)
+├── M18: 工具智能化 — Agent 自主工具选择 + 推荐引擎
+└── 记忆与知识融合（跨会话记忆 + Memory×Knowledge 联动 RAG）
 ```
 
 ---

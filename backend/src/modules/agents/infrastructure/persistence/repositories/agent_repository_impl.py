@@ -21,6 +21,14 @@ def _deserialize_stop_sequences(raw: str) -> tuple[str, ...]:
     return tuple(json.loads(raw)) if raw else ()
 
 
+def _serialize_tool_ids(tool_ids: tuple[int, ...]) -> str:
+    return json.dumps(list(tool_ids)) if tool_ids else "[]"
+
+
+def _deserialize_tool_ids(raw: str) -> tuple[int, ...]:
+    return tuple(json.loads(raw)) if raw else ()
+
+
 class AgentRepositoryImpl(PydanticRepository[Agent, AgentModel, int], IAgentRepository):
     """Agent 仓库的 SQLAlchemy 实现。"""
 
@@ -39,6 +47,7 @@ class AgentRepositoryImpl(PydanticRepository[Agent, AgentModel, int], IAgentRepo
             "stop_sequences",
             "runtime_type",
             "enable_teams",
+            "tool_ids",
         },
     )
 
@@ -58,6 +67,7 @@ class AgentRepositoryImpl(PydanticRepository[Agent, AgentModel, int], IAgentRepo
                 stop_sequences=_deserialize_stop_sequences(model.stop_sequences),
                 runtime_type=model.runtime_type,
                 enable_teams=model.enable_teams,
+                tool_ids=_deserialize_tool_ids(model.tool_ids),
             ),
             created_at=model.created_at,
             updated_at=model.updated_at,
@@ -76,6 +86,7 @@ class AgentRepositoryImpl(PydanticRepository[Agent, AgentModel, int], IAgentRepo
             "stop_sequences": _serialize_stop_sequences(entity.config.stop_sequences),
             "runtime_type": entity.config.runtime_type,
             "enable_teams": entity.config.enable_teams,
+            "tool_ids": _serialize_tool_ids(entity.config.tool_ids),
         }
 
     def _to_model(self, entity: Agent) -> AgentModel:

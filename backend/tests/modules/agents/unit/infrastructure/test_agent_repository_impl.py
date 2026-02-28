@@ -46,6 +46,7 @@ class TestAgentRepositoryImplStructure:
                 "stop_sequences",
                 "runtime_type",
                 "enable_teams",
+                "tool_ids",
             },
         )
         assert AgentRepositoryImpl._updatable_fields == expected
@@ -87,6 +88,54 @@ class TestAgentRepositoryImplToEntity:
         assert entity.config.top_p == 1.0
         assert entity.config.stop_sequences == ()
         assert entity.config.runtime_type == "agent"
+
+    def test_to_entity_parses_tool_ids_json(self) -> None:
+        now = datetime.now(UTC)
+        model = AgentModel(
+            id=3,
+            name="Agent",
+            description="",
+            system_prompt="",
+            status="draft",
+            owner_id=1,
+            model_id="model-1",
+            temperature=0.7,
+            max_tokens=2048,
+            top_p=1.0,
+            stop_sequences="",
+            runtime_type="agent",
+            tool_ids=json.dumps([10, 20, 30]),
+            created_at=now,
+            updated_at=now,
+        )
+        repo = AgentRepositoryImpl.__new__(AgentRepositoryImpl)
+        entity = repo._to_entity(model)
+
+        assert entity.config.tool_ids == (10, 20, 30)
+
+    def test_to_entity_empty_tool_ids(self) -> None:
+        now = datetime.now(UTC)
+        model = AgentModel(
+            id=4,
+            name="Agent",
+            description="",
+            system_prompt="",
+            status="draft",
+            owner_id=1,
+            model_id="model-1",
+            temperature=0.7,
+            max_tokens=2048,
+            top_p=1.0,
+            stop_sequences="",
+            runtime_type="agent",
+            tool_ids="[]",
+            created_at=now,
+            updated_at=now,
+        )
+        repo = AgentRepositoryImpl.__new__(AgentRepositoryImpl)
+        entity = repo._to_entity(model)
+
+        assert entity.config.tool_ids == ()
 
     def test_to_entity_parses_stop_sequences_json(self) -> None:
         now = datetime.now(UTC)
@@ -136,6 +185,36 @@ class TestAgentRepositoryImplToModel:
         assert model.stop_sequences == ""
         assert model.runtime_type == "agent"
 
+    def test_to_model_serializes_tool_ids_to_json(self) -> None:
+        agent = Agent(
+            id=3,
+            name="Agent",
+            description="",
+            system_prompt="",
+            status=AgentStatus.DRAFT,
+            owner_id=1,
+            config=AgentConfig(tool_ids=(10, 20)),
+        )
+        repo = AgentRepositoryImpl.__new__(AgentRepositoryImpl)
+        model = repo._to_model(agent)
+
+        assert model.tool_ids == json.dumps([10, 20])
+
+    def test_to_model_empty_tool_ids(self) -> None:
+        agent = Agent(
+            id=4,
+            name="Agent",
+            description="",
+            system_prompt="",
+            status=AgentStatus.DRAFT,
+            owner_id=1,
+            config=AgentConfig(),
+        )
+        repo = AgentRepositoryImpl.__new__(AgentRepositoryImpl)
+        model = repo._to_model(agent)
+
+        assert model.tool_ids == "[]"
+
     def test_to_model_serializes_stop_sequences_to_json(self) -> None:
         agent = Agent(
             id=2,
@@ -178,6 +257,22 @@ class TestAgentRepositoryImplGetUpdateData:
         assert data["top_p"] == 1.0
         assert data["stop_sequences"] == ""
         assert data["runtime_type"] == "agent"
+        assert data["tool_ids"] == "[]"
+
+    def test_get_update_data_includes_tool_ids(self) -> None:
+        agent = Agent(
+            id=1,
+            name="Name",
+            description="",
+            system_prompt="",
+            status=AgentStatus.DRAFT,
+            owner_id=42,
+            config=AgentConfig(tool_ids=(5, 10)),
+        )
+        repo = AgentRepositoryImpl.__new__(AgentRepositoryImpl)
+        data = repo._get_update_data(agent)
+
+        assert data["tool_ids"] == json.dumps([5, 10])
 
     def test_get_update_data_only_includes_updatable_fields(self) -> None:
         agent = Agent(

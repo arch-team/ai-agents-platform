@@ -231,3 +231,13 @@ class ToolRepositoryImpl(PydanticRepository[Tool, ToolModel, int], IToolReposito
             creator_id=creator_id,
         )
         return await self._count_where(*filters)
+
+    async def list_by_ids_and_status(self, tool_ids: list[int], status: ToolStatus) -> list[Tool]:  # noqa: D102
+        if not tool_ids:
+            return []
+        return await self._list_where(
+            ToolModel.id.in_(tool_ids),
+            ToolModel.status == status.value,
+            offset=0,
+            limit=len(tool_ids),
+        )
