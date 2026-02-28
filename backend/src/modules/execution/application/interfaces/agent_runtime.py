@@ -37,6 +37,7 @@ class AgentRequest:
     temperature: float = AGENT_DEFAULT_TEMPERATURE
     max_tokens: int = AGENT_DEFAULT_MAX_TOKENS
     gateway_url: str = ""  # AgentCore Gateway MCP 端点
+    gateway_auth_token: str = ""  # Gateway Bearer Token (Cognito Client Credentials)
     memory_id: str = ""  # AgentCore Memory 资源 ID
     max_turns: int = 20  # Agent Loop 最大轮次
     cwd: str = ""  # Agent 工作目录

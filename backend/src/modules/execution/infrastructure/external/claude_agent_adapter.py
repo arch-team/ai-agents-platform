@@ -302,12 +302,23 @@ class ClaudeAgentAdapter(IAgentRuntime):
 
         has_mcp_tools = any(t.tool_type == "mcp_server" for t in request.tools)
 
-        # AgentCore Gateway MCP 配置
+        # AgentCore Gateway MCP 配置 (需要有效 auth_token, 否则 CLI 连接 401 导致进程崩溃)
         if has_mcp_tools and request.gateway_url:
-            mcp_servers["gateway"] = {
-                "type": "sse",
-                "url": request.gateway_url,
-            }
+            if request.gateway_auth_token:
+                mcp_servers["gateway"] = {
+                    "type": "sse",
+                    "url": request.gateway_url,
+                    "requestInit": {
+                        "headers": {"Authorization": f"Bearer {request.gateway_auth_token}"},
+                    },
+                }
+            else:
+                mcp_tool_names = [t.name for t in request.tools if t.tool_type == "mcp_server"]
+                logger.warning(
+                    "gateway_mcp_skipped_no_auth",
+                    reason="gateway_auth_token 未配置, 跳过 gateway MCP 避免 CLI 401 崩溃",
+                    skipped_tools=mcp_tool_names,
+                )
 
         # API / Function 工具 -> SDK MCP Server
         non_mcp_tools = [t for t in request.tools if t.tool_type in ("api", "function")]

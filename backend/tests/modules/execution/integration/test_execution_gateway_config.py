@@ -71,8 +71,23 @@ def _make_function_tool(name: str = "func-tool-1") -> AgentTool:
 class TestBuildMcpConfig:
     """验证 ClaudeAgentAdapter._build_mcp_config 构建逻辑。"""
 
-    def test_mcp_config_with_mcp_tools_and_gateway(self, adapter: ClaudeAgentAdapter) -> None:
-        """MCP 工具 + gateway_url → mcp_servers 包含 gateway。"""
+    def test_mcp_config_with_mcp_tools_and_gateway_auth(self, adapter: ClaudeAgentAdapter) -> None:
+        """MCP 工具 + gateway_url + auth_token → mcp_servers 包含 gateway。"""
+        request = AgentRequest(
+            prompt="你好",
+            tools=[_make_mcp_tool()],
+            gateway_url="https://gateway.example.com/mcp",
+            gateway_auth_token="test-token-123",
+        )
+        mcp_servers = adapter._build_mcp_config(request)
+
+        assert "gateway" in mcp_servers
+        assert mcp_servers["gateway"]["type"] == "sse"
+        assert mcp_servers["gateway"]["url"] == "https://gateway.example.com/mcp"
+        assert mcp_servers["gateway"]["requestInit"]["headers"]["Authorization"] == "Bearer test-token-123"
+
+    def test_mcp_config_with_mcp_tools_but_no_auth_skips_gateway(self, adapter: ClaudeAgentAdapter) -> None:
+        """MCP 工具 + gateway_url 但无 auth_token → 跳过 gateway 避免 CLI 401 崩溃。"""
         request = AgentRequest(
             prompt="你好",
             tools=[_make_mcp_tool()],
@@ -80,8 +95,7 @@ class TestBuildMcpConfig:
         )
         mcp_servers = adapter._build_mcp_config(request)
 
-        assert "gateway" in mcp_servers
-        assert mcp_servers["gateway"] == {"type": "sse", "url": "https://gateway.example.com/mcp"}
+        assert "gateway" not in mcp_servers
 
     def test_mcp_config_without_gateway_url(self, adapter: ClaudeAgentAdapter) -> None:
         """无 gateway_url → mcp_servers 不包含 gateway。"""
@@ -106,12 +120,13 @@ class TestBuildMcpConfig:
         assert "gateway" not in mcp_servers
         assert "platform-tools" in mcp_servers
 
-    def test_mcp_config_mixed_tools(self, adapter: ClaudeAgentAdapter) -> None:
-        """混合工具类型 → gateway + platform-tools 共存。"""
+    def test_mcp_config_mixed_tools_with_auth(self, adapter: ClaudeAgentAdapter) -> None:
+        """混合工具类型 + auth_token → gateway + platform-tools 共存。"""
         request = AgentRequest(
             prompt="你好",
             tools=[_make_mcp_tool(), _make_api_tool()],
             gateway_url="https://gateway.example.com/mcp",
+            gateway_auth_token="test-token",
         )
         mcp_servers = adapter._build_mcp_config(request)
 

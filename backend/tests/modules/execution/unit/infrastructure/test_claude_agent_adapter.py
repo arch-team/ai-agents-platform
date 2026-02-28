@@ -254,7 +254,22 @@ class TestBuildMcpConfig:
         result = adapter._build_mcp_config(request)
         assert result == {}
 
-    def test_mcp_tools_with_gateway_url(self):
+    def test_mcp_tools_with_gateway_url_and_auth(self):
+        adapter = ClaudeAgentAdapter()
+        request = _make_request(
+            tools=[_make_tool("search", "mcp_server")],
+            gateway_url="https://gateway.example.com/mcp",
+            gateway_auth_token="test-token",
+        )
+        result = adapter._build_mcp_config(request)
+
+        assert "gateway" in result
+        assert result["gateway"]["type"] == "sse"
+        assert result["gateway"]["url"] == "https://gateway.example.com/mcp"
+        assert result["gateway"]["requestInit"]["headers"]["Authorization"] == "Bearer test-token"
+
+    def test_mcp_tools_with_gateway_url_but_no_auth_skips(self):
+        """无 auth_token 时跳过 gateway, 避免 CLI 401 崩溃。"""
         adapter = ClaudeAgentAdapter()
         request = _make_request(
             tools=[_make_tool("search", "mcp_server")],
@@ -262,9 +277,7 @@ class TestBuildMcpConfig:
         )
         result = adapter._build_mcp_config(request)
 
-        assert "gateway" in result
-        assert result["gateway"]["type"] == "sse"
-        assert result["gateway"]["url"] == "https://gateway.example.com/mcp"
+        assert "gateway" not in result
 
     def test_mcp_tools_without_gateway_url_no_gateway_config(self):
         adapter = ClaudeAgentAdapter()
@@ -306,6 +319,7 @@ class TestBuildMcpConfig:
                 _make_tool("calculator", "api"),
             ],
             gateway_url="https://gw.example.com",
+            gateway_auth_token="test-token",
         )
         result = adapter._build_mcp_config(request)
 
@@ -481,6 +495,7 @@ class TestMemoryMcpIntegration:
                 _make_tool("http-call", "api"),
             ],
             gateway_url="https://gw.example.com",
+            gateway_auth_token="test-token",
         )
         config = adapter._build_mcp_config(request)
         assert "gateway" in config
