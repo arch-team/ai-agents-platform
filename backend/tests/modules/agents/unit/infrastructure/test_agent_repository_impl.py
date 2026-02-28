@@ -46,6 +46,7 @@ class TestAgentRepositoryImplStructure:
                 "stop_sequences",
                 "runtime_type",
                 "enable_teams",
+                "enable_memory",
                 "tool_ids",
             },
         )

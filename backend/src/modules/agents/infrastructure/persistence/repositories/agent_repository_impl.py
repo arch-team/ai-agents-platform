@@ -47,6 +47,7 @@ class AgentRepositoryImpl(PydanticRepository[Agent, AgentModel, int], IAgentRepo
             "stop_sequences",
             "runtime_type",
             "enable_teams",
+            "enable_memory",
             "tool_ids",
         },
     )
@@ -67,6 +68,7 @@ class AgentRepositoryImpl(PydanticRepository[Agent, AgentModel, int], IAgentRepo
                 stop_sequences=_deserialize_stop_sequences(model.stop_sequences),
                 runtime_type=model.runtime_type,
                 enable_teams=model.enable_teams,
+                enable_memory=model.enable_memory,
                 tool_ids=_deserialize_tool_ids(model.tool_ids),
             ),
             created_at=model.created_at,
@@ -86,6 +88,7 @@ class AgentRepositoryImpl(PydanticRepository[Agent, AgentModel, int], IAgentRepo
             "stop_sequences": _serialize_stop_sequences(entity.config.stop_sequences),
             "runtime_type": entity.config.runtime_type,
             "enable_teams": entity.config.enable_teams,
+            "enable_memory": entity.config.enable_memory,
             "tool_ids": _serialize_tool_ids(entity.config.tool_ids),
         }
 

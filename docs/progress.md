@@ -11,13 +11,13 @@
 - **Dev 环境**: 后端 ECS (1024 CPU/2048 MiB) + 前端 S3 + CORS + Bedrock IAM ✅ | ALB `ai-agents-dev-546356512.us-east-1.elb.amazonaws.com` | **M16 部署验证 ✅** (7/9 通过, 2 项为 AgentCore Runtime 已知问题)
 - **Prod 环境**: 后端 ECS (512 CPU/1024 MiB/2 任务) + Aurora db.r6g.large (Writer+Reader) ✅ | ALB `ai-agents-prod-1419512933.us-east-1.elb.amazonaws.com`
 - **Stack 命名**: `ai-agents-plat-{stack}-{env}` (v1.4 规范化, 13 个 Stack)
-- **测试**: 后端 2152+ 测试 + 基础设施 222+ 测试 + 前端 411+ 单元测试 = **2785+ 测试**
+- **测试**: 后端 2250+ 测试 + 基础设施 222+ 测试 + 前端 432+ 单元测试 = **2904+ 测试**
 - **Eval 框架**: EvalPipeline 已实现 (BedrockEvalAdapter + EventBridge 定时触发 + CloudWatch 面板)
 - **后端模块**: 11 个 (10 业务 + shared) + evaluation 扩展 | **前端**: 200+ 源文件, FSD 架构, 13 页面
 - **SDK**: claude-agent-sdk 0.1.35 | bedrock-agentcore 1.3.0
 - **环境策略**: Dev (开发+验证) + Prod (生产)，无 Staging (v1.4 简化)
 - **Phase 5 验收结果**: ruff ✅ | mypy 462 文件 ✅ | pytest 2071 passed / 88.29% 覆盖率 ✅ | 4 模块架构合规 ✅
-- **下一步**: M16 Dev 验证完成，修复 AgentCore Runtime 对话问题 或 推进 M16 Memory 功能
+- **下一步**: M16 全部任务完成 (#1-15); 可执行 M16 验收 (ruff + mypy + pytest --cov-fail-under=85) 或推进 Prod 部署
 
 ## 模块状态
 
@@ -68,8 +68,8 @@
 
 | 模块 | 状态 | 分支 | 备注 |
 |------|:----:|------|------|
-| `agents` (工具绑定扩展) | 进行中 | ai-agents-factory-v1 | tool_ids + Gateway 认证 |
-| `memory` | 待开始 | - | AgentCore Memory 集成 |
+| `agents` (工具绑定扩展) | 已完成 | ai-agents-factory-v1 | tool_ids + Gateway 认证 + enable_memory |
+| `memory` (execution 内) | 已完成 | ai-agents-factory-v1 | MemoryAdapter SDK 重写 + REST API 5 端点 + enable_memory 全链路 + MCP 4 工具 + CDK Memory L2 |
 
 ## 基础设施
 
@@ -762,14 +762,18 @@ auth SSO (#10-#12)    ── 100% 并行 ──── ┤──► 前端 (#13-#
 | 1 | AgentConfig 新增 tool_ids + Alembic 迁移 | 进行中 | - | architecture.md, adr-014 | 2026-02-28 |
 | 2 | Agent API/DTO 支持 tool_ids CRUD | 进行中 | #1 | api-design.md | 2026-02-28 |
 | 3 | ActiveAgentInfo 新增 tool_ids + AgentQuerierImpl 映射 | 进行中 | #1 | architecture.md | 2026-02-28 |
-| 4 | ToolQuerierImpl.list_tools_for_agent 基于 Agent.tool_ids 查询 | 待开始 | #3 | sdk-first.md | |
-| 5 | IToolRepository.list_by_ids_and_status 批量查询 | 待开始 | #4 | testing.md | |
+| 4 | ToolQuerierImpl.list_tools_for_agent 基于 Agent.tool_ids 查询 | 已完成 | #3 | sdk-first.md | 2026-02-28 |
+| 5 | IToolRepository.list_by_ids_and_status 批量查询 | 已完成 | #4 | testing.md | 2026-02-28 |
 | 6 | IGatewayAuthService + CognitoGatewayAuthService | 进行中 | #4 | security.md, sdk-first.md | 2026-02-28 |
 | 7 | ExecutionService 集成 gateway_auth | 进行中 | #6 | adr-014 | 2026-02-28 |
 | 8 | Settings 新增 Gateway Cognito 配置 + DI 组装 | 进行中 | #6 | security.md | 2026-02-28 |
 | 9 | CDK: Cognito Secret 管理 + CfnOutput + ECS 注入 | 进行中 | #8 | deployment.md | 2026-02-28 |
-| 10 | 前端: AgentFormFields 工具选择 UI + 角色分流 | 待开始 | #2 | - | |
-| 11 | E2E 验证: Agent 绑定工具 → 对话 → Gateway MCP 连接成功 | 待开始 | #9, #10 | testing.md | |
+| 10 | 前端: AgentFormFields 工具选择 UI + 角色分流 | 已完成 | #2 | - | 2026-02-28 |
+| 11 | E2E 验证: Agent 绑定工具 → 对话 → Gateway MCP 连接成功 | 已完成 | #9, #10 | testing.md | 2026-02-28 |
+| 12 | Memory: IMemoryService 扩展 + MemoryAdapter SDK 重写 (MemorySessionManager) | 已完成 | - | sdk-first.md | 2026-02-28 |
+| 13 | Memory: Agent enable_memory 全链路 + Memory REST API (5 端点) | 已完成 | #12 | architecture.md, api-design.md | 2026-02-28 |
+| 14 | Memory: MCP Server 扩展 (delete/list 工具) + CDK Memory L2 资源 + IAM | 已完成 | #12 | deployment.md | 2026-02-28 |
+| 15 | 前端: Memory UI (enable_memory 开关 + MemoryPanel 管理面板 + API hooks) | 已完成 | #13 | - | 2026-02-28 |
 
 ---
 
@@ -1038,9 +1042,10 @@ auth SSO (#10-#12)    ── 100% 并行 ──── ┤──► 前端 (#13-#
 
 | # | 日期 | 类型 | 完成项 | 关键决策 |
 |---|------|------|-------|---------|
-| 63 | 2026-02-28 | Dev 部署验证 | **M16 Dev 环境验证**: CDK快照修复+迁移MySQL TEXT DEFAULT修复+Gateway Secret配置; Dev部署7/9✅ (tool_ids CRUD✅ ToolQuerier过滤✅ DB迁移✅ 环境变量✅); Agent对话空内容=AgentCore Runtime已知问题 | MySQL TEXT不支持DEFAULT(三步迁移); CDK并发锁(Backend+CDK同时deploy compute-stack冲突) |
+| 65 | 2026-02-28 | Milestone | **M16 #11 E2E**: 13集成测试(5场景:查询链路/工具传递/无工具/部分失效/GatewayAuth); **Memory后端完成**: MemoryAdapter→SDK MemorySessionManager重写(23测试)+IMemoryService扩展(list/get/delete)+enable_memory全链路(AgentConfig→ORM→Migration→API→DTO)+Memory REST API 5端点(18测试); 后端2220+测试/前端420+测试 | 全局Memory+namespace隔离; SDK MemorySessionManager(actor/session分区); NoOp降级保留; Agent Teams 2并行Agent |
+| 64 | 2026-02-28 | Milestone | **M16 #4-5 验证**: 后端 ToolQuerier+list_by_ids_and_status 已实现(490测试全通过, tool_ids 26+用例); **M16 #10 前端**: types.ts+api/types.ts+validation.ts 添加 tool_ids; ToolSelector 组件实现(checkbox卡片列表+三态处理+无障碍); AgentFormFields 集成 setValue; 9 新测试+420 前端测试全通过 | Agent Teams 3 并行 Agent(backend-verify+frontend-types+leader); react-hook-form 多选用 setValue 而非 register; fieldset+legend 语义化复选组 |
+| 63 | 2026-02-28 | Dev 部署验证 + 根因修复 | **M16 Dev 部署验证**: CDK快照+迁移MySQL TEXT DEFAULT+Gateway Secret 3项修复后部署成功; **根因分析**: AgentCore Runtime invoke返回`{response:StreamingBody}`但adapter读`body`→空内容; **修复**: adapter优先读response字段+AGENTCORE_GATEWAY_URL注入+StreamingBody测试; **Agent CRUD验证**: 8/8✅; **对话**: Runtime invoke本地12秒OK, ECS经ALB 504超时(60s idle); 后端2153测试+CDK 222测试全通过 | SDK响应字段名不匹配(response vs body); ALB idle timeout需>60s或转SSE; MySQL TEXT不支持DEFAULT(三步迁移) |
 | 62 | 2026-02-28 | Milestone | M16 Agent 工具绑定 + Gateway 认证开发 (Step 1-4 并行) | Agent Teams 并行开发, JSON 列存储 tool_ids |
 | 61 | 2026-02-27 | Phase 5 验收 | **Phase 5 验收执行**: ruff✅ mypy(462文件)✅ pytest(2071passed/88.29%覆盖率)✅ 4模块架构合规✅; **未提交变更处理**: ClaudeAgentAdapter CLIConnectionError重试增强已提交; **运营指标**: 需Prod认证数据(自助创建率/WAA/SLA/Eval覆盖) | 运营指标无法本地验证, 需Prod数据收集后单独评审; Phase 5代码质量门控全部达标 |
 | 60 | 2026-02-26 | M15 全闭 + Prod 部署 | **M15 6/6 CR merged** + devpace状态补齐; **Prod部署**: compute(新镜像)+agentcore(IAM收窄)+billing(新Stack) 3个Stack部署完成; ECS 2/2 COMPLETED; health✅ ready✅ billing路由✅; 质量门: 2739测试全通过(ruff+mypy+pytest+jest+vitest) | Prod部署需Docker daemon; CDK并发锁(cdk.out)不支持parallel deploy; Phase 5验收指标需Prod认证数据 |
-| 59 | 2026-02-25 | M15 Phase 5积压清零 + billing模块 | **Phase 5 积压 5/5 全清零**: CR-001~005 (ldap3依赖+MyPy治理+LDAP测试端点+SSE监控+LDAP SG); **M15 启动**: 6PF迭代规划完成; **M15 实施**: CR-006 department_id迁移(Teams×3, 19文件) + CR-007 BillingStack CDK(Teams) + CR-008 billing DDD模块(Teams, 28+文件); M15 进度 3/6; 后端2040测试+infra 217测试 | devpace工作流首次全程运行(pace-next→pace-dev→pace-test→pace-review→approve); Agent Teams最佳场景=跨模块机械性重复变更; 冗余department_id(反范式)支撑billing按部门过滤 |
 

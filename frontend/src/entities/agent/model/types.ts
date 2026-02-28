@@ -3,6 +3,7 @@ export interface AgentConfig {
   temperature: number;
   max_tokens: number;
   top_p: number;
+  enable_memory: boolean;
 }
 
 export type AgentStatus = 'draft' | 'active' | 'archived';
@@ -15,6 +16,7 @@ export interface Agent {
   status: AgentStatus;
   owner_id: number;
   config: AgentConfig;
+  tool_ids: number[];
   created_at: string;
   updated_at: string;
 }

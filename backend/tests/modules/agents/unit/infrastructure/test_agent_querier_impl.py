@@ -143,3 +143,27 @@ class TestAgentQuerierImpl:
 
         assert result is not None
         assert result.runtime_type == "basic"
+
+    @pytest.mark.asyncio
+    async def test_maps_enable_memory_true(self) -> None:
+        agent = _make_agent()
+        agent.config = AgentConfig(enable_memory=True)
+        repo = AsyncMock(spec=IAgentRepository)
+        repo.get_by_id.return_value = agent
+        querier = AgentQuerierImpl(agent_repository=repo)
+
+        result = await querier.get_active_agent(1)
+
+        assert result is not None
+        assert result.enable_memory is True
+
+    @pytest.mark.asyncio
+    async def test_maps_enable_memory_default_false(self) -> None:
+        repo = AsyncMock(spec=IAgentRepository)
+        repo.get_by_id.return_value = _make_agent()
+        querier = AgentQuerierImpl(agent_repository=repo)
+
+        result = await querier.get_active_agent(1)
+
+        assert result is not None
+        assert result.enable_memory is False

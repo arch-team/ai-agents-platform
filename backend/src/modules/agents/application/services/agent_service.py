@@ -56,6 +56,7 @@ class AgentService:
                 max_tokens=dto.max_tokens,
                 runtime_type=dto.runtime_type,
                 enable_teams=dto.enable_teams,
+                enable_memory=dto.enable_memory,
                 tool_ids=tuple(dto.tool_ids),
             ),
         )
@@ -173,7 +174,7 @@ class AgentService:
 
         # 重建 AgentConfig (frozen 值对象, 任一字段变化需整体替换)
         config_overrides: dict[str, object] = {}
-        for field in ("model_id", "temperature", "max_tokens", "runtime_type", "enable_teams"):
+        for field in ("model_id", "temperature", "max_tokens", "runtime_type", "enable_teams", "enable_memory"):
             value = getattr(dto, field)
             if value is not None:
                 config_overrides[field] = value
@@ -285,6 +286,7 @@ class AgentService:
             top_p=agent.config.top_p,
             runtime_type=agent.config.runtime_type,
             enable_teams=agent.config.enable_teams,
+            enable_memory=agent.config.enable_memory,
             created_at=created_at,
             updated_at=updated_at,
             tool_ids=list(agent.config.tool_ids),

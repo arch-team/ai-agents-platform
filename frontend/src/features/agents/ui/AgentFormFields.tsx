@@ -6,7 +6,9 @@ import { Input, Textarea } from '@/shared/ui';
 
 import { MODEL_OPTIONS } from '../model/constants';
 
-import type { FieldErrors, UseFormRegister, UseFormWatch } from 'react-hook-form';
+import { ToolSelector } from './ToolSelector';
+
+import type { FieldErrors, UseFormRegister, UseFormSetValue, UseFormWatch } from 'react-hook-form';
 
 import type { CreateAgentFormData } from '../lib/validation';
 
@@ -17,9 +19,10 @@ interface AgentFormFieldsProps {
   register: UseFormRegister<CreateAgentFormData>;
   errors: FieldErrors<CreateAgentFormData>;
   watch: UseFormWatch<CreateAgentFormData>;
+  setValue: UseFormSetValue<CreateAgentFormData>;
 }
 
-export function AgentFormFields({ register, errors, watch }: AgentFormFieldsProps) {
+export function AgentFormFields({ register, errors, watch, setValue }: AgentFormFieldsProps) {
   const [showAdvanced, setShowAdvanced] = useState(false);
 
   const systemPromptValue = watch('system_prompt') ?? '';
@@ -59,6 +62,23 @@ export function AgentFormFields({ register, errors, watch }: AgentFormFieldsProp
           {systemPromptValue.length.toLocaleString()} / {SYSTEM_PROMPT_MAX_LENGTH.toLocaleString()}
         </p>
       </div>
+
+      {/* 工具绑定区 — TODO(human): 实现 ToolSelector 核心逻辑 */}
+      <ToolSelector
+        selectedIds={watch('tool_ids') ?? []}
+        onChange={(ids) => setValue('tool_ids', ids)}
+      />
+
+      {/* 记忆开关 */}
+      <label className="flex items-center gap-2 text-sm">
+        <input
+          type="checkbox"
+          {...register('enable_memory')}
+          className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500/20"
+        />
+        <span className="font-medium text-gray-700">启用记忆</span>
+        <span className="text-gray-400">— Agent 对话中自动提取和检索长期记忆</span>
+      </label>
 
       {/* 高级选项折叠区 */}
       <div>

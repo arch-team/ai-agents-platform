@@ -155,6 +155,7 @@ class TestAgentConfigResponse:
             top_p=1.0,
             runtime_type="agent",
             enable_teams=False,
+            enable_memory=False,
         )
         assert resp.model_id == "test-model"
         assert resp.top_p == 1.0
@@ -169,6 +170,7 @@ class TestAgentConfigResponse:
             top_p=1.0,
             runtime_type="agent",
             enable_teams=False,
+            enable_memory=False,
             tool_ids=[1, 2, 3],
         )
         assert resp.tool_ids == [1, 2, 3]
@@ -194,6 +196,7 @@ class TestAgentResponse:
                 top_p=1.0,
                 runtime_type="agent",
                 enable_teams=False,
+                enable_memory=False,
             ),
             created_at=now,
             updated_at=now,
@@ -234,6 +237,7 @@ class TestAgentListResponse:
                 top_p=1.0,
                 runtime_type="agent",
                 enable_teams=False,
+                enable_memory=False,
             ),
             created_at=now,
             updated_at=now,

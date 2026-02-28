@@ -23,4 +23,5 @@ class AgentConfig:
     stop_sequences: tuple[str, ...] = ()
     runtime_type: str = AGENT_DEFAULT_RUNTIME_TYPE
     enable_teams: bool = AGENT_DEFAULT_ENABLE_TEAMS
+    enable_memory: bool = False
     tool_ids: tuple[int, ...] = ()

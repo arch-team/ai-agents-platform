@@ -538,3 +538,79 @@ class TestAgentServiceArchive:
 
         with pytest.raises(DomainError, match="无权操作"):
             await agent_service.archive_agent(1, operator_id=999)
+
+
+@pytest.mark.unit
+class TestAgentServiceEnableMemory:
+    """enable_memory 字段的 CRUD 测试。"""
+
+    @pytest.mark.asyncio
+    async def test_create_agent_with_enable_memory_true(
+        self,
+        mock_agent_repo: AsyncMock,
+        agent_service: AgentService,
+        mock_event_bus: AsyncMock,
+    ) -> None:
+        mock_agent_repo.get_by_name_and_owner.return_value = None
+        mock_agent_repo.create.side_effect = lambda a: make_agent(
+            name=a.name,
+            config=a.config,
+        )
+
+        dto = CreateAgentDTO(name="Memory Agent", enable_memory=True)
+        result = await agent_service.create_agent(dto, owner_id=100)
+
+        assert result.enable_memory is True
+
+    @pytest.mark.asyncio
+    async def test_create_agent_enable_memory_default_false(
+        self,
+        mock_agent_repo: AsyncMock,
+        agent_service: AgentService,
+        mock_event_bus: AsyncMock,
+    ) -> None:
+        mock_agent_repo.get_by_name_and_owner.return_value = None
+        mock_agent_repo.create.side_effect = lambda a: make_agent(
+            name=a.name,
+            config=a.config,
+        )
+
+        dto = CreateAgentDTO(name="No Memory Agent")
+        result = await agent_service.create_agent(dto, owner_id=100)
+
+        assert result.enable_memory is False
+
+    @pytest.mark.asyncio
+    async def test_update_enable_memory(
+        self,
+        mock_agent_repo: AsyncMock,
+        agent_service: AgentService,
+        mock_event_bus: AsyncMock,
+    ) -> None:
+        agent = make_agent(status=AgentStatus.DRAFT)
+        mock_agent_repo.get_by_id.return_value = agent
+        mock_agent_repo.update.side_effect = lambda a: a
+
+        dto = UpdateAgentDTO(enable_memory=True)
+        result = await agent_service.update_agent(1, dto, operator_id=100)
+
+        assert result.enable_memory is True
+
+    @pytest.mark.asyncio
+    async def test_update_enable_memory_none_keeps_original(
+        self,
+        mock_agent_repo: AsyncMock,
+        agent_service: AgentService,
+        mock_event_bus: AsyncMock,
+    ) -> None:
+        agent = make_agent(
+            status=AgentStatus.DRAFT,
+            config=AgentConfig(enable_memory=True),
+        )
+        mock_agent_repo.get_by_id.return_value = agent
+        mock_agent_repo.update.side_effect = lambda a: a
+
+        dto = UpdateAgentDTO(temperature=0.5)
+        result = await agent_service.update_agent(1, dto, operator_id=100)
+
+        assert result.enable_memory is True

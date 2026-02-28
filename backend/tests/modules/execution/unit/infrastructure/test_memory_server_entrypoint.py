@@ -70,16 +70,18 @@ class TestHandleInitialize:
 class TestHandleToolsList:
     """tools/list 请求处理测试。"""
 
-    def test_returns_two_tools(self) -> None:
+    def test_returns_four_tools(self) -> None:
         result = _handle_tools_list(1)
         tools = result["result"]["tools"]
-        assert len(tools) == 2
+        assert len(tools) == 4
 
     def test_tool_names(self) -> None:
         result = _handle_tools_list(1)
         names = [t["name"] for t in result["result"]["tools"]]
         assert "save_memory" in names
         assert "recall_memory" in names
+        assert "list_memories" in names
+        assert "delete_memory" in names
 
     def test_tools_have_input_schema(self) -> None:
         for tool in TOOLS:
@@ -194,6 +196,91 @@ class TestHandleToolsCall:
             query="q",
             max_results=10,
         )
+
+    async def test_list_memories_success(self) -> None:
+        adapter = AsyncMock(spec=MemoryAdapter)
+        adapter.list_memories.return_value = [
+            MemoryItem(memory_id="mem-a", content="记忆内容A", topic="偏好"),
+            MemoryItem(memory_id="mem-b", content="记忆内容B", topic="上下文"),
+        ]
+
+        msg = {
+            "jsonrpc": "2.0",
+            "id": 40,
+            "method": "tools/call",
+            "params": {
+                "name": "list_memories",
+                "arguments": {"agent_id": 42},
+            },
+        }
+        result = await handle_message(msg, adapter)
+
+        assert result is not None
+        assert result["id"] == 40
+        import json
+
+        items = json.loads(result["result"]["content"][0]["text"])
+        assert len(items) == 2
+        assert items[0]["memory_id"] == "mem-a"
+        assert items[1]["topic"] == "上下文"
+        adapter.list_memories.assert_awaited_once_with(agent_id=42, max_results=20)
+
+    async def test_list_memories_with_max_results(self) -> None:
+        adapter = AsyncMock(spec=MemoryAdapter)
+        adapter.list_memories.return_value = []
+
+        msg = {
+            "jsonrpc": "2.0",
+            "id": 41,
+            "method": "tools/call",
+            "params": {
+                "name": "list_memories",
+                "arguments": {"agent_id": 1, "max_results": 5},
+            },
+        }
+        await handle_message(msg, adapter)
+
+        adapter.list_memories.assert_awaited_once_with(agent_id=1, max_results=5)
+
+    async def test_delete_memory_success(self) -> None:
+        adapter = AsyncMock(spec=MemoryAdapter)
+        adapter.delete_memory.return_value = True
+
+        msg = {
+            "jsonrpc": "2.0",
+            "id": 50,
+            "method": "tools/call",
+            "params": {
+                "name": "delete_memory",
+                "arguments": {"agent_id": 42, "memory_id": "mem-to-delete"},
+            },
+        }
+        result = await handle_message(msg, adapter)
+
+        assert result is not None
+        assert result["id"] == 50
+        text = result["result"]["content"][0]["text"]
+        assert text == "deleted"
+        adapter.delete_memory.assert_awaited_once_with(agent_id=42, memory_id="mem-to-delete")
+
+    async def test_delete_memory_failure(self) -> None:
+        adapter = AsyncMock(spec=MemoryAdapter)
+        adapter.delete_memory.return_value = False
+
+        msg = {
+            "jsonrpc": "2.0",
+            "id": 51,
+            "method": "tools/call",
+            "params": {
+                "name": "delete_memory",
+                "arguments": {"agent_id": 1, "memory_id": "nonexistent"},
+            },
+        }
+        result = await handle_message(msg, adapter)
+
+        assert result is not None
+        text = result["result"]["content"][0]["text"]
+        assert text == "delete_failed"
 
     async def test_unknown_tool_returns_error(self) -> None:
         adapter = AsyncMock(spec=MemoryAdapter)

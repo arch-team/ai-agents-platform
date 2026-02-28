@@ -22,6 +22,7 @@ class CreateAgentRequest(BaseModel):
     max_tokens: int = Field(default=AGENT_DEFAULT_MAX_TOKENS, ge=1, le=4096)
     runtime_type: str = Field(default=AGENT_DEFAULT_RUNTIME_TYPE, pattern=r"^(agent|basic)$")
     enable_teams: bool = Field(default=AGENT_DEFAULT_ENABLE_TEAMS)
+    enable_memory: bool = Field(default=False)
     tool_ids: list[int] = Field(default_factory=list, max_length=50)
 
 
@@ -36,4 +37,5 @@ class UpdateAgentRequest(BaseModel):
     max_tokens: int | None = Field(default=None, ge=1, le=4096)
     runtime_type: str | None = Field(default=None, pattern=r"^(agent|basic)$")
     enable_teams: bool | None = Field(default=None)
+    enable_memory: bool | None = Field(default=None)
     tool_ids: list[int] | None = Field(default=None, max_length=50)

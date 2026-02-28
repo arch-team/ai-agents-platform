@@ -17,6 +17,8 @@ export interface FrontendStackProps extends BaseStackProps {
    * @default path.join(__dirname, '../../../frontend/dist')
    */
   readonly frontendDistPath?: string;
+  /** 后端 ALB DNS 名（如 ai-agents-dev-xxx.us-east-1.elb.amazonaws.com），用于 /api/* 反向代理 */
+  readonly apiAlbDnsName?: string;
 }
 
 /**
@@ -54,6 +56,32 @@ export class FrontendStack extends cdk.Stack {
       description: `Frontend OAC for ${envName}`,
     });
 
+    // --- API Origin（ALB 反向代理，解决 Mixed Content） ---
+    const apiOrigin = props.apiAlbDnsName
+      ? new origins.HttpOrigin(props.apiAlbDnsName, {
+          protocolPolicy: cloudfront.OriginProtocolPolicy.HTTP_ONLY,
+          httpPort: 80,
+        })
+      : undefined;
+
+    // API 行为：不缓存，转发所有 headers/cookies/query
+    const apiCachePolicy = new cloudfront.CachePolicy(this, 'ApiCachePolicy', {
+      cachePolicyName: `${envName}-api-no-cache`,
+      defaultTtl: cdk.Duration.seconds(0),
+      maxTtl: cdk.Duration.seconds(0),
+      minTtl: cdk.Duration.seconds(0),
+      headerBehavior: cloudfront.CacheHeaderBehavior.allowList(
+        'Authorization',
+        'Content-Type',
+        'Accept',
+      ),
+      queryStringBehavior: cloudfront.CacheQueryStringBehavior.all(),
+      cookieBehavior: cloudfront.CacheCookieBehavior.none(),
+    });
+
+    // Authorization 通过 CachePolicy 转发; OriginRequestPolicy 用 CDK 托管策略（转发除 Host 外的所有 viewer headers）
+    const apiOriginRequestPolicy = cloudfront.OriginRequestPolicy.ALL_VIEWER_EXCEPT_HOST_HEADER;
+
     // --- CloudFront 分发 ---
     this.distribution = new cloudfront.Distribution(this, 'FrontendDistribution', {
       defaultBehavior: {
@@ -65,6 +93,25 @@ export class FrontendStack extends cdk.Stack {
         cachePolicy: cloudfront.CachePolicy.CACHING_OPTIMIZED,
         compress: true,
       },
+      // /api/* 和 /health* 路由到后端 ALB（通过 HTTPS CloudFront → HTTP ALB，解决 Mixed Content）
+      additionalBehaviors: apiOrigin
+        ? {
+            '/api/*': {
+              origin: apiOrigin,
+              viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+              allowedMethods: cloudfront.AllowedMethods.ALLOW_ALL,
+              cachePolicy: apiCachePolicy,
+              originRequestPolicy: apiOriginRequestPolicy,
+            },
+            '/health*': {
+              origin: apiOrigin,
+              viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+              allowedMethods: cloudfront.AllowedMethods.ALLOW_GET_HEAD,
+              cachePolicy: apiCachePolicy,
+              originRequestPolicy: apiOriginRequestPolicy,
+            },
+          }
+        : undefined,
       defaultRootObject: 'index.html',
       // SPA 路由支持：所有 404/403 返回 index.html（React Router history mode）
       errorResponses: [
@@ -104,8 +151,7 @@ export class FrontendStack extends cdk.Stack {
     );
 
     // --- BucketDeployment：上传前端构建产物并自动 Invalidate CloudFront 缓存 ---
-    const distPath =
-      props.frontendDistPath ?? path.join(__dirname, '../../../frontend/dist');
+    const distPath = props.frontendDistPath ?? path.join(__dirname, '../../../frontend/dist');
 
     new s3deploy.BucketDeployment(this, 'DeployFrontend', {
       sources: [s3deploy.Source.asset(distPath)],
@@ -142,13 +188,11 @@ export class FrontendStack extends cdk.Stack {
       [
         {
           id: 'AwsSolutions-CFR1',
-          reason:
-            'Geo restriction not required for internal enterprise platform',
+          reason: 'Geo restriction not required for internal enterprise platform',
         },
         {
           id: 'AwsSolutions-CFR2',
-          reason:
-            'WAF not required for internal enterprise platform in initial deployment',
+          reason: 'WAF not required for internal enterprise platform in initial deployment',
         },
         {
           id: 'AwsSolutions-CFR3',
@@ -157,8 +201,12 @@ export class FrontendStack extends cdk.Stack {
         },
         {
           id: 'AwsSolutions-CFR4',
+          reason: 'TLS 1.2 is enforced via ViewerProtocolPolicy.REDIRECT_TO_HTTPS with HTTPS only',
+        },
+        {
+          id: 'AwsSolutions-CFR5',
           reason:
-            'TLS 1.2 is enforced via ViewerProtocolPolicy.REDIRECT_TO_HTTPS with HTTPS only',
+            'API origin uses HTTP-only ALB (no custom domain/cert in Dev); viewer-to-CloudFront is HTTPS, CloudFront-to-ALB is HTTP within VPC',
         },
       ],
       true,

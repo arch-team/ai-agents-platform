@@ -48,6 +48,7 @@ from src.modules.execution.domain.exceptions import (
     AgentNotAvailableError,
     ConversationNotActiveError,
     ConversationNotFoundError,
+    MemoryNotEnabledError,
     MessageNotFoundError,
     TeamExecutionNotCancellableError,
     TeamExecutionNotFoundError,
@@ -642,6 +643,7 @@ def create_app() -> FastAPI:
         MessageNotFoundError: 404,
         ConversationNotActiveError: 409,
         AgentNotAvailableError: 409,
+        MemoryNotEnabledError: 400,
         TeamExecutionNotFoundError: 404,
         TeamExecutionNotCancellableError: 409,
         # tool_catalog
@@ -688,6 +690,7 @@ def create_app() -> FastAPI:
     # 路由
     from src.modules.auth.api.admin_endpoints import router as admin_router
     from src.modules.auth.api.sso_endpoints import router as sso_router
+    from src.modules.execution.api.memory_endpoints import router as memory_router
 
     app.include_router(health_router)
     app.include_router(auth_router)
@@ -698,6 +701,7 @@ def create_app() -> FastAPI:
     app.include_router(execution_router)
     app.include_router(team_execution_router)
     app.include_router(preview_router)
+    app.include_router(memory_router)
     app.include_router(tool_catalog_router)
     app.include_router(knowledge_router)
     app.include_router(insights_router)

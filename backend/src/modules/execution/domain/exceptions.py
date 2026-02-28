@@ -37,6 +37,16 @@ class AgentNotAvailableError(DomainError):
         )
 
 
+class MemoryNotEnabledError(DomainError):
+    """Agent 未启用 Memory 功能。"""
+
+    def __init__(self, agent_id: int) -> None:
+        super().__init__(
+            message=f"Agent(id={agent_id}) 未启用 Memory 功能",
+            code="MEMORY_NOT_ENABLED",
+        )
+
+
 # ────────────────────────────────────────────
 # 团队执行相关异常
 # ────────────────────────────────────────────

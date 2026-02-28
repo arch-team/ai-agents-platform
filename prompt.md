@@ -395,3 +395,45 @@ ai-agents-plat-agentCore-staging
 
 
 本项目为 claude-agent-sdk → Claude Code CLI  →Bedrock Invoke API 构建的Agent提供了两张运行时，一是采用AWS ECS来部署，一种是采用 AWS AgentCore Runtime；分析一下当前系统中对这这两种模式的支持的架构设计有什么可以优化的地方。以满足架构设计原则。同时两种方式一直还存在功能无法正常使用的问题，需要同步修复，保证这两种模式都能正常运行。团队执行功能正常运行
+
+
+    =========================== short test summary info ============================                                          
+     SKIPPED [3] tests/modules/audit/integration/test_audit_logs_triggers.py: 需要 --mysql 选项和 MySQL 容器                   
+     SKIPPED [1] tests/modules/auth/integration/test_user_repository_impl.py:168: 需要 --mysql 选项和 MySQL 容器               
+     SKIPPED [1] tests/modules/auth/integration/test_user_repository_impl.py:179: 需要 --mysql 选项和 MySQL 容器               
+     SKIPPED [1] tests/modules/auth/integration/test_user_repository_impl.py:191: 需要 --mysql 选项和 MySQL 容器               
+     SKIPPED [1] tests/modules/auth/integration/test_user_repository_impl.py:203: 需要 --mysql 选项和 MySQL 容器               
+     ======================= 2071 passed, 7 skipped in 38.78s =======================
+
+
+
+     │ Agent 对话 (in_process)     │  ❌  │ 预有问题 — CLI 二进制启动失败                                   │
+  ├─────────────────────────────┼──────┼─────────────────────────────────────────────────────────────────┤
+  │ Agent 对话                  │  ❌  │ 预有问题 — Runtime 调用超时                                     │
+  │ (agentcore_runtime)         │      │                               
+  是否可能是fagage
+
+
+      PYEOF)
+  ⎿  [migrate] MySQL 连接/锁操作异常: (2003, "Can't connect to MySQL server on 'localhost' ([Errno 111] Connect call failed ('127.0.0.1',
+     3306))")，降级为直接执行迁移
+
+
+  ┌──────────┬──────────────────────────────┬───────────────────────────────────────────┐
+  │   维度   │  gateway (mcp_server 工具)   │         platform-tools (api 工具)         │
+  ├──────────┼──────────────────────────────┼───────────────────────────────────────────┤
+  │ 传输协议 │ SSE over HTTPS（远程）       │ stdio pipe（进程间）                      │
+  ├──────────┼──────────────────────────────┼───────────────────────────────────────────┤
+  │ 提供方   │ AgentCore Gateway 远程服务   │ Python SDK 进程内 MCP Server              │
+  ├──────────┼──────────────────────────────┼───────────────────────────────────────────┤
+  │ 初始化   │ CLI → HTTP 连接 Gateway      │ CLI → stdio → SDK _handle_control_request │
+  ├──────────┼──────────────────────────────┼───────────────────────────────────────────┤
+  │ 工具发现 │ CLI 发 tools/list 到 Gateway │ CLI 发 tools/list 到 SDK 父进程           │
+  └──────────┴──────────────────────────────┴───────────────────────────────────────────┘
+
+    要继续 CDK deploy + E2E 验证吗？
+
+      2. Gateway 认证缺失 (根因): SSE MCP 配置没有 Bearer Token，Gateway 返回 401
+
+
+        问题 2 (Gateway Cognito 认证完整实现) 留作后续 Agent 管理功能设计时规划。

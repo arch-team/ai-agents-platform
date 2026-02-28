@@ -34,6 +34,7 @@ export function AgentCreateForm({ onSuccess, onCancel }: AgentCreateFormProps) {
     register,
     handleSubmit,
     watch,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<CreateAgentFormData>({
     resolver: zodResolver(createAgentSchema),
@@ -44,6 +45,8 @@ export function AgentCreateForm({ onSuccess, onCancel }: AgentCreateFormProps) {
       model_id: templateData?.model_id ?? MODEL_OPTIONS[0].value,
       temperature: templateData?.temperature ?? 0.7,
       max_tokens: templateData?.max_tokens ?? 4096,
+      tool_ids: [],
+      enable_memory: false,
     },
   });
 
@@ -58,7 +61,7 @@ export function AgentCreateForm({ onSuccess, onCancel }: AgentCreateFormProps) {
 
   return (
     <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6" noValidate>
-      <AgentFormFields register={register} errors={errors} watch={watch} />
+      <AgentFormFields register={register} errors={errors} watch={watch} setValue={setValue} />
 
       {/* 提交错误提示 */}
       {createMutation.isError && (

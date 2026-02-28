@@ -15,6 +15,8 @@ export const createAgentSchema = z.object({
     .min(1, '最小为 1')
     .max(4096, '最大为 4096')
     .optional(),
+  tool_ids: z.array(z.number().int().positive()).optional().default([]),
+  enable_memory: z.boolean().optional().default(false),
 });
 
 export type CreateAgentFormData = z.input<typeof createAgentSchema>;

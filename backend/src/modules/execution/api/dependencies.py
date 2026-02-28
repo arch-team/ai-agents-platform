@@ -95,6 +95,15 @@ def get_agent_runtime() -> IAgentRuntime:
     return ClaudeAgentAdapter()
 
 
+@lru_cache
+def get_memory_service() -> object:
+    """创建 MemoryAdapter 单例。"""
+    from src.modules.execution.infrastructure.external.memory_adapter import MemoryAdapter
+
+    settings = get_settings()
+    return MemoryAdapter(memory_id=settings.AGENTCORE_MEMORY_ID, region=settings.AWS_REGION)
+
+
 async def get_execution_service(
     session: Annotated[AsyncSession, Depends(get_db)],
     agent_querier: Annotated[IAgentQuerier, Depends(get_agent_querier)],

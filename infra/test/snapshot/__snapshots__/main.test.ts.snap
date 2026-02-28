@@ -84,6 +84,15 @@ exports[`Snapshot Tests AgentCoreStack 快照匹配 1`] = `
         ],
       },
     },
+    "MemoryId": {
+      "Description": "AgentCore Memory ID",
+      "Value": {
+        "Fn::GetAtt": [
+          "AgentMemoryF0943253",
+          "MemoryId",
+        ],
+      },
+    },
     "RuntimeArn": {
       "Description": "AgentCore Runtime ARN",
       "Value": {
@@ -464,6 +473,97 @@ exports[`Snapshot Tests AgentCoreStack 快照匹配 1`] = `
         },
       },
       "Type": "AWS::Cognito::UserPoolResourceServer",
+    },
+    "AgentMemoryF0943253": {
+      "Metadata": {
+        "cdk_nag": {
+          "rules_to_suppress": [
+            {
+              "id": "AwsSolutions-IAM4",
+              "reason": "AgentCore Memory L2 Construct internally creates IAM execution role with AWS managed policies for memory strategy processing",
+            },
+            {
+              "id": "AwsSolutions-IAM5",
+              "reason": "Memory execution role requires wildcard permissions for Bedrock model invocation used by memory extraction strategies",
+            },
+          ],
+        },
+      },
+      "Properties": {
+        "Description": "AI Agents Platform - dev Agent Memory",
+        "EventExpiryDuration": 90,
+        "MemoryExecutionRoleArn": {
+          "Fn::GetAtt": [
+            "AgentMemoryServiceRoleC7E34D29",
+            "Arn",
+          ],
+        },
+        "MemoryStrategies": [
+          {
+            "SemanticMemoryStrategy": {
+              "Description": "提取语义记忆 — 事实、偏好和概念",
+              "Name": "semantic",
+              "Namespaces": [
+                "/strategies/{memoryStrategyId}/actors/{actorId}/sessions/{sessionId}",
+              ],
+              "Type": "SEMANTIC",
+            },
+          },
+          {
+            "UserPreferenceMemoryStrategy": {
+              "Description": "提取用户偏好 — 行为模式和习惯",
+              "Name": "user_preference",
+              "Namespaces": [
+                "/strategies/{memoryStrategyId}/actors/{actorId}/sessions/{sessionId}",
+              ],
+              "Type": "USER_PREFERENCE",
+            },
+          },
+          {
+            "SummaryMemoryStrategy": {
+              "Description": "提取对话摘要 — 关键上下文压缩",
+              "Name": "summarization",
+              "Namespaces": [
+                "/strategies/{memoryStrategyId}/actors/{actorId}/sessions/{sessionId}",
+              ],
+              "Type": "SUMMARIZATION",
+            },
+          },
+        ],
+        "Name": "ai_agents_platform_memory_dev",
+      },
+      "Type": "AWS::BedrockAgentCore::Memory",
+    },
+    "AgentMemoryServiceRoleC7E34D29": {
+      "Metadata": {
+        "cdk_nag": {
+          "rules_to_suppress": [
+            {
+              "id": "AwsSolutions-IAM4",
+              "reason": "AgentCore Memory L2 Construct internally creates IAM execution role with AWS managed policies for memory strategy processing",
+            },
+            {
+              "id": "AwsSolutions-IAM5",
+              "reason": "Memory execution role requires wildcard permissions for Bedrock model invocation used by memory extraction strategies",
+            },
+          ],
+        },
+      },
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "bedrock-agentcore.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+      },
+      "Type": "AWS::IAM::Role",
     },
     "AgentRuntime917DDB48": {
       "DependsOn": [
@@ -1239,6 +1339,10 @@ exports[`Snapshot Tests ComputeStack 快照匹配 1`] = `
               },
               {
                 "Name": "AGENTCORE_GATEWAY_URL",
+                "Value": "",
+              },
+              {
+                "Name": "AGENTCORE_MEMORY_ID",
                 "Value": "",
               },
             ],

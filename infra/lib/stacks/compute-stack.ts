@@ -61,6 +61,8 @@ export interface ComputeStackProps extends BaseStackProps {
   readonly gatewayClientSecretArn?: string;
   /** AgentCore Gateway MCP 端点 URL @default '' */
   readonly agentcoreGatewayUrl?: string;
+  /** AgentCore Memory ID — Agent 跨会话长期记忆 @default '' */
+  readonly agentcoreMemoryId?: string;
 }
 
 /**
@@ -141,6 +143,8 @@ export class ComputeStack extends cdk.Stack {
         GATEWAY_SCOPES: '', // AgentCore Gateway 默认 scopes
         // AgentCore Gateway MCP 端点 URL (Agent 执行时连接 MCP 工具)
         AGENTCORE_GATEWAY_URL: props.agentcoreGatewayUrl ?? '',
+        // AgentCore Memory ID (Agent 跨会话长期记忆, 空字符串触发 NoOp 降级)
+        AGENTCORE_MEMORY_ID: props.agentcoreMemoryId ?? '',
       },
       secrets: {
         // Aurora Secret JSON fields: host, port, username, password, dbname, engine
@@ -211,6 +215,27 @@ export class ComputeStack extends cdk.Stack {
         new iam.PolicyStatement({
           actions: ['bedrock-agentcore:InvokeAgentRuntime'],
           resources: [props.agentcoreRuntimeArn, `${props.agentcoreRuntimeArn}/*`],
+        }),
+      );
+    }
+
+    // 授权 ECS Task Role 调用 AgentCore Memory (M16: Agent 跨会话长期记忆)
+    if (props.agentcoreMemoryId) {
+      const memoryArn = `arn:aws:bedrock-agentcore:${cdk.Stack.of(this).region}:${accountId}:memory/${props.agentcoreMemoryId}`;
+      ecsConstruct.service.taskDefinition.taskRole.addToPrincipalPolicy(
+        new iam.PolicyStatement({
+          actions: [
+            'bedrock-agentcore:CreateEvent',
+            'bedrock-agentcore:GetEvent',
+            'bedrock-agentcore:ListEvents',
+            'bedrock-agentcore:GetMemoryRecord',
+            'bedrock-agentcore:RetrieveMemoryRecords',
+            'bedrock-agentcore:ListMemoryRecords',
+            'bedrock-agentcore:DeleteMemoryRecord',
+            'bedrock-agentcore:ListActors',
+            'bedrock-agentcore:ListSessions',
+          ],
+          resources: [memoryArn, `${memoryArn}/*`],
         }),
       );
     }

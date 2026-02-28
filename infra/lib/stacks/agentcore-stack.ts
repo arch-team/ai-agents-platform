@@ -11,6 +11,9 @@ import {
   GatewayProtocol,
   McpGatewaySearchType,
   MCPProtocolVersion,
+  Memory,
+  MemoryStrategyType,
+  ManagedMemoryStrategy,
 } from '@aws-cdk/aws-bedrock-agentcore-alpha';
 import { NagSuppressions } from 'cdk-nag';
 import { Construct } from 'constructs';
@@ -44,6 +47,10 @@ export class AgentCoreStack extends cdk.Stack {
   public readonly runtime: Runtime;
   /** AgentCore Gateway 实例 */
   public readonly gateway: Gateway;
+  /** AgentCore Memory 实例 */
+  public readonly memory: Memory;
+  /** AgentCore Memory ID (注入 ECS 环境变量) */
+  public readonly memoryId: string;
   /** Gateway Cognito Token Endpoint URL (OAuth2 Client Credentials) */
   public readonly gatewayTokenEndpoint: string;
   /** Gateway Cognito User Pool Client ID */
@@ -121,10 +128,36 @@ export class AgentCoreStack extends cdk.Stack {
     this.gatewayTokenEndpoint = this.gateway.tokenEndpointUrl ?? '';
     this.gatewayCognitoClientId = this.gateway.userPoolClient?.userPoolClientId ?? '';
 
-    // 4. CDK Nag 抑制
+    // 4. AgentCore Memory — Agent 跨会话长期记忆存储
+    const memoryName = `${PROJECT_NAME.replace(/-/g, '_')}_memory_${envName}`;
+    this.memory = new Memory(this, 'AgentMemory', {
+      memoryName,
+      description: `AI Agents Platform - ${envName} Agent Memory`,
+      expirationDuration: cdk.Duration.days(isProd(envName) ? 365 : 90),
+      memoryStrategies: [
+        new ManagedMemoryStrategy(MemoryStrategyType.SEMANTIC, {
+          name: 'semantic',
+          description: '提取语义记忆 — 事实、偏好和概念',
+          namespaces: ['/strategies/{memoryStrategyId}/actors/{actorId}/sessions/{sessionId}'],
+        }),
+        new ManagedMemoryStrategy(MemoryStrategyType.USER_PREFERENCE, {
+          name: 'user_preference',
+          description: '提取用户偏好 — 行为模式和习惯',
+          namespaces: ['/strategies/{memoryStrategyId}/actors/{actorId}/sessions/{sessionId}'],
+        }),
+        new ManagedMemoryStrategy(MemoryStrategyType.SUMMARIZATION, {
+          name: 'summarization',
+          description: '提取对话摘要 — 关键上下文压缩',
+          namespaces: ['/strategies/{memoryStrategyId}/actors/{actorId}/sessions/{sessionId}'],
+        }),
+      ],
+    });
+    this.memoryId = this.memory.memoryId;
+
+    // 6. CDK Nag 抑制
     this.suppressNagRules();
 
-    // 5. Outputs
+    // 7. Outputs
     new cdk.CfnOutput(this, 'RuntimeArn', {
       value: this.runtimeArn,
       description: 'AgentCore Runtime ARN',
@@ -145,6 +178,10 @@ export class AgentCoreStack extends cdk.Stack {
       value: this.gatewayCognitoClientId,
       description: 'AgentCore Gateway Cognito User Pool Client ID',
     });
+    new cdk.CfnOutput(this, 'MemoryId', {
+      value: this.memoryId,
+      description: 'AgentCore Memory ID',
+    });
   }
 
   /** CDK Nag 合规规则抑制 — AgentCore L2 Construct 内部资源的豁免 */
@@ -161,6 +198,23 @@ export class AgentCoreStack extends cdk.Stack {
           id: 'AwsSolutions-IAM5',
           reason:
             'Bedrock InvokeModel uses scoped wildcards (foundation-model/*, inference-profile/*); Runtime execution role is auto-created by L2 Construct',
+        },
+      ],
+      true,
+    );
+
+    NagSuppressions.addResourceSuppressions(
+      this.memory,
+      [
+        {
+          id: 'AwsSolutions-IAM4',
+          reason:
+            'AgentCore Memory L2 Construct internally creates IAM execution role with AWS managed policies for memory strategy processing',
+        },
+        {
+          id: 'AwsSolutions-IAM5',
+          reason:
+            'Memory execution role requires wildcard permissions for Bedrock model invocation used by memory extraction strategies',
         },
       ],
       true,

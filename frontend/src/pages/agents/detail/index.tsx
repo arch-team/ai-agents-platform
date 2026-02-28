@@ -8,6 +8,7 @@ import {
   useArchiveAgent,
   usePreviewAgent,
   AgentStatusBadge,
+  MemoryPanel,
 } from '@/features/agents';
 import { useConversations, useCreateConversation } from '@/features/execution';
 import { extractApiError } from '@/shared/lib/extractApiError';
@@ -215,6 +216,7 @@ export default function AgentDetailPage() {
             { label: '模型', value: agent.config.model_id },
             { label: '温度', value: agent.config.temperature },
             { label: '最大 Token 数', value: agent.config.max_tokens },
+            { label: '记忆', value: agent.config.enable_memory ? '已启用' : '未启用' },
             { label: '创建时间', value: formatDateTime(agent.created_at) },
           ].map(({ label, value }) => (
             <div key={label}>
@@ -233,6 +235,13 @@ export default function AgentDetailPage() {
           </div>
         )}
       </Card>
+
+      {/* 记忆管理面板 — 仅当 enable_memory 开启时展示 */}
+      {agent.config.enable_memory && (
+        <div className="mb-6">
+          <MemoryPanel agentId={agent.id} />
+        </div>
+      )}
 
       {/* 对话历史 */}
       <Card>

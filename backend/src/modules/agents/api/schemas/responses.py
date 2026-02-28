@@ -14,6 +14,7 @@ class AgentConfigResponse(BaseModel):
     top_p: float
     runtime_type: str
     enable_teams: bool
+    enable_memory: bool
     tool_ids: list[int] = Field(default_factory=list)
 
 

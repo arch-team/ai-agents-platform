@@ -18,6 +18,7 @@ const mockAgent: Agent = {
     temperature: 0.7,
     max_tokens: 4096,
     top_p: 1,
+    enable_memory: false,
   },
   created_at: '2025-01-15T00:00:00Z',
   updated_at: '2025-01-15T00:00:00Z',

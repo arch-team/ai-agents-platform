@@ -23,12 +23,18 @@ class IMemoryService(Protocol):
         """保存到 AgentCore Memory，返回 memory_id。"""
         ...
 
-    async def recall_memory(
-        self,
-        agent_id: int,
-        query: str,
-        *,
-        max_results: int = 5,
-    ) -> list[MemoryItem]:
+    async def recall_memory(self, agent_id: int, query: str, *, max_results: int = 5) -> list[MemoryItem]:
         """从 AgentCore Memory 检索相关记忆。"""
+        ...
+
+    async def list_memories(self, agent_id: int, *, max_results: int = 20) -> list[MemoryItem]:
+        """列出 Agent 的长期记忆列表。"""
+        ...
+
+    async def get_memory(self, agent_id: int, memory_id: str) -> MemoryItem | None:
+        """获取单条记忆，不存在返回 None。"""
+        ...
+
+    async def delete_memory(self, agent_id: int, memory_id: str) -> bool:
+        """删除单条记忆，返回是否成功。"""
         ...

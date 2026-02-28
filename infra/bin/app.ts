@@ -95,6 +95,8 @@ const computeStack = new ComputeStack(app, `${prefix}-compute-${env}`, {
   agentRuntimeMode,
   // AgentCore Runtime ARN (agentcore_runtime 模式: Agent 执行托管在 AgentCore 独立容器中)
   agentcoreRuntimeArn: agentCoreStack.runtimeArn,
+  // AgentCore Memory ID (M16: Agent 跨会话长期记忆)
+  agentcoreMemoryId: agentCoreStack.memoryId,
   // AgentCore Gateway 参数 (M16: Agent 工具绑定)
   agentcoreGatewayUrl: agentCoreStack.gatewayUrl,
   gatewayTokenEndpoint: agentCoreStack.gatewayTokenEndpoint,
@@ -132,11 +134,13 @@ monitoringStack.addDependency(databaseStack);
 monitoringStack.addDependency(computeStack);
 monitoringStack.addDependency(securityStack);
 
-// FrontendStack — S3 私有 + CloudFront OAC，独立 Stack，无需依赖其他 Stack
-new FrontendStack(app, `${prefix}-frontend-${env}`, {
+// FrontendStack — S3 私有 + CloudFront OAC + API 反向代理（解决 Mixed Content）
+const frontendStack = new FrontendStack(app, `${prefix}-frontend-${env}`, {
   env: cdkEnv,
   envName: env,
+  apiAlbDnsName: computeStack.albDnsName,
 });
+frontendStack.addDependency(computeStack);
 
 // BillingStack — AWS Budgets 月度预算告警，独立 Stack，无需依赖其他 Stack
 new BillingStack(app, `${prefix}-billing-${env}`, {

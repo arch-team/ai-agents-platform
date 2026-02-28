@@ -8,6 +8,8 @@ export interface CreateAgentRequest {
   model_id?: string;
   temperature?: number;
   max_tokens?: number;
+  tool_ids?: number[];
+  enable_memory?: boolean;
 }
 
 export type UpdateAgentRequest = Partial<CreateAgentRequest>;

@@ -1,7 +1,7 @@
 """Memory MCP Server stdio 入口点。
 
 Claude Agent SDK 通过 stdio 启动本模块作为子进程，
-提供 save_memory 和 recall_memory 两个 MCP 工具。
+提供 save_memory / recall_memory / list_memories / delete_memory 四个 MCP 工具。
 
 启动方式: python -m src.modules.execution.infrastructure.external.memory_server_entrypoint
 
@@ -77,6 +77,43 @@ TOOLS = [
             "required": ["agent_id", "query"],
         },
     },
+    {
+        "name": "list_memories",
+        "description": "列出 Agent 的记忆列表",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "agent_id": {
+                    "type": "integer",
+                    "description": "Agent ID",
+                },
+                "max_results": {
+                    "type": "integer",
+                    "description": "最大返回数量",
+                    "default": 20,
+                },
+            },
+            "required": ["agent_id"],
+        },
+    },
+    {
+        "name": "delete_memory",
+        "description": "删除指定的记忆条目",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "agent_id": {
+                    "type": "integer",
+                    "description": "Agent ID",
+                },
+                "memory_id": {
+                    "type": "string",
+                    "description": "记忆 ID",
+                },
+            },
+            "required": ["agent_id", "memory_id"],
+        },
+    },
 ]
 
 
@@ -122,7 +159,7 @@ def _handle_tools_list(request_id: int | str | None) -> dict[str, Any]:
     return _make_response(request_id, {"tools": TOOLS})
 
 
-async def _handle_tools_call(
+async def _handle_tools_call(  # noqa: PLR0911
     request_id: int | str | None,
     params: dict[str, Any],
     adapter: MemoryAdapter,
@@ -164,6 +201,38 @@ async def _handle_tools_call(
                 request_id,
                 {
                     "content": [{"type": "text", "text": json.dumps(results, ensure_ascii=False)}],
+                },
+            )
+
+        if tool_name == "list_memories":
+            items = await adapter.list_memories(
+                agent_id=arguments["agent_id"],
+                max_results=arguments.get("max_results", 20),
+            )
+            results = [
+                {
+                    "memory_id": item.memory_id,
+                    "content": item.content,
+                    "topic": item.topic,
+                }
+                for item in items
+            ]
+            return _make_response(
+                request_id,
+                {
+                    "content": [{"type": "text", "text": json.dumps(results, ensure_ascii=False)}],
+                },
+            )
+
+        if tool_name == "delete_memory":
+            deleted = await adapter.delete_memory(
+                agent_id=arguments["agent_id"],
+                memory_id=arguments["memory_id"],
+            )
+            return _make_response(
+                request_id,
+                {
+                    "content": [{"type": "text", "text": "deleted" if deleted else "delete_failed"}],
                 },
             )
 
