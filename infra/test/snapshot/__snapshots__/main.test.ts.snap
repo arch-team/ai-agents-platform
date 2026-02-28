@@ -54,6 +54,27 @@ exports[`Snapshot Tests AgentCoreStack 快照匹配 1`] = `
         ],
       },
     },
+    "GatewayCognitoClientId": {
+      "Description": "AgentCore Gateway Cognito User Pool Client ID",
+      "Value": {
+        "Ref": "AgentGatewayUserPoolDefaultClient29A51579",
+      },
+    },
+    "GatewayTokenEndpoint": {
+      "Description": "AgentCore Gateway Cognito Token Endpoint (OAuth2 Client Credentials)",
+      "Value": {
+        "Fn::Join": [
+          "",
+          [
+            "https://",
+            {
+              "Ref": "AgentGatewayUserPoolDomain356D4F1B",
+            },
+            ".auth.us-east-1.amazoncognito.com/oauth2/token",
+          ],
+        ],
+      },
+    },
     "GatewayUrl": {
       "Description": "AgentCore Gateway URL",
       "Value": {
@@ -1198,6 +1219,18 @@ exports[`Snapshot Tests ComputeStack 快照匹配 1`] = `
               },
               {
                 "Name": "AGENTCORE_RUNTIME_ARN",
+                "Value": "",
+              },
+              {
+                "Name": "AGENTCORE_GATEWAY_TOKEN_ENDPOINT",
+                "Value": "",
+              },
+              {
+                "Name": "GATEWAY_CLIENT_ID",
+                "Value": "",
+              },
+              {
+                "Name": "GATEWAY_SCOPES",
                 "Value": "",
               },
             ],
