@@ -1034,8 +1034,8 @@ class TestAgentRuntimeRouting:
         agent_runtime.execute_stream.assert_not_called()
 
     @pytest.mark.asyncio
-    async def test_agent_mode_calls_tool_querier(self) -> None:
-        """Agent 模式下, tool_querier.list_approved_tools() 被调用。"""
+    async def test_agent_mode_calls_tool_querier_for_agent(self) -> None:
+        """Agent 模式下, tool_querier.list_tools_for_agent(agent_id) 被调用。"""
         conv_repo, msg_repo, agent_querier, llm_client = _setup_basic_mocks(
             runtime_type="agent",
         )
@@ -1049,7 +1049,7 @@ class TestAgentRuntimeRouting:
         )
 
         tool_querier = AsyncMock(spec=IToolQuerier)
-        tool_querier.list_approved_tools.return_value = [
+        tool_querier.list_tools_for_agent.return_value = [
             _make_approved_tool(tool_id=1, name="search", tool_type="mcp_server"),
             _make_approved_tool(tool_id=2, name="calculator", tool_type="api"),
         ]
@@ -1069,8 +1069,10 @@ class TestAgentRuntimeRouting:
             mock_bus.publish_async = AsyncMock()
             await service.send_message(1, SendMessageDTO(content="你好"), user_id=100)
 
-        # 验证 tool_querier 被调用
-        tool_querier.list_approved_tools.assert_called_once()
+        # 验证按 Agent 绑定过滤 (而非全平台)
+        tool_querier.list_tools_for_agent.assert_called_once()
+        # list_approved_tools 不应被调用
+        tool_querier.list_approved_tools.assert_not_called()
 
         # 验证 agent_runtime.execute 的 request 包含工具
         call_args = agent_runtime.execute.call_args

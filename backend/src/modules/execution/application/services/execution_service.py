@@ -463,7 +463,7 @@ class ExecutionService:
                 "agent.model_id": ctx.agent_info.model_id,
             },
         ):
-            tools = await self._get_agent_tools()
+            tools = await self._get_agent_tools(ctx.agent_info.id)
             request = self._build_agent_request(ctx, tools)
             response = await self._agent_runtime.execute(request)
             total_tokens = response.input_tokens + response.output_tokens
@@ -495,7 +495,7 @@ class ExecutionService:
         if self._agent_runtime is None:
             msg = "Agent runtime 未配置"
             raise ValueError(msg)
-        tools = await self._get_agent_tools()
+        tools = await self._get_agent_tools(ctx.agent_info.id)
         request = self._build_agent_request(ctx, tools)
         return await self._agent_runtime.execute_stream(request)
 
@@ -511,22 +511,25 @@ class ExecutionService:
             stop_sequences=ctx.agent_info.stop_sequences,
         )
 
-    async def _get_agent_tools(self) -> list[AgentTool]:
-        """通过 IToolQuerier 获取已审批工具并转换为 AgentTool。
+    async def _get_agent_tools(self, agent_id: int) -> list[AgentTool]:
+        """获取指定 Agent 绑定的工具并转换为 AgentTool。
 
+        使用 list_tools_for_agent(agent_id) 按 Agent 绑定关系过滤，
+        而非 list_approved_tools() 返回全平台工具。
         降级: IToolQuerier 异常时返回空列表, Agent 无工具继续执行。
         """
         if self._tool_querier is None:
             return []
         with tracer.start_as_current_span("tools.load"):
             try:
-                approved = await self._tool_querier.list_approved_tools()
+                approved = await self._tool_querier.list_tools_for_agent(agent_id)
             except Exception:
-                logger.warning("tool_querier_degraded", reason="list_approved_tools failed")
+                logger.warning("tool_querier_degraded", reason="list_tools_for_agent failed", agent_id=agent_id)
                 return []
             tools = [self._to_agent_tool(t) for t in approved]
             span = trace.get_current_span()
             span.set_attribute("tools.count", len(tools))
+            span.set_attribute("agent.id", agent_id)
             return tools
 
     _TOOL_CONFIG_FIELDS: tuple[str, ...] = (

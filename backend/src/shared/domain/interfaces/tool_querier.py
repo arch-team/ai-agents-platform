@@ -34,3 +34,12 @@ class IToolQuerier(ABC):
 
     @abstractmethod
     async def list_approved_tools(self) -> list[ApprovedToolInfo]: ...  # noqa: D102
+
+    async def list_tools_for_agent(self, agent_id: int) -> list[ApprovedToolInfo]:
+        """获取指定 Agent 绑定的已审批工具。
+
+        默认返回空列表（无 Agent-Tool 绑定关系时）。
+        子类可覆写此方法实现 Agent 级别工具过滤。
+        """
+        _ = agent_id
+        return []
