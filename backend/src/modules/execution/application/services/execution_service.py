@@ -100,6 +100,15 @@ class ExecutionService:
         stream_session_close: AsyncCallback | None = None,
         memory_adapter: IMemoryService | None = None,
         memory_id: str = "",
+        stats_repo_factory: Callable[
+            [],
+            tuple[
+                IConversationRepository,
+                Callable[[], Coroutine[Any, Any, None]],
+                Callable[[], Coroutine[Any, Any, None]],
+            ],
+        ]
+        | None = None,
     ) -> None:
         self._conversation_repo = conversation_repo
         self._message_repo = message_repo
@@ -114,6 +123,7 @@ class ExecutionService:
         self._context_window = context_window or ContextWindowConfig()
         self._stream_session_commit = stream_session_commit
         self._stream_session_close = stream_session_close
+        self._stats_repo_factory = stats_repo_factory
         # 流后 DB 写使用独立 repos (由 API 层通过独立 session 创建)
         self._stream_msg_repo, self._stream_conv_repo = stream_finalize_repos or (message_repo, conversation_repo)
 
@@ -248,16 +258,14 @@ class ExecutionService:
                         total_input_tokens = chunk.input_tokens
                         total_output_tokens = chunk.output_tokens
             except Exception:
-                # 流失败: 通过 stream_session 补偿更新用户消息计数
-                # (DI session 在 SSE 期间不可用, 必须用独立 session)
-                await self._compensate_user_message_count(ctx.conversation, conversation_id)
+                # 流失败: 补偿用户消息计数 (独立短事务, 不依赖 DI/stream session)
+                await self._compensate_user_message_count(conversation_id)
                 raise
 
             # 流后 DB 写操作: 使用独立 session, 避免 DI session 已关闭的问题
             total_tokens = total_input_tokens + total_output_tokens
             await self._finalize_stream(
                 conversation_id=conversation_id,
-                conversation=ctx.conversation,
                 user_msg=ctx.created_user_msg,
                 assistant_msg=created_assistant_msg,
                 collected_content=collected_content,
@@ -278,7 +286,6 @@ class ExecutionService:
         self,
         *,
         conversation_id: int,
-        conversation: Conversation,
         user_msg: Message,
         assistant_msg: Message,
         collected_content: str,
@@ -286,65 +293,84 @@ class ExecutionService:
         model_id: str,
         user_id: int,
     ) -> None:
-        """流式传输完成后，使用独立 session 执行 DB 写操作和事件发布。
+        """流式传输完成后的 DB 写操作和事件发布。
 
-        确保 stream_session 在操作完成后被提交并关闭（包括异常情况）。
+        1. stream_session: 仅更新助手消息内容 → commit → close
+        2. 独立短事务: 原子增量更新 conversation 统计 (避免行锁竞争)
+        3. 事件发布: 不依赖 DB session
         """
         if user_msg.id is None or assistant_msg.id is None:
             msg = "消息 ID 不能为空"
             raise ValueError(msg)
 
         try:
+            # Step 1: stream_session 只更新助手消息 (不触碰 conversations 表)
             assistant_msg.content = collected_content
             assistant_msg.token_count = total_tokens
-            conversation.add_message_count(token_count=0)  # 用户消息
-            conversation.add_message_count(token_count=total_tokens)  # 助手消息
-
-            # 使用流专用 repos 写入 (由 API 层通过独立 session 创建, 避免 DI session 已关闭)
             await self._stream_msg_repo.update(assistant_msg)
-            await self._stream_conv_repo.update(conversation)
 
-            # 提交 stream session 事务
             if self._stream_session_commit:
                 await self._stream_session_commit()
-
-            # 发布事件 (不依赖 DB session, 独立事件并行发布)
-            await self._publish_message_events(
-                conversation_id=conversation_id,
-                user_msg_id=user_msg.id,
-                assistant_msg_id=assistant_msg.id,
-                total_tokens=total_tokens,
-                model_id=model_id,
-                user_id=user_id,
-            )
         except Exception:
             logger.exception("stream_finalize_failed", conversation_id=conversation_id)
             raise
         finally:
-            # 确保 stream session 关闭, 避免连接泄漏
             if self._stream_session_close:
                 await self._stream_session_close()
 
-    async def _compensate_user_message_count(
-        self,
-        conversation: Conversation,
-        conversation_id: int,
-    ) -> None:
-        """流失败时补偿更新用户消息计数 (通过 stream_session)。
+        # Step 2: 独立短事务更新 conversation 统计 (原子增量, 不持有长锁)
+        # best-effort: 统计更新失败不影响消息已保存的事实
+        await self._increment_conversation_stats(conversation_id, message_delta=2, token_delta=total_tokens)
 
-        SSE 流期间 DI session 不可用, 必须通过独立的 stream_session 更新。
+        # Step 3: 发布事件
+        await self._publish_message_events(
+            conversation_id=conversation_id,
+            user_msg_id=user_msg.id,
+            assistant_msg_id=assistant_msg.id,
+            total_tokens=total_tokens,
+            model_id=model_id,
+            user_id=user_id,
+        )
+
+    async def _increment_conversation_stats(
+        self,
+        conversation_id: int,
+        *,
+        message_delta: int,
+        token_delta: int,
+    ) -> None:
+        """独立短事务更新 conversation 统计 (原子增量)。
+
+        通过 stats_repo_factory 创建一次性 session + repo, 避免与 DI / stream session 竞争行锁。
+        best-effort: 失败仅记录警告, 不影响已保存的消息。
+        """
+        if self._stats_repo_factory is None:
+            logger.warning("stats_repo_factory_not_configured", conversation_id=conversation_id)
+            return
+        try:
+            repo, commit, close = self._stats_repo_factory()
+            try:
+                await repo.increment_message_stats(
+                    conversation_id,
+                    message_delta=message_delta,
+                    token_delta=token_delta,
+                )
+                await commit()
+            finally:
+                await close()
+        except Exception:
+            logger.warning("increment_conversation_stats_failed", conversation_id=conversation_id)
+
+    async def _compensate_user_message_count(self, conversation_id: int) -> None:
+        """流失败时补偿更新用户消息计数。
+
+        使用独立短事务原子增量, 与 _increment_conversation_stats 一致。
         best-effort: 补偿失败不阻塞异常传播。
         """
-        try:
-            conversation.add_message_count(token_count=0)
-            await self._stream_conv_repo.update(conversation)
-            if self._stream_session_commit:
-                await self._stream_session_commit()
-        except Exception:
-            logger.warning("compensate_user_message_count_failed", conversation_id=conversation_id)
-        finally:
-            if self._stream_session_close:
-                await self._stream_session_close()
+        await self._increment_conversation_stats(conversation_id, message_delta=1, token_delta=0)
+        # 关闭 stream_session (助手消息占位可能需要回滚)
+        if self._stream_session_close:
+            await self._stream_session_close()
 
     async def get_conversation(
         self,

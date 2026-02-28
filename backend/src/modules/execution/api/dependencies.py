@@ -12,6 +12,7 @@ from src.modules.execution.application.dto.execution_dto import ContextWindowCon
 from src.modules.execution.application.interfaces.agent_runtime import IAgentRuntime
 from src.modules.execution.application.services.execution_service import ExecutionService
 from src.modules.execution.application.services.team_execution_service import TeamExecutionService
+from src.modules.execution.domain.repositories.conversation_repository import IConversationRepository
 from src.modules.execution.infrastructure.external.bedrock_llm_client import BedrockLLMClient
 from src.modules.execution.infrastructure.external.claude_agent_adapter import ClaudeAgentAdapter
 from src.modules.execution.infrastructure.persistence.repositories.conversation_repository_impl import (
@@ -102,6 +103,24 @@ async def get_execution_service(
         max_context_tokens=settings.MAX_CONTEXT_TOKENS,
         system_prompt_token_budget=settings.SYSTEM_PROMPT_TOKEN_BUDGET,
     )
+
+    def _stats_repo_factory() -> tuple[
+        IConversationRepository,
+        Callable[[], Awaitable[None]],
+        Callable[[], Awaitable[None]],
+    ]:
+        """为 conversation 统计更新创建独立 session, 避免与 DI/stream session 竞争行锁。"""
+        stats_session = get_session_factory()()
+
+        async def _commit() -> None:
+            await stats_session.commit()
+
+        async def _close() -> None:
+            await stats_session.close()
+
+        repo: IConversationRepository = ConversationRepositoryImpl(session=stats_session)
+        return repo, _commit, _close
+
     return ExecutionService(
         conversation_repo=conversation_repo,
         message_repo=message_repo,
@@ -116,6 +135,7 @@ async def get_execution_service(
         stream_session_commit=stream_session.commit,
         stream_session_close=stream_session.close,
         memory_id=settings.AGENTCORE_MEMORY_ID,
+        stats_repo_factory=_stats_repo_factory,  # type: ignore[arg-type]  # Awaitable vs Coroutine
     )
 
 

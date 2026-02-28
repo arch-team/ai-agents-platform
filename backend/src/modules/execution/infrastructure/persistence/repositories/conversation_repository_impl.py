@@ -1,6 +1,8 @@
 """Conversation 仓库实现。"""
 
-from sqlalchemy import ColumnElement, select
+from datetime import UTC, datetime
+
+from sqlalchemy import ColumnElement, select, update
 
 from src.modules.execution.domain.entities.conversation import Conversation
 from src.modules.execution.domain.repositories.conversation_repository import IConversationRepository
@@ -21,6 +23,21 @@ class ConversationRepositoryImpl(
     _updatable_fields: frozenset[str] = frozenset(
         {"title", "status", "message_count", "total_tokens"},
     )
+
+    async def increment_message_stats(
+        self, conversation_id: int, *, message_delta: int = 0, token_delta: int = 0,
+    ) -> None:
+        """原子增量: UPDATE SET col = col + N, 锁持有时间极短。"""
+        stmt = (
+            update(ConversationModel)
+            .where(ConversationModel.id == conversation_id)
+            .values(
+                message_count=ConversationModel.message_count + message_delta,
+                total_tokens=ConversationModel.total_tokens + token_delta,
+                updated_at=datetime.now(UTC),
+            )
+        )
+        await self._session.execute(stmt)
 
     @staticmethod
     def _user_filters(user_id: int, agent_id: int | None = None) -> list[ColumnElement[bool]]:

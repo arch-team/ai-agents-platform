@@ -351,9 +351,8 @@ class TestSendMessageStream:
         assert chunks[-1].done is True
         assert chunks[-1].token_count == 30
 
-        # 验证更新调用
+        # 验证消息更新调用 (conversation 统计现在走独立短事务, 不再通过 conv_repo.update)
         msg_repo.update.assert_called_once()
-        conv_repo.update.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_stream_post_write_uses_independent_repos(self) -> None:
@@ -417,10 +416,11 @@ class TestSendMessageStream:
             async for chunk in stream:
                 chunks.append(chunk)
 
-        # 验证: stream repos 执行了写操作
+        # 验证: stream msg repo 执行了消息更新
         stream_msg_repo.update.assert_called_once()
-        stream_conv_repo.update.assert_called_once()
-        # 验证: DI repos 的 update 未被调用 (流路径全部走 stream repos)
+        # 验证: conversation 统计走独立短事务, stream_conv_repo.update 不再被调用
+        stream_conv_repo.update.assert_not_called()
+        # 验证: DI repos 的 update 未被调用
         di_msg_repo.update.assert_not_called()
         di_conv_repo.update.assert_not_called()
 
