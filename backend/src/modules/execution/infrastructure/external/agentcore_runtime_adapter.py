@@ -170,7 +170,7 @@ class AgentCoreRuntimeAdapter(IAgentRuntime):
         # StreamingBody → bytes → JSON
         if hasattr(body, "read"):
             body = json.loads(body.read())
-        elif isinstance(body, (bytes, bytearray)) or isinstance(body, str):
+        elif isinstance(body, (bytes, bytearray, str)):
             body = json.loads(body)
 
         content = str(body.get("content", ""))
