@@ -14,20 +14,22 @@ from src.shared.infrastructure.tracing import (
 class TestSetupTracing:
     """setup_tracing 配置测试。"""
 
-    def test_dev_mode_uses_console_exporter(self) -> None:
-        """dev 模式下使用 ConsoleSpanExporter。"""
-        with patch("src.shared.infrastructure.tracing.TracerProvider") as mock_provider, \
-             patch("src.shared.infrastructure.tracing.ConsoleSpanExporter") as mock_console, \
-             patch("src.shared.infrastructure.tracing.BatchSpanProcessor") as mock_processor, \
-             patch("src.shared.infrastructure.tracing.trace") as mock_trace, \
-             patch("src.shared.infrastructure.tracing.SQLAlchemyInstrumentor"):
+    def test_dev_mode_uses_noop_exporter(self) -> None:
+        """dev 模式下使用 _NoOpSpanExporter (避免 Console 输出淹没 structlog)。"""
+        with (
+            patch("src.shared.infrastructure.tracing.TracerProvider") as mock_provider,
+            patch("src.shared.infrastructure.tracing._NoOpSpanExporter") as mock_noop,
+            patch("src.shared.infrastructure.tracing.BatchSpanProcessor") as mock_processor,
+            patch("src.shared.infrastructure.tracing.trace") as mock_trace,
+            patch("src.shared.infrastructure.tracing.SQLAlchemyInstrumentor"),
+        ):
             mock_provider_instance = MagicMock()
             mock_provider.return_value = mock_provider_instance
 
             setup_tracing(service_name="test-service", is_dev=True, otlp_endpoint="")
 
-            mock_console.assert_called_once()
-            mock_processor.assert_called_once_with(mock_console.return_value)
+            mock_noop.assert_called_once()
+            mock_processor.assert_called_once_with(mock_noop.return_value)
             mock_provider_instance.add_span_processor.assert_called_once_with(
                 mock_processor.return_value,
             )
@@ -35,11 +37,13 @@ class TestSetupTracing:
 
     def test_prod_mode_with_otlp_endpoint_uses_otlp_exporter(self) -> None:
         """prod 模式且配置了 OTLP 端点时使用 OTLPSpanExporter。"""
-        with patch("src.shared.infrastructure.tracing.TracerProvider") as mock_provider, \
-             patch("src.shared.infrastructure.tracing.OTLPSpanExporter") as mock_otlp, \
-             patch("src.shared.infrastructure.tracing.BatchSpanProcessor") as mock_processor, \
-             patch("src.shared.infrastructure.tracing.trace") as mock_trace, \
-             patch("src.shared.infrastructure.tracing.SQLAlchemyInstrumentor"):
+        with (
+            patch("src.shared.infrastructure.tracing.TracerProvider") as mock_provider,
+            patch("src.shared.infrastructure.tracing.OTLPSpanExporter") as mock_otlp,
+            patch("src.shared.infrastructure.tracing.BatchSpanProcessor") as mock_processor,
+            patch("src.shared.infrastructure.tracing.trace") as mock_trace,
+            patch("src.shared.infrastructure.tracing.SQLAlchemyInstrumentor"),
+        ):
             mock_provider_instance = MagicMock()
             mock_provider.return_value = mock_provider_instance
 
@@ -54,30 +58,34 @@ class TestSetupTracing:
             mock_provider_instance.add_span_processor.assert_called_once()
             mock_trace.set_tracer_provider.assert_called_once_with(mock_provider_instance)
 
-    def test_prod_mode_without_otlp_endpoint_falls_back_to_console(self) -> None:
-        """prod 模式但未配置 OTLP 端点时降级为 ConsoleSpanExporter。"""
-        with patch("src.shared.infrastructure.tracing.TracerProvider") as mock_provider, \
-             patch("src.shared.infrastructure.tracing.ConsoleSpanExporter") as mock_console, \
-             patch("src.shared.infrastructure.tracing.BatchSpanProcessor") as mock_processor, \
-             patch("src.shared.infrastructure.tracing.trace") as mock_trace, \
-             patch("src.shared.infrastructure.tracing.SQLAlchemyInstrumentor"):
+    def test_prod_mode_without_otlp_endpoint_falls_back_to_noop(self) -> None:
+        """prod 模式但未配置 OTLP 端点时降级为 _NoOpSpanExporter。"""
+        with (
+            patch("src.shared.infrastructure.tracing.TracerProvider") as mock_provider,
+            patch("src.shared.infrastructure.tracing._NoOpSpanExporter") as mock_noop,
+            patch("src.shared.infrastructure.tracing.BatchSpanProcessor") as mock_processor,
+            patch("src.shared.infrastructure.tracing.trace") as mock_trace,
+            patch("src.shared.infrastructure.tracing.SQLAlchemyInstrumentor"),
+        ):
             mock_provider_instance = MagicMock()
             mock_provider.return_value = mock_provider_instance
 
             setup_tracing(service_name="test-service", is_dev=False, otlp_endpoint="")
 
-            mock_console.assert_called_once()
-            mock_processor.assert_called_once_with(mock_console.return_value)
+            mock_noop.assert_called_once()
+            mock_processor.assert_called_once_with(mock_noop.return_value)
             mock_trace.set_tracer_provider.assert_called_once_with(mock_provider_instance)
 
     def test_resource_includes_service_name_and_environment(self) -> None:
         """Resource 包含 service.name 和 deployment.environment 属性。"""
-        with patch("src.shared.infrastructure.tracing.TracerProvider") as mock_provider, \
-             patch("src.shared.infrastructure.tracing.Resource") as mock_resource, \
-             patch("src.shared.infrastructure.tracing.ConsoleSpanExporter"), \
-             patch("src.shared.infrastructure.tracing.BatchSpanProcessor"), \
-             patch("src.shared.infrastructure.tracing.trace"), \
-             patch("src.shared.infrastructure.tracing.SQLAlchemyInstrumentor"):
+        with (
+            patch("src.shared.infrastructure.tracing.TracerProvider") as mock_provider,
+            patch("src.shared.infrastructure.tracing.Resource") as mock_resource,
+            patch("src.shared.infrastructure.tracing._NoOpSpanExporter"),
+            patch("src.shared.infrastructure.tracing.BatchSpanProcessor"),
+            patch("src.shared.infrastructure.tracing.trace"),
+            patch("src.shared.infrastructure.tracing.SQLAlchemyInstrumentor"),
+        ):
             mock_provider.return_value = MagicMock()
 
             setup_tracing(
@@ -94,11 +102,13 @@ class TestSetupTracing:
 
     def test_sqlalchemy_instrumentor_is_registered(self) -> None:
         """SQLAlchemyInstrumentor 在 setup 时被注册。"""
-        with patch("src.shared.infrastructure.tracing.TracerProvider") as mock_provider, \
-             patch("src.shared.infrastructure.tracing.ConsoleSpanExporter"), \
-             patch("src.shared.infrastructure.tracing.BatchSpanProcessor"), \
-             patch("src.shared.infrastructure.tracing.trace"), \
-             patch("src.shared.infrastructure.tracing.SQLAlchemyInstrumentor") as mock_sqla:
+        with (
+            patch("src.shared.infrastructure.tracing.TracerProvider") as mock_provider,
+            patch("src.shared.infrastructure.tracing._NoOpSpanExporter"),
+            patch("src.shared.infrastructure.tracing.BatchSpanProcessor"),
+            patch("src.shared.infrastructure.tracing.trace"),
+            patch("src.shared.infrastructure.tracing.SQLAlchemyInstrumentor") as mock_sqla,
+        ):
             mock_provider.return_value = MagicMock()
             mock_instrumentor = MagicMock()
             mock_sqla.return_value = mock_instrumentor

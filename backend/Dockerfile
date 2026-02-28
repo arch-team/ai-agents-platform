@@ -60,7 +60,12 @@ COPY --from=builder /app/scripts /app/scripts
 ENV PATH="/app/.venv/bin:$PATH" \
     PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
-    CLAUDE_CODE_USE_BEDROCK=1
+    CLAUDE_CODE_USE_BEDROCK=1 \
+    HOME=/home/appuser
+
+# 确保 .claude 目录可写 (CLI 启动时写入配置)
+RUN mkdir -p /home/appuser/.claude && \
+    chown -R appuser:appuser /home/appuser
 
 # 切换到非 root 用户
 USER appuser

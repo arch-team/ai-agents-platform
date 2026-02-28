@@ -1,20 +1,32 @@
 """OpenTelemetry 分布式追踪配置。
 
-dev 环境: ConsoleSpanExporter (本地调试)
+dev 环境: NoOp (禁用 Span 导出, 避免淹没 structlog)
 prod 环境: OTLPSpanExporter (导出到 ADOT Collector → CloudWatch)
-未配置 OTLP 端点时: 降级为 ConsoleSpanExporter
+未配置 OTLP 端点时: 降级为 NoOp
 """
+
+from collections.abc import Sequence
 
 import structlog
 from opentelemetry import trace
 from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
 from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
 from opentelemetry.sdk.resources import Resource
-from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.sdk.trace.export import BatchSpanProcessor, ConsoleSpanExporter, SpanExporter
+from opentelemetry.sdk.trace import ReadableSpan, TracerProvider
+from opentelemetry.sdk.trace.export import BatchSpanProcessor, SpanExporter, SpanExportResult
 
 
 logger = structlog.get_logger(__name__)
+
+
+class _NoOpSpanExporter(SpanExporter):
+    """静默丢弃 Span, 避免 Console 输出干扰 structlog 业务日志。"""
+
+    def export(self, spans: Sequence[ReadableSpan]) -> SpanExportResult:  # noqa: ARG002
+        return SpanExportResult.SUCCESS
+
+    def shutdown(self) -> None:
+        pass
 
 
 def setup_tracing(
@@ -41,11 +53,11 @@ def setup_tracing(
 
     provider = TracerProvider(resource=resource)
 
-    # 选择 Exporter: dev 模式或未配置 OTLP 端点时使用 Console, 否则使用 OTLP
+    # 选择 Exporter: dev/无 OTLP 端点时禁用导出 (避免 Console 输出淹没 structlog), 否则使用 OTLP
     exporter: SpanExporter
     if is_dev or not otlp_endpoint:
-        exporter = ConsoleSpanExporter()
-        exporter_type = "console"
+        exporter = _NoOpSpanExporter()
+        exporter_type = "noop"
     else:
         exporter = OTLPSpanExporter(endpoint=otlp_endpoint)
         exporter_type = "otlp"

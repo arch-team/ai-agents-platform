@@ -221,8 +221,14 @@ class ClaudeAgentAdapter(IAgentRuntime):
             except asyncio.CancelledError:
                 raise
             except ProcessError as e:
+                if e.stderr:
+                    logger.warning("claude_agent_sdk_cli_stderr_stream", stderr=e.stderr[:500], exit_code=e.exit_code)
                 if not has_content:
-                    logger.exception("Claude Agent SDK 流式调用失败")
+                    logger.exception(
+                        "claude_agent_sdk_failed_no_content_stream",
+                        exit_code=e.exit_code,
+                        stderr=str(e.stderr)[:200],
+                    )
                     raise DomainError(message="Agent 服务暂时不可用, 请稍后重试", code="AGENT_SDK_ERROR") from e
                 logger.warning("claude_agent_sdk_process_exit1_ignored", exit_code=e.exit_code)
             except BaseException as e:
