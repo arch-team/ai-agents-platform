@@ -136,6 +136,26 @@ class AgentService:
                 target_state="updated",
             )
 
+        changed_fields = await self._apply_agent_updates(agent, dto)
+        agent.touch()
+        updated = await self._repository.update(agent)
+
+        if changed_fields:
+            if updated.id is None:
+                msg = "Agent 更新后 ID 不能为空"
+                raise ValueError(msg)
+            await event_bus.publish_async(
+                AgentUpdatedEvent(
+                    agent_id=updated.id,
+                    owner_id=updated.owner_id,
+                    changed_fields=tuple(changed_fields),
+                ),
+            )
+
+        return self._to_dto(updated)
+
+    async def _apply_agent_updates(self, agent: Agent, dto: UpdateAgentDTO) -> list[str]:
+        """应用 DTO 中非 None 的字段到 Agent 实体, 返回变更字段列表。"""
         changed_fields: list[str] = []
 
         # 名称变更需要唯一性校验
@@ -166,22 +186,7 @@ class AgentService:
         if config_overrides:
             agent.config = replace(agent.config, **config_overrides)  # type: ignore[arg-type]
 
-        agent.touch()
-        updated = await self._repository.update(agent)
-
-        if changed_fields:
-            if updated.id is None:
-                msg = "Agent 更新后 ID 不能为空"
-                raise ValueError(msg)
-            await event_bus.publish_async(
-                AgentUpdatedEvent(
-                    agent_id=updated.id,
-                    owner_id=updated.owner_id,
-                    changed_fields=tuple(changed_fields),
-                ),
-            )
-
-        return self._to_dto(updated)
+        return changed_fields
 
     async def delete_agent(self, agent_id: int, operator_id: int) -> None:
         """删除 Agent。仅 DRAFT 可删除。

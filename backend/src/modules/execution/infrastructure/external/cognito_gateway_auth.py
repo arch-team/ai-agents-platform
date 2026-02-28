@@ -42,15 +42,12 @@ class CognitoGatewayAuthService(IGatewayAuthService):
         """获取 Gateway Bearer Token, 优先使用缓存。
 
         获取失败时返回空字符串 (触发降级逻辑)。
+        所有缓存检查在 Lock 内执行, 消除并发竞态疑虑。
+        asyncio.Lock 开销极低 (无内核调用), 不影响性能。
         """
-        if self._cached_token and time.monotonic() < self._token_expires_at:
-            return self._cached_token
-
         async with self._lock:
-            # Double-check: 其他协程可能已刷新
             if self._cached_token and time.monotonic() < self._token_expires_at:
                 return self._cached_token
-
             return await self._refresh_token()
 
     async def _refresh_token(self) -> str:

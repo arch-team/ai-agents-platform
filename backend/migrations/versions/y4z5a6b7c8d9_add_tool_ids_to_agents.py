@@ -17,7 +17,12 @@ depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
-    """添加 tool_ids 列到 agents 表。"""
+    """添加 tool_ids 列到 agents 表。
+
+    数据迁移策略:
+    - 历史 Agent: server_default='[]' 保证既有记录默认空列表, 用户通过 API 手动绑定工具
+    - 新 Agent: 创建时由业务层填充 tool_ids
+    """
     op.add_column(
         "agents",
         sa.Column("tool_ids", sa.Text(), nullable=False, server_default="[]"),

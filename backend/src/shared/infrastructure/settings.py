@@ -79,7 +79,7 @@ class Settings(BaseSettings):
     AGENTCORE_GATEWAY_TOKEN_ENDPOINT: str = ""  # Cognito /oauth2/token 端点
     GATEWAY_CLIENT_ID: str = ""  # Cognito App Client ID
     GATEWAY_CLIENT_SECRET: SecretStr = SecretStr("")  # Cognito App Client Secret
-    GATEWAY_SCOPES: str = ""  # OAuth2 Scopes (空格分隔)
+    GATEWAY_SCOPES: str = ""  # OAuth2 Scopes (空格分隔, 非敏感信息无需 SecretStr)
 
     # Agent 运行时模式: in_process (本地 Claude Agent SDK) / agentcore_runtime (AgentCore Runtime 托管)
     AGENT_RUNTIME_MODE: str = "in_process"

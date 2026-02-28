@@ -78,8 +78,9 @@ AsyncCallback = Callable[[], Coroutine[Any, Any, None]]
 logger = structlog.get_logger(__name__)
 tracer = trace.get_tracer(__name__)
 
-# token 估算: 约 4 字符/token (中英混合文本的经验值)
-_CHARS_PER_TOKEN = 4
+# token 估算: 英文约 4 字符/token, 中文约 1.5 字符/token
+# 使用 2 作为中英混合保守值, 避免上下文窗口溢出
+_CHARS_PER_TOKEN = 2
 
 
 class ExecutionService:
@@ -369,11 +370,15 @@ class ExecutionService:
 
         使用独立短事务原子增量, 与 _increment_conversation_stats 一致。
         best-effort: 补偿失败不阻塞异常传播。
+
+        资源管理: 异常路径调用 close 后置 None, 防止 _finalize_stream 二次关闭。
+        (实际上两条路径互斥, 但置 None 是防御性保障)
         """
         await self._increment_conversation_stats(conversation_id, message_delta=1, token_delta=0)
-        # 关闭 stream_session (助手消息占位可能需要回滚)
+        # 关闭 stream_session (助手消息占位通过事务回滚清除)
         if self._stream_session_close:
             await self._stream_session_close()
+            self._stream_session_close = None
 
     async def get_conversation(
         self,

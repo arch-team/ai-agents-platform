@@ -74,27 +74,27 @@ class TestTruncateMessages:
         assert len(result) == 5
 
     def test_uses_char_estimation_when_token_count_zero(self) -> None:
-        """token_count 为 0 时应使用字符估算。"""
+        """token_count 为 0 时应使用字符估算 (2 chars/token)。"""
         messages = [
             Message(
                 id=1,
                 conversation_id=1,
                 role=MessageRole.USER,
-                content="a" * 4000,  # ~1000 tokens (4 chars/token)
+                content="a" * 2000,  # ~1000 tokens (2 chars/token)
                 token_count=0,
             ),
             Message(
                 id=2,
                 conversation_id=1,
                 role=MessageRole.ASSISTANT,
-                content="b" * 4000,
+                content="b" * 2000,
                 token_count=0,
             ),
             Message(
                 id=3,
                 conversation_id=1,
                 role=MessageRole.USER,
-                content="c" * 4000,
+                content="c" * 2000,
                 token_count=0,
             ),
         ]
