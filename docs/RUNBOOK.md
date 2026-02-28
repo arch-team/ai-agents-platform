@@ -1,7 +1,7 @@
 # 运维手册 (Runbook)
 
 > **自动生成**: 基于项目配置和现有文档
-> **最后更新**: 2026-02-17
+> **最后更新**: 2026-02-27
 
 ---
 
@@ -27,6 +27,8 @@ ai-agents-plat-{stack}-{env}
 | `database` | Aurora MySQL, S3 知识库 |
 | `compute` | ECS Fargate, ALB |
 | `agentcore` | Bedrock AgentCore Runtime |
+| `frontend` | CloudFront, S3 静态资源托管 |
+| `billing` | 计费与配额管理 |
 | `monitoring` | CloudWatch Dashboard, SNS 告警 |
 
 ---
@@ -36,7 +38,7 @@ ai-agents-plat-{stack}-{env}
 ### 2.1 部署顺序
 
 ```
-NetworkStack → SecurityStack → DatabaseStack → ComputeStack → AgentCoreStack → MonitoringStack
+NetworkStack → SecurityStack → DatabaseStack → ComputeStack → AgentCoreStack → FrontendStack → BillingStack → MonitoringStack
 ```
 
 ### 2.2 CDK 部署
@@ -200,7 +202,7 @@ aws logs filter-log-events \
 | 问题 | 原因 | 解决 |
 |------|------|------|
 | `uv: command not found` | uv 未安装 | `pip install uv` |
-| MySQL 连接被拒 | Docker 未启动 | `docker compose up -d mysql` |
+| MySQL 连接被拒 | Docker 未启动 | `docker run -d --name mysql-dev -p 3306:3306 -e MYSQL_ROOT_PASSWORD=changeme -e MYSQL_DATABASE=ai_agents_platform mysql:8.0` |
 | `ModuleNotFoundError` | 依赖未安装 | `cd backend && uv sync` |
 | TypeScript 类型错误 | 依赖过期 | `pnpm install` |
 | CDK synth 失败 | Context 缓存过期 | 删除 `cdk.context.json` 后重试 |

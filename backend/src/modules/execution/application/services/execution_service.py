@@ -99,6 +99,7 @@ class ExecutionService:
         stream_session_commit: AsyncCallback | None = None,
         stream_session_close: AsyncCallback | None = None,
         memory_adapter: IMemoryService | None = None,
+        memory_id: str = "",
     ) -> None:
         self._conversation_repo = conversation_repo
         self._message_repo = message_repo
@@ -109,6 +110,7 @@ class ExecutionService:
         self._tool_querier = tool_querier
         self._gateway_url = gateway_url
         self._memory_adapter = memory_adapter
+        self._memory_id = memory_id
         self._context_window = context_window or ContextWindowConfig()
         self._stream_session_commit = stream_session_commit
         self._stream_session_close = stream_session_close
@@ -563,6 +565,7 @@ class ExecutionService:
             max_tokens=ctx.agent_info.max_tokens,
             gateway_url=self._gateway_url,
             enable_teams=ctx.agent_info.enable_teams,
+            memory_id=self._memory_id if ctx.agent_info.enable_memory else "",
         )
 
     async def _prepare_for_send(

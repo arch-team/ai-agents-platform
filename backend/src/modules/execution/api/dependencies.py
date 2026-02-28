@@ -115,6 +115,7 @@ async def get_execution_service(
         context_window=context_window,
         stream_session_commit=stream_session.commit,
         stream_session_close=stream_session.close,
+        memory_id=settings.AGENTCORE_MEMORY_ID,
     )
 
 
@@ -156,5 +157,6 @@ async def get_team_execution_service(
         max_turns=settings.TEAM_EXECUTION_MAX_TURNS,
         timeout_seconds=settings.TEAM_EXECUTION_TIMEOUT_SECONDS,
         max_concurrent=settings.TEAM_EXECUTION_MAX_CONCURRENT,
+        memory_id=settings.AGENTCORE_MEMORY_ID,
         bg_repo_factory=_bg_repo_factory,
     )

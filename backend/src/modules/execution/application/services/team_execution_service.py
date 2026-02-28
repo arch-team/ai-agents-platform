@@ -65,6 +65,7 @@ class TeamExecutionService:
         max_turns: int = 200,
         timeout_seconds: int = 1800,
         max_concurrent: int = 3,
+        memory_id: str = "",
         bg_repo_factory: Callable[
             [],
             tuple[
@@ -83,6 +84,7 @@ class TeamExecutionService:
         self._gateway_url = gateway_url
         self._max_turns = max_turns
         self._timeout_seconds = timeout_seconds
+        self._memory_id = memory_id
         self._semaphore = asyncio.Semaphore(max_concurrent)
         # 后台任务用独立 session 的 repo 工厂
         self._bg_repo_factory = bg_repo_factory
@@ -347,6 +349,7 @@ class TeamExecutionService:
                         gateway_url=self._gateway_url,
                         max_turns=self._max_turns,
                         enable_teams=True,
+                        memory_id=self._memory_id if agent_info.enable_memory else "",
                     )
 
                     # 带超时的流式执行

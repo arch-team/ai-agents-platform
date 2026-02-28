@@ -1,7 +1,7 @@
 # 开发贡献指南
 
 > **自动生成**: 基于 `pyproject.toml`, `package.json`, `.env.example` 等配置文件
-> **最后更新**: 2026-02-17
+> **最后更新**: 2026-02-27
 
 ---
 
@@ -34,7 +34,9 @@ cd frontend && pnpm install && cd ..
 cd infra && pnpm install && cd ..
 
 # 启动本地 MySQL
-docker compose up -d mysql
+docker run -d --name mysql-dev -p 3306:3306 \
+  -e MYSQL_ROOT_PASSWORD=changeme \
+  -e MYSQL_DATABASE=ai_agents_platform mysql:8.0
 ```
 
 ### 1.3 验证安装
@@ -70,6 +72,9 @@ cd infra && pnpm exec cdk --version
 | `JWT_ALGORITHM` | `HS256` | JWT 算法 | ✅ |
 | `JWT_ACCESS_TOKEN_EXPIRE_MINUTES` | `30` | Token 有效期 (分钟) | ✅ |
 | `AWS_REGION` | `us-east-1` | AWS 区域 | ✅ |
+| `DEFAULT_ADMIN_EMAIL` | `admin@company.com` | 默认管理员邮箱 (启动时自动创建，幂等) | ✅ |
+| `DEFAULT_ADMIN_PASSWORD` | `Admin@2026!` | 默认管理员密码 | ✅ |
+| `DEFAULT_ADMIN_NAME` | `系统管理员` | 默认管理员名称 | ✅ |
 | `LOG_LEVEL` | `DEBUG` | 日志级别 (`DEBUG`/`INFO`/`WARNING`/`ERROR`) | ✅ |
 
 > 部署环境通过 ECS Secrets (`ecs.Secret.fromSecretsManager`) 或 Secrets Manager ARN 注入敏感凭证。
@@ -148,31 +153,38 @@ cd infra && pnpm exec cdk --version
 
 ## 4. Docker 开发环境
 
-### 4.1 docker-compose 服务
-
-| 服务 | 端口 | 说明 |
-|------|------|------|
-| `mysql` | 3306 | 开发数据库 (MySQL 8.0) |
-| `backend` | 8000 | 后端 API 服务 |
-| `mysql-test` | 3307 | 测试数据库 (需 `--profile test` 启动) |
-
-### 4.2 常用命令
+### 4.1 本地数据库
 
 ```bash
 # 启动开发数据库
-docker compose up -d mysql
-
-# 启动完整开发环境
-docker compose up -d
+docker run -d --name mysql-dev \
+  -p 3306:3306 \
+  -e MYSQL_ROOT_PASSWORD=changeme \
+  -e MYSQL_DATABASE=ai_agents_platform \
+  mysql:8.0
 
 # 启动测试数据库 (集成测试用)
-docker compose --profile test up -d mysql-test
+docker run -d --name mysql-test \
+  -p 3307:3306 \
+  -e MYSQL_ROOT_PASSWORD=test_root_password \
+  -e MYSQL_DATABASE=ai_agents_test \
+  mysql:8.0
 
-# 查看日志
-docker compose logs -f backend
+# 查看容器状态
+docker ps --filter "name=mysql"
 
 # 停止并清理
-docker compose down -v
+docker rm -f mysql-dev mysql-test
+```
+
+### 4.2 后端镜像构建
+
+```bash
+# 构建后端 API 镜像
+cd backend && docker build -t ai-agents-platform:latest .
+
+# 构建 Agent 运行时镜像
+cd backend && docker build -f Dockerfile.agent -t ai-agents-agent:latest .
 ```
 
 ---
@@ -206,20 +218,46 @@ docker compose down -v
 
 ## 6. CI/CD 管道
 
-### 6.1 后端 CI (`backend-ci.yml`)
+### 6.1 工作流架构
 
-| 阶段 | 触发条件 | 内容 |
-|------|---------|------|
-| lint-and-unit-test | `backend/**` 变更 | Ruff + MyPy + pytest (非集成) + 覆盖率 ≥85% |
-| integration-test | lint 通过后 | MySQL 8.0 Service Container + 集成测试 |
-| security-scan | lint 通过后 | Bandit + pip-audit (不阻断) |
-
-### 6.2 CDK 部署 (`cdk-deploy.yml`)
+采用**可复用工作流**模式，质量检查逻辑提取为独立工作流，被 CI 和 Deploy 共同调用：
 
 ```
-push to main → [test] → [deploy-dev] → [deploy-prod (需审批)]
-PR → [test] → [cdk-diff → PR 评论]
+backend-quality.yml  ← backend-ci.yml (PR/push)
+                     ← backend-deploy.yml (部署前质量门控)
+
+frontend-quality.yml ← frontend-ci.yml (PR/push)
+                     ← frontend-deploy.yml (部署前质量门控)
 ```
+
+### 6.2 后端 CI/CD
+
+| 工作流 | 触发条件 | 内容 |
+|--------|---------|------|
+| `backend-ci.yml` | PR/push `backend/**` | 调用 `backend-quality.yml` (Ruff + MyPy + pytest + 覆盖率 ≥83%) |
+| `backend-quality.yml` | 可复用工作流 | MySQL 8.0 Service Container + lint + 类型检查 + 测试 (排除 E2E) |
+| `backend-deploy.yml` | push to main `backend/src/**` | 质量门控 → Dev 自动部署 → Prod 手动审批 (支持回滚) |
+
+### 6.3 前端 CI/CD
+
+| 工作流 | 触发条件 | 内容 |
+|--------|---------|------|
+| `frontend-ci.yml` | PR/push `frontend/**` | 调用 `frontend-quality.yml` (lint + typecheck + test + build) |
+| `frontend-deploy.yml` | push to main `frontend/src/**` | 质量门控 → Dev 部署 → Prod 手动审批 (支持回滚) |
+
+### 6.4 基础设施 & Agent 镜像
+
+| 工作流 | 触发条件 | 内容 |
+|--------|---------|------|
+| `cdk-deploy.yml` | push to main `infra/**` | test → deploy-dev → deploy-prod (需审批) |
+| `agent-image.yml` | push to main `backend/Dockerfile.agent` | Agent 运行时镜像构建推送 ECR |
+| `deploy-notify.yml` | 部署工作流完成 | 部署失败时自动创建 GitHub Issue 通知 |
+
+### 6.5 通用优化
+
+- **最小权限原则**: 所有工作流默认 `permissions: {}`，各 job 按需声明
+- **并发控制**: 同一分支/PR 上的新推送自动取消旧的运行
+- **版本统一**: UV、Python、Node.js、pnpm 版本通过环境变量集中管理
 
 ---
 
