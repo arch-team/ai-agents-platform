@@ -235,9 +235,11 @@ class ToolRepositoryImpl(PydanticRepository[Tool, ToolModel, int], IToolReposito
     async def list_by_ids_and_status(self, tool_ids: list[int], status: ToolStatus) -> list[Tool]:  # noqa: D102
         if not tool_ids:
             return []
+        # 防御性类型验证: 确保 IN 查询参数为 int, 防止非预期类型注入
+        validated_ids = [int(tid) for tid in tool_ids]
         return await self._list_where(
-            ToolModel.id.in_(tool_ids),
+            ToolModel.id.in_(validated_ids),
             ToolModel.status == status.value,
             offset=0,
-            limit=len(tool_ids),
+            limit=len(validated_ids),
         )
