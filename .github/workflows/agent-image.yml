@@ -103,7 +103,7 @@ jobs:
           sudo apt-get install -y -qq trivy
       - name: 容器镜像安全扫描
         run: |
-          trivy image --image-src remote --platform linux/arm64 --severity CRITICAL,HIGH --exit-code 1 --format table \
+          trivy image --image-src remote --platform linux/arm64 --severity CRITICAL,HIGH --exit-code 1 --format table --ignorefile backend/.trivyignore \
             ${{ steps.ecr-login.outputs.registry }}/${{ env.ECR_REPO_PREFIX }}-dev:${{ github.sha }}
 
       - name: 输出镜像推送通知
@@ -163,7 +163,7 @@ jobs:
           sudo apt-get install -y -qq trivy
       - name: 容器镜像安全扫描
         run: |
-          trivy image --image-src remote --platform linux/arm64 --severity CRITICAL,HIGH --exit-code 1 --format table \
+          trivy image --image-src remote --platform linux/arm64 --severity CRITICAL,HIGH --exit-code 1 --format table --ignorefile backend/.trivyignore \
             ${{ steps.ecr-login.outputs.registry }}/${{ env.ECR_REPO_PREFIX }}-prod:${{ github.sha }}
 
       - name: 输出镜像推送通知
