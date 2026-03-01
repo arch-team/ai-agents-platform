@@ -13,14 +13,23 @@ on:
         type: choice
         options: [dev, prod]
         default: dev
+      action:
+        description: '执行动作'
+        type: choice
+        options: [deploy, rollback]
+        default: deploy
+      rollback-commit:
+        description: '回滚目标 commit SHA (仅 action=rollback 时需要)'
+        type: string
+        default: ''
 
 # 最小权限原则: 默认无权限, 各 job 按需声明
 permissions: {}
 
-# 同一分支/PR 上的新推送取消旧的运行
+# 同一分支/PR 上的新推送排队等待（部署不可取消，避免中断 CloudFormation Stack 更新）
 concurrency:
   group: cdk-deploy-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 env:
   NODE_VERSION: "22"
@@ -33,6 +42,7 @@ jobs:
   # ============================================================
   test:
     name: 测试 + CDK Synth
+    if: github.event.inputs.action != 'rollback'
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -121,10 +131,13 @@ jobs:
   deploy-dev:
     name: 部署 Dev
     needs: test
+    # 回滚时 test 被跳过（skipped），用 always() 确保本 job 仍可运行
     if: >-
-      (github.event_name == 'push' &&
+      always() &&
+      (needs.test.result == 'success' || needs.test.result == 'skipped') &&
+      ((github.event_name == 'push' &&
        (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/ai-agents-factory-v1')) ||
-      (github.event_name == 'workflow_dispatch' && inputs.environment == 'dev')
+      (github.event_name == 'workflow_dispatch' && inputs.environment == 'dev'))
     runs-on: ubuntu-latest
     environment: dev
     defaults:
@@ -134,7 +147,13 @@ jobs:
       id-token: write
       contents: read
     steps:
+      # 回滚时 checkout 指定 commit，正常部署时 checkout 当前 SHA
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ (github.event.inputs.action == 'rollback' && github.event.inputs.rollback-commit) || github.sha }}
+      - name: 回滚模式提示
+        if: github.event.inputs.action == 'rollback'
+        run: echo "::warning::回滚模式 — 将部署 commit ${{ github.event.inputs.rollback-commit }}"
 
       - uses: pnpm/action-setup@v4
         with:
@@ -163,11 +182,13 @@ jobs:
   # ============================================================
   deploy-prod:
     name: 部署 Prod
-    needs: deploy-dev
+    needs: [test, deploy-dev]
     if: >-
-      (github.event_name == 'push' &&
+      always() &&
+      (needs.test.result == 'success' || needs.test.result == 'skipped') &&
+      ((github.event_name == 'push' &&
        (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/ai-agents-factory-v1')) ||
-      (github.event_name == 'workflow_dispatch' && inputs.environment == 'prod')
+      (github.event_name == 'workflow_dispatch' && inputs.environment == 'prod'))
     runs-on: ubuntu-latest
     environment:
       name: production
@@ -179,7 +200,13 @@ jobs:
       id-token: write
       contents: read
     steps:
+      # 回滚时 checkout 指定 commit，正常部署时 checkout 当前 SHA
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ (github.event.inputs.action == 'rollback' && github.event.inputs.rollback-commit) || github.sha }}
+      - name: 回滚模式提示
+        if: github.event.inputs.action == 'rollback'
+        run: echo "::warning::回滚模式 — 将部署 commit ${{ github.event.inputs.rollback-commit }}"
 
       - uses: pnpm/action-setup@v4
         with:
@@ -203,5 +230,7 @@ jobs:
       - name: CDK Diff (生产变更确认)
         run: pnpm cdk diff --context env=prod
 
+      # 排除 FrontendStack（由 frontend-deploy.yml 独立部署，避免占位文件覆盖真实构建）
       - name: 部署到生产环境
-        run: pnpm cdk deploy --all --context env=prod --require-approval never
+        run: |
+          pnpm cdk list --context env=prod | grep -v frontend | xargs pnpm cdk deploy --context env=prod --require-approval never

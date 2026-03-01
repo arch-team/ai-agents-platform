@@ -27,7 +27,7 @@ jobs:
     name: 代码检查 + 单元测试
     uses: ./.github/workflows/backend-quality.yml
     with:
-      coverage-threshold: 83
+      coverage-threshold: 85
       pytest-marker: 'not integration and not e2e'
 
   # ============================================================
@@ -121,10 +121,9 @@ jobs:
       - name: 安装依赖
         run: uv sync
 
-      # Bandit — Python 安全静态分析
+      # Bandit — Python 安全静态分析（仅 high severity 阻断 CI）
       - name: Bandit 安全静态分析
-        run: uv run bandit -r src/ -c pyproject.toml
-        continue-on-error: true
+        run: uv run bandit -r src/ -c pyproject.toml -lll
 
       # pip-audit — 依赖漏洞扫描
       - name: pip-audit 依赖漏洞扫描

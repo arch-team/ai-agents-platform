@@ -35,6 +35,15 @@ jobs:
       - run: pnpm lint
       - run: pnpm typecheck
       - run: pnpm test
+      - name: 上传测试报告
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: frontend-test-results
+          path: frontend/test-results/
+          retention-days: 7
+      - name: 依赖安全扫描
+        run: pnpm audit --audit-level=high || echo "::warning::发现 high severity 依赖漏洞，请检查"
       - name: 构建验证
         run: |
           if [ -n "${{ inputs.build-mode }}" ]; then

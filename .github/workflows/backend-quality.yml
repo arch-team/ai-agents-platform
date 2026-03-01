@@ -21,6 +21,10 @@ jobs:
     defaults:
       run:
         working-directory: backend
+    # MySQL 服务始终启动: GitHub Actions services 不支持条件化。
+    # backend-ci.yml 调用时 marker="not integration and not e2e" 不需要 MySQL，
+    # 但 backend-deploy.yml 调用时 marker="not e2e" 包含集成测试需要 MySQL。
+    # 启动开销约 30s，权衡后接受该开销以保持工作流简洁。
     services:
       mysql:
         image: mysql:8.0
@@ -64,7 +68,14 @@ jobs:
       - name: 运行测试
         run: |
           if [ -n "${{ inputs.pytest-marker }}" ]; then
-            uv run pytest -m "${{ inputs.pytest-marker }}" --cov=src --cov-fail-under=${{ inputs.coverage-threshold }} -q
+            uv run pytest -m "${{ inputs.pytest-marker }}" --cov=src --cov-fail-under=${{ inputs.coverage-threshold }} --junitxml=test-results.xml -q
           else
-            uv run pytest --cov=src --cov-fail-under=${{ inputs.coverage-threshold }} -q
+            uv run pytest --cov=src --cov-fail-under=${{ inputs.coverage-threshold }} --junitxml=test-results.xml -q
           fi
+      - name: 上传测试报告
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: backend-test-results
+          path: backend/test-results.xml
+          retention-days: 7

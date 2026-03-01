@@ -30,10 +30,10 @@ on:
 # 最小权限原则: 默认无权限, 各 job 按需声明
 permissions: {}
 
-# 同一分支上的新推送取消旧的运行
+# 同一分支上的新推送排队等待（部署不可取消，避免中断 ECS 滚动更新）
 concurrency:
   group: backend-deploy-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 env:
   NODE_VERSION: "22"
@@ -98,6 +98,22 @@ jobs:
         run: mkdir -p ../frontend/dist && echo '<html></html>' > ../frontend/dist/index.html
       # 只部署 compute stack（包含 Docker 镜像构建 + ECS 更新）
       - run: pnpm cdk deploy ai-agents-plat-compute-dev --context env=dev --require-approval never
+      - name: 部署后健康检查
+        run: |
+          ALB_URL="${{ secrets.DEV_ALB_URL }}"
+          if [ -n "$ALB_URL" ]; then
+            echo "等待服务启动..."
+            sleep 30
+            for i in 1 2 3; do
+              STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$ALB_URL/health" --max-time 10) || true
+              echo "健康检查 #$i: HTTP $STATUS"
+              if [ "$STATUS" = "200" ]; then exit 0; fi
+              sleep 10
+            done
+            echo "::warning::健康检查未通过 (最终状态: $STATUS)，请手动验证"
+          else
+            echo "::notice::DEV_ALB_URL 未配置，跳过健康检查"
+          fi
 
   # ============================================================
   # 部署 — Prod 环境 (需要手动审批)
@@ -148,3 +164,20 @@ jobs:
         run: pnpm cdk diff ai-agents-plat-compute-prod --context env=prod
       - name: 部署到生产环境
         run: pnpm cdk deploy ai-agents-plat-compute-prod --context env=prod --require-approval never
+      - name: 部署后健康检查
+        run: |
+          ALB_URL="${{ secrets.PROD_ALB_URL }}"
+          if [ -n "$ALB_URL" ]; then
+            echo "等待服务启动..."
+            sleep 30
+            for i in 1 2 3; do
+              STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$ALB_URL/health" --max-time 10) || true
+              echo "健康检查 #$i: HTTP $STATUS"
+              if [ "$STATUS" = "200" ]; then exit 0; fi
+              sleep 10
+            done
+            echo "::error::生产环境健康检查失败 (最终状态: $STATUS)"
+            exit 1
+          else
+            echo "::notice::PROD_ALB_URL 未配置，跳过健康检查"
+          fi

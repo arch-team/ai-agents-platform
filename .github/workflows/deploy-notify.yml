@@ -15,6 +15,27 @@ permissions:
   issues: write
 
 jobs:
+  notify-success:
+    name: 部署成功摘要
+    runs-on: ubuntu-latest
+    if: github.event.workflow_run.conclusion == 'success'
+    steps:
+      - name: 输出部署成功摘要
+        run: |
+          cat >> "$GITHUB_STEP_SUMMARY" <<EOF
+          ## ✅ 部署成功
+
+          | 项目 | 详情 |
+          |------|------|
+          | **工作流** | ${{ github.event.workflow_run.name }} |
+          | **分支** | ${{ github.event.workflow_run.head_branch }} |
+          | **提交** | \`${{ github.event.workflow_run.head_sha }}\` |
+          | **触发者** | @${{ github.event.workflow_run.actor.login }} |
+          | **运行链接** | [查看详情](${{ github.event.workflow_run.html_url }}) |
+
+          > 由 Deploy Notification 工作流自动生成
+          EOF
+
   notify-failure:
     name: 部署失败通知
     runs-on: ubuntu-latest
