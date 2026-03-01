@@ -3,6 +3,12 @@
 
 version: 2
 
+registries:
+  ecr-public:
+    type: docker-registry
+    url: https://public.ecr.aws
+    replaces-base: true
+
 updates:
   # Python 依赖 (backend)
   - package-ecosystem: "pip"
@@ -63,8 +69,11 @@ updates:
       - "platform-team"
 
   # Docker 基础镜像更新 (backend Dockerfile)
+  # 基础镜像来自 public.ecr.aws，需要 registries 配置
   - package-ecosystem: "docker"
     directory: "/backend"
+    registries:
+      - ecr-public
     schedule:
       interval: "weekly"
       day: "monday"
