@@ -20,7 +20,7 @@ logger = structlog.get_logger(__name__)
 
 
 @lru_cache
-def _get_ce_client() -> Any:  # noqa: ANN401
+def _get_ce_client() -> Any:
     """创建 Cost Explorer client 单例 (固定 us-east-1)。"""
     return boto3.client("ce", region_name="us-east-1")
 

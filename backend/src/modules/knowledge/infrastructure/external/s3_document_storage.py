@@ -11,7 +11,7 @@ from src.modules.knowledge.application.interfaces.document_storage import (
 class S3DocumentStorage(IDocumentStorage):
     """S3 文档存储适配器。SDK-First, < 100 行。"""
 
-    def __init__(self, s3_client: Any, *, bucket: str) -> None:  # noqa: ANN401
+    def __init__(self, s3_client: Any, *, bucket: str) -> None:
         self._client = s3_client  # boto3.client("s3")
         self._bucket = bucket
 

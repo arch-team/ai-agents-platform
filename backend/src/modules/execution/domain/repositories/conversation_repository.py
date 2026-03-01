@@ -11,7 +11,11 @@ class IConversationRepository(IRepository[Conversation, int]):
 
     @abstractmethod
     async def increment_message_stats(
-        self, conversation_id: int, *, message_delta: int = 0, token_delta: int = 0,
+        self,
+        conversation_id: int,
+        *,
+        message_delta: int = 0,
+        token_delta: int = 0,
     ) -> None:
         """原子增量更新消息计数和 Token 统计。
 
@@ -19,7 +23,7 @@ class IConversationRepository(IRepository[Conversation, int]):
         """
 
     @abstractmethod
-    async def list_by_user(  # noqa: D102
+    async def list_by_user(
         self,
         user_id: int,
         *,
@@ -29,7 +33,7 @@ class IConversationRepository(IRepository[Conversation, int]):
     ) -> list[Conversation]: ...
 
     @abstractmethod
-    async def count_by_user(  # noqa: D102
+    async def count_by_user(
         self,
         user_id: int,
         *,

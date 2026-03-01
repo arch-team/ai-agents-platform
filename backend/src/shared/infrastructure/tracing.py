@@ -22,7 +22,7 @@ logger = structlog.get_logger(__name__)
 class _NoOpSpanExporter(SpanExporter):
     """静默丢弃 Span, 避免 Console 输出干扰 structlog 业务日志。"""
 
-    def export(self, spans: Sequence[ReadableSpan]) -> SpanExportResult:  # noqa: ARG002
+    def export(self, spans: Sequence[ReadableSpan]) -> SpanExportResult:
         return SpanExportResult.SUCCESS
 
     def shutdown(self) -> None:

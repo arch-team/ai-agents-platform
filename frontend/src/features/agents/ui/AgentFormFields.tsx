@@ -6,7 +6,7 @@ import { Input, Textarea } from '@/shared/ui';
 
 import { MODEL_OPTIONS } from '../model/constants';
 
-import { ToolSelector } from './ToolSelector';
+import { ToolSelector, type ToolOption } from './ToolSelector';
 
 import type { FieldErrors, UseFormRegister, UseFormSetValue, UseFormWatch } from 'react-hook-form';
 
@@ -20,9 +20,23 @@ interface AgentFormFieldsProps {
   errors: FieldErrors<CreateAgentFormData>;
   watch: UseFormWatch<CreateAgentFormData>;
   setValue: UseFormSetValue<CreateAgentFormData>;
+  /** 可选工具列表（由页面层注入，避免跨 feature 依赖） */
+  tools: ToolOption[];
+  /** 工具加载状态 */
+  toolsLoading?: boolean;
+  /** 工具加载错误 */
+  toolsError?: string | null;
 }
 
-export function AgentFormFields({ register, errors, watch, setValue }: AgentFormFieldsProps) {
+export function AgentFormFields({
+  register,
+  errors,
+  watch,
+  setValue,
+  tools,
+  toolsLoading,
+  toolsError,
+}: AgentFormFieldsProps) {
   const [showAdvanced, setShowAdvanced] = useState(false);
 
   const systemPromptValue = watch('system_prompt') ?? '';
@@ -67,6 +81,9 @@ export function AgentFormFields({ register, errors, watch, setValue }: AgentForm
       <ToolSelector
         selectedIds={watch('tool_ids') ?? []}
         onChange={(ids) => setValue('tool_ids', ids)}
+        tools={tools}
+        isLoading={toolsLoading}
+        error={toolsError}
       />
 
       {/* 记忆开关 */}

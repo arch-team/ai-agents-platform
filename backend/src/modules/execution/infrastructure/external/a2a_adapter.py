@@ -49,8 +49,8 @@ class A2AAdapter:
         self._gateway_url = gateway_url
         self._region = region
 
-    @lru_cache(maxsize=1)  # noqa: B019
-    def _get_client(self) -> Any:  # noqa: ANN401
+    @lru_cache(maxsize=1)
+    def _get_client(self) -> Any:
         """获取 bedrock-agentcore 客户端 (懒加载单例)。"""
         import boto3
 

@@ -1,7 +1,12 @@
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as logs from 'aws-cdk-lib/aws-logs';
 import { Construct } from 'constructs';
-import { getLogRetention, getRemovalPolicy, type EnvironmentName } from '../../config';
+import {
+  getLogRetention,
+  getRemovalPolicy,
+  PROJECT_NAME,
+  type EnvironmentName,
+} from '../../config';
 
 export interface VpcConstructProps {
   /** VPC CIDR 地址块 */
@@ -51,7 +56,7 @@ export class VpcConstruct extends Construct {
     // VPC Flow Log (安全审计) — 显式创建 LogGroup 控制日志保留期
     if (enableFlowLog) {
       const flowLogGroup = new logs.LogGroup(this, 'FlowLogGroup', {
-        logGroupName: `/vpc/ai-agents-platform/${envName}/flow-logs`,
+        logGroupName: `/vpc/${PROJECT_NAME}/${envName}/flow-logs`,
         retention: getLogRetention(envName),
         removalPolicy: getRemovalPolicy(envName),
       });

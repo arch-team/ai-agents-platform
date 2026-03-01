@@ -2,7 +2,12 @@
 
 from __future__ import annotations
 
+import structlog
+
 from src.shared.infrastructure.settings import get_settings
+
+
+_log = structlog.get_logger(__name__)
 
 
 def _register_audit_event_subscriptions() -> None:
@@ -102,9 +107,7 @@ def _register_audit_event_subscriptions() -> None:
                     await session.commit()
                 except Exception:
                     await session.rollback()
-                    import structlog
-
-                    structlog.get_logger(__name__).exception(
+                    _log.exception(
                         "audit_event_subscription_failed",
                         event_type=type(event).__name__,
                     )
@@ -205,9 +208,7 @@ def _register_team_execution_event_subscriptions() -> None:
                 await session.commit()
             except Exception:
                 await session.rollback()
-                import structlog
-
-                structlog.get_logger(__name__).exception(
+                _log.exception(
                     "team_execution_cost_attribution_failed",
                     execution_id=event.execution_id,
                 )
@@ -294,9 +295,7 @@ def _register_message_received_event_subscriptions() -> None:
                 await session.commit()
             except Exception:
                 await session.rollback()
-                import structlog
-
-                structlog.get_logger(__name__).exception(
+                _log.exception(
                     "message_received_cost_attribution_failed",
                     conversation_id=event.conversation_id,
                     message_id=event.message_id,

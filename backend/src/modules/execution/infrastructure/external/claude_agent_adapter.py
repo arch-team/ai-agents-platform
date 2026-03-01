@@ -57,7 +57,7 @@ _CLI_TOTAL_TIMEOUT_S = 60.0
 def _cli_retry_delay(attempt: int) -> float:
     """指数退避 + jitter: attempt=1→~0.5s, 2→~1s, 3→~2s"""
     base: float = _CLI_BASE_DELAY_S * (2 ** (attempt - 1))
-    jitter: float = random.uniform(0, base * 0.3)  # noqa: S311
+    jitter: float = random.uniform(0, base * 0.3)
     return base + jitter
 
 
@@ -65,7 +65,7 @@ def _is_retryable_cli_error(exc: BaseException) -> bool:
     """CLIConnectionError/CLIJSONDecodeError/MessageParseError 可重试, CLINotFoundError 不可重试。"""
     if isinstance(exc, CLINotFoundError):
         return False
-    if isinstance(exc, (CLIConnectionError, CLIJSONDecodeError, MessageParseError)):
+    if isinstance(exc, CLIConnectionError | CLIJSONDecodeError | MessageParseError):
         return True
     if isinstance(exc, BaseExceptionGroup):
         return any(_is_retryable_cli_error(e) for e in exc.exceptions)
@@ -79,7 +79,7 @@ _BLOCKED_HOSTS = frozenset(
         "metadata.google.internal",
         "localhost",
         "127.0.0.1",
-        "0.0.0.0",  # noqa: S104
+        "0.0.0.0",
     },
 )
 

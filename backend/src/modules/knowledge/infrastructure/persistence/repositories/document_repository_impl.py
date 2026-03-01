@@ -31,7 +31,7 @@ class DocumentRepositoryImpl(
         },
     )
 
-    async def list_by_knowledge_base(  # noqa: D102
+    async def list_by_knowledge_base(
         self,
         knowledge_base_id: int,
         *,
@@ -48,5 +48,5 @@ class DocumentRepositoryImpl(
         result = await self._session.execute(stmt)
         return [self._to_entity(m) for m in result.scalars().all()]
 
-    async def count_by_knowledge_base(self, knowledge_base_id: int) -> int:  # noqa: D102
+    async def count_by_knowledge_base(self, knowledge_base_id: int) -> int:
         return await self._count_where(DocumentModel.knowledge_base_id == knowledge_base_id)

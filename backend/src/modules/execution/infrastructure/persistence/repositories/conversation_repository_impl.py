@@ -25,7 +25,11 @@ class ConversationRepositoryImpl(
     )
 
     async def increment_message_stats(
-        self, conversation_id: int, *, message_delta: int = 0, token_delta: int = 0,
+        self,
+        conversation_id: int,
+        *,
+        message_delta: int = 0,
+        token_delta: int = 0,
     ) -> None:
         """原子增量: UPDATE SET col = col + N, 锁持有时间极短。"""
         stmt = (
@@ -47,7 +51,7 @@ class ConversationRepositoryImpl(
             filters.append(ConversationModel.agent_id == agent_id)
         return filters
 
-    async def list_by_user(  # noqa: D102
+    async def list_by_user(
         self,
         user_id: int,
         *,
@@ -62,7 +66,7 @@ class ConversationRepositoryImpl(
         result = await self._session.execute(stmt)
         return [self._to_entity(m) for m in result.scalars().all()]
 
-    async def count_by_user(  # noqa: D102
+    async def count_by_user(
         self,
         user_id: int,
         *,

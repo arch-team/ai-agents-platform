@@ -36,7 +36,7 @@ def init_db(
     连接池参数仅对支持连接池的数据库后端生效 (如 MySQL),
     SQLite 内存数据库不支持连接池参数。
     """
-    global _engine, _session_factory  # noqa: PLW0603
+    global _engine, _session_factory
 
     engine_kwargs: dict[str, object] = {
         "echo": echo,

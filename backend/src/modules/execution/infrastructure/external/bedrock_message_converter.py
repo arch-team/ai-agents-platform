@@ -60,7 +60,7 @@ def parse_converse_response(response: dict[str, Any]) -> LLMResponse:
     )
 
 
-async def iter_stream_chunks(stream: Any) -> AsyncIterator[LLMStreamChunk]:  # noqa: ANN401
+async def iter_stream_chunks(stream: Any) -> AsyncIterator[LLMStreamChunk]:
     """Bedrock ConverseStream 事件流 → LLMStreamChunk 异步迭代器。"""
     input_tokens = 0
     output_tokens = 0

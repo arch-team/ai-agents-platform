@@ -33,7 +33,7 @@ class IToolQuerier(ABC):
     """跨模块工具查询接口。"""
 
     @abstractmethod
-    async def list_approved_tools(self) -> list[ApprovedToolInfo]: ...  # noqa: D102
+    async def list_approved_tools(self) -> list[ApprovedToolInfo]: ...
 
     async def list_tools_for_agent(self, agent_id: int) -> list[ApprovedToolInfo]:
         """获取指定 Agent 绑定的已审批工具。

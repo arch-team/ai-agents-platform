@@ -27,7 +27,11 @@ class BudgetRepositoryImpl(PydanticRepository[Budget, BudgetModel, int], IBudget
         return self._to_entity(model) if model else None
 
     async def list_by_department(
-        self, department_id: int, *, offset: int = 0, limit: int = 20,
+        self,
+        department_id: int,
+        *,
+        offset: int = 0,
+        limit: int = 20,
     ) -> tuple[list[Budget], int]:
         """查询部门的所有预算记录，返回 (items, total)。"""
         return await self._list_and_count(

@@ -10,7 +10,7 @@ class IMessageRepository(IRepository[Message, int]):
     """消息仓库接口。"""
 
     @abstractmethod
-    async def list_by_conversation(  # noqa: D102
+    async def list_by_conversation(
         self,
         conversation_id: int,
         *,
@@ -19,4 +19,4 @@ class IMessageRepository(IRepository[Message, int]):
     ) -> list[Message]: ...
 
     @abstractmethod
-    async def count_by_conversation(self, conversation_id: int) -> int: ...  # noqa: D102
+    async def count_by_conversation(self, conversation_id: int) -> int: ...

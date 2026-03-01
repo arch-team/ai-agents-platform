@@ -31,8 +31,8 @@ logger = structlog.get_logger(__name__)
 
 
 class _BedrockRuntimeClient(Protocol):
-    def converse(self, **kwargs: Any) -> dict[str, Any]: ...  # noqa: ANN401
-    def converse_stream(self, **kwargs: Any) -> dict[str, Any]: ...  # noqa: ANN401
+    def converse(self, **kwargs: Any) -> dict[str, Any]: ...
+    def converse_stream(self, **kwargs: Any) -> dict[str, Any]: ...
 
 
 class BedrockLLMClient(ILLMClient):
@@ -42,7 +42,7 @@ class BedrockLLMClient(ILLMClient):
         self._client = client
         self._executor = ThreadPoolExecutor(max_workers=max_workers, thread_name_prefix="bedrock")
 
-    async def invoke(  # noqa: D102
+    async def invoke(
         self,
         model_id: str,
         messages: list[LLMMessage],
@@ -70,7 +70,7 @@ class BedrockLLMClient(ILLMClient):
             raise DomainError(message="LLM 服务暂时不可用, 请稍后重试", code="BEDROCK_API_ERROR") from e
         return parse_converse_response(response)
 
-    async def invoke_stream(  # noqa: D102
+    async def invoke_stream(
         self,
         model_id: str,
         messages: list[LLMMessage],

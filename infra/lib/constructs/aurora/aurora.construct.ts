@@ -4,7 +4,7 @@ import * as kms from 'aws-cdk-lib/aws-kms';
 import * as rds from 'aws-cdk-lib/aws-rds';
 import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
 import { Construct } from 'constructs';
-import { getRemovalPolicy, isDev, isProd, type EnvironmentName } from '../../config';
+import { getRemovalPolicy, isDev, isProd, PROJECT_NAME, type EnvironmentName } from '../../config';
 
 export interface AuroraConstructProps {
   /** Aurora 集群所在的 VPC */
@@ -66,7 +66,7 @@ export class AuroraConstruct extends Construct {
         version: rds.AuroraMysqlEngineVersion.of('8.0.mysql_aurora.3.10.3', '8.0'),
       }),
       credentials: rds.Credentials.fromGeneratedSecret('admin', {
-        secretName: `${envName}/ai-agents-platform/db-credentials`,
+        secretName: `${envName}/${PROJECT_NAME}/db-credentials`,
       }),
       defaultDatabaseName: databaseName,
       vpc,

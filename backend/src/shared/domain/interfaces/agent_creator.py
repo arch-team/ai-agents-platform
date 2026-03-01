@@ -33,4 +33,4 @@ class IAgentCreator(ABC):
     """跨模块 Agent 创建接口。"""
 
     @abstractmethod
-    async def create_agent(self, request: CreateAgentRequest, owner_id: int) -> CreatedAgentInfo: ...  # noqa: D102
+    async def create_agent(self, request: CreateAgentRequest, owner_id: int) -> CreatedAgentInfo: ...

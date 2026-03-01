@@ -18,7 +18,7 @@ class MessageRepositoryImpl(
     model_class = MessageModel
     _updatable_fields: frozenset[str] = frozenset({"content", "token_count"})
 
-    async def list_by_conversation(  # noqa: D102
+    async def list_by_conversation(
         self,
         conversation_id: int,
         *,
@@ -35,5 +35,5 @@ class MessageRepositoryImpl(
         result = await self._session.execute(stmt)
         return [self._to_entity(m) for m in result.scalars().all()]
 
-    async def count_by_conversation(self, conversation_id: int) -> int:  # noqa: D102
+    async def count_by_conversation(self, conversation_id: int) -> int:
         return await self._count_where(MessageModel.conversation_id == conversation_id)

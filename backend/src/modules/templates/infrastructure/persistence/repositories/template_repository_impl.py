@@ -110,13 +110,13 @@ class TemplateRepositoryImpl(PydanticRepository[Template, TemplateModel, int], I
 
     # ── 接口实现 ──
 
-    async def get_by_name(self, name: str) -> Template | None:  # noqa: D102
+    async def get_by_name(self, name: str) -> Template | None:
         stmt = select(TemplateModel).where(TemplateModel.name == name)
         result = await self._session.execute(stmt)
         model = result.scalar_one_or_none()
         return self._to_entity(model) if model else None
 
-    async def list_published(self, *, offset: int = 0, limit: int = 20) -> list[Template]:  # noqa: D102
+    async def list_published(self, *, offset: int = 0, limit: int = 20) -> list[Template]:
         stmt = (
             select(TemplateModel)
             .where(TemplateModel.status == TemplateStatus.PUBLISHED.value)
@@ -127,7 +127,7 @@ class TemplateRepositoryImpl(PydanticRepository[Template, TemplateModel, int], I
         result = await self._session.execute(stmt)
         return [self._to_entity(m) for m in result.scalars().all()]
 
-    async def list_by_creator(self, creator_id: int, *, offset: int = 0, limit: int = 20) -> list[Template]:  # noqa: D102
+    async def list_by_creator(self, creator_id: int, *, offset: int = 0, limit: int = 20) -> list[Template]:
         stmt = (
             select(TemplateModel)
             .where(TemplateModel.creator_id == creator_id)
@@ -138,7 +138,7 @@ class TemplateRepositoryImpl(PydanticRepository[Template, TemplateModel, int], I
         result = await self._session.execute(stmt)
         return [self._to_entity(m) for m in result.scalars().all()]
 
-    async def list_by_category(self, category: TemplateCategory, *, offset: int = 0, limit: int = 20) -> list[Template]:  # noqa: D102
+    async def list_by_category(self, category: TemplateCategory, *, offset: int = 0, limit: int = 20) -> list[Template]:
         stmt = (
             select(TemplateModel)
             .where(TemplateModel.category == category.value, TemplateModel.status == TemplateStatus.PUBLISHED.value)
@@ -149,12 +149,12 @@ class TemplateRepositoryImpl(PydanticRepository[Template, TemplateModel, int], I
         result = await self._session.execute(stmt)
         return [self._to_entity(m) for m in result.scalars().all()]
 
-    async def search(  # noqa: D102
+    async def search(
         self,
         keyword: str,
         *,
         category: TemplateCategory | None = None,
-        tags: list[str] | None = None,  # noqa: ARG002
+        tags: list[str] | None = None,
         offset: int = 0,
         limit: int = 20,
     ) -> list[Template]:
@@ -166,12 +166,12 @@ class TemplateRepositoryImpl(PydanticRepository[Template, TemplateModel, int], I
         result = await self._session.execute(stmt)
         return [self._to_entity(m) for m in result.scalars().all()]
 
-    async def count_by_search(  # noqa: D102
+    async def count_by_search(
         self,
         keyword: str,
         *,
         category: TemplateCategory | None = None,
-        tags: list[str] | None = None,  # noqa: ARG002
+        tags: list[str] | None = None,
     ) -> int:
         conditions = self._build_search_conditions(keyword, category)
         return await self._count_where(*conditions) if conditions else await self.count()
@@ -181,7 +181,7 @@ class TemplateRepositoryImpl(PydanticRepository[Template, TemplateModel, int], I
         keyword: str,
         *,
         category: TemplateCategory | None = None,
-        tags: list[str] | None = None,  # noqa: ARG002
+        tags: list[str] | None = None,
         offset: int = 0,
         limit: int = 20,
     ) -> tuple[list[Template], int]:
@@ -199,14 +199,14 @@ class TemplateRepositoryImpl(PydanticRepository[Template, TemplateModel, int], I
         rows = result.all()
         if not rows:
             return [], 0
-        total: int = rows[0]._total  # noqa: SLF001 — SQLAlchemy label 属性
+        total: int = rows[0]._total  # — SQLAlchemy label 属性
         items = [self._to_entity(row[0]) for row in rows]
         return items, total
 
-    async def count_by_creator(self, creator_id: int) -> int:  # noqa: D102
+    async def count_by_creator(self, creator_id: int) -> int:
         return await self._count_where(TemplateModel.creator_id == creator_id)
 
-    async def increment_usage_count(self, template_id: int) -> None:  # noqa: D102
+    async def increment_usage_count(self, template_id: int) -> None:
         stmt = (
             update(TemplateModel)
             .where(TemplateModel.id == template_id)

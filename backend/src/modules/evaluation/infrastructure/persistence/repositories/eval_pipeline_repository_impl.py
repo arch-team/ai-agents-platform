@@ -68,7 +68,7 @@ class EvalPipelineRepositoryImpl(
             updated_at=model.updated_at,
         )
 
-    async def list_by_suite(self, suite_id: int, limit: int = 20) -> list[EvalPipeline]:  # noqa: D102
+    async def list_by_suite(self, suite_id: int, limit: int = 20) -> list[EvalPipeline]:
         from sqlalchemy import select
 
         stmt = (
@@ -80,7 +80,7 @@ class EvalPipelineRepositoryImpl(
         result = await self._session.execute(stmt)
         return [self._to_entity(m) for m in result.scalars().all()]
 
-    async def find_running_by_suite(self, suite_id: int) -> EvalPipeline | None:  # noqa: D102
+    async def find_running_by_suite(self, suite_id: int) -> EvalPipeline | None:
         from sqlalchemy import select
 
         stmt = select(EvalPipelineModel).where(

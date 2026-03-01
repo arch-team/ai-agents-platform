@@ -61,14 +61,14 @@ class EvaluationRunRepositoryImpl(
             "updated_at": entity.updated_at,
         }
 
-    async def list_by_suite(self, suite_id: int, *, offset: int = 0, limit: int = 20) -> list[EvaluationRun]:  # noqa: D102
+    async def list_by_suite(self, suite_id: int, *, offset: int = 0, limit: int = 20) -> list[EvaluationRun]:
         return await self._list_where(EvaluationRunModel.suite_id == suite_id, offset=offset, limit=limit)
 
-    async def list_by_user(self, user_id: int, *, offset: int = 0, limit: int = 20) -> list[EvaluationRun]:  # noqa: D102
+    async def list_by_user(self, user_id: int, *, offset: int = 0, limit: int = 20) -> list[EvaluationRun]:
         return await self._list_where(EvaluationRunModel.user_id == user_id, offset=offset, limit=limit)
 
-    async def count_by_user(self, user_id: int) -> int:  # noqa: D102
+    async def count_by_user(self, user_id: int) -> int:
         return await self._count_where(EvaluationRunModel.user_id == user_id)
 
-    async def count_by_suite(self, suite_id: int) -> int:  # noqa: D102
+    async def count_by_suite(self, suite_id: int) -> int:
         return await self._count_where(EvaluationRunModel.suite_id == suite_id)

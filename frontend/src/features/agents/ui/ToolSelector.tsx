@@ -1,18 +1,37 @@
 // 工具选择器 — Agent 表单中选择要绑定的已审批工具
-
-import { useApprovedTools, TOOL_TYPE_LABELS, type Tool } from '@/features/tool-catalog';
+// 通过 props 注入工具数据，避免跨 feature 依赖（FSD 架构合规）
 
 import { Spinner } from '@/shared/ui';
+
+/** 工具选择器所需的最小工具信息 */
+interface ToolOption {
+  id: string | number;
+  name: string;
+  description?: string;
+  /** 工具类型显示标签 */
+  typeLabel: string;
+}
 
 interface ToolSelectorProps {
   selectedIds: number[];
   onChange: (ids: number[]) => void;
+  /** 可选工具列表（由调用方注入，避免跨 feature 依赖） */
+  tools: ToolOption[];
+  /** 数据加载中 */
+  isLoading?: boolean;
+  /** 数据加载错误 */
+  error?: string | null;
 }
 
-export function ToolSelector({ selectedIds, onChange }: ToolSelectorProps) {
-  const { data, isLoading, error } = useApprovedTools();
-  const tools: Tool[] = data?.items ?? [];
+export type { ToolOption };
 
+export function ToolSelector({
+  selectedIds,
+  onChange,
+  tools,
+  isLoading,
+  error,
+}: ToolSelectorProps) {
   // 切换选中状态：已选则移除，未选则添加
   const handleToggle = (toolId: number) => {
     const next = selectedIds.includes(toolId)
@@ -75,7 +94,7 @@ export function ToolSelector({ selectedIds, onChange }: ToolSelectorProps) {
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-medium text-gray-900">{tool.name}</span>
                   <span className="inline-flex rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600">
-                    {TOOL_TYPE_LABELS[tool.tool_type] ?? tool.tool_type}
+                    {tool.typeLabel}
                   </span>
                 </div>
                 {tool.description && (

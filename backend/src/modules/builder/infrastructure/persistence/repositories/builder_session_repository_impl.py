@@ -56,7 +56,7 @@ class BuilderSessionRepositoryImpl(
             updated_at=model.updated_at,
         )
 
-    async def list_by_user(self, user_id: int, *, offset: int = 0, limit: int = 20) -> list[BuilderSession]:  # noqa: D102
+    async def list_by_user(self, user_id: int, *, offset: int = 0, limit: int = 20) -> list[BuilderSession]:
         return await self._list_where(
             BuilderSessionModel.user_id == user_id,
             offset=offset,

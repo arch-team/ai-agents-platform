@@ -35,7 +35,10 @@ class IDepartmentCostService(ABC):
 
     @abstractmethod
     async def get_department_cost_report(
-        self, department_id: int, start_date: str, end_date: str,
+        self,
+        department_id: int,
+        start_date: str,
+        end_date: str,
     ) -> DepartmentCostReport:
         """获取部门成本报告。
 

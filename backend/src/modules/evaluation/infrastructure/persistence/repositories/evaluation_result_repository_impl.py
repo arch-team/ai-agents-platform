@@ -28,8 +28,8 @@ class EvaluationResultRepositoryImpl(
         },
     )
 
-    async def list_by_run(self, run_id: int, *, offset: int = 0, limit: int = 20) -> list[EvaluationResult]:  # noqa: D102
+    async def list_by_run(self, run_id: int, *, offset: int = 0, limit: int = 20) -> list[EvaluationResult]:
         return await self._list_where(EvaluationResultModel.run_id == run_id, offset=offset, limit=limit)
 
-    async def count_by_run(self, run_id: int) -> int:  # noqa: D102
+    async def count_by_run(self, run_id: int) -> int:
         return await self._count_where(EvaluationResultModel.run_id == run_id)

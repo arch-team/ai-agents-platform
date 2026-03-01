@@ -33,7 +33,7 @@ logger = structlog.get_logger(__name__)
 class _AgentCoreClient(Protocol):
     """boto3 bedrock-agentcore client 最小协议。"""
 
-    def invoke_agent_runtime(self, **kwargs: Any) -> dict[str, Any]: ...  # noqa: ANN401
+    def invoke_agent_runtime(self, **kwargs: Any) -> dict[str, Any]: ...
 
 
 class AgentCoreRuntimeAdapter(IAgentRuntime):
@@ -170,7 +170,7 @@ class AgentCoreRuntimeAdapter(IAgentRuntime):
         # StreamingBody → bytes → JSON
         if hasattr(body, "read"):
             body = json.loads(body.read())
-        elif isinstance(body, (bytes, bytearray, str)):
+        elif isinstance(body, bytes | bytearray | str):
             body = json.loads(body)
 
         content = str(body.get("content", ""))

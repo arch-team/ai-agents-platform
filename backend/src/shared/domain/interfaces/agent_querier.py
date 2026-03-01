@@ -31,4 +31,4 @@ class IAgentQuerier(ABC):
     """跨模块 Agent 查询接口。"""
 
     @abstractmethod
-    async def get_active_agent(self, agent_id: int) -> ActiveAgentInfo | None: ...  # noqa: D102
+    async def get_active_agent(self, agent_id: int) -> ActiveAgentInfo | None: ...

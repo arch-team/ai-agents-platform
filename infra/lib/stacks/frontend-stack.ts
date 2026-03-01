@@ -9,7 +9,7 @@ import * as s3deploy from 'aws-cdk-lib/aws-s3-deployment';
 import { NagSuppressions } from 'cdk-nag';
 import { Construct } from 'constructs';
 import type { BaseStackProps } from '../config';
-import { getRemovalPolicy, isDev } from '../config';
+import { getRemovalPolicy, isDev, PROJECT_NAME } from '../config';
 
 export interface FrontendStackProps extends BaseStackProps {
   /**
@@ -41,7 +41,7 @@ export class FrontendStack extends cdk.Stack {
 
     // --- S3 私有 Bucket（禁止公开访问） ---
     this.bucket = new s3.Bucket(this, 'FrontendBucket', {
-      bucketName: `ai-agents-platform-frontend-${envName}-897473`,
+      bucketName: `${PROJECT_NAME}-frontend-${envName}-897473`,
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
       encryption: s3.BucketEncryption.S3_MANAGED,
       enforceSSL: true,

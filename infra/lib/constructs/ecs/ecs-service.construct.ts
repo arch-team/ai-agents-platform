@@ -4,7 +4,12 @@ import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as ecs from 'aws-cdk-lib/aws-ecs';
 import * as logs from 'aws-cdk-lib/aws-logs';
 import { Construct } from 'constructs';
-import { getLogRetention, getRemovalPolicy, type EnvironmentName } from '../../config';
+import {
+  getLogRetention,
+  getRemovalPolicy,
+  PROJECT_NAME,
+  type EnvironmentName,
+} from '../../config';
 
 /** 定时缩放配置 — 用于 Dev 环境非工作时段自动缩减 ECS 任务数 */
 export interface ScheduledScalingConfig {
@@ -98,7 +103,7 @@ export class EcsServiceConstruct extends Construct {
     );
 
     const logGroup = new logs.LogGroup(this, 'LogGroup', {
-      logGroupName: `/ecs/ai-agents-platform/${envName}`,
+      logGroupName: `/ecs/${PROJECT_NAME}/${envName}`,
       retention: getLogRetention(envName),
       removalPolicy: getRemovalPolicy(envName),
     });

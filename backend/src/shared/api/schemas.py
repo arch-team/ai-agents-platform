@@ -24,7 +24,7 @@ class PageRequest(BaseModel):
     page_size: int = Field(default=20, ge=1, le=100)
 
     @property
-    def offset(self) -> int:  # noqa: D102
+    def offset(self) -> int:
         return (self.page - 1) * self.page_size
 
 

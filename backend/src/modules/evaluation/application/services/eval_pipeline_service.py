@@ -100,7 +100,7 @@ class EvalPipelineService:
 
         return self._to_dto(pipeline)
 
-    async def get(self, *, pipeline_id: int, user_id: int) -> EvalPipelineDTO:  # noqa: ARG002
+    async def get(self, *, pipeline_id: int, user_id: int) -> EvalPipelineDTO:
         """获取 Pipeline 详情。
 
         Raises:

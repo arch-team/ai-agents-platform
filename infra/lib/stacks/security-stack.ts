@@ -5,7 +5,7 @@ import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
 import * as ssm from 'aws-cdk-lib/aws-ssm';
 import { NagSuppressions } from 'cdk-nag';
 import { Construct } from 'constructs';
-import { isProd, type BaseStackProps } from '../config';
+import { isProd, PROJECT_NAME, type BaseStackProps } from '../config';
 import { KmsConstruct, SecurityGroupsConstruct } from '../constructs/security';
 
 export interface SecurityStackProps extends BaseStackProps {
@@ -32,7 +32,7 @@ export class SecurityStack extends cdk.Stack {
 
     const kmsConstruct = new KmsConstruct(this, 'Kms', {
       envName,
-      alias: `ai-agents-platform-${envName}`,
+      alias: `${PROJECT_NAME}-${envName}`,
     });
     this.encryptionKey = kmsConstruct.key;
 
@@ -72,7 +72,7 @@ export class SecurityStack extends cdk.Stack {
         JSON.stringify({
           private_key: 'REPLACE_WITH_ACTUAL_PRIVATE_KEY',
           certificate: 'REPLACE_WITH_ACTUAL_CERTIFICATE',
-          entity_id: `https://ai-agents-platform-${envName}.example.com/sso/metadata`,
+          entity_id: `https://${PROJECT_NAME}-${envName}.example.com/sso/metadata`,
         }),
       ),
       encryptionKey: this.encryptionKey,

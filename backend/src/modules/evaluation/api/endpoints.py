@@ -291,7 +291,7 @@ async def trigger_eval_pipeline(
 @pipeline_router.get("/{suite_id}/pipelines")
 async def list_eval_pipelines(
     suite_id: int,
-    current_user: CurrentUserDep,  # noqa: ARG001
+    current_user: CurrentUserDep,
     pipeline_service: PipelineServiceDep,
 ) -> list[EvalPipelineResponse]:
     """获取指定 TestSuite 的 Pipeline 列表。"""

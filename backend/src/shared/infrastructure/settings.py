@@ -200,7 +200,7 @@ class Settings(BaseSettings):
         """非开发环境校验密钥安全性，fail-fast 防止弱密钥上线。"""
         if self.APP_ENV not in ("development", "test"):
             jwt_secret = self.JWT_SECRET_KEY.get_secret_value()
-            if jwt_secret == "changeme" or len(jwt_secret) < 32:  # noqa: S105
+            if jwt_secret == "changeme" or len(jwt_secret) < 32:
                 msg = "JWT_SECRET_KEY 在非开发环境下不能使用默认值且长度不得少于 32 字符"
                 raise ValueError(msg)
             admin_pwd = self.DEFAULT_ADMIN_PASSWORD.get_secret_value()

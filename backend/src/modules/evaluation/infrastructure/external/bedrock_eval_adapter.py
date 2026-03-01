@@ -24,7 +24,12 @@ class BedrockEvalAdapter(IEvalService):
         self._client = boto3.client("bedrock", region_name=region)
         self._role_arn = role_arn
 
-    async def create_eval_job(self, suite_name: str, model_ids: list[str], test_cases: list[dict[str, str]]) -> str:  # noqa: ARG002 — MVP: 当前版本不传入自定义数据集
+    async def create_eval_job(
+        self,
+        suite_name: str,
+        model_ids: list[str],
+        test_cases: list[dict[str, str]],
+    ) -> str:  # — MVP: 当前版本不传入自定义数据集
         """创建 Bedrock Evaluation Job，返回 job_id。
 
         Raises:

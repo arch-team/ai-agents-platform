@@ -1,11 +1,11 @@
 import * as kms from 'aws-cdk-lib/aws-kms';
 import { Construct } from 'constructs';
-import { getRemovalPolicy, type EnvironmentName } from '../../config';
+import { getRemovalPolicy, PROJECT_NAME, type EnvironmentName } from '../../config';
 
 export interface KmsConstructProps {
   /** 环境名称 (dev | prod) */
   readonly envName: EnvironmentName;
-  /** KMS 密钥别名 @default 'ai-agents-platform' */
+  /** KMS 密钥别名 @default PROJECT_NAME */
   readonly alias?: string;
   /** 是否启用自动密钥轮换 @default true */
   readonly enableKeyRotation?: boolean;
@@ -20,7 +20,7 @@ export class KmsConstruct extends Construct {
 
   constructor(scope: Construct, id: string, props: KmsConstructProps) {
     super(scope, id);
-    const { envName, alias = 'ai-agents-platform', enableKeyRotation = true } = props;
+    const { envName, alias = PROJECT_NAME, enableKeyRotation = true } = props;
 
     this.key = new kms.Key(this, 'Key', {
       alias,

@@ -15,6 +15,10 @@ class IBudgetRepository(IRepository[Budget, int]):
 
     @abstractmethod
     async def list_by_department(
-        self, department_id: int, *, offset: int = 0, limit: int = 20,
+        self,
+        department_id: int,
+        *,
+        offset: int = 0,
+        limit: int = 20,
     ) -> tuple[list[Budget], int]:
         """查询部门的所有预算记录，返回 (items, total)。"""

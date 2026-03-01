@@ -45,7 +45,15 @@ function FormWrapper({ defaultValues }: { defaultValues?: Partial<CreateAgentFor
     },
   });
 
-  return <AgentFormFields register={register} errors={errors} watch={watch} setValue={setValue} />;
+  return (
+    <AgentFormFields
+      register={register}
+      errors={errors}
+      watch={watch}
+      setValue={setValue}
+      tools={[]}
+    />
+  );
 }
 
 describe('AgentFormFields', () => {

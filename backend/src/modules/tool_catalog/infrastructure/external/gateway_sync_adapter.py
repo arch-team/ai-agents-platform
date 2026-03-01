@@ -32,7 +32,7 @@ class GatewaySyncAdapter:
         self._gateway_id = gateway_id
         self._region = region
 
-    @lru_cache(maxsize=1)  # noqa: B019
+    @lru_cache(maxsize=1)
     def _get_client(self) -> _AgentCoreGatewayClient:
         """获取 bedrock-agentcore 控制面客户端 (懒加载单例)。"""
         import boto3

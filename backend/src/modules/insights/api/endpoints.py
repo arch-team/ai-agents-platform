@@ -87,7 +87,7 @@ async def list_usage_records(
 async def get_usage_record(
     record_id: int,
     service: ServiceDep,
-    current_user: CurrentUserDep,  # noqa: ARG001
+    current_user: CurrentUserDep,
 ) -> UsageRecordResponse:
     """获取使用记录详情。"""
     dto = await service.get_usage_record(record_id)
@@ -97,7 +97,7 @@ async def get_usage_record(
 @router.get("/summary", response_model=InsightsSummaryResponse)
 async def get_insights_summary(
     service: ServiceDep,
-    current_user: CurrentUserDep,  # noqa: ARG001
+    current_user: CurrentUserDep,
     start_date: Annotated[str | None, Query()] = None,
     end_date: Annotated[str | None, Query()] = None,
 ) -> InsightsSummaryResponse:
@@ -120,7 +120,7 @@ async def get_insights_summary(
 @router.get("/cost-breakdown", response_model=CostBreakdownResponse)
 async def get_cost_breakdown(
     service: ServiceDep,
-    current_user: CurrentUserDep,  # noqa: ARG001
+    current_user: CurrentUserDep,
     start_date: Annotated[str | None, Query()] = None,
     end_date: Annotated[str | None, Query()] = None,
 ) -> CostBreakdownResponse:
@@ -152,7 +152,7 @@ async def get_cost_breakdown(
 @router.get("/usage-trends", response_model=UsageTrendResponse)
 async def get_usage_trends(
     service: ServiceDep,
-    current_user: CurrentUserDep,  # noqa: ARG001
+    current_user: CurrentUserDep,
     start_date: Annotated[str | None, Query()] = None,
     end_date: Annotated[str | None, Query()] = None,
 ) -> UsageTrendResponse:

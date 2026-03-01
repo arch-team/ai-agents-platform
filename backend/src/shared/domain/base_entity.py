@@ -21,7 +21,7 @@ class PydanticEntity(BaseModel):
     created_at: datetime | None = None
     updated_at: datetime | None = None
 
-    def model_post_init(self, context: Any, /) -> None:  # noqa: ANN401, ARG002
+    def model_post_init(self, context: Any, /) -> None:
         """初始化时间戳。"""
         now = utc_now()
         if self.created_at is None:

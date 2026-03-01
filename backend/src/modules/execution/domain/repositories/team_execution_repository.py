@@ -12,7 +12,7 @@ class ITeamExecutionRepository(IRepository[TeamExecution, int]):
     """团队执行仓库接口。"""
 
     @abstractmethod
-    async def list_by_user(  # noqa: D102
+    async def list_by_user(
         self,
         user_id: int,
         *,
@@ -21,7 +21,7 @@ class ITeamExecutionRepository(IRepository[TeamExecution, int]):
     ) -> list[TeamExecution]: ...
 
     @abstractmethod
-    async def list_by_agent(  # noqa: D102
+    async def list_by_agent(
         self,
         agent_id: int,
         *,
@@ -30,17 +30,17 @@ class ITeamExecutionRepository(IRepository[TeamExecution, int]):
     ) -> list[TeamExecution]: ...
 
     @abstractmethod
-    async def count_by_user(self, user_id: int) -> int: ...  # noqa: D102
+    async def count_by_user(self, user_id: int) -> int: ...
 
     @abstractmethod
-    async def list_by_statuses(self, statuses: list[TeamExecutionStatus]) -> list[TeamExecution]: ...  # noqa: D102
+    async def list_by_statuses(self, statuses: list[TeamExecutionStatus]) -> list[TeamExecution]: ...
 
 
 class ITeamExecutionLogRepository(IRepository[TeamExecutionLog, int]):
     """团队执行日志仓库接口。"""
 
     @abstractmethod
-    async def list_by_execution(  # noqa: D102
+    async def list_by_execution(
         self,
         execution_id: int,
         *,
@@ -48,4 +48,4 @@ class ITeamExecutionLogRepository(IRepository[TeamExecutionLog, int]):
     ) -> list[TeamExecutionLog]: ...
 
     @abstractmethod
-    async def append_log(self, log: TeamExecutionLog) -> TeamExecutionLog: ...  # noqa: D102
+    async def append_log(self, log: TeamExecutionLog) -> TeamExecutionLog: ...

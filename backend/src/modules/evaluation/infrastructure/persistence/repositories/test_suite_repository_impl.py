@@ -44,14 +44,14 @@ class TestSuiteRepositoryImpl(
             "updated_at": entity.updated_at,
         }
 
-    async def list_by_agent(self, agent_id: int, *, offset: int = 0, limit: int = 20) -> list[TestSuite]:  # noqa: D102
+    async def list_by_agent(self, agent_id: int, *, offset: int = 0, limit: int = 20) -> list[TestSuite]:
         return await self._list_where(TestSuiteModel.agent_id == agent_id, offset=offset, limit=limit)
 
-    async def count_by_agent(self, agent_id: int) -> int:  # noqa: D102
+    async def count_by_agent(self, agent_id: int) -> int:
         return await self._count_where(TestSuiteModel.agent_id == agent_id)
 
-    async def list_by_owner(self, owner_id: int, *, offset: int = 0, limit: int = 20) -> list[TestSuite]:  # noqa: D102
+    async def list_by_owner(self, owner_id: int, *, offset: int = 0, limit: int = 20) -> list[TestSuite]:
         return await self._list_where(TestSuiteModel.owner_id == owner_id, offset=offset, limit=limit)
 
-    async def count_by_owner(self, owner_id: int) -> int:  # noqa: D102
+    async def count_by_owner(self, owner_id: int) -> int:
         return await self._count_where(TestSuiteModel.owner_id == owner_id)

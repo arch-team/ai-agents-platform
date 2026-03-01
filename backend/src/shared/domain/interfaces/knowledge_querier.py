@@ -20,7 +20,7 @@ class IKnowledgeQuerier(ABC):
     """跨模块知识库查询接口。"""
 
     @abstractmethod
-    async def retrieve(  # noqa: D102
+    async def retrieve(
         self,
         kb_id: int,
         query: str,

@@ -276,6 +276,17 @@ ignore = [
     "D107",
     # 允许 magic method 缺少 docstring
     "D105",
+    # 允许公共方法缺少 docstring (遵循"类型即文档"原则, 类型自解释时省略)
+    "D102",
+    # 允许 "bearer" 等 OAuth2 标准字段名不被误判为硬编码密码
+    "S105",
+    # 允许使用 Any (boto3/SDK 返回值无精确类型)
+    "ANN401",
+    # 允许未使用的函数/方法参数 (接口契约要求)
+    "ARG001",
+    "ARG002",
+    # 允许方法上使用 lru_cache (有意的单例懒加载模式)
+    "B019",
     # Python 3.11+ self/cls 类型自动推断 (ANN101/ANN102 已在 ruff >=0.15 中移除)
 ]
 

@@ -12,7 +12,7 @@ class IToolRepository(IRepository[Tool, int]):
     """Tool 仓库接口。"""
 
     @abstractmethod
-    async def list_by_creator(  # noqa: D102
+    async def list_by_creator(
         self,
         creator_id: int,
         *,
@@ -21,17 +21,17 @@ class IToolRepository(IRepository[Tool, int]):
     ) -> list[Tool]: ...
 
     @abstractmethod
-    async def count_by_creator(self, creator_id: int) -> int: ...  # noqa: D102
+    async def count_by_creator(self, creator_id: int) -> int: ...
 
     @abstractmethod
-    async def get_by_name_and_creator(  # noqa: D102
+    async def get_by_name_and_creator(
         self,
         name: str,
         creator_id: int,
     ) -> Tool | None: ...
 
     @abstractmethod
-    async def list_approved(  # noqa: D102
+    async def list_approved(
         self,
         *,
         offset: int = 0,
@@ -39,10 +39,10 @@ class IToolRepository(IRepository[Tool, int]):
     ) -> list[Tool]: ...
 
     @abstractmethod
-    async def count_approved(self) -> int: ...  # noqa: D102
+    async def count_approved(self) -> int: ...
 
     @abstractmethod
-    async def list_filtered(  # noqa: D102
+    async def list_filtered(
         self,
         *,
         status: ToolStatus | None = None,
@@ -54,7 +54,7 @@ class IToolRepository(IRepository[Tool, int]):
     ) -> list[Tool]: ...
 
     @abstractmethod
-    async def count_filtered(  # noqa: D102
+    async def count_filtered(
         self,
         *,
         status: ToolStatus | None = None,

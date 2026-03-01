@@ -11,7 +11,7 @@ class IAgentRepository(IRepository[Agent, int]):
     """Agent 仓库接口。"""
 
     @abstractmethod
-    async def list_by_owner(  # noqa: D102
+    async def list_by_owner(
         self,
         owner_id: int,
         *,
@@ -20,17 +20,17 @@ class IAgentRepository(IRepository[Agent, int]):
     ) -> list[Agent]: ...
 
     @abstractmethod
-    async def count_by_owner(self, owner_id: int) -> int: ...  # noqa: D102
+    async def count_by_owner(self, owner_id: int) -> int: ...
 
     @abstractmethod
-    async def get_by_name_and_owner(  # noqa: D102
+    async def get_by_name_and_owner(
         self,
         name: str,
         owner_id: int,
     ) -> Agent | None: ...
 
     @abstractmethod
-    async def list_by_owner_and_status(  # noqa: D102
+    async def list_by_owner_and_status(
         self,
         owner_id: int,
         status: AgentStatus,
@@ -40,7 +40,7 @@ class IAgentRepository(IRepository[Agent, int]):
     ) -> list[Agent]: ...
 
     @abstractmethod
-    async def count_by_owner_and_status(  # noqa: D102
+    async def count_by_owner_and_status(
         self,
         owner_id: int,
         status: AgentStatus,

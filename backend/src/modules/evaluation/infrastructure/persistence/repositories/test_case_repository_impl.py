@@ -26,13 +26,13 @@ class TestCaseRepositoryImpl(
         },
     )
 
-    async def list_by_suite(self, suite_id: int, *, offset: int = 0, limit: int = 20) -> list[TestCase]:  # noqa: D102
+    async def list_by_suite(self, suite_id: int, *, offset: int = 0, limit: int = 20) -> list[TestCase]:
         return await self._list_where(TestCaseModel.suite_id == suite_id, offset=offset, limit=limit)
 
-    async def count_by_suite(self, suite_id: int) -> int:  # noqa: D102
+    async def count_by_suite(self, suite_id: int) -> int:
         return await self._count_where(TestCaseModel.suite_id == suite_id)
 
-    async def delete_by_suite(self, suite_id: int) -> None:  # noqa: D102
+    async def delete_by_suite(self, suite_id: int) -> None:
         stmt = delete(TestCaseModel).where(TestCaseModel.suite_id == suite_id)
         await self._session.execute(stmt)
         await self._session.flush()

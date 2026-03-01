@@ -154,7 +154,7 @@ class ToolRepositoryImpl(PydanticRepository[Tool, ToolModel, int], IToolReposito
 
     # -- 接口实现 --
 
-    async def list_by_creator(  # noqa: D102
+    async def list_by_creator(
         self,
         creator_id: int,
         *,
@@ -167,10 +167,10 @@ class ToolRepositoryImpl(PydanticRepository[Tool, ToolModel, int], IToolReposito
             limit=limit,
         )
 
-    async def count_by_creator(self, creator_id: int) -> int:  # noqa: D102
+    async def count_by_creator(self, creator_id: int) -> int:
         return await self._count_where(ToolModel.creator_id == creator_id)
 
-    async def get_by_name_and_creator(  # noqa: D102
+    async def get_by_name_and_creator(
         self,
         name: str,
         creator_id: int,
@@ -183,7 +183,7 @@ class ToolRepositoryImpl(PydanticRepository[Tool, ToolModel, int], IToolReposito
         model = result.scalar_one_or_none()
         return self._to_entity(model) if model else None
 
-    async def list_approved(  # noqa: D102
+    async def list_approved(
         self,
         *,
         offset: int = 0,
@@ -195,10 +195,10 @@ class ToolRepositoryImpl(PydanticRepository[Tool, ToolModel, int], IToolReposito
             limit=limit,
         )
 
-    async def count_approved(self) -> int:  # noqa: D102
+    async def count_approved(self) -> int:
         return await self._count_where(ToolModel.status == ToolStatus.APPROVED.value)
 
-    async def list_filtered(  # noqa: D102
+    async def list_filtered(
         self,
         *,
         status: ToolStatus | None = None,
@@ -216,7 +216,7 @@ class ToolRepositoryImpl(PydanticRepository[Tool, ToolModel, int], IToolReposito
         )
         return await self._list_where(*filters, offset=offset, limit=limit)
 
-    async def count_filtered(  # noqa: D102
+    async def count_filtered(
         self,
         *,
         status: ToolStatus | None = None,
@@ -232,7 +232,7 @@ class ToolRepositoryImpl(PydanticRepository[Tool, ToolModel, int], IToolReposito
         )
         return await self._count_where(*filters)
 
-    async def list_by_ids_and_status(self, tool_ids: list[int], status: ToolStatus) -> list[Tool]:  # noqa: D102
+    async def list_by_ids_and_status(self, tool_ids: list[int], status: ToolStatus) -> list[Tool]:
         if not tool_ids:
             return []
         # 防御性类型验证: 确保 IN 查询参数为 int, 防止非预期类型注入

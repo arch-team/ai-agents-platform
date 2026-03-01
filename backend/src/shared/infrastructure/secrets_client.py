@@ -44,7 +44,7 @@ def is_deployed_env(app_env: str) -> bool:
     return app_env not in _LOCAL_ENVS
 
 
-def _get_secrets_client(region: str) -> Any:  # noqa: ANN401
+def _get_secrets_client(region: str) -> Any:
     """创建 Secrets Manager 客户端 (ECS Task Role 自动提供凭证)。"""
     return boto3.client("secretsmanager", region_name=region)
 

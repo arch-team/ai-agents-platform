@@ -7,7 +7,7 @@
 from typing import Any
 
 
-def extract_content(message: Any) -> str:  # noqa: ANN401
+def extract_content(message: Any) -> str:
     """从 SDK 消息中提取文本内容。
 
     兼容两种格式:
@@ -35,7 +35,7 @@ def extract_content(message: Any) -> str:  # noqa: ANN401
     return str(message) if isinstance(message, str) else ""
 
 
-def extract_usage(message: Any) -> tuple[int, int]:  # noqa: ANN401
+def extract_usage(message: Any) -> tuple[int, int]:
     """从 SDK 消息中提取 Token 用量 (input_tokens, output_tokens)。
 
     兼容两种格式:

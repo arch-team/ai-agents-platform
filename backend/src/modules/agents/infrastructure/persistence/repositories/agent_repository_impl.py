@@ -119,7 +119,7 @@ class AgentRepositoryImpl(PydanticRepository[Agent, AgentModel, int], IAgentRepo
 
     # ── 接口实现 ──
 
-    async def list_by_owner(  # noqa: D102
+    async def list_by_owner(
         self,
         owner_id: int,
         *,
@@ -132,10 +132,10 @@ class AgentRepositoryImpl(PydanticRepository[Agent, AgentModel, int], IAgentRepo
             limit=limit,
         )
 
-    async def count_by_owner(self, owner_id: int) -> int:  # noqa: D102
+    async def count_by_owner(self, owner_id: int) -> int:
         return await self._count_where(*self._owner_filters(owner_id))
 
-    async def get_by_name_and_owner(  # noqa: D102
+    async def get_by_name_and_owner(
         self,
         name: str,
         owner_id: int,
@@ -148,7 +148,7 @@ class AgentRepositoryImpl(PydanticRepository[Agent, AgentModel, int], IAgentRepo
         model = result.scalar_one_or_none()
         return self._to_entity(model) if model else None
 
-    async def list_by_owner_and_status(  # noqa: D102
+    async def list_by_owner_and_status(
         self,
         owner_id: int,
         status: AgentStatus,
@@ -162,7 +162,7 @@ class AgentRepositoryImpl(PydanticRepository[Agent, AgentModel, int], IAgentRepo
             limit=limit,
         )
 
-    async def count_by_owner_and_status(  # noqa: D102
+    async def count_by_owner_and_status(
         self,
         owner_id: int,
         status: AgentStatus,

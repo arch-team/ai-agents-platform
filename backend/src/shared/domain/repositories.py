@@ -14,19 +14,19 @@ class IRepository(ABC, Generic[E, ID]):
     """仓库泛型接口，定义标准 CRUD 操作。"""
 
     @abstractmethod
-    async def get_by_id(self, entity_id: ID) -> E | None: ...  # noqa: D102
+    async def get_by_id(self, entity_id: ID) -> E | None: ...
 
     @abstractmethod
-    async def list(self, *, offset: int = 0, limit: int = 20) -> list[E]: ...  # noqa: D102
+    async def list(self, *, offset: int = 0, limit: int = 20) -> list[E]: ...
 
     @abstractmethod
-    async def count(self) -> int: ...  # noqa: D102
+    async def count(self) -> int: ...
 
     @abstractmethod
-    async def create(self, entity: E) -> E: ...  # noqa: D102
+    async def create(self, entity: E) -> E: ...
 
     @abstractmethod
-    async def update(self, entity: E) -> E: ...  # noqa: D102
+    async def update(self, entity: E) -> E: ...
 
     @abstractmethod
-    async def delete(self, entity_id: ID) -> None: ...  # noqa: D102
+    async def delete(self, entity_id: ID) -> None: ...

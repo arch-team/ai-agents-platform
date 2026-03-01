@@ -32,7 +32,7 @@ class KnowledgeBaseRepositoryImpl(
         },
     )
 
-    async def get_by_name_and_owner(self, name: str, owner_id: int) -> KnowledgeBase | None:  # noqa: D102
+    async def get_by_name_and_owner(self, name: str, owner_id: int) -> KnowledgeBase | None:
         stmt = select(KnowledgeBaseModel).where(
             KnowledgeBaseModel.name == name,
             KnowledgeBaseModel.owner_id == owner_id,
@@ -41,7 +41,7 @@ class KnowledgeBaseRepositoryImpl(
         model = result.scalar_one_or_none()
         return self._to_entity(model) if model else None
 
-    async def list_by_owner(self, owner_id: int, *, offset: int = 0, limit: int = 20) -> list[KnowledgeBase]:  # noqa: D102
+    async def list_by_owner(self, owner_id: int, *, offset: int = 0, limit: int = 20) -> list[KnowledgeBase]:
         stmt = (
             select(KnowledgeBaseModel)
             .where(KnowledgeBaseModel.owner_id == owner_id)
@@ -52,5 +52,5 @@ class KnowledgeBaseRepositoryImpl(
         result = await self._session.execute(stmt)
         return [self._to_entity(m) for m in result.scalars().all()]
 
-    async def count_by_owner(self, owner_id: int) -> int:  # noqa: D102
+    async def count_by_owner(self, owner_id: int) -> int:
         return await self._count_where(KnowledgeBaseModel.owner_id == owner_id)

@@ -38,7 +38,7 @@ class TeamExecutionRepositoryImpl(
         },
     )
 
-    async def list_by_user(  # noqa: D102
+    async def list_by_user(
         self,
         user_id: int,
         *,
@@ -55,7 +55,7 @@ class TeamExecutionRepositoryImpl(
         result = await self._session.execute(stmt)
         return [self._to_entity(m) for m in result.scalars().all()]
 
-    async def list_by_agent(  # noqa: D102
+    async def list_by_agent(
         self,
         agent_id: int,
         *,
@@ -72,10 +72,10 @@ class TeamExecutionRepositoryImpl(
         result = await self._session.execute(stmt)
         return [self._to_entity(m) for m in result.scalars().all()]
 
-    async def count_by_user(self, user_id: int) -> int:  # noqa: D102
+    async def count_by_user(self, user_id: int) -> int:
         return await self._count_where(TeamExecutionModel.user_id == user_id)
 
-    async def list_by_statuses(  # noqa: D102
+    async def list_by_statuses(
         self,
         statuses: list[TeamExecutionStatus],
     ) -> list[TeamExecution]:
@@ -95,7 +95,7 @@ class TeamExecutionLogRepositoryImpl(
     model_class = TeamExecutionLogModel
     _updatable_fields: frozenset[str] = frozenset({"content"})
 
-    async def list_by_execution(  # noqa: D102
+    async def list_by_execution(
         self,
         execution_id: int,
         *,
@@ -112,5 +112,5 @@ class TeamExecutionLogRepositoryImpl(
         result = await self._session.execute(stmt)
         return [self._to_entity(m) for m in result.scalars().all()]
 
-    async def append_log(self, log: TeamExecutionLog) -> TeamExecutionLog:  # noqa: D102
+    async def append_log(self, log: TeamExecutionLog) -> TeamExecutionLog:
         return await self.create(log)

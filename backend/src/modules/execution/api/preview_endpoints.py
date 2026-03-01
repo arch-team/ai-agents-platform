@@ -41,7 +41,7 @@ class AgentPreviewResponse(BaseModel):
 async def preview_agent(
     agent_id: int,
     request: PreviewAgentRequest,
-    current_user: CurrentUserDep,  # noqa: ARG001
+    current_user: CurrentUserDep,
     agent_runtime: Annotated[IAgentRuntime, Depends(get_agent_runtime)],
     agent_querier: Annotated[IAgentQuerier, Depends(get_agent_querier)],
 ) -> AgentPreviewResponse:

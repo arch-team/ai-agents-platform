@@ -76,7 +76,7 @@ async def create_tool(request: CreateToolRequest, service: ServiceDep, current_u
 @router.get("")
 async def list_tools(
     service: ServiceDep,
-    current_user: CurrentUserDep,  # noqa: ARG001
+    current_user: CurrentUserDep,
     status_filter: Annotated[ToolStatus | None, Query(alias="status")] = None,
     type_filter: Annotated[ToolType | None, Query(alias="type")] = None,
     keyword: Annotated[str | None, Query()] = None,
@@ -98,7 +98,7 @@ async def list_tools(
 @router.get("/approved")
 async def list_approved_tools(
     service: ServiceDep,
-    current_user: CurrentUserDep,  # noqa: ARG001
+    current_user: CurrentUserDep,
     page: Annotated[int, Query(ge=1)] = 1,
     page_size: Annotated[int, Query(ge=1, le=100)] = 20,
 ) -> ToolListResponse:
@@ -108,7 +108,7 @@ async def list_approved_tools(
 
 
 @router.get("/{tool_id}")
-async def get_tool(tool_id: int, service: ServiceDep, current_user: CurrentUserDep) -> ToolResponse:  # noqa: ARG001
+async def get_tool(tool_id: int, service: ServiceDep, current_user: CurrentUserDep) -> ToolResponse:
     """获取 Tool 详情。"""
     tool = await service.get_tool(tool_id)
     return _to_response(tool)

@@ -10,6 +10,7 @@ import { createAgentSchema, type CreateAgentFormData } from '../lib/validation';
 import { MODEL_OPTIONS } from '../model/constants';
 
 import { AgentFormFields } from './AgentFormFields';
+import type { ToolOption } from './ToolSelector';
 
 /** 从模板预填的字段 */
 interface TemplatePreset {
@@ -22,9 +23,21 @@ interface TemplatePreset {
 interface AgentCreateFormProps {
   onSuccess?: (id: number) => void;
   onCancel?: () => void;
+  /** 可选工具列表（由页面层注入，避免跨 feature 依赖） */
+  tools?: ToolOption[];
+  /** 工具加载状态 */
+  toolsLoading?: boolean;
+  /** 工具加载错误 */
+  toolsError?: string | null;
 }
 
-export function AgentCreateForm({ onSuccess, onCancel }: AgentCreateFormProps) {
+export function AgentCreateForm({
+  onSuccess,
+  onCancel,
+  tools = [],
+  toolsLoading,
+  toolsError,
+}: AgentCreateFormProps) {
   const location = useLocation();
   const templateData = (location.state as { fromTemplate?: TemplatePreset } | null)?.fromTemplate;
 
@@ -61,7 +74,15 @@ export function AgentCreateForm({ onSuccess, onCancel }: AgentCreateFormProps) {
 
   return (
     <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6" noValidate>
-      <AgentFormFields register={register} errors={errors} watch={watch} setValue={setValue} />
+      <AgentFormFields
+        register={register}
+        errors={errors}
+        watch={watch}
+        setValue={setValue}
+        tools={tools}
+        toolsLoading={toolsLoading}
+        toolsError={toolsError}
+      />
 
       {/* 提交错误提示 */}
       {createMutation.isError && (

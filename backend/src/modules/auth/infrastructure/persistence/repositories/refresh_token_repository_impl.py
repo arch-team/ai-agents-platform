@@ -24,13 +24,13 @@ class RefreshTokenRepositoryImpl(
     model_class = RefreshTokenModel
     _updatable_fields: frozenset[str] = frozenset({"revoked", "updated_at"})
 
-    async def get_by_token(self, token: str) -> RefreshToken | None:  # noqa: D102
+    async def get_by_token(self, token: str) -> RefreshToken | None:
         stmt = select(RefreshTokenModel).where(RefreshTokenModel.token == token)
         result = await self._session.execute(stmt)
         model = result.scalar_one_or_none()
         return self._to_entity(model) if model else None
 
-    async def revoke_by_user_id(self, user_id: int) -> int:  # noqa: D102
+    async def revoke_by_user_id(self, user_id: int) -> int:
         stmt = (
             update(RefreshTokenModel)
             .where(RefreshTokenModel.user_id == user_id, RefreshTokenModel.revoked.is_(False))
@@ -40,7 +40,7 @@ class RefreshTokenRepositoryImpl(
         await self._session.flush()
         return result.rowcount  # type: ignore[attr-defined, no-any-return]
 
-    async def revoke_by_token(self, token: str) -> bool:  # noqa: D102
+    async def revoke_by_token(self, token: str) -> bool:
         stmt = (
             update(RefreshTokenModel)
             .where(RefreshTokenModel.token == token, RefreshTokenModel.revoked.is_(False))
@@ -50,7 +50,7 @@ class RefreshTokenRepositoryImpl(
         await self._session.flush()
         return (result.rowcount or 0) > 0  # type: ignore[attr-defined]
 
-    async def delete_expired(self) -> int:  # noqa: D102
+    async def delete_expired(self) -> int:
         now = datetime.now(UTC)
         stmt = delete(RefreshTokenModel).where(RefreshTokenModel.expires_at < now)
         result = await self._session.execute(stmt)

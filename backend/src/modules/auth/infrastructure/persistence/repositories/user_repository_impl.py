@@ -27,13 +27,13 @@ class UserRepositoryImpl(PydanticRepository[User, UserModel, int], IUserReposito
         },
     )
 
-    async def get_by_email(self, email: str) -> User | None:  # noqa: D102
+    async def get_by_email(self, email: str) -> User | None:
         stmt = select(UserModel).where(UserModel.email == email)
         result = await self._session.execute(stmt)
         model = result.scalar_one_or_none()
         return self._to_entity(model) if model else None
 
-    async def get_by_sso_subject(self, sso_provider: str, sso_subject: str) -> User | None:  # noqa: D102
+    async def get_by_sso_subject(self, sso_provider: str, sso_subject: str) -> User | None:
         stmt = select(UserModel).where(
             UserModel.sso_provider == sso_provider,
             UserModel.sso_subject == sso_subject,

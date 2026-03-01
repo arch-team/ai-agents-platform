@@ -1,112 +1,51 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi } from 'vitest';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
-import { ToolSelector } from './ToolSelector';
+import { ToolSelector, type ToolOption } from './ToolSelector';
 
-// Mock useApprovedTools hook + TOOL_TYPE_LABELS 常量
-const mockUseApprovedTools = vi.fn();
-vi.mock('@/features/tool-catalog', () => ({
-  useApprovedTools: () => mockUseApprovedTools(),
-  TOOL_TYPE_LABELS: {
-    mcp_server: 'MCP Server',
-    api: 'API',
-    function: 'Function',
-  } as Record<string, string>,
-}));
-
-function renderWithProviders(ui: React.ReactElement) {
-  const queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
-  });
-  return render(<QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>);
-}
-
-const mockTools = [
+const mockTools: ToolOption[] = [
   {
     id: '1',
     name: 'Web Search',
     description: '搜索互联网内容',
-    tool_type: 'mcp_server' as const,
-    status: 'approved' as const,
-    version: '1.0',
-    configuration: {},
-    created_by: '1',
-    created_at: '2026-01-01',
-    updated_at: '2026-01-01',
+    typeLabel: 'MCP Server',
   },
   {
     id: '2',
     name: 'Code Runner',
     description: '执行代码片段',
-    tool_type: 'function' as const,
-    status: 'approved' as const,
-    version: '1.0',
-    configuration: {},
-    created_by: '1',
-    created_at: '2026-01-01',
-    updated_at: '2026-01-01',
+    typeLabel: 'Function',
   },
   {
     id: '3',
     name: 'REST API',
     description: '',
-    tool_type: 'api' as const,
-    status: 'approved' as const,
-    version: '2.0',
-    configuration: {},
-    created_by: '1',
-    created_at: '2026-01-01',
-    updated_at: '2026-01-01',
+    typeLabel: 'API',
   },
 ];
 
 describe('ToolSelector', () => {
   it('should show loading state', () => {
-    mockUseApprovedTools.mockReturnValue({
-      data: undefined,
-      isLoading: true,
-      error: null,
-    });
-
-    renderWithProviders(<ToolSelector selectedIds={[]} onChange={vi.fn()} />);
+    render(<ToolSelector selectedIds={[]} onChange={vi.fn()} tools={[]} isLoading />);
 
     expect(screen.getByText('加载可用工具...')).toBeInTheDocument();
   });
 
   it('should show error state', () => {
-    mockUseApprovedTools.mockReturnValue({
-      data: undefined,
-      isLoading: false,
-      error: new Error('Network error'),
-    });
-
-    renderWithProviders(<ToolSelector selectedIds={[]} onChange={vi.fn()} />);
+    render(<ToolSelector selectedIds={[]} onChange={vi.fn()} tools={[]} error="Network error" />);
 
     expect(screen.getByText('工具列表加载失败')).toBeInTheDocument();
   });
 
   it('should show empty state when no tools', () => {
-    mockUseApprovedTools.mockReturnValue({
-      data: { items: [], total: 0, page: 1, page_size: 20 },
-      isLoading: false,
-      error: null,
-    });
-
-    renderWithProviders(<ToolSelector selectedIds={[]} onChange={vi.fn()} />);
+    render(<ToolSelector selectedIds={[]} onChange={vi.fn()} tools={[]} />);
 
     expect(screen.getByText(/暂无已审批工具/)).toBeInTheDocument();
   });
 
   it('should render tool list with names and type labels', () => {
-    mockUseApprovedTools.mockReturnValue({
-      data: { items: mockTools, total: 3, page: 1, page_size: 20 },
-      isLoading: false,
-      error: null,
-    });
-
-    renderWithProviders(<ToolSelector selectedIds={[]} onChange={vi.fn()} />);
+    render(<ToolSelector selectedIds={[]} onChange={vi.fn()} tools={mockTools} />);
 
     expect(screen.getByText('Web Search')).toBeInTheDocument();
     expect(screen.getByText('Code Runner')).toBeInTheDocument();
@@ -121,25 +60,13 @@ describe('ToolSelector', () => {
   });
 
   it('should show selection count', () => {
-    mockUseApprovedTools.mockReturnValue({
-      data: { items: mockTools, total: 3, page: 1, page_size: 20 },
-      isLoading: false,
-      error: null,
-    });
-
-    renderWithProviders(<ToolSelector selectedIds={[1]} onChange={vi.fn()} />);
+    render(<ToolSelector selectedIds={[1]} onChange={vi.fn()} tools={mockTools} />);
 
     expect(screen.getByText('(1/3 已选)')).toBeInTheDocument();
   });
 
   it('should check selected tools', () => {
-    mockUseApprovedTools.mockReturnValue({
-      data: { items: mockTools, total: 3, page: 1, page_size: 20 },
-      isLoading: false,
-      error: null,
-    });
-
-    renderWithProviders(<ToolSelector selectedIds={[1, 3]} onChange={vi.fn()} />);
+    render(<ToolSelector selectedIds={[1, 3]} onChange={vi.fn()} tools={mockTools} />);
 
     const checkboxes = screen.getAllByRole('checkbox');
     expect(checkboxes[0]).toBeChecked(); // id=1
@@ -148,16 +75,10 @@ describe('ToolSelector', () => {
   });
 
   it('should call onChange with added id when unchecked tool clicked', async () => {
-    mockUseApprovedTools.mockReturnValue({
-      data: { items: mockTools, total: 3, page: 1, page_size: 20 },
-      isLoading: false,
-      error: null,
-    });
-
     const handleChange = vi.fn();
     const user = userEvent.setup();
 
-    renderWithProviders(<ToolSelector selectedIds={[1]} onChange={handleChange} />);
+    render(<ToolSelector selectedIds={[1]} onChange={handleChange} tools={mockTools} />);
 
     // 点击 Code Runner (id=2) — 当前未选中
     await user.click(screen.getByLabelText(/Code Runner/));
@@ -166,16 +87,10 @@ describe('ToolSelector', () => {
   });
 
   it('should call onChange with removed id when checked tool clicked', async () => {
-    mockUseApprovedTools.mockReturnValue({
-      data: { items: mockTools, total: 3, page: 1, page_size: 20 },
-      isLoading: false,
-      error: null,
-    });
-
     const handleChange = vi.fn();
     const user = userEvent.setup();
 
-    renderWithProviders(<ToolSelector selectedIds={[1, 2]} onChange={handleChange} />);
+    render(<ToolSelector selectedIds={[1, 2]} onChange={handleChange} tools={mockTools} />);
 
     // 点击 Web Search (id=1) — 当前已选中，取消选中
     await user.click(screen.getByLabelText(/Web Search/));
@@ -184,13 +99,7 @@ describe('ToolSelector', () => {
   });
 
   it('should have accessible group role', () => {
-    mockUseApprovedTools.mockReturnValue({
-      data: { items: mockTools, total: 3, page: 1, page_size: 20 },
-      isLoading: false,
-      error: null,
-    });
-
-    renderWithProviders(<ToolSelector selectedIds={[]} onChange={vi.fn()} />);
+    render(<ToolSelector selectedIds={[]} onChange={vi.fn()} tools={mockTools} />);
 
     expect(screen.getByRole('group', { name: '工具选择' })).toBeInTheDocument();
   });

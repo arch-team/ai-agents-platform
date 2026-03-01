@@ -33,3 +33,4 @@ export type {
 } from './api/types';
 export type { MemoryItem, SaveMemoryRequest, SearchMemoryRequest } from './api/memory-queries';
 export type { AgentFilters } from './model/types';
+export type { ToolOption } from './ui/ToolSelector';

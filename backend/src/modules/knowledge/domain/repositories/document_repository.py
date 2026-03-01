@@ -10,7 +10,7 @@ class IDocumentRepository(IRepository[Document, int]):
     """文档仓库接口。"""
 
     @abstractmethod
-    async def list_by_knowledge_base(  # noqa: D102
+    async def list_by_knowledge_base(
         self,
         knowledge_base_id: int,
         *,
@@ -19,4 +19,4 @@ class IDocumentRepository(IRepository[Document, int]):
     ) -> list[Document]: ...
 
     @abstractmethod
-    async def count_by_knowledge_base(self, knowledge_base_id: int) -> int: ...  # noqa: D102
+    async def count_by_knowledge_base(self, knowledge_base_id: int) -> int: ...

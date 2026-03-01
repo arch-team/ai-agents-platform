@@ -85,21 +85,21 @@ class PydanticRepository(IRepository[EntityT, IDT], Generic[EntityT, ModelT, IDT
         )
         return items, total
 
-    async def get_by_id(self, entity_id: IDT) -> EntityT | None:  # noqa: D102
+    async def get_by_id(self, entity_id: IDT) -> EntityT | None:
         model = await self._find_model(entity_id)
         return self._to_entity(model) if model else None
 
-    async def list(self, *, offset: int = 0, limit: int = 20) -> list[EntityT]:  # noqa: D102
+    async def list(self, *, offset: int = 0, limit: int = 20) -> list[EntityT]:
         stmt = select(self.model_class).offset(offset).limit(limit)
         result = await self._session.execute(stmt)
         return [self._to_entity(m) for m in result.scalars().all()]
 
-    async def count(self) -> int:  # noqa: D102
+    async def count(self) -> int:
         stmt = select(func.count()).select_from(self.model_class)
         result = await self._session.execute(stmt)
         return result.scalar_one()
 
-    async def create(self, entity: EntityT) -> EntityT:  # noqa: D102
+    async def create(self, entity: EntityT) -> EntityT:
         model = self._to_model(entity)
         self._session.add(model)
         await self._session.flush()

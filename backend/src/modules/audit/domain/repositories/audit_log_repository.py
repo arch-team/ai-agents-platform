@@ -11,7 +11,7 @@ class IAuditLogRepository(IRepository[AuditLog, int]):
     """AuditLog 仓库接口，扩展通用 IRepository 增加审计特有查询。"""
 
     @abstractmethod
-    async def list_filtered(  # noqa: D102
+    async def list_filtered(
         self,
         *,
         page: int = 1,
@@ -26,21 +26,21 @@ class IAuditLogRepository(IRepository[AuditLog, int]):
     ) -> tuple[list[AuditLog], int]: ...
 
     @abstractmethod
-    async def count_by_category(  # noqa: D102
+    async def count_by_category(
         self,
         start_date: datetime | None = None,
         end_date: datetime | None = None,
     ) -> dict[str, int]: ...
 
     @abstractmethod
-    async def count_by_action(  # noqa: D102
+    async def count_by_action(
         self,
         start_date: datetime | None = None,
         end_date: datetime | None = None,
     ) -> dict[str, int]: ...
 
     @abstractmethod
-    async def get_by_resource(  # noqa: D102
+    async def get_by_resource(
         self,
         resource_type: str,
         resource_id: str,
