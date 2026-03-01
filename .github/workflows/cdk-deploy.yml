@@ -68,7 +68,7 @@ jobs:
       run:
         working-directory: infra
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: pnpm/action-setup@v4
         with:
@@ -105,7 +105,7 @@ jobs:
       contents: read
       pull-requests: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: pnpm/action-setup@v4
         with:
@@ -170,7 +170,7 @@ jobs:
       contents: read
     steps:
       # 回滚时 checkout 指定 commit，正常部署时 checkout 当前 SHA
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           ref: ${{ (github.event.inputs.action == 'rollback' && github.event.inputs.rollback-commit) || github.sha }}
       - name: 回滚模式提示
@@ -223,7 +223,7 @@ jobs:
       contents: read
     steps:
       # 回滚时 checkout 指定 commit，正常部署时 checkout 当前 SHA
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           ref: ${{ (github.event.inputs.action == 'rollback' && github.event.inputs.rollback-commit) || github.sha }}
       - name: 回滚模式提示
