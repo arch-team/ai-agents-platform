@@ -128,4 +128,3 @@ jobs:
       # pip-audit — 依赖漏洞扫描
       - name: pip-audit 依赖漏洞扫描
         run: uv run pip-audit
-        continue-on-error: true

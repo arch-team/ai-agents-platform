@@ -20,3 +20,35 @@ jobs:
   test:
     name: 前端质量检查
     uses: ./.github/workflows/frontend-quality.yml
+
+  # E2E 测试 (Playwright)
+  e2e-test:
+    name: E2E 测试
+    needs: test
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'pnpm'
+          cache-dependency-path: frontend/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - name: 安装 Playwright 浏览器
+        run: pnpm exec playwright install --with-deps chromium
+      - name: 运行 E2E 测试
+        run: pnpm test:e2e
+        continue-on-error: true
+      - name: 上传 Playwright 测试报告
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report
+          path: frontend/playwright-report/
+          retention-days: 14

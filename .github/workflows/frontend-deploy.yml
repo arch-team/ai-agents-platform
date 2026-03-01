@@ -132,6 +132,26 @@ jobs:
           fi
       - name: 验证部署
         run: aws s3 ls s3://${{ vars.DEV_FRONTEND_S3_BUCKET }}/index.html
+      - name: CloudFront 可达性验证
+        if: success()
+        run: |
+          DIST_ID=$(aws cloudfront list-distributions \
+            --query "DistributionList.Items[?Origins.Items[?contains(DomainName, '${{ vars.DEV_FRONTEND_S3_BUCKET }}')]].{Id:Id,Domain:DomainName}" \
+            --output text)
+          if [ -n "$DIST_ID" ] && [ "$DIST_ID" != "None" ]; then
+            CF_DOMAIN=$(echo "$DIST_ID" | awk '{print $2}')
+            echo "等待 CloudFront 缓存失效生效..."
+            sleep 30
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" "https://$CF_DOMAIN/" --max-time 15) || true
+            echo "CloudFront 可达性检查: HTTP $STATUS"
+            if [ "$STATUS" = "200" ] || [ "$STATUS" = "304" ]; then
+              echo "✅ CloudFront 可达性验证通过"
+            else
+              echo "::warning::CloudFront 返回 HTTP $STATUS，请检查缓存失效状态"
+            fi
+          else
+            echo "::notice::未找到匹配的 CloudFront Distribution，跳过可达性验证"
+          fi
 
   # ============================================================
   # 部署 — Prod 环境 (需要手动审批)
@@ -192,3 +212,23 @@ jobs:
           fi
       - name: 验证部署
         run: aws s3 ls s3://${{ vars.PROD_FRONTEND_S3_BUCKET }}/index.html
+      - name: CloudFront 可达性验证
+        if: success()
+        run: |
+          DIST_ID=$(aws cloudfront list-distributions \
+            --query "DistributionList.Items[?Origins.Items[?contains(DomainName, '${{ vars.PROD_FRONTEND_S3_BUCKET }}')]].{Id:Id,Domain:DomainName}" \
+            --output text)
+          if [ -n "$DIST_ID" ] && [ "$DIST_ID" != "None" ]; then
+            CF_DOMAIN=$(echo "$DIST_ID" | awk '{print $2}')
+            echo "等待 CloudFront 缓存失效生效..."
+            sleep 30
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" "https://$CF_DOMAIN/" --max-time 15) || true
+            echo "CloudFront 可达性检查: HTTP $STATUS"
+            if [ "$STATUS" = "200" ] || [ "$STATUS" = "304" ]; then
+              echo "✅ CloudFront 可达性验证通过"
+            else
+              echo "::warning::CloudFront 返回 HTTP $STATUS，请检查缓存失效状态"
+            fi
+          else
+            echo "::notice::未找到匹配的 CloudFront Distribution，跳过可达性验证"
+          fi

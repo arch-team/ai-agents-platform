@@ -2559,6 +2559,85 @@ exports[`Snapshot Tests MonitoringStack 快照匹配 1`] = `
       },
       "Type": "AWS::CloudWatch::Alarm",
     },
+    "AlbLatencyP95Alarm34FC535F": {
+      "Properties": {
+        "AlarmActions": [
+          {
+            "Ref": "AlertTopic2720D535",
+          },
+        ],
+        "AlarmDescription": "ALB target response time P95 exceeds 500ms",
+        "AlarmName": "ai-agents-platform-dev-alb-latency-p95-high",
+        "ComparisonOperator": "GreaterThanThreshold",
+        "Dimensions": [
+          {
+            "Name": "LoadBalancer",
+            "Value": {
+              "Fn::Join": [
+                "",
+                [
+                  {
+                    "Fn::Select": [
+                      1,
+                      {
+                        "Fn::Split": [
+                          "/",
+                          {
+                            "Fn::ImportValue": "TestComputeStack:ExportsOutputRefAlbHttpListenerC9825CF44524FA3B",
+                          },
+                        ],
+                      },
+                    ],
+                  },
+                  "/",
+                  {
+                    "Fn::Select": [
+                      2,
+                      {
+                        "Fn::Split": [
+                          "/",
+                          {
+                            "Fn::ImportValue": "TestComputeStack:ExportsOutputRefAlbHttpListenerC9825CF44524FA3B",
+                          },
+                        ],
+                      },
+                    ],
+                  },
+                  "/",
+                  {
+                    "Fn::Select": [
+                      3,
+                      {
+                        "Fn::Split": [
+                          "/",
+                          {
+                            "Fn::ImportValue": "TestComputeStack:ExportsOutputRefAlbHttpListenerC9825CF44524FA3B",
+                          },
+                        ],
+                      },
+                    ],
+                  },
+                ],
+              ],
+            },
+          },
+          {
+            "Name": "TargetGroup",
+            "Value": {
+              "Fn::ImportValue": "TestComputeStack:ExportsOutputFnGetAttAlbTargetGroup3E290A92TargetGroupFullNameC43F1128",
+            },
+          },
+        ],
+        "EvaluationPeriods": 3,
+        "ExtendedStatistic": "p95",
+        "MetricName": "TargetResponseTime",
+        "Namespace": "AWS/ApplicationELB",
+        "Period": 300,
+        "Threshold": 0.5,
+        "TreatMissingData": "notBreaching",
+      },
+      "Type": "AWS::CloudWatch::Alarm",
+    },
     "AlertTopic2720D535": {
       "Metadata": {
         "cdk_nag": {
@@ -2809,19 +2888,115 @@ exports[`Snapshot Tests MonitoringStack 快照匹配 1`] = `
               {
                 "Fn::ImportValue": "TestComputeStack:ExportsOutputFnGetAttAlbTargetGroup3E290A92TargetGroupFullNameC43F1128",
               },
-              ""]],"yAxis":{}}},{"type":"text","width":24,"height":1,"x":0,"y":18,"properties":{"markdown":"## Eval Pipeline"}},{"type":"metric","width":12,"height":6,"x":0,"y":19,"properties":{"view":"timeSeries","title":"Eval Pipeline Job Succeeded","region":"",
+              ""]],"yAxis":{}}},{"type":"metric","width":12,"height":6,"x":0,"y":18,"properties":{"view":"timeSeries","title":"ALB Target Response Time","region":"",
               {
                 "Ref": "AWS::Region",
               },
-              "","metrics":[["EvalPipeline","JobSucceeded",{"stat":"Sum"}]],"yAxis":{}}},{"type":"metric","width":12,"height":6,"x":12,"y":19,"properties":{"view":"timeSeries","title":"Eval Pipeline Job Failed","region":"",
+              "","metrics":[["AWS/ApplicationELB","TargetResponseTime","LoadBalancer","",
+              {
+                "Fn::Select": [
+                  1,
+                  {
+                    "Fn::Split": [
+                      "/",
+                      {
+                        "Fn::ImportValue": "TestComputeStack:ExportsOutputRefAlbHttpListenerC9825CF44524FA3B",
+                      },
+                    ],
+                  },
+                ],
+              },
+              "/",
+              {
+                "Fn::Select": [
+                  2,
+                  {
+                    "Fn::Split": [
+                      "/",
+                      {
+                        "Fn::ImportValue": "TestComputeStack:ExportsOutputRefAlbHttpListenerC9825CF44524FA3B",
+                      },
+                    ],
+                  },
+                ],
+              },
+              "/",
+              {
+                "Fn::Select": [
+                  3,
+                  {
+                    "Fn::Split": [
+                      "/",
+                      {
+                        "Fn::ImportValue": "TestComputeStack:ExportsOutputRefAlbHttpListenerC9825CF44524FA3B",
+                      },
+                    ],
+                  },
+                ],
+              },
+              "","TargetGroup","",
+              {
+                "Fn::ImportValue": "TestComputeStack:ExportsOutputFnGetAttAlbTargetGroup3E290A92TargetGroupFullNameC43F1128",
+              },
+              ""],["AWS/ApplicationELB","TargetResponseTime","LoadBalancer","",
+              {
+                "Fn::Select": [
+                  1,
+                  {
+                    "Fn::Split": [
+                      "/",
+                      {
+                        "Fn::ImportValue": "TestComputeStack:ExportsOutputRefAlbHttpListenerC9825CF44524FA3B",
+                      },
+                    ],
+                  },
+                ],
+              },
+              "/",
+              {
+                "Fn::Select": [
+                  2,
+                  {
+                    "Fn::Split": [
+                      "/",
+                      {
+                        "Fn::ImportValue": "TestComputeStack:ExportsOutputRefAlbHttpListenerC9825CF44524FA3B",
+                      },
+                    ],
+                  },
+                ],
+              },
+              "/",
+              {
+                "Fn::Select": [
+                  3,
+                  {
+                    "Fn::Split": [
+                      "/",
+                      {
+                        "Fn::ImportValue": "TestComputeStack:ExportsOutputRefAlbHttpListenerC9825CF44524FA3B",
+                      },
+                    ],
+                  },
+                ],
+              },
+              "","TargetGroup","",
+              {
+                "Fn::ImportValue": "TestComputeStack:ExportsOutputFnGetAttAlbTargetGroup3E290A92TargetGroupFullNameC43F1128",
+              },
+              "",{"stat":"p95"}]],"yAxis":{}}},{"type":"text","width":24,"height":1,"x":0,"y":24,"properties":{"markdown":"## Eval Pipeline"}},{"type":"metric","width":12,"height":6,"x":0,"y":25,"properties":{"view":"timeSeries","title":"Eval Pipeline Job Succeeded","region":"",
               {
                 "Ref": "AWS::Region",
               },
-              "","metrics":[["EvalPipeline","JobFailed",{"stat":"Sum"}]],"yAxis":{}}},{"type":"text","width":24,"height":1,"x":0,"y":25,"properties":{"markdown":"## SSE Connections"}},{"type":"metric","width":12,"height":6,"x":0,"y":26,"properties":{"view":"timeSeries","title":"SSE Active Connections","region":"",
+              "","metrics":[["EvalPipeline","JobSucceeded",{"stat":"Sum"}]],"yAxis":{}}},{"type":"metric","width":12,"height":6,"x":12,"y":25,"properties":{"view":"timeSeries","title":"Eval Pipeline Job Failed","region":"",
               {
                 "Ref": "AWS::Region",
               },
-              "","metrics":[["SSEConnections","ActiveConnections",{"stat":"Maximum"}]],"yAxis":{}}},{"type":"metric","width":12,"height":6,"x":12,"y":26,"properties":{"view":"timeSeries","title":"SSE Active Users","region":"",
+              "","metrics":[["EvalPipeline","JobFailed",{"stat":"Sum"}]],"yAxis":{}}},{"type":"text","width":24,"height":1,"x":0,"y":31,"properties":{"markdown":"## SSE Connections"}},{"type":"metric","width":12,"height":6,"x":0,"y":32,"properties":{"view":"timeSeries","title":"SSE Active Connections","region":"",
+              {
+                "Ref": "AWS::Region",
+              },
+              "","metrics":[["SSEConnections","ActiveConnections",{"stat":"Maximum"}]],"yAxis":{}}},{"type":"metric","width":12,"height":6,"x":12,"y":32,"properties":{"view":"timeSeries","title":"SSE Active Users","region":"",
               {
                 "Ref": "AWS::Region",
               },

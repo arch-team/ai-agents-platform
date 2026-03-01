@@ -1,0 +1,69 @@
+name: 定期性能测试
+
+on:
+  schedule:
+    - cron: '0 11 * * 1'  # 每周一 11:00 UTC（安全扫描之后）
+  workflow_dispatch:
+    inputs:
+      target-url:
+        description: '压测目标 URL'
+        type: string
+        default: ''
+      duration:
+        description: '压测持续时间 (秒)'
+        type: string
+        default: '120'
+
+permissions: {}
+
+env:
+  PYTHON_VERSION: "3.12"
+
+jobs:
+  locust-test:
+    name: Locust 性能测试
+    runs-on: ubuntu-24.04
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: 安装 Locust
+        run: pip install locust
+      - name: 检查压测脚本
+        run: |
+          if [ ! -f "scripts/loadtest/locustfile.py" ]; then
+            echo "::warning::未找到 scripts/loadtest/locustfile.py，跳过性能测试"
+            echo "SKIP_TEST=true" >> "$GITHUB_ENV"
+          fi
+      - name: 运行 Locust 压测
+        if: env.SKIP_TEST != 'true'
+        run: |
+          TARGET_URL="${{ inputs.target-url || secrets.DEV_ALB_URL }}"
+          DURATION="${{ inputs.duration || '120' }}"
+          if [ -z "$TARGET_URL" ]; then
+            echo "::warning::未配置压测目标 URL (DEV_ALB_URL)，跳过"
+            exit 0
+          fi
+          locust \
+            -f scripts/loadtest/locustfile.py \
+            --host "$TARGET_URL" \
+            --users 10 \
+            --spawn-rate 2 \
+            --run-time "${DURATION}s" \
+            --headless \
+            --csv performance-results \
+            --html performance-report.html \
+            || true
+      - name: 上传性能测试报告
+        uses: actions/upload-artifact@v4
+        if: always() && env.SKIP_TEST != 'true'
+        with:
+          name: performance-report
+          path: |
+            performance-results*.csv
+            performance-report.html
+          retention-days: 30

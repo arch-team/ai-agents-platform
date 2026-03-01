@@ -108,8 +108,8 @@ describe('MonitoringStack', () => {
   });
 
   describe('告警总数', () => {
-    it('应创建 7 个 CloudWatch Alarm', () => {
-      template.resourceCountIs('AWS::CloudWatch::Alarm', 7);
+    it('应创建 8 个 CloudWatch Alarm', () => {
+      template.resourceCountIs('AWS::CloudWatch::Alarm', 8);
     });
   });
 

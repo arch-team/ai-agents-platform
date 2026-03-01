@@ -1,5 +1,6 @@
 import * as cdk from 'aws-cdk-lib';
 import * as cloudwatch from 'aws-cdk-lib/aws-cloudwatch';
+import * as logs from 'aws-cdk-lib/aws-logs';
 import * as cw_actions from 'aws-cdk-lib/aws-cloudwatch-actions';
 import * as ecs from 'aws-cdk-lib/aws-ecs';
 import * as elbv2 from 'aws-cdk-lib/aws-elasticloadbalancingv2';
@@ -36,6 +37,8 @@ export interface MonitoringStackProps extends BaseStackProps {
   readonly encryptionKey?: kms.IKey;
   /** 告警通知邮箱 @default undefined (不创建邮件订阅) */
   readonly alertEmail?: string;
+  /** ECS 服务的 CloudWatch Log Group 名称 @default undefined (不创建日志告警) */
+  readonly logGroupName?: string;
 }
 
 /**
@@ -77,6 +80,11 @@ export class MonitoringStack extends cdk.Stack {
 
     // ALB CloudWatch Alarms
     this.createAlbAlarms(loadBalancer, targetGroup, envName);
+
+    // 应用级错误日志告警 (如提供 Log Group)
+    if (props.logGroupName) {
+      this.createApplicationErrorAlarm(props.logGroupName, envName);
+    }
 
     // CloudWatch Dashboard
     this.createDashboard(cluster, service, loadBalancer, targetGroup, envName);
@@ -190,6 +198,48 @@ export class MonitoringStack extends cdk.Stack {
       ...ALB_ALARM_OVERRIDES,
       comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
     });
+
+    // ALB Target Response Time P95 告警 — 5 分钟内 P95 超过 500ms
+    this.createAlarm('AlbLatencyP95Alarm', {
+      alarmName: `${PROJECT_NAME}-${envName}-alb-latency-p95-high`,
+      alarmDescription: 'ALB target response time P95 exceeds 500ms',
+      metric: targetGroup.metrics.targetResponseTime({
+        period: METRIC_PERIOD,
+        statistic: 'p95',
+      }),
+      threshold: 0.5, // 500ms = 0.5 秒
+      ...ALARM_DEFAULTS,
+      comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
+    });
+  }
+
+  /** 创建应用级错误日志告警 */
+  private createApplicationErrorAlarm(logGroupName: string, envName: EnvironmentName): void {
+    const logGroup = logs.LogGroup.fromLogGroupName(this, 'AppLogGroup', logGroupName);
+
+    // 创建 Metric Filter — 过滤 JSON 日志中的 ERROR 级别
+    // 注意: structlog JSONRenderer 输出的 JSON 格式带空格: "level": "error"
+    const metricFilter = new logs.MetricFilter(this, 'ErrorLogFilter', {
+      logGroup,
+      filterPattern: logs.FilterPattern.literal('"level": "error"'),
+      metricNamespace: `${PROJECT_NAME}/Application`,
+      metricName: 'ErrorCount',
+      metricValue: '1',
+      defaultValue: 0,
+    });
+
+    // 基于 Metric Filter 创建告警
+    this.createAlarm('AppErrorCountAlarm', {
+      alarmName: `${PROJECT_NAME}-${envName}-app-error-count-high`,
+      alarmDescription: 'Application ERROR log count exceeds 5 per 5 minutes',
+      metric: metricFilter.metric({
+        period: METRIC_PERIOD,
+        statistic: 'Sum',
+      }),
+      threshold: 5,
+      ...ALARM_DEFAULTS,
+      comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
+    });
   }
 
   /** 创建 CloudWatch Dashboard */
@@ -257,6 +307,24 @@ export class MonitoringStack extends cdk.Stack {
         title: 'ALB Unhealthy Hosts',
         left: [targetGroup.metrics.unhealthyHostCount({ period: METRIC_PERIOD })],
         width: 8,
+      }),
+    );
+
+    // API 响应延迟指标
+    dashboard.addWidgets(
+      new cloudwatch.GraphWidget({
+        title: 'ALB Target Response Time',
+        left: [
+          targetGroup.metrics.targetResponseTime({
+            period: METRIC_PERIOD,
+            statistic: 'Average',
+          }),
+          targetGroup.metrics.targetResponseTime({
+            period: METRIC_PERIOD,
+            statistic: 'p95',
+          }),
+        ],
+        width: 12,
       }),
     );
 
@@ -343,12 +411,14 @@ export class MonitoringStack extends cdk.Stack {
           eventType: ['ERROR'],
         },
       },
-      targets: [new events_targets.SnsTopic(this.alertTopic, {
-        message: events.RuleTargetInput.fromText(
-          `🚨 ECS 部署失败 [${envName}]\n` +
-          `原因: ${events.EventField.fromPath('$.detail.reason')}`,
-        ),
-      })],
+      targets: [
+        new events_targets.SnsTopic(this.alertTopic, {
+          message: events.RuleTargetInput.fromText(
+            `🚨 ECS 部署失败 [${envName}]\n` +
+              `原因: ${events.EventField.fromPath('$.detail.reason')}`,
+          ),
+        }),
+      ],
     });
   }
 

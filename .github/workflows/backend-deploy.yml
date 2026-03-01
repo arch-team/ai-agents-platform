@@ -26,6 +26,10 @@ on:
         description: '回滚目标 commit SHA (仅 action=rollback 时需要)'
         type: string
         default: ''
+      rollback-db:
+        description: '是否同时回滚数据库迁移 (仅 action=rollback 时有效)'
+        type: boolean
+        default: false
 
 # 最小权限原则: 默认无权限, 各 job 按需声明
 permissions: {}
@@ -74,15 +78,53 @@ jobs:
       pytest-marker: "not e2e"
 
   # ============================================================
+  # 数据库迁移脚本验证
+  # ============================================================
+  validate-migration:
+    name: 迁移脚本验证
+    needs: quality-gate
+    if: >-
+      needs.quality-gate.result == 'success' &&
+      github.event.inputs.action != 'rollback'
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: 安装 uv
+        run: pip install uv==0.7.12
+      - name: 安装依赖
+        run: uv sync
+      - name: 验证迁移脚本
+        env:
+          DATABASE_URL: "sqlite+aiosqlite://"
+          APP_ENV: "test"
+        run: |
+          echo "检查是否有未生成的迁移..."
+          echo "注意: 使用 SQLite 仅检查未生成的迁移文件，不验证 MySQL 特定 SQL 兼容性"
+          uv run alembic check || {
+            echo "::error::存在未生成的迁移脚本，请先运行 alembic revision"
+            exit 1
+          }
+          echo "✅ 迁移脚本验证通过"
+
+  # ============================================================
   # 部署 — Dev 环境 (push 触发自动部署)
   # ============================================================
   deploy-dev:
     name: 部署 Dev
-    needs: quality-gate
-    # 回滚时 quality-gate 被跳过（skipped），用 always() 确保本 job 仍可运行
+    needs: [validate-inputs, quality-gate, validate-migration]
+    # 回滚时 quality-gate 和 validate-migration 被跳过，用 always() 确保本 job 仍可运行
+    # validate-inputs 在回滚时必须通过，非回滚时被跳过
     if: >-
       always() &&
+      (needs.validate-inputs.result == 'success' || needs.validate-inputs.result == 'skipped') &&
       (needs.quality-gate.result == 'success' || needs.quality-gate.result == 'skipped') &&
+      (needs.validate-migration.result == 'success' || needs.validate-migration.result == 'skipped') &&
       ((github.event_name == 'push') ||
        (github.event_name == 'workflow_dispatch' && inputs.environment == 'dev'))
     runs-on: ubuntu-24.04
@@ -101,6 +143,25 @@ jobs:
       - name: 回滚模式提示
         if: github.event.inputs.action == 'rollback'
         run: echo "::warning::回滚模式 — 将部署 commit ${{ github.event.inputs.rollback-commit }}"
+      - uses: actions/setup-python@v5
+        if: github.event.inputs.action == 'rollback' && github.event.inputs.rollback-db == 'true'
+        with:
+          python-version: '3.12'
+      - name: 数据库迁移降级
+        if: github.event.inputs.action == 'rollback' && github.event.inputs.rollback-db == 'true'
+        working-directory: backend
+        run: |
+          echo "::warning::正在执行数据库迁移降级..."
+          pip install uv==0.7.12
+          uv sync
+          # 获取目标 commit 对应的 alembic revision
+          REVISION=$(uv run alembic heads | head -1 | awk '{print $1}')
+          echo "目标 revision: $REVISION"
+          uv run alembic downgrade "$REVISION"
+          echo "✅ 数据库迁移降级完成"
+        env:
+          DATABASE_URL: ${{ secrets.DEV_DATABASE_URL }}
+          APP_ENV: "dev"
       - uses: pnpm/action-setup@v4
         with:
           version: ${{ env.PNPM_VERSION }}
@@ -136,15 +197,49 @@ jobs:
             echo "::notice::DEV_ALB_URL 未配置，跳过健康检查"
           fi
 
+      - name: 业务端点冒烟测试
+        if: success()
+        run: |
+          ALB_URL="${{ secrets.DEV_ALB_URL }}"
+          if [ -z "$ALB_URL" ]; then
+            echo "::notice::ALB_URL 未配置，跳过冒烟测试"
+            exit 0
+          fi
+          echo "执行冒烟测试..."
+          FAILED=0
+          # 测试 /health/ready 端点
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$ALB_URL/health/ready" --max-time 10) || true
+          echo "GET /health/ready → HTTP $STATUS"
+          [ "$STATUS" = "200" ] || FAILED=$((FAILED + 1))
+          # 测试 /api/v1/agents 端点（应返回 401 未授权）
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$ALB_URL/api/v1/agents" --max-time 10) || true
+          echo "GET /api/v1/agents → HTTP $STATUS (期望 401)"
+          [ "$STATUS" = "401" ] || FAILED=$((FAILED + 1))
+          # 测试 /docs 端点（OpenAPI 文档）
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$ALB_URL/docs" --max-time 10) || true
+          echo "GET /docs → HTTP $STATUS"
+          [ "$STATUS" = "200" ] || FAILED=$((FAILED + 1))
+          if [ "$FAILED" -gt 0 ]; then
+            echo "::warning::冒烟测试有 $FAILED 项未通过，请检查"
+          else
+            echo "✅ 所有冒烟测试通过"
+          fi
+
   # ============================================================
   # 部署 — Prod 环境 (需要手动审批)
   # ============================================================
   deploy-prod:
     name: 部署 Prod
-    needs: [quality-gate, deploy-dev]
+    needs: [validate-inputs, quality-gate, validate-migration, deploy-dev]
+    # 回滚时 quality-gate 和 validate-migration 被跳过，用 always() 确保本 job 仍可运行
+    # validate-inputs 在回滚时必须通过，非回滚时被跳过
+    # deploy-dev 必须成功（或被跳过，当 workflow_dispatch 指定 prod 时）
     if: >-
       always() &&
+      (needs.validate-inputs.result == 'success' || needs.validate-inputs.result == 'skipped') &&
       (needs.quality-gate.result == 'success' || needs.quality-gate.result == 'skipped') &&
+      (needs.validate-migration.result == 'success' || needs.validate-migration.result == 'skipped') &&
+      (needs.deploy-dev.result == 'success' || needs.deploy-dev.result == 'skipped') &&
       ((github.event_name == 'push' &&
         (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/ai-agents-factory-v1')) ||
        (github.event_name == 'workflow_dispatch' && inputs.environment == 'prod'))
@@ -157,15 +252,35 @@ jobs:
         working-directory: infra
     permissions:
       id-token: write
-      contents: read
+      contents: write
     steps:
       # 回滚时 checkout 指定 commit，正常部署时 checkout 当前 SHA
       - uses: actions/checkout@v4
         with:
           ref: ${{ (github.event.inputs.action == 'rollback' && github.event.inputs.rollback-commit) || github.sha }}
+          fetch-depth: 0
       - name: 回滚模式提示
         if: github.event.inputs.action == 'rollback'
         run: echo "::warning::回滚模式 — 将部署 commit ${{ github.event.inputs.rollback-commit }}"
+      - uses: actions/setup-python@v5
+        if: github.event.inputs.action == 'rollback' && github.event.inputs.rollback-db == 'true'
+        with:
+          python-version: '3.12'
+      - name: 数据库迁移降级
+        if: github.event.inputs.action == 'rollback' && github.event.inputs.rollback-db == 'true'
+        working-directory: backend
+        run: |
+          echo "::warning::正在执行数据库迁移降级..."
+          pip install uv==0.7.12
+          uv sync
+          # 获取目标 commit 对应的 alembic revision
+          REVISION=$(uv run alembic heads | head -1 | awk '{print $1}')
+          echo "目标 revision: $REVISION"
+          uv run alembic downgrade "$REVISION"
+          echo "✅ 数据库迁移降级完成"
+        env:
+          DATABASE_URL: ${{ secrets.PROD_DATABASE_URL }}
+          APP_ENV: "prod"
       - uses: pnpm/action-setup@v4
         with:
           version: ${{ env.PNPM_VERSION }}
@@ -202,3 +317,45 @@ jobs:
           else
             echo "::notice::PROD_ALB_URL 未配置，跳过健康检查"
           fi
+
+      - name: 业务端点冒烟测试
+        if: success()
+        run: |
+          ALB_URL="${{ secrets.PROD_ALB_URL }}"
+          if [ -z "$ALB_URL" ]; then
+            echo "::notice::ALB_URL 未配置，跳过冒烟测试"
+            exit 0
+          fi
+          echo "执行冒烟测试..."
+          FAILED=0
+          # 测试 /health/ready 端点（生产环境必须通过）
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$ALB_URL/health/ready" --max-time 10) || true
+          echo "GET /health/ready → HTTP $STATUS"
+          if [ "$STATUS" != "200" ]; then
+            echo "::error::生产环境 /health/ready 检查失败"
+            exit 1
+          fi
+          # 测试 /api/v1/agents 端点（应返回 401 未授权）
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$ALB_URL/api/v1/agents" --max-time 10) || true
+          echo "GET /api/v1/agents → HTTP $STATUS (期望 401)"
+          [ "$STATUS" = "401" ] || FAILED=$((FAILED + 1))
+          # 测试 /docs 端点（OpenAPI 文档）
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$ALB_URL/docs" --max-time 10) || true
+          echo "GET /docs → HTTP $STATUS"
+          [ "$STATUS" = "200" ] || FAILED=$((FAILED + 1))
+          if [ "$FAILED" -gt 0 ]; then
+            echo "::warning::冒烟测试有 $FAILED 项未通过，请检查"
+          else
+            echo "✅ 所有冒烟测试通过"
+          fi
+
+      - name: 打部署版本标签
+        if: success() && github.event.inputs.action != 'rollback'
+        run: |
+          cd ..
+          DEPLOY_TAG="deploy-prod-$(date -u +'%Y%m%d-%H%M%S')"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag "$DEPLOY_TAG"
+          git push origin "$DEPLOY_TAG"
+          echo "::notice::已创建部署标签: $DEPLOY_TAG"

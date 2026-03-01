@@ -1,0 +1,60 @@
+name: 月度备份验证
+
+on:
+  schedule:
+    - cron: '0 6 1 * *'  # 每月 1 号 06:00 UTC
+  workflow_dispatch:
+
+permissions: {}
+
+env:
+  AWS_REGION: "us-east-1"
+
+jobs:
+  verify-aurora-backup:
+    name: Aurora 备份状态检查
+    runs-on: ubuntu-24.04
+    permissions:
+      id-token: write
+      contents: read
+    strategy:
+      matrix:
+        environment: [dev, prod]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ matrix.environment == 'prod' && secrets.AWS_PROD_ROLE_ARN || secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+      - name: 检查 Aurora 快照状态
+        run: |
+          echo "=== ${{ matrix.environment }} 环境 Aurora 备份验证 ==="
+          # 查找最新的自动快照
+          LATEST_SNAPSHOT=$(aws rds describe-db-cluster-snapshots \
+            --snapshot-type automated \
+            --query "reverse(sort_by(DBClusterSnapshots, &SnapshotCreateTime))[0]" \
+            --output json)
+          if [ "$LATEST_SNAPSHOT" = "null" ] || [ -z "$LATEST_SNAPSHOT" ]; then
+            echo "::error::未找到自动备份快照"
+            exit 1
+          fi
+          SNAPSHOT_ID=$(echo "$LATEST_SNAPSHOT" | jq -r '.DBClusterSnapshotIdentifier')
+          SNAPSHOT_TIME=$(echo "$LATEST_SNAPSHOT" | jq -r '.SnapshotCreateTime')
+          SNAPSHOT_STATUS=$(echo "$LATEST_SNAPSHOT" | jq -r '.Status')
+          echo "最新快照: $SNAPSHOT_ID"
+          echo "创建时间: $SNAPSHOT_TIME"
+          echo "状态: $SNAPSHOT_STATUS"
+          # 检查快照是否在 24 小时内
+          SNAPSHOT_EPOCH=$(date -d "$SNAPSHOT_TIME" +%s 2>/dev/null || date -j -f "%Y-%m-%dT%H:%M:%S" "$SNAPSHOT_TIME" +%s 2>/dev/null || echo 0)
+          NOW_EPOCH=$(date +%s)
+          AGE_HOURS=$(( (NOW_EPOCH - SNAPSHOT_EPOCH) / 3600 ))
+          echo "快照年龄: ${AGE_HOURS} 小时"
+          if [ "$SNAPSHOT_STATUS" != "available" ]; then
+            echo "::error::快照状态异常: $SNAPSHOT_STATUS"
+            exit 1
+          fi
+          if [ "$AGE_HOURS" -gt 48 ]; then
+            echo "::warning::最新快照已超过 48 小时，请检查自动备份配置"
+          else
+            echo "✅ 备份验证通过: 快照状态正常，创建于 ${AGE_HOURS} 小时前"
+          fi

@@ -1,0 +1,52 @@
+# 后端相关
+backend:
+  - changed-files:
+    - any-glob-to-any-file: 'backend/**'
+
+# 前端相关
+frontend:
+  - changed-files:
+    - any-glob-to-any-file: 'frontend/**'
+
+# 基础设施相关
+infra:
+  - changed-files:
+    - any-glob-to-any-file: 'infra/**'
+
+# 文档相关
+docs:
+  - changed-files:
+    - any-glob-to-any-file: 'docs/**'
+    - any-glob-to-any-file: '**/*.md'
+    - any-glob-to-any-file: '.claude/**'
+
+# CI/CD 相关
+ci:
+  - changed-files:
+    - any-glob-to-any-file: '.github/**'
+    - any-glob-to-any-file: '.github/workflows/**'
+
+# 依赖更新
+dependencies:
+  - changed-files:
+    - any-glob-to-any-file: 'backend/pyproject.toml'
+    - any-glob-to-any-file: 'backend/uv.lock'
+    - any-glob-to-any-file: 'frontend/package.json'
+    - any-glob-to-any-file: 'frontend/package-lock.json'
+    - any-glob-to-any-file: 'frontend/pnpm-lock.yaml'
+
+# 测试相关
+test:
+  - changed-files:
+    - any-glob-to-any-file: '**/tests/**'
+    - any-glob-to-any-file: '**/*.test.*'
+    - any-glob-to-any-file: '**/*.spec.*'
+
+# 配置文件
+config:
+  - changed-files:
+    - any-glob-to-any-file: '**/*.toml'
+    - any-glob-to-any-file: '**/*.yaml'
+    - any-glob-to-any-file: '**/*.yml'
+    - any-glob-to-any-file: '**/*.json'
+    - any-glob-to-any-file: '.env.*'

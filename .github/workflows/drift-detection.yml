@@ -1,0 +1,83 @@
+name: 基础设施漂移检测
+
+on:
+  schedule:
+    - cron: '0 8 * * 3'  # 每周三 08:00 UTC
+  workflow_dispatch:
+
+permissions: {}
+
+env:
+  NODE_VERSION: "22"
+  PNPM_VERSION: "9"
+  AWS_REGION: "us-east-1"
+
+jobs:
+  detect-drift:
+    name: CDK Diff 漂移检测
+    runs-on: ubuntu-24.04
+    permissions:
+      id-token: write
+      contents: read
+      issues: write
+    strategy:
+      matrix:
+        environment: [dev, prod]
+    defaults:
+      run:
+        working-directory: infra
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+          cache-dependency-path: infra/pnpm-lock.yaml
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ matrix.environment == 'prod' && secrets.AWS_PROD_ROLE_ARN || secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+      - run: pnpm install --frozen-lockfile
+      # FrontendStack 引用 frontend/dist，CDK synth 需要此目录存在
+      - name: 创建前端占位目录
+        run: mkdir -p ../frontend/dist && echo '<html></html>' > ../frontend/dist/index.html
+      - name: 执行 CDK Diff
+        id: cdk-diff
+        run: |
+          echo "=== ${{ matrix.environment }} 环境漂移检测 ==="
+          DIFF_OUTPUT=$(pnpm cdk diff --context env=${{ matrix.environment }} 2>&1) || true
+          echo "$DIFF_OUTPUT"
+          # 检测是否有实际变更
+          if echo "$DIFF_OUTPUT" | grep -q "There were no differences"; then
+            echo "drift_detected=false" >> "$GITHUB_OUTPUT"
+            echo "✅ 无漂移检测到"
+          else
+            echo "drift_detected=true" >> "$GITHUB_OUTPUT"
+            echo "::warning::检测到基础设施漂移"
+            # 保存 diff 输出
+            echo "$DIFF_OUTPUT" > "drift-report-${{ matrix.environment }}.txt"
+          fi
+      - name: 创建漂移报告 Issue
+        if: steps.cdk-diff.outputs.drift_detected == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const diffReport = fs.readFileSync('infra/drift-report-${{ matrix.environment }}.txt', 'utf8');
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `🔍 基础设施漂移检测 [${{ matrix.environment }}] - ${new Date().toISOString().split('T')[0]}`,
+              body: `## 基础设施漂移报告\n\n**环境**: ${{ matrix.environment }}\n**检测时间**: ${new Date().toISOString()}\n\n### CDK Diff 输出\n\n\`\`\`\n${diffReport.substring(0, 60000)}\n\`\`\`\n\n> 此 Issue 由 drift-detection 工作流自动创建。`,
+              labels: ['infra', 'drift-detection']
+            });
+      - name: 上传漂移报告
+        uses: actions/upload-artifact@v4
+        if: steps.cdk-diff.outputs.drift_detected == 'true'
+        with:
+          name: drift-report-${{ matrix.environment }}
+          path: infra/drift-report-${{ matrix.environment }}.txt
+          retention-days: 30

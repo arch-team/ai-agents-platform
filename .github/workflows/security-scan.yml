@@ -1,0 +1,98 @@
+name: 定期安全扫描
+
+on:
+  schedule:
+    - cron: '0 9 * * 1'  # 每周一 09:00 UTC
+  workflow_dispatch:  # 支持手动触发
+
+permissions: {}
+
+env:
+  UV_VERSION: "0.7.12"
+  PYTHON_VERSION: "3.12"
+  NODE_VERSION: "22"
+  PNPM_VERSION: "9"
+
+jobs:
+  backend-security:
+    name: 后端安全扫描
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: 安装 uv
+        run: pip install uv==${{ env.UV_VERSION }}
+      - name: 安装依赖
+        run: uv sync
+      - name: Bandit 安全静态分析
+        run: uv run bandit -r src/ -c pyproject.toml -f json -o bandit-report.json || true
+      - name: pip-audit 依赖漏洞扫描
+        run: uv run pip-audit --format json --output pip-audit-report.json || true
+      - name: 上传后端安全报告
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: backend-security-report
+          path: |
+            backend/bandit-report.json
+            backend/pip-audit-report.json
+          retention-days: 90
+
+  frontend-security:
+    name: 前端安全扫描
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+          cache-dependency-path: frontend/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - name: pnpm audit 依赖漏洞扫描
+        run: pnpm audit --json > pnpm-audit-report.json || true
+      - name: 上传前端安全报告
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: frontend-security-report
+          path: frontend/pnpm-audit-report.json
+          retention-days: 90
+
+  container-security:
+    name: 容器镜像扫描
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Trivy 文件系统扫描
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'json'
+          output: 'trivy-report.json'
+          severity: 'CRITICAL,HIGH'
+      - name: 上传 Trivy 报告
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: trivy-security-report
+          path: trivy-report.json
+          retention-days: 90
