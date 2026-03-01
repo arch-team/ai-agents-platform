@@ -93,14 +93,13 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+      - name: 安装 Trivy
+        run: |
+          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin v0.58.2
       - name: 容器镜像安全扫描
-        uses: aquasecurity/trivy-action@0.28.0
-        with:
-          scan-type: image
-          image-ref: ${{ steps.ecr-login.outputs.registry }}/${{ env.ECR_REPO_PREFIX }}-dev:${{ github.sha }}
-          format: table
-          exit-code: 1
-          severity: CRITICAL,HIGH
+        run: |
+          trivy image --severity CRITICAL,HIGH --exit-code 1 --format table \
+            ${{ steps.ecr-login.outputs.registry }}/${{ env.ECR_REPO_PREFIX }}-dev:${{ github.sha }}
 
       - name: 输出镜像推送通知
         run: echo "::notice::镜像已推送:${{ steps.ecr-login.outputs.registry }}/${{ env.ECR_REPO_PREFIX }}-dev:latest"
@@ -149,14 +148,13 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+      - name: 安装 Trivy
+        run: |
+          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin v0.58.2
       - name: 容器镜像安全扫描
-        uses: aquasecurity/trivy-action@0.28.0
-        with:
-          scan-type: image
-          image-ref: ${{ steps.ecr-login.outputs.registry }}/${{ env.ECR_REPO_PREFIX }}-prod:${{ github.sha }}
-          format: table
-          exit-code: 1
-          severity: CRITICAL,HIGH
+        run: |
+          trivy image --severity CRITICAL,HIGH --exit-code 1 --format table \
+            ${{ steps.ecr-login.outputs.registry }}/${{ env.ECR_REPO_PREFIX }}-prod:${{ github.sha }}
 
       - name: 输出镜像推送通知
         run: echo "::notice::镜像已推送:${{ steps.ecr-login.outputs.registry }}/${{ env.ECR_REPO_PREFIX }}-prod:latest"
