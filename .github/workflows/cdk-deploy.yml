@@ -38,12 +38,32 @@ env:
 
 jobs:
   # ============================================================
+  # 回滚参数校验
+  # ============================================================
+  validate-inputs:
+    name: 参数校验
+    runs-on: ubuntu-24.04
+    if: github.event.inputs.action == 'rollback'
+    steps:
+      - name: 校验 rollback-commit SHA 格式
+        run: |
+          COMMIT="${{ github.event.inputs.rollback-commit }}"
+          if [ -z "$COMMIT" ]; then
+            echo "::error::rollback-commit 不能为空"
+            exit 1
+          fi
+          if ! echo "$COMMIT" | grep -qE '^[0-9a-f]{7,40}$'; then
+            echo "::error::rollback-commit 格式无效，必须为 7-40 位 hex SHA: $COMMIT"
+            exit 1
+          fi
+
+  # ============================================================
   # 测试 + CDK Synth
   # ============================================================
   test:
     name: 测试 + CDK Synth
     if: github.event.inputs.action != 'rollback'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     defaults:
       run:
         working-directory: infra
@@ -74,7 +94,7 @@ jobs:
   # ============================================================
   cdk-diff:
     name: CDK Diff
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     if: github.event_name == 'pull_request'
     needs: test
     defaults:
@@ -138,7 +158,7 @@ jobs:
       ((github.event_name == 'push' &&
        (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/ai-agents-factory-v1')) ||
       (github.event_name == 'workflow_dispatch' && inputs.environment == 'dev'))
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     environment: dev
     defaults:
       run:
@@ -189,7 +209,7 @@ jobs:
       ((github.event_name == 'push' &&
        (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/ai-agents-factory-v1')) ||
       (github.event_name == 'workflow_dispatch' && inputs.environment == 'prod'))
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     environment:
       name: production
       # GitHub 环境保护规则中配置 required_reviewers

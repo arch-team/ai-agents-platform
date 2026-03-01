@@ -62,6 +62,23 @@ updates:
     reviewers:
       - "platform-team"
 
+  # Docker 基础镜像更新 (backend Dockerfile)
+  - package-ecosystem: "docker"
+    directory: "/backend"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Asia/Shanghai"
+    labels:
+      - "dependencies"
+      - "backend"
+    commit-message:
+      prefix: "chore(backend):"
+    open-pull-requests-limit: 3
+    reviewers:
+      - "platform-team"
+
   # GitHub Actions 版本更新
   - package-ecosystem: "github-actions"
     directory: "/"

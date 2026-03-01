@@ -1,0 +1,11 @@
+# CI/CD 工作流和基础设施配置 — 需要 platform-team 审批
+.github/workflows/          @platform-team
+.github/dependabot.yml      @platform-team
+.github/CODEOWNERS           @platform-team
+
+# Dockerfile 变更影响部署，需要 platform-team 审批
+backend/Dockerfile           @platform-team
+backend/Dockerfile.agent     @platform-team
+
+# CDK 基础设施
+infra/                       @platform-team

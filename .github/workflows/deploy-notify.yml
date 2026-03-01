@@ -11,14 +11,15 @@ on:
       - "Agent Image Build & Push"
     types: [completed]
 
-permissions:
-  issues: write
+# 最小权限原则: 默认无权限, 各 job 按需声明
+permissions: {}
 
 jobs:
   notify-success:
     name: 部署成功摘要
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     if: github.event.workflow_run.conclusion == 'success'
+    # notify-success 仅写 GITHUB_STEP_SUMMARY，不需要额外权限
     steps:
       - name: 输出部署成功摘要
         run: |
@@ -38,8 +39,10 @@ jobs:
 
   notify-failure:
     name: 部署失败通知
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     if: github.event.workflow_run.conclusion == 'failure'
+    permissions:
+      issues: write
     steps:
       - name: 收集失败信息
         id: info

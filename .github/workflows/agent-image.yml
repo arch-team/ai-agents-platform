@@ -35,7 +35,7 @@ jobs:
   # ============================================================
   quality-gate:
     name: Agent 质量门控
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     defaults:
       run:
         working-directory: backend
@@ -59,7 +59,7 @@ jobs:
   build-and-push-dev:
     name: 构建推送 Agent 镜像 (Dev)
     needs: quality-gate
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     if: >-
       (github.event_name == 'push') ||
       (github.event_name == 'workflow_dispatch' && inputs.environment == 'dev')
@@ -98,7 +98,7 @@ jobs:
         with:
           image-ref: ${{ steps.ecr-login.outputs.registry }}/${{ env.ECR_REPO_PREFIX }}-dev:${{ github.sha }}
           format: table
-          exit-code: 0
+          exit-code: 1
           severity: CRITICAL,HIGH
 
       - name: 输出镜像推送通知
@@ -109,7 +109,7 @@ jobs:
   # ============================================================
   build-and-push-prod:
     name: 构建推送 Agent 镜像 (Prod)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: build-and-push-dev
     if: >-
       (github.event_name == 'push' &&
@@ -147,6 +147,14 @@ jobs:
             ${{ steps.ecr-login.outputs.registry }}/${{ env.ECR_REPO_PREFIX }}-prod:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: 容器镜像安全扫描
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: ${{ steps.ecr-login.outputs.registry }}/${{ env.ECR_REPO_PREFIX }}-prod:${{ github.sha }}
+          format: table
+          exit-code: 1
+          severity: CRITICAL,HIGH
 
       - name: 输出镜像推送通知
         run: echo "::notice::镜像已推送:${{ steps.ecr-login.outputs.registry }}/${{ env.ECR_REPO_PREFIX }}-prod:latest"

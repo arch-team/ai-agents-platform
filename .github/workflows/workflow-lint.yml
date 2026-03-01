@@ -1,0 +1,59 @@
+# 工作流 YAML 语法校验 — 防止工作流配置回归
+name: Workflow Lint
+
+on:
+  pull_request:
+    paths: ['.github/workflows/**']
+  push:
+    branches: [main, ai-agents-factory-v1]
+    paths: ['.github/workflows/**']
+
+permissions:
+  contents: read
+
+jobs:
+  actionlint:
+    name: actionlint 工作流校验
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: 安装 actionlint
+        run: |
+          bash <(curl -s https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash)
+          echo "$(pwd)" >> "$GITHUB_PATH"
+      - name: 校验所有工作流
+        run: actionlint -color
+      # 自定义模式校验: 检测已知的危险模式
+      - name: 检查部署工作流安全模式
+        run: |
+          ERRORS=0
+
+          # 检查: 部署工作流禁止 cancel-in-progress: true
+          for f in .github/workflows/*-deploy.yml .github/workflows/agent-image.yml .github/workflows/cdk-deploy.yml; do
+            if [ -f "$f" ] && grep -q 'cancel-in-progress: true' "$f"; then
+              echo "::error file=$f::部署工作流禁止 cancel-in-progress: true"
+              ERRORS=$((ERRORS + 1))
+            fi
+          done
+
+          # 检查: CDK deploy 禁止 --all
+          for f in .github/workflows/cdk-deploy.yml .github/workflows/backend-deploy.yml; do
+            if [ -f "$f" ] && grep -q 'cdk deploy --all' "$f"; then
+              echo "::error file=$f::CDK deploy 禁止使用 --all，必须显式指定 Stack"
+              ERRORS=$((ERRORS + 1))
+            fi
+          done
+
+          # 检查: Dockerfile 禁止 uv:latest
+          for f in backend/Dockerfile backend/Dockerfile.agent; do
+            if [ -f "$f" ] && grep -q 'uv:latest' "$f"; then
+              echo "::error file=$f::Dockerfile 禁止使用 uv:latest，必须 pin 版本"
+              ERRORS=$((ERRORS + 1))
+            fi
+          done
+
+          if [ "$ERRORS" -gt 0 ]; then
+            echo "发现 $ERRORS 个安全模式违规"
+            exit 1
+          fi
+          echo "安全模式检查通过"

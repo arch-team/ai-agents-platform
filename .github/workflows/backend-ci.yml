@@ -35,7 +35,7 @@ jobs:
   # ============================================================
   integration-test:
     name: 集成测试 (MySQL)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: lint-and-unit-test
     defaults:
       run:
@@ -93,7 +93,7 @@ jobs:
   # ============================================================
   security-scan:
     name: 安全扫描
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: lint-and-unit-test
     defaults:
       run:

@@ -38,11 +38,32 @@ concurrency:
 env:
   NODE_VERSION: "22"
   PNPM_VERSION: "9"
+  AWS_REGION: "us-east-1"
 
 jobs:
   # ============================================================
   # 后端 CI 质量门控（调用可复用工作流，部署前必须通过）
   # ============================================================
+  # ============================================================
+  # 回滚参数校验
+  # ============================================================
+  validate-inputs:
+    name: 参数校验
+    runs-on: ubuntu-24.04
+    if: github.event.inputs.action == 'rollback'
+    steps:
+      - name: 校验 rollback-commit SHA 格式
+        run: |
+          COMMIT="${{ github.event.inputs.rollback-commit }}"
+          if [ -z "$COMMIT" ]; then
+            echo "::error::rollback-commit 不能为空"
+            exit 1
+          fi
+          if ! echo "$COMMIT" | grep -qE '^[0-9a-f]{7,40}$'; then
+            echo "::error::rollback-commit 格式无效，必须为 7-40 位 hex SHA: $COMMIT"
+            exit 1
+          fi
+
   # 回滚时跳过质量门控，直接进入部署流程
   quality-gate:
     name: 质量门控
@@ -64,7 +85,7 @@ jobs:
       (needs.quality-gate.result == 'success' || needs.quality-gate.result == 'skipped') &&
       ((github.event_name == 'push') ||
        (github.event_name == 'workflow_dispatch' && inputs.environment == 'dev'))
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     environment: dev
     defaults:
       run:
@@ -91,7 +112,7 @@ jobs:
       - uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
-          aws-region: us-east-1
+          aws-region: ${{ env.AWS_REGION }}
       - run: pnpm install --frozen-lockfile
       # FrontendStack 引用 frontend/dist，CDK synth 需要此目录存在
       - name: 创建前端占位目录
@@ -127,7 +148,7 @@ jobs:
       ((github.event_name == 'push' &&
         (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/ai-agents-factory-v1')) ||
        (github.event_name == 'workflow_dispatch' && inputs.environment == 'prod'))
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     environment:
       name: production
       # GitHub 环境保护规则中配置 required_reviewers
@@ -156,7 +177,7 @@ jobs:
       - uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_PROD_ROLE_ARN }}
-          aws-region: us-east-1
+          aws-region: ${{ env.AWS_REGION }}
       - run: pnpm install --frozen-lockfile
       - name: 创建前端占位目录
         run: mkdir -p ../frontend/dist && echo '<html></html>' > ../frontend/dist/index.html
