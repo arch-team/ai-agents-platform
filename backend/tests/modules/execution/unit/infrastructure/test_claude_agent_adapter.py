@@ -556,4 +556,5 @@ class TestToolHandler:
         config = {"endpoint_url": "https://api.example.com/fail", "method": "POST"}
         result = await ClaudeAgentAdapter._call_api_tool(config, {})
 
-        assert "API 调用失败" in result["content"][0]["text"]
+        assert "API 工具调用失败, 请稍后重试" in result["content"][0]["text"]
+        assert result.get("is_error") is True

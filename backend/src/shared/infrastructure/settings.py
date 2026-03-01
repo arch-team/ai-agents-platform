@@ -130,7 +130,7 @@ class Settings(BaseSettings):
 
     # 默认管理员: 应用启动时自动创建, 幂等, 已存在则跳过
     DEFAULT_ADMIN_EMAIL: str = "admin@company.com"
-    DEFAULT_ADMIN_PASSWORD: SecretStr = SecretStr("Admin@2026!")
+    DEFAULT_ADMIN_PASSWORD: SecretStr = SecretStr("")
     DEFAULT_ADMIN_NAME: str = "系统管理员"
 
     # Bedrock Eval Pipeline 配置
@@ -204,8 +204,8 @@ class Settings(BaseSettings):
                 msg = "JWT_SECRET_KEY 在非开发环境下不能使用默认值且长度不得少于 32 字符"
                 raise ValueError(msg)
             admin_pwd = self.DEFAULT_ADMIN_PASSWORD.get_secret_value()
-            if admin_pwd == "Admin@2026!":  # noqa: S105
-                msg = "DEFAULT_ADMIN_PASSWORD 在非开发环境下不能使用默认值, 请通过环境变量配置"
+            if not admin_pwd:
+                msg = "DEFAULT_ADMIN_PASSWORD 在非开发环境下不能为空, 请通过环境变量配置"
                 raise ValueError(msg)
         # CORS 校验: 禁止通配符 (防止 allow_credentials=True + allow_origins=["*"])
         if "*" in self.CORS_ALLOWED_ORIGINS:

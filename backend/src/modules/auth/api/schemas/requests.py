@@ -50,6 +50,18 @@ class SsoInitRequest(BaseModel):
 
     return_url: str = Field(description="SSO 登录成功后的回调 URL")
 
+    @field_validator("return_url")
+    @classmethod
+    def validate_return_url(cls, v: str) -> str:
+        """只允许相对路径（以 / 开头且不含 //）或同源 URL，防止开放重定向攻击。"""
+        if v.startswith("/"):
+            if "//" in v:
+                msg = "return_url 不允许包含 '//', 防止协议相对 URL 攻击"
+                raise ValueError(msg)
+            return v
+        msg = "return_url 只允许相对路径(以 / 开头)"
+        raise ValueError(msg)
+
 
 class LdapTestRequest(BaseModel):
     """LDAP 连接测试请求（可选覆盖 Settings 默认值）。"""

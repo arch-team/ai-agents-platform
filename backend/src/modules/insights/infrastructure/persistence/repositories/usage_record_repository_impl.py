@@ -2,9 +2,10 @@
 
 from datetime import datetime
 
-from sqlalchemy import ColumnElement, String, distinct, func, select, text
+from sqlalchemy import ColumnElement, String, distinct, func, select
 from sqlalchemy.sql.expression import cast
 
+from src.modules.agents.infrastructure.persistence.models.agent_model import AgentModel
 from src.modules.insights.domain.entities.usage_record import UsageRecord
 from src.modules.insights.domain.repositories.usage_record_repository import (
     IUsageRecordRepository,
@@ -158,27 +159,24 @@ class UsageRecordRepositoryImpl(
         end: datetime,
     ) -> list[AgentTokenBreakdown]:
         """按 Agent 维度聚合 Token 消耗 (LEFT JOIN agents 获取名称)。"""
-        # 使用 text() 构建 LEFT JOIN 获取 agent_name
-        # Infrastructure 层实现细节 — 直接访问 agents 表获取名称
-        agents_table = text("agents")
+        # 使用 AgentModel ORM 引用替代 text(), 避免 SQL 注入风险
+        total_tokens_expr = func.sum(UsageRecordModel.tokens_input + UsageRecordModel.tokens_output)
         stmt = (
             select(
                 UsageRecordModel.agent_id,
                 func.coalesce(
-                    func.max(text("agents.name")),
+                    func.max(AgentModel.name),
                     cast(UsageRecordModel.agent_id, String),
                 ).label("agent_name"),
-                func.sum(UsageRecordModel.tokens_input + UsageRecordModel.tokens_output).label(
-                    "total_tokens",
-                ),
+                total_tokens_expr.label("total_tokens"),
                 func.sum(UsageRecordModel.tokens_input).label("tokens_input"),
                 func.sum(UsageRecordModel.tokens_output).label("tokens_output"),
                 func.count().label("invocation_count"),
             )
             .select_from(
                 UsageRecordModel.__table__.outerjoin(
-                    agents_table,
-                    UsageRecordModel.agent_id == text("agents.id"),
+                    AgentModel.__table__,
+                    UsageRecordModel.agent_id == AgentModel.id,
                 ),
             )
             .where(
@@ -186,7 +184,7 @@ class UsageRecordRepositoryImpl(
                 UsageRecordModel.recorded_at <= end,
             )
             .group_by(UsageRecordModel.agent_id)
-            .order_by(text("total_tokens DESC"))
+            .order_by(total_tokens_expr.desc())
         )
         result = await self._session.execute(stmt)
         return [

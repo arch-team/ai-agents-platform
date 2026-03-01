@@ -262,8 +262,10 @@ class ExecutionService:
                         total_input_tokens = chunk.input_tokens
                         total_output_tokens = chunk.output_tokens
             except Exception:
-                # 流失败: 补偿用户消息计数 (独立短事务, 不依赖 DI/stream session)
-                await self._compensate_user_message_count(conversation_id)
+                await self._compensate_user_message_count(  # 异常补偿
+                    conversation_id,
+                    created_assistant_msg,
+                )
                 raise
 
             # 流后 DB 写操作: 使用独立 session, 避免 DI session 已关闭的问题
@@ -365,8 +367,12 @@ class ExecutionService:
         except Exception:
             logger.warning("increment_conversation_stats_failed", conversation_id=conversation_id)
 
-    async def _compensate_user_message_count(self, conversation_id: int) -> None:
-        """流失败时补偿更新用户消息计数。
+    async def _compensate_user_message_count(
+        self,
+        conversation_id: int,
+        assistant_msg: Message | None = None,
+    ) -> None:
+        """流失败时补偿: 更新用户消息计数 + 清理助手消息占位。
 
         使用独立短事务原子增量, 与 _increment_conversation_stats 一致。
         best-effort: 补偿失败不阻塞异常传播。
@@ -375,6 +381,12 @@ class ExecutionService:
         (实际上两条路径互斥, 但置 None 是防御性保障)
         """
         await self._increment_conversation_stats(conversation_id, message_delta=1, token_delta=0)
+        # 清理未完成的助手消息占位记录
+        if assistant_msg is not None and assistant_msg.id is not None:
+            try:
+                await self._stream_msg_repo.delete(assistant_msg.id)
+            except Exception:
+                logger.warning("cleanup_assistant_placeholder_failed", conversation_id=conversation_id)
         # 关闭 stream_session (助手消息占位通过事务回滚清除)
         if self._stream_session_close:
             await self._stream_session_close()
@@ -673,20 +685,23 @@ class ExecutionService:
                     logger.warning("knowledge_querier_degraded", knowledge_base_id=agent_info.knowledge_base_id)
                     return []
 
-        async def _recall_memory() -> list[Any]:
+        async def _recall_memory() -> tuple[list[Any], bool]:
+            """检索 Memory, 返回 (结果列表, 是否降级)。"""
             if not (agent_info.enable_memory and self._memory_adapter is not None):
-                return []
+                return [], False
             with tracer.start_as_current_span(
                 "memory.recall",
                 attributes={"memory.agent_id": str(agent_info.id), "memory.top_k": 5},
             ):
                 try:
-                    return await self._memory_adapter.recall_memory(agent_info.id, content, max_results=5)
+                    results = await self._memory_adapter.recall_memory(agent_info.id, content, max_results=5)
                 except Exception:
                     logger.exception("memory_recall_failed", agent_id=agent_info.id)
-                    return []
+                    return [], True
+                else:
+                    return results, False
 
-        rag_results, memories = await asyncio.gather(_retrieve_rag(), _recall_memory())
+        rag_results, (memories, memory_degraded) = await asyncio.gather(_retrieve_rag(), _recall_memory())
 
         if rag_results:
             rag_context = "\n\n".join(f"[参考文档] {r.content}" for r in rag_results)
@@ -695,6 +710,8 @@ class ExecutionService:
             memory_context = "\n\n".join(f"[长期记忆 - {m.topic}] {m.content}" for m in memories)
             system_prompt = f"{system_prompt}\n\n## 长期记忆\n\n{memory_context}"
             logger.info("memory_injected", agent_id=agent_info.id, memory_count=len(memories))
+        if memory_degraded:
+            system_prompt = f"{system_prompt}\n\n[Memory 服务暂时不可用, 请告知用户]"
 
         return _SendContext(
             conversation=conversation,
@@ -745,27 +762,57 @@ class ExecutionService:
         )
 
     @staticmethod
+    def _estimate_tokens(msg: Message) -> int:
+        """估算消息 token 数: 有实际值用实际值, 否则按字符估算。"""
+        return msg.token_count if msg.token_count > 0 else max(len(msg.content) // _CHARS_PER_TOKEN, 1)
+
+    @staticmethod
     def _truncate_messages(messages: list[Message], *, max_tokens: int) -> list[Message]:
         """从最新消息向前截取, 保持总 token 数在预算内。
 
-        token_count > 0 时使用实际值, 否则按 ~4 字符/token 估算。
-        返回截取后的消息列表 (保持时间正序)。
+        保留策略:
+        1. 始终保留最早 1 条消息 (首条用户提问, 提供对话起点上下文)
+        2. 剩余 token 窗口从最新消息向前填充
+        3. 最终合并: 保留消息 + 最新对话消息 (按时间正序)
+
+        token_count > 0 时使用实际值, 否则按 ~2 字符/token 估算。
         """
         if not messages:
             return []
 
+        # 快速路径 - 全部在预算内
+        total_est = sum(ExecutionService._estimate_tokens(m) for m in messages)
+        if total_est <= max_tokens:
+            return messages
+
+        # 始终保留最早 1 条消息(系统指令)
+        preserved = [messages[0]]
+        remaining = messages[1:]
+
+        # 计算保留消息占用的 token
+        preserved_tokens = ExecutionService._estimate_tokens(preserved[0])
+        available_tokens = max_tokens - preserved_tokens
+
+        if available_tokens <= 0:
+            return preserved
+
+        # 从最新消息向前填充剩余窗口
         selected: list[Message] = []
         accumulated = 0
 
-        for msg in reversed(messages):
-            est = msg.token_count if msg.token_count > 0 else max(len(msg.content) // _CHARS_PER_TOKEN, 1)
-            if accumulated + est > max_tokens:
+        for msg in reversed(remaining):
+            est = ExecutionService._estimate_tokens(msg)
+            if accumulated + est > available_tokens:
                 break
             accumulated += est
             selected.append(msg)
 
         selected.reverse()
-        return selected
+
+        # 合并并按时间正序返回
+        all_selected = preserved + selected
+        all_selected.sort(key=lambda m: m.id or 0)
+        return all_selected
 
     @staticmethod
     def _to_message_dto(msg: Message) -> MessageDTO:

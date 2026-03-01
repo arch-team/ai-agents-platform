@@ -1,4 +1,6 @@
 # 基础镜像 (python:3.12-slim / Debian bookworm) 已知漏洞，上游暂无修复
+# 影响: libxml2 - HIGH - XML 解析缓冲区溢出，本项目未直接使用 libxml2
+# 参考: https://nvd.nist.gov/vuln/detail/CVE-2026-0861
 # 定期审查: 当 Debian 发布修复时移除此豁免
 # 审查日期: 2026-03-01
 CVE-2026-0861

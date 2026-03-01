@@ -1,6 +1,8 @@
 """Knowledge 应用服务。"""
 
 import asyncio
+import re
+from pathlib import PurePosixPath
 
 from opentelemetry import trace
 
@@ -230,7 +232,14 @@ class KnowledgeService:
                 target_state="upload",
             )
 
-        s3_key = f"kb/{kb_id}/{dto.filename}"
+        # 清洗文件名, 防止路径穿越攻击
+        safe_filename = PurePosixPath(dto.filename).name
+        safe_filename = re.sub(r"[^\w.\-]", "_", safe_filename)
+        if not safe_filename or safe_filename.startswith("."):
+            safe_filename = f"unnamed_{safe_filename}"
+        dto.filename = safe_filename
+
+        s3_key = f"kb/{kb_id}/{safe_filename}"
         await self._doc_storage.upload(s3_key, dto.content, content_type=dto.content_type)
 
         doc = Document(

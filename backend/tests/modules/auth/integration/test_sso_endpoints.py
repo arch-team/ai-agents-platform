@@ -57,7 +57,7 @@ class TestSsoInitEndpoint:
 
         response = client.post(
             "/api/v1/auth/sso/init",
-            json={"return_url": "https://app.example.com/dashboard"},
+            json={"return_url": "/dashboard"},
         )
 
         assert response.status_code == 200
@@ -70,7 +70,7 @@ class TestSsoInitEndpoint:
 
         response = client.post(
             "/api/v1/auth/sso/init",
-            json={"return_url": "https://app.example.com"},
+            json={"return_url": "/home"},
         )
 
         assert response.status_code == 400
@@ -98,7 +98,9 @@ class TestSsoCallbackEndpoint:
         assert data["token_type"] == "bearer"
 
     def test_returns_401_on_saml_validation_failure(
-        self, client: TestClient, mock_sso_service: MagicMock,
+        self,
+        client: TestClient,
+        mock_sso_service: MagicMock,
     ) -> None:
         mock_sso_service.process_saml_callback = AsyncMock(
             side_effect=SsoAuthError("SAML 验证失败: Signature mismatch"),
@@ -114,7 +116,9 @@ class TestSsoCallbackEndpoint:
         assert data["code"] == "SSO_AUTH_FAILED"
 
     def test_returns_400_when_not_configured(
-        self, client: TestClient, mock_sso_service: MagicMock,
+        self,
+        client: TestClient,
+        mock_sso_service: MagicMock,
     ) -> None:
         mock_sso_service.process_saml_callback = AsyncMock(side_effect=SsoNotConfiguredError())
 

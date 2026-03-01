@@ -11,7 +11,9 @@ from src.modules.auth.api.schemas.requests import LdapTestRequest, SsoInitReques
 from src.modules.auth.api.schemas.responses import LdapTestResponse, SsoInitResponse, TokenResponse
 from src.modules.auth.application.services.sso_service import SsoService
 from src.modules.auth.domain.entities.user import User
+from src.modules.auth.domain.exceptions import AuthenticationError
 from src.modules.auth.domain.value_objects.role import Role
+from src.shared.api.middleware.rate_limit import rate_limit
 from src.shared.infrastructure.settings import Settings, get_settings
 
 
@@ -36,6 +38,7 @@ def _get_acs_url(request: Request) -> str:
 
 
 @router.get("/metadata")
+@rate_limit("10/minute")
 async def sso_metadata(
     request: Request,
     service: Annotated[SsoService, Depends(get_sso_service)],
@@ -60,6 +63,7 @@ async def sso_init(
 
 
 @router.post("/callback", name="sso_callback")
+@rate_limit("10/minute")
 async def sso_callback(
     request: Request,
     service: Annotated[SsoService, Depends(get_sso_service)],
@@ -71,6 +75,18 @@ async def sso_callback(
     acs_url = _get_acs_url(request)
 
     user = await service.process_saml_callback(request_data, acs_url=acs_url)
+
+    # [H-1] SSO 回调后检查用户是否已停用
+    if not user.is_active:
+        logger.warning(
+            "security_event",
+            event_type="sso_login_failed",
+            user_id=user.id,
+            reason="account_disabled",
+        )
+        msg = "账户已停用"
+        raise AuthenticationError(msg)
+
     access_token = service.create_token_for_user(user)
 
     logger.info(

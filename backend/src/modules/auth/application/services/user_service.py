@@ -93,7 +93,7 @@ class UserService:
             logger.warning(
                 "security_event",
                 event_type="login_failed",
-                reason="user_not_found",
+                reason="invalid_credentials",
             )
             msg = "邮箱或密码错误"
             raise AuthenticationError(msg)
@@ -139,7 +139,7 @@ class UserService:
                     "security_event",
                     event_type="login_failed",
                     user_id=user.id,
-                    reason="invalid_password",
+                    reason="invalid_credentials",
                     failed_attempts=user.failed_login_count,
                 )
             msg = "邮箱或密码错误"
@@ -241,6 +241,31 @@ class UserService:
             revoked_count=count,
         )
         return count
+
+    async def deactivate_user(self, user_id: int) -> UserDTO:
+        """停用用户并撤销其所有 Refresh Token。
+
+        Raises:
+            EntityNotFoundError: 用户不存在
+        """
+        from src.shared.domain.exceptions import EntityNotFoundError
+
+        user = await self._repository.get_by_id(user_id)
+        if user is None:
+            raise EntityNotFoundError(entity_type="User", entity_id=user_id)
+
+        user.deactivate()
+        updated = await self._repository.update(user)
+
+        # 停用后立即撤销所有 Token, 确保已签发的 Token 不可用
+        await self.revoke_user_tokens(user_id)
+
+        logger.info(
+            "security_event",
+            event_type="user_deactivated",
+            target_user_id=user_id,
+        )
+        return self._to_dto(updated)
 
     async def get_user(self, user_id: int) -> UserDTO | None:
         """根据 ID 获取用户信息。"""

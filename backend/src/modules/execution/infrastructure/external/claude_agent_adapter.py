@@ -51,6 +51,7 @@ logger = structlog.get_logger(__name__)
 # CLI 连接重试: CLIConnectionError / CLIJSONDecodeError (pipe 中断) 自动重试
 _CLI_MAX_RETRIES = 3
 _CLI_BASE_DELAY_S = 0.5
+_CLI_TOTAL_TIMEOUT_S = 60.0
 
 
 def _cli_retry_delay(attempt: int) -> float:
@@ -86,9 +87,13 @@ _BLOCKED_HOSTS = frozenset(
 def _validate_url(url: str) -> None:
     """验证 URL 安全性，防止 SSRF 攻击。
 
+    对非 IP 主机名执行 DNS 解析后验证, 防止通过 DNS rebinding 绕过检查。
+
     Raises:
-        ValueError: URL 不安全（内部地址、非 HTTP(S) 协议）
+        ValueError: URL 不安全（内部地址、非 HTTP(S) 协议、DNS 解析到内网）
     """
+    import socket
+
     parsed = urlparse(url)
     if parsed.scheme not in ("http", "https"):
         msg = "仅支持 HTTP/HTTPS 协议"
@@ -100,7 +105,17 @@ def _validate_url(url: str) -> None:
     try:
         ip = ipaddress.ip_address(hostname)
     except ValueError:
-        # hostname 不是 IP 地址, DNS 解析后再验证
+        # hostname 不是 IP 地址, DNS 解析后验证解析结果
+        try:
+            resolved = socket.getaddrinfo(hostname, None)
+            for _, _, _, _, addr_info in resolved:
+                resolved_ip = ipaddress.ip_address(addr_info[0])
+                if resolved_ip.is_private or resolved_ip.is_loopback or resolved_ip.is_link_local:
+                    msg = f"DNS 解析后发现内网地址: {addr_info[0]}"
+                    raise ValueError(msg)
+        except socket.gaierror:
+            # DNS 解析失败: 记录警告但放行, HTTP 调用阶段会自然失败
+            logger.warning("dns_resolution_failed", hostname=hostname)
         return
     if ip.is_private or ip.is_loopback or ip.is_link_local:
         msg = f"禁止访问内网地址: {hostname}"
@@ -124,7 +139,15 @@ class ClaudeAgentAdapter(IAgentRuntime):
         self._region = region
 
     async def execute(self, request: AgentRequest) -> AgentResponseChunk:
-        """同步执行 Agent, CLIConnectionError 自动重试。"""
+        """同步执行 Agent, CLIConnectionError 自动重试, 总超时 60s。"""
+        try:
+            return await asyncio.wait_for(self._execute_with_retry(request), timeout=_CLI_TOTAL_TIMEOUT_S)
+        except TimeoutError:
+            logger.exception("claude_cli_total_timeout", timeout_s=_CLI_TOTAL_TIMEOUT_S)
+            raise DomainError(message="Agent 执行超时", code="AGENT_SDK_TIMEOUT") from None
+
+    async def _execute_with_retry(self, request: AgentRequest) -> AgentResponseChunk:
+        """内部重试循环 (被 execute 包裹总超时)。"""
         last_err: BaseException | None = None
 
         for attempt in range(_CLI_MAX_RETRIES + 1):
@@ -186,9 +209,22 @@ class ClaudeAgentAdapter(IAgentRuntime):
         ) from last_err
 
     async def execute_stream(self, request: AgentRequest) -> AsyncIterator[AgentResponseChunk]:
-        """流式执行 Agent，逐条 yield 响应片段。"""
+        """流式执行 Agent，逐条 yield 响应片段, 总超时 60s。"""
         options = self._build_options(request)
-        return self._stream_messages(request.prompt, options)
+        return self._stream_with_timeout(request.prompt, options)
+
+    async def _stream_with_timeout(
+        self,
+        prompt: str,
+        options: ClaudeAgentOptions,
+    ) -> AsyncIterator[AgentResponseChunk]:
+        """为流式消息生成器添加总超时保护。"""
+        deadline = asyncio.get_event_loop().time() + _CLI_TOTAL_TIMEOUT_S
+        async for chunk in self._stream_messages(prompt, options):
+            if asyncio.get_event_loop().time() > deadline:
+                logger.error("claude_cli_stream_total_timeout", timeout_s=_CLI_TOTAL_TIMEOUT_S)
+                raise DomainError(message="Agent 执行超时", code="AGENT_SDK_TIMEOUT")
+            yield chunk
 
     async def _stream_messages(
         self,
@@ -385,13 +421,26 @@ class ClaudeAgentAdapter(IAgentRuntime):
 
         return _handler
 
+    # API 工具请求体大小上限 (1MB)
+    _API_TOOL_MAX_PAYLOAD_BYTES = 1_048_576
+
     @staticmethod
     async def _call_api_tool(
         config: dict[str, Any],
         args: dict[str, Any],
     ) -> dict[str, Any]:
         """通过 HTTP 调用 API 类型工具。"""
+        import json
+
         import httpx
+
+        # 请求体大小检查
+        payload = json.dumps(args, default=str)
+        if len(payload) > ClaudeAgentAdapter._API_TOOL_MAX_PAYLOAD_BYTES:
+            return {
+                "content": [{"type": "text", "text": "API 工具请求体超过 1MB 限制"}],
+                "is_error": True,
+            }
 
         url = config["endpoint_url"]
         _validate_url(url)
@@ -414,9 +463,10 @@ class ClaudeAgentAdapter(IAgentRuntime):
                     "content": [{"type": "text", "text": resp.text}],
                 }
         except httpx.HTTPError as e:
-            logger.warning("API 工具调用失败", url=url, error=str(e))
+            logger.warning("api_tool_call_failed", url=url, error=str(e))
             return {
-                "content": [{"type": "text", "text": f"API 调用失败: {e}"}],
+                "content": [{"type": "text", "text": "API 工具调用失败, 请稍后重试"}],
+                "is_error": True,
             }
 
     def _build_allowed_tools(self, request: AgentRequest) -> list[str]:

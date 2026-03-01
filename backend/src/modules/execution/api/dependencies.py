@@ -58,7 +58,7 @@ def get_bedrock_client() -> BedrockLLMClient:
     """创建 BedrockLLMClient 单例。"""
     settings = get_settings()
     client = boto3.client("bedrock-runtime", region_name=settings.AWS_REGION)
-    return BedrockLLMClient(client=client)
+    return BedrockLLMClient(client=client, max_workers=settings.BEDROCK_THREAD_POOL_SIZE)
 
 
 @lru_cache

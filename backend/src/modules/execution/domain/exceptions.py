@@ -67,3 +67,20 @@ class TeamExecutionNotCancellableError(DomainError):
             message=f"团队执行(id={execution_id}) 不在可取消状态",
             code="TEAM_EXECUTION_NOT_CANCELLABLE",
         )
+
+
+# ────────────────────────────────────────────
+# SSE 连接相关异常
+# ────────────────────────────────────────────
+
+
+class TooManySSEConnectionsError(DomainError):
+    """SSE 并发连接数超限异常 (对应 HTTP 429)。"""
+
+    def __init__(self, *, user_id: int, max_connections: int) -> None:
+        self.user_id = user_id
+        self.max_connections = max_connections
+        super().__init__(
+            message=f"SSE 并发连接数超限 (最大 {max_connections})",
+            code="TOO_MANY_SSE_CONNECTIONS",
+        )

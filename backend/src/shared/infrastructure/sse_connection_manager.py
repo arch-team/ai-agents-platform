@@ -7,7 +7,7 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from functools import lru_cache
 
-from src.shared.domain.exceptions import TooManySSEConnectionsError
+from src.modules.execution.domain.exceptions import TooManySSEConnectionsError
 from src.shared.infrastructure.settings import get_settings
 
 

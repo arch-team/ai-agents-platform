@@ -4,7 +4,7 @@ import asyncio
 
 import pytest
 
-from src.shared.domain.exceptions import TooManySSEConnectionsError
+from src.modules.execution.domain.exceptions import TooManySSEConnectionsError
 from src.shared.infrastructure.sse_connection_manager import SSEConnectionManager
 
 

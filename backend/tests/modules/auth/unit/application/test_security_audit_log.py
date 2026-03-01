@@ -58,7 +58,7 @@ class TestLoginSecurityAuditLog:
             call_args = mock_logger.warning.call_args
             assert call_args[0][0] == "security_event"
             assert call_args[1]["event_type"] == "login_failed"
-            assert call_args[1]["reason"] == "user_not_found"
+            assert call_args[1]["reason"] == "invalid_credentials"
 
     @pytest.mark.asyncio
     async def test_login_failed_wrong_password_logs_event(self) -> None:
@@ -77,7 +77,7 @@ class TestLoginSecurityAuditLog:
             call_args = mock_logger.warning.call_args
             assert call_args[0][0] == "security_event"
             assert call_args[1]["event_type"] == "login_failed"
-            assert call_args[1]["reason"] == "invalid_password"
+            assert call_args[1]["reason"] == "invalid_credentials"
 
     @pytest.mark.asyncio
     async def test_login_inactive_user_logs_event(self) -> None:

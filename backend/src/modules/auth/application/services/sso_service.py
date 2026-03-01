@@ -247,15 +247,24 @@ class SsoService:
             tls_config = Tls(validate=ssl.CERT_NONE) if use_tls else None
             server = Server(server_url, use_ssl=server_url.startswith("ldaps://"), tls=tls_config, get_info=ALL)
         except LDAPException as e:
-            return LdapTestResult(success=False, message=f"LDAP 服务器配置错误: {e}", details=details)
+            logger.exception("ldap_server_config_error", error=str(e))
+            return LdapTestResult(success=False, message="LDAP 服务器配置错误, 请检查 URL 格式", details=details)
 
-        # 2. Bind 认证
+        # 2. Bind 认证 (设置超时防止连接挂起)
         try:
-            conn = Connection(server, user=bind_dn, password=bind_password, auto_bind=True)
-        except LDAPSocketOpenError:
+            conn = Connection(
+                server,
+                user=bind_dn,
+                password=bind_password,
+                auto_bind=True,
+                receive_timeout=10,
+            )
+        except LDAPSocketOpenError as e:
+            logger.exception("ldap_server_unreachable", error=str(e))
             return LdapTestResult(success=False, message="LDAP 服务器不可达, 请检查 URL 和网络连通性", details=details)
         except LDAPException as e:
-            return LdapTestResult(success=False, message=f"LDAP bind 失败(凭证错误或权限不足): {e}", details=details)
+            logger.exception("ldap_bind_failed", error=str(e))
+            return LdapTestResult(success=False, message="LDAP bind 失败, 请检查凭证和权限", details=details)
 
         # 3. STARTTLS (如配置)
         if use_tls and not server_url.startswith("ldaps://"):
@@ -263,18 +272,20 @@ class SsoService:
                 conn.start_tls()
             except LDAPException as e:
                 conn.unbind()
-                return LdapTestResult(success=False, message=f"STARTTLS 协商失败: {e}", details=details)
+                logger.exception("ldap_starttls_failed", error=str(e))
+                return LdapTestResult(success=False, message="STARTTLS 协商失败, 请检查 TLS 配置", details=details)
 
-        # 4. Search 验证 (确认搜索权限)
+        # 4. Search 验证 (确认搜索权限, 设置查询超时)
         try:
-            conn.search(search_base=base_dn, search_filter="(objectClass=*)", size_limit=1)
+            conn.search(search_base=base_dn, search_filter="(objectClass=*)", size_limit=1, time_limit=5)
             entry_count = len(conn.entries)
             details["search_result"] = f"找到 {entry_count} 条目"
         except LDAPException as e:
             conn.unbind()
+            logger.exception("ldap_search_failed", error=str(e))
             return LdapTestResult(
                 success=False,
-                message=f"LDAP 搜索失败(权限不足或 base_dn 无效): {e}",
+                message="LDAP 搜索失败, 请检查权限或 base_dn 配置",
                 details=details,
             )
 

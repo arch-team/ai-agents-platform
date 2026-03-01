@@ -31,6 +31,20 @@ from src.modules.knowledge.application.dto.knowledge_dto import (
 )
 from src.modules.knowledge.application.services.knowledge_service import KnowledgeService
 from src.shared.api.schemas import calc_total_pages
+from src.shared.domain.exceptions import ValidationError
+
+
+# 文件上传限制
+MAX_UPLOAD_SIZE = 50 * 1024 * 1024  # 50MB
+ALLOWED_CONTENT_TYPES: frozenset[str] = frozenset(
+    {
+        "application/pdf",
+        "text/plain",
+        "text/markdown",
+        "text/csv",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    },
+)
 
 
 router = APIRouter(prefix="/api/v1/knowledge-bases", tags=["knowledge-bases"])
@@ -111,11 +125,27 @@ async def upload_document(
     current_user: CurrentUserDep,
 ) -> DocumentResponse:
     """上传文档。"""
+    # 检查文件内容类型是否在白名单中
+    content_type = file.content_type or "application/octet-stream"
+    if content_type not in ALLOWED_CONTENT_TYPES:
+        raise ValidationError(
+            message=f"不支持的文件类型: {content_type}, 允许的类型: {', '.join(sorted(ALLOWED_CONTENT_TYPES))}",
+            field="file",
+        )
+
     content = await file.read()
+
+    # 检查文件大小是否超限
+    if len(content) > MAX_UPLOAD_SIZE:
+        raise ValidationError(
+            message=f"文件大小超过限制: {len(content)} 字节, 最大允许 {MAX_UPLOAD_SIZE} 字节 (50MB)",
+            field="file",
+        )
+
     dto = UploadDocumentDTO(
         filename=file.filename or "unnamed",
         content=content,
-        content_type=file.content_type or "application/octet-stream",
+        content_type=content_type,
     )
     doc = await service.upload_document(kb_id, dto, current_user.id)
     return _to_doc_response(doc)

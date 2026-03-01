@@ -49,13 +49,12 @@ class TestTruncateMessages:
         assert len(result) == 5
 
     def test_truncates_old_messages(self) -> None:
-        """超出预算时应截取最新的消息, 丢弃旧消息。"""
+        """超出预算时应保留首条 + 最新消息, 丢弃中间消息。"""
         messages = _make_messages(10, token_count=1000)
-        # max_tokens=3000 只能容纳 3 条消息 (每条 1000)
+        # max_tokens=3000 容纳 3 条: 首条(id=1) + 最新 2 条(id=9,10)
         result = ExecutionService._truncate_messages(messages, max_tokens=3000)
         assert len(result) == 3
-        # 应该是最新的 3 条
-        assert result[0].id == 8
+        assert result[0].id == 1  # 首条保留
         assert result[1].id == 9
         assert result[2].id == 10
 
@@ -98,10 +97,11 @@ class TestTruncateMessages:
                 token_count=0,
             ),
         ]
-        # max_tokens=2000, 每条估算 ~1000 tokens, 应截取最新 2 条
+        # max_tokens=2000, 每条估算 ~1000 tokens
+        # 保留首条(id=1, 1000 tokens) + 最新 1 条(id=3, 1000 tokens) = 2 条
         result = ExecutionService._truncate_messages(messages, max_tokens=2000)
         assert len(result) == 2
-        assert result[0].id == 2
+        assert result[0].id == 1  # 首条保留
         assert result[1].id == 3
 
     def test_hundred_messages_truncated(self) -> None:

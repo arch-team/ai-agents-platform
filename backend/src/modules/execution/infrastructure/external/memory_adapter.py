@@ -5,7 +5,7 @@ SDK-First: 使用 bedrock_agentcore.memory.MemorySessionManager 高级 API。
 """
 
 import asyncio
-from functools import lru_cache
+import functools
 
 import structlog
 from bedrock_agentcore.memory import MemorySessionManager
@@ -24,9 +24,9 @@ class MemoryAdapter:
         self._memory_id = memory_id
         self._region = region
 
-    @lru_cache(maxsize=1)  # noqa: B019
-    def _get_manager(self) -> MemorySessionManager:
-        """获取 MemorySessionManager (懒加载单例)。"""
+    @functools.cached_property
+    def _manager(self) -> MemorySessionManager:
+        """懒加载 MemorySessionManager 单例。"""
         return MemorySessionManager(memory_id=self._memory_id, region_name=self._region)
 
     def _namespace(self, agent_id: int) -> str:
@@ -39,7 +39,7 @@ class MemoryAdapter:
             logger.debug("memory_save_skip", agent_id=agent_id, reason="memory_id 未配置")
             return ""
         try:
-            mgr = self._get_manager()
+            mgr = self._manager
             ns = self._namespace(agent_id)
             msg = ConversationalMessage(text=f"[{topic}] {content}", role=MessageRole.USER)
             event = await asyncio.to_thread(mgr.add_turns, actor_id=ns, session_id=ns, messages=[msg])
@@ -57,7 +57,7 @@ class MemoryAdapter:
             logger.debug("memory_recall_skip", agent_id=agent_id, reason="memory_id 未配置")
             return []
         try:
-            mgr = self._get_manager()
+            mgr = self._manager
             ns = self._namespace(agent_id)
             records = await asyncio.to_thread(
                 mgr.search_long_term_memories,
@@ -75,7 +75,7 @@ class MemoryAdapter:
         if not self._memory_id:
             return []
         try:
-            mgr = self._get_manager()
+            mgr = self._manager
             ns = self._namespace(agent_id)
             records = await asyncio.to_thread(
                 mgr.list_long_term_memory_records,
@@ -92,7 +92,7 @@ class MemoryAdapter:
         if not self._memory_id:
             return None
         try:
-            mgr = self._get_manager()
+            mgr = self._manager
             record = await asyncio.to_thread(mgr.get_memory_record, record_id=memory_id)
             return self._to_memory_item(record)
         except Exception:
@@ -104,7 +104,7 @@ class MemoryAdapter:
         if not self._memory_id:
             return False
         try:
-            mgr = self._get_manager()
+            mgr = self._manager
             await asyncio.to_thread(mgr.delete_memory_record, record_id=memory_id)
         except Exception:
             logger.exception("memory_delete_failed", agent_id=agent_id, memory_id=memory_id)
@@ -121,7 +121,7 @@ class MemoryAdapter:
         if not self._memory_id:
             return 0
         try:
-            mgr = self._get_manager()
+            mgr = self._manager
             ns = self._namespace(agent_id)
             sid = session_id or ns
             msg = ConversationalMessage(text=conversation_content, role=MessageRole.ASSISTANT)
