@@ -199,7 +199,7 @@ class TemplateRepositoryImpl(PydanticRepository[Template, TemplateModel, int], I
         rows = result.all()
         if not rows:
             return [], 0
-        total: int = rows[0]._total  # — SQLAlchemy label 属性
+        total: int = rows[0]._total  # noqa: SLF001
         items = [self._to_entity(row[0]) for row in rows]
         return items, total
 
