@@ -107,3 +107,62 @@ class TestSSEConnectionManager:
             assert exc_info.value.user_id == 42
             assert exc_info.value.max_connections == 1
             assert exc_info.value.code == "TOO_MANY_SSE_CONNECTIONS"
+
+    @pytest.mark.asyncio
+    async def test_total_active_connections(self) -> None:
+        """total_active_connections 返回所有用户的连接数总和。"""
+        manager = SSEConnectionManager(max_connections_per_user=5)
+        async with manager.connect(user_id=1), manager.connect(user_id=2):
+            assert manager.total_active_connections == 2
+        assert manager.total_active_connections == 0
+
+    @pytest.mark.asyncio
+    async def test_active_user_count(self) -> None:
+        """active_user_count 返回有活跃连接的用户数。"""
+        manager = SSEConnectionManager(max_connections_per_user=5)
+        assert manager.active_user_count == 0
+        async with manager.connect(user_id=1):
+            async with manager.connect(user_id=2):
+                assert manager.active_user_count == 2
+            assert manager.active_user_count == 1
+        assert manager.active_user_count == 0
+
+    @pytest.mark.asyncio
+    async def test_publish_metrics_success(self) -> None:
+        """publish_metrics 成功调用 CloudWatch。"""
+        from unittest.mock import MagicMock, patch
+
+        manager = SSEConnectionManager(max_connections_per_user=5)
+
+        mock_client = MagicMock()
+        with patch("boto3.client", return_value=mock_client):
+            async with manager.connect(user_id=1):
+                await manager.publish_metrics()
+
+        mock_client.put_metric_data.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_publish_metrics_suppresses_error(self) -> None:
+        """publish_metrics 出错时不抛异常（suppress）。"""
+        from unittest.mock import patch
+
+        manager = SSEConnectionManager(max_connections_per_user=5)
+
+        with patch("boto3.client", side_effect=RuntimeError("AWS 不可用")):
+            # 不应抛异常
+            await manager.publish_metrics()
+
+
+@pytest.mark.unit
+class TestGetSSEManager:
+    """get_sse_manager 单例测试。"""
+
+    def test_returns_singleton(self) -> None:
+        """get_sse_manager 返回同一实例。"""
+        from src.shared.infrastructure.sse_connection_manager import get_sse_manager
+
+        get_sse_manager.cache_clear()
+        m1 = get_sse_manager()
+        m2 = get_sse_manager()
+        assert m1 is m2
+        get_sse_manager.cache_clear()
