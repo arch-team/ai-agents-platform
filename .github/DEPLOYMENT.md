@@ -11,17 +11,17 @@
 ### 1.1 `dev` 环境
 
 - 无特殊保护规则
-- push 到 `main` / `ai-agents-factory-v1` 时自动触发部署
+- push 到 `main` 时自动触发部署
 
 ### 1.2 `staging` 环境
 
-- **部署分支限制**: 仅允许 `main` 和 `ai-agents-factory-v1`
+- **部署分支限制**: 仅允许 `main`
 - dev 部署成功后自动触发
 
 ### 1.3 `production` 环境
 
 - **Required reviewers**: 至少 1 名审批人 (建议 2 名)
-- **部署分支限制**: 仅允许 `main` 和 `ai-agents-factory-v1`
+- **部署分支限制**: 仅允许 `main`
 - **Wait timer** (可选): 部署前等待 5 分钟，留出取消窗口
 - staging 部署成功后触发，需审批通过后执行
 
@@ -221,7 +221,7 @@ aws iam get-role --role-name <ROLE_NAME> --query 'Role.AssumeRolePolicyDocument'
 ## 5. 部署流水线概览
 
 ```
-push to main/ai-agents-factory-v1 (infra/** 变更)
+push to main (infra/** 变更)
   |
   v
 [test] lint + typecheck + test + cdk synth

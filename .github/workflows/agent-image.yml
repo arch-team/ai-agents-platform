@@ -2,7 +2,7 @@ name: Agent Image Build & Push
 
 on:
   push:
-    branches: [main, ai-agents-factory-v1]
+    branches: [main]
     paths:
       - 'backend/Dockerfile.agent'
       - 'backend/src/agent_entrypoint.py'
@@ -115,8 +115,7 @@ jobs:
     runs-on: ubuntu-24.04
     needs: build-and-push-dev
     if: >-
-      (github.event_name == 'push' &&
-       (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/ai-agents-factory-v1')) ||
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
       (github.event_name == 'workflow_dispatch' && inputs.environment == 'prod')
     environment:
       name: production

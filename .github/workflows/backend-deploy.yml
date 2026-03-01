@@ -2,7 +2,7 @@ name: Backend Deploy
 
 on:
   push:
-    branches: [main, ai-agents-factory-v1]
+    branches: [main]
     paths:
       - 'backend/src/**'
       - 'backend/migrations/**'
@@ -240,8 +240,7 @@ jobs:
       (needs.quality-gate.result == 'success' || needs.quality-gate.result == 'skipped') &&
       (needs.validate-migration.result == 'success' || needs.validate-migration.result == 'skipped') &&
       (needs.deploy-dev.result == 'success' || needs.deploy-dev.result == 'skipped') &&
-      ((github.event_name == 'push' &&
-        (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/ai-agents-factory-v1')) ||
+      ((github.event_name == 'push' && github.ref == 'refs/heads/main') ||
        (github.event_name == 'workflow_dispatch' && inputs.environment == 'prod'))
     runs-on: ubuntu-24.04
     environment:

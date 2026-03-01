@@ -5,7 +5,7 @@ on:
   pull_request:
     paths: ['.github/workflows/**']
   push:
-    branches: [main, ai-agents-factory-v1]
+    branches: [main]
     paths: ['.github/workflows/**']
 
 permissions:

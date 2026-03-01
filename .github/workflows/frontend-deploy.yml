@@ -2,7 +2,7 @@ name: Frontend Deploy
 
 on:
   push:
-    branches: [main, ai-agents-factory-v1]
+    branches: [main]
     paths:
       - 'frontend/src/**'
       - 'frontend/public/**'
@@ -160,8 +160,7 @@ jobs:
     name: 部署 Prod
     needs: deploy-dev
     if: >-
-      (github.event_name == 'push' &&
-       (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/ai-agents-factory-v1')) ||
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
       (github.event_name == 'workflow_dispatch' && inputs.environment == 'prod')
     runs-on: ubuntu-24.04
     environment:

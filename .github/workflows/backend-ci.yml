@@ -2,7 +2,7 @@ name: Backend CI
 
 on:
   push:
-    branches-ignore: [main, ai-agents-factory-v1]
+    branches-ignore: [main]
     paths: ['backend/**']
   pull_request:
     paths: ['backend/**']
