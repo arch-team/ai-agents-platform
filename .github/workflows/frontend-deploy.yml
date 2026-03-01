@@ -117,12 +117,12 @@ jobs:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
       - name: 同步到 Dev S3
-        run: aws s3 sync dist/ s3://${{ secrets.DEV_FRONTEND_S3_BUCKET }}/ --delete
+        run: aws s3 sync dist/ s3://${{ vars.DEV_FRONTEND_S3_BUCKET }}/ --delete
       - name: 失效 CloudFront 缓存
         continue-on-error: true
         run: |
           DIST_ID=$(aws cloudfront list-distributions \
-            --query "DistributionList.Items[?Origins.Items[?contains(DomainName, '${{ secrets.DEV_FRONTEND_S3_BUCKET }}')]].Id" \
+            --query "DistributionList.Items[?Origins.Items[?contains(DomainName, '${{ vars.DEV_FRONTEND_S3_BUCKET }}')]].Id" \
             --output text)
           if [ -n "$DIST_ID" ] && [ "$DIST_ID" != "None" ]; then
             aws cloudfront create-invalidation --distribution-id "$DIST_ID" --paths "/*"
@@ -131,7 +131,7 @@ jobs:
             echo "::warning::未找到匹配的 CloudFront Distribution，跳过缓存失效"
           fi
       - name: 验证部署
-        run: aws s3 ls s3://${{ secrets.DEV_FRONTEND_S3_BUCKET }}/index.html
+        run: aws s3 ls s3://${{ vars.DEV_FRONTEND_S3_BUCKET }}/index.html
 
   # ============================================================
   # 部署 — Prod 环境 (需要手动审批)
@@ -178,11 +178,11 @@ jobs:
           role-to-assume: ${{ secrets.AWS_PROD_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
       - name: 同步到 Prod S3
-        run: aws s3 sync dist/ s3://${{ secrets.PROD_FRONTEND_S3_BUCKET }}/ --delete
+        run: aws s3 sync dist/ s3://${{ vars.PROD_FRONTEND_S3_BUCKET }}/ --delete
       - name: 失效 CloudFront 缓存
         run: |
           DIST_ID=$(aws cloudfront list-distributions \
-            --query "DistributionList.Items[?Origins.Items[?contains(DomainName, '${{ secrets.PROD_FRONTEND_S3_BUCKET }}')]].Id" \
+            --query "DistributionList.Items[?Origins.Items[?contains(DomainName, '${{ vars.PROD_FRONTEND_S3_BUCKET }}')]].Id" \
             --output text)
           if [ -n "$DIST_ID" ] && [ "$DIST_ID" != "None" ]; then
             aws cloudfront create-invalidation --distribution-id "$DIST_ID" --paths "/*"
@@ -191,4 +191,4 @@ jobs:
             echo "::warning::未找到匹配的 CloudFront Distribution，跳过缓存失效"
           fi
       - name: 验证部署
-        run: aws s3 ls s3://${{ secrets.PROD_FRONTEND_S3_BUCKET }}/index.html
+        run: aws s3 ls s3://${{ vars.PROD_FRONTEND_S3_BUCKET }}/index.html
