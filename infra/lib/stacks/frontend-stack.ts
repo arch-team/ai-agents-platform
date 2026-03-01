@@ -64,20 +64,8 @@ export class FrontendStack extends cdk.Stack {
         })
       : undefined;
 
-    // API 行为：不缓存，转发所有 headers/cookies/query
-    const apiCachePolicy = new cloudfront.CachePolicy(this, 'ApiCachePolicy', {
-      cachePolicyName: `${envName}-api-no-cache`,
-      defaultTtl: cdk.Duration.seconds(0),
-      maxTtl: cdk.Duration.seconds(0),
-      minTtl: cdk.Duration.seconds(0),
-      headerBehavior: cloudfront.CacheHeaderBehavior.allowList(
-        'Authorization',
-        'Content-Type',
-        'Accept',
-      ),
-      queryStringBehavior: cloudfront.CacheQueryStringBehavior.all(),
-      cookieBehavior: cloudfront.CacheCookieBehavior.none(),
-    });
+    // API 行为：禁用缓存，使用 CDK 托管策略
+    const apiCachePolicy = cloudfront.CachePolicy.CACHING_DISABLED;
 
     // Authorization 通过 CachePolicy 转发; OriginRequestPolicy 用 CDK 托管策略（转发除 Host 外的所有 viewer headers）
     const apiOriginRequestPolicy = cloudfront.OriginRequestPolicy.ALL_VIEWER_EXCEPT_HOST_HEADER;

@@ -6,5 +6,7 @@ function getEnvVar(key: string, fallback: string): string {
 }
 
 export const env = {
-  VITE_API_BASE_URL: getEnvVar('VITE_API_BASE_URL', 'http://localhost:8000'),
+  // 默认空字符串 = 相对路径（CloudFront 同源代理 /api/*）
+  // 本地开发时通过 .env 设置 VITE_API_BASE_URL=http://localhost:8000
+  VITE_API_BASE_URL: getEnvVar('VITE_API_BASE_URL', ''),
 } as const;
