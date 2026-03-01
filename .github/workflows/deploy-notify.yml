@@ -47,11 +47,13 @@ jobs:
       - name: 收集失败信息
         id: info
         run: |
-          echo "workflow=${{ github.event.workflow_run.name }}" >> "$GITHUB_OUTPUT"
-          echo "branch=${{ github.event.workflow_run.head_branch }}" >> "$GITHUB_OUTPUT"
-          echo "commit=${{ github.event.workflow_run.head_sha }}" >> "$GITHUB_OUTPUT"
-          echo "url=${{ github.event.workflow_run.html_url }}" >> "$GITHUB_OUTPUT"
-          echo "actor=${{ github.event.workflow_run.actor.login }}" >> "$GITHUB_OUTPUT"
+          {
+            echo "workflow=${{ github.event.workflow_run.name }}"
+            echo "branch=${{ github.event.workflow_run.head_branch }}"
+            echo "commit=${{ github.event.workflow_run.head_sha }}"
+            echo "url=${{ github.event.workflow_run.html_url }}"
+            echo "actor=${{ github.event.workflow_run.actor.login }}"
+          } >> "$GITHUB_OUTPUT"
 
       - name: 创建 GitHub Issue 通知
         uses: actions/github-script@v7

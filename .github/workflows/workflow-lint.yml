@@ -20,7 +20,7 @@ jobs:
       - name: 安装 actionlint
         run: |
           bash <(curl -s https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash)
-          echo "$(pwd)" >> "$GITHUB_PATH"
+          pwd >> "$GITHUB_PATH"
       - name: 校验所有工作流
         run: actionlint -color
       # 自定义模式校验: 检测已知的危险模式
