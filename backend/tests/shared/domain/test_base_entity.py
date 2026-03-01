@@ -116,3 +116,22 @@ class TestPydanticEntityHash:
         e3 = ConcreteEntity(id=2, name="c")
         entity_set = {e1, e2, e3}
         assert len(entity_set) == 2
+
+    def test_entity_without_id_hash_is_object_id(self):
+        entity = ConcreteEntity(name="test")
+        assert hash(entity) == id(entity)
+
+
+@pytest.mark.unit
+class TestPydanticEntityRequirePersisted:
+    def test_raises_when_id_is_none(self):
+        entity = ConcreteEntity(name="test")
+        with pytest.raises(ValueError, match="缺少必要字段"):
+            entity.require_persisted()
+
+    def test_returns_tuple_when_persisted(self):
+        entity = ConcreteEntity(id=1, name="test")
+        id_, created_at, updated_at = entity.require_persisted()
+        assert id_ == 1
+        assert created_at is not None
+        assert updated_at is not None

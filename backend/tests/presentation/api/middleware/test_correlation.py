@@ -64,3 +64,26 @@ class TestSanitizeCorrelationId:
         """含空格时自动生成 UUID。"""
         result = _sanitize_correlation_id("id with spaces")
         assert len(result) == 36
+
+
+@pytest.mark.unit
+class TestCorrelationMiddleware:
+    """CorrelationMiddleware ASGI 行为测试。"""
+
+    @pytest.mark.anyio
+    async def test_non_http_scope_passes_through(self) -> None:
+        """非 HTTP scope 直接透传，不注入 correlation_id。"""
+        from unittest.mock import AsyncMock
+
+        from src.presentation.api.middleware.correlation import CorrelationIdMiddleware
+
+        mock_app = AsyncMock()
+        middleware = CorrelationIdMiddleware(mock_app)
+
+        scope = {"type": "websocket"}
+        receive = AsyncMock()
+        send = AsyncMock()
+
+        await middleware(scope, receive, send)
+
+        mock_app.assert_awaited_once_with(scope, receive, send)

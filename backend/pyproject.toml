@@ -421,6 +421,8 @@ omit = [
     "*/__init__.py",
     "*/conftest.py",
     "src/presentation/api/main.py",
+    "src/presentation/api/seed.py",
+    "src/agent_entrypoint.py",
 ]
 
 [tool.coverage.report]

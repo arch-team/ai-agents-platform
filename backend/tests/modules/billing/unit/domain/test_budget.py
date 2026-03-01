@@ -123,3 +123,23 @@ class TestBudget:
         )
         with pytest.raises(ValidationError, match="使用金额不能为负数"):
             budget.add_usage(-100.0)
+
+    def test_amount_with_too_many_decimals_raises(self) -> None:
+        """测试：金额超过两位小数抛出异常。"""
+        with pytest.raises((PydanticValidationError, ValidationError)):
+            Budget(
+                department_id=1,
+                year=2024,
+                month=2,
+                budget_amount=100.123,  # 三位小数
+            )
+
+    def test_alert_threshold_returns_false_when_budget_zero(self) -> None:
+        """测试：预算为 0 时告警阈值返回 False（除零保护）。"""
+        budget = Budget(
+            department_id=1,
+            year=2024,
+            month=2,
+            budget_amount=0.0,
+        )
+        assert budget.is_alert_threshold_reached() is False

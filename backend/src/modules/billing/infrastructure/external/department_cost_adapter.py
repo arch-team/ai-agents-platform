@@ -149,5 +149,5 @@ class DepartmentCostAdapter(IDepartmentCostService):
     @staticmethod
     def _extract_year_month(date_str: str) -> tuple[int, int]:
         """从日期字符串提取年月 (YYYY-MM-DD -> year, month)。"""
-        date = datetime.strptime(date_str, "%Y-%m-%d")
+        date = datetime.strptime(date_str, "%Y-%m-%d")  # noqa: DTZ007
         return date.year, date.month

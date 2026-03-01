@@ -174,3 +174,24 @@ class TestInjectTraceContext:
 
             ctx = structlog.contextvars.get_contextvars()
             assert "trace_id" not in ctx
+
+
+class TestNoOpSpanExporter:
+    """_NoOpSpanExporter 测试。"""
+
+    def test_export_returns_success(self) -> None:
+        """export 方法返回 SUCCESS。"""
+        from opentelemetry.sdk.trace.export import SpanExportResult
+
+        from src.shared.infrastructure.tracing import _NoOpSpanExporter
+
+        exporter = _NoOpSpanExporter()
+        result = exporter.export([])
+        assert result == SpanExportResult.SUCCESS
+
+    def test_shutdown_is_noop(self) -> None:
+        """shutdown 方法不抛异常（空实现）。"""
+        from src.shared.infrastructure.tracing import _NoOpSpanExporter
+
+        exporter = _NoOpSpanExporter()
+        exporter.shutdown()  # 不应抛异常
