@@ -13,13 +13,19 @@ vi.mock('@/features/templates', () => ({
     onSelect: (id: string) => void;
     onCreate: () => void;
   }) => (
-    <div data-testid="template-list">
-      <button onClick={() => onSelect('1')}>选择</button>
-      <button onClick={onCreate}>创建</button>
-    </div>
+    <ul role="list" aria-label="模板列表">
+      <li>
+        <button onClick={() => onSelect('1')}>选择</button>
+        <button onClick={onCreate}>创建</button>
+      </li>
+    </ul>
   ),
   TemplateCreateDialog: ({ open }: { open: boolean }) =>
-    open ? <div data-testid="template-create-dialog">创建对话框</div> : null,
+    open ? (
+      <div role="dialog" aria-label="创建模板">
+        创建对话框
+      </div>
+    ) : null,
 }));
 
 import TemplateListPage from './index';
@@ -32,6 +38,6 @@ describe('TemplateListPage', () => {
 
   it('should render template list component', () => {
     renderWithProviders(<TemplateListPage />);
-    expect(screen.getByTestId('template-list')).toBeInTheDocument();
+    expect(screen.getByRole('list', { name: '模板列表' })).toBeInTheDocument();
   });
 });

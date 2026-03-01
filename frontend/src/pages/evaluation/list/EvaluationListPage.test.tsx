@@ -13,13 +13,15 @@ vi.mock('@/features/evaluation', () => ({
     onSelect: (id: string) => void;
     onCreate: () => void;
   }) => (
-    <div data-testid="test-suite-list">
-      <button onClick={() => onSelect('1')}>选择</button>
-      <button onClick={onCreate}>创建</button>
-    </div>
+    <ul role="list" aria-label="测试集列表">
+      <li>
+        <button onClick={() => onSelect('1')}>选择</button>
+        <button onClick={onCreate}>创建</button>
+      </li>
+    </ul>
   ),
   TestSuiteCreateDialog: ({ onClose }: { onClose: () => void }) => (
-    <div data-testid="test-suite-create-dialog">
+    <div role="dialog" aria-label="创建测试集">
       <button onClick={onClose}>关闭</button>
     </div>
   ),
@@ -35,6 +37,6 @@ describe('EvaluationListPage', () => {
 
   it('should render test suite list component', () => {
     renderWithProviders(<EvaluationListPage />);
-    expect(screen.getByTestId('test-suite-list')).toBeInTheDocument();
+    expect(screen.getByRole('list', { name: '测试集列表' })).toBeInTheDocument();
   });
 });

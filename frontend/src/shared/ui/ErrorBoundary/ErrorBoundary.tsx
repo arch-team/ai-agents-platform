@@ -34,7 +34,11 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
   };
 
   private handleGoHome = () => {
-    window.location.href = '/';
+    // 先重置错误状态，再导航回首页
+    // 使用 window.location.href 而非 React Router，因为错误可能发生在路由层
+    this.setState({ hasError: false, error: null }, () => {
+      window.location.href = '/';
+    });
   };
 
   render() {

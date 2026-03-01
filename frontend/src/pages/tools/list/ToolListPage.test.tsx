@@ -7,9 +7,11 @@ import { renderWithProviders } from '../../../../tests/utils';
 // Mock feature 组件，避免 API 调用
 vi.mock('@/features/tool-catalog', () => ({
   ToolList: ({ onSelect }: { onSelect: (id: string) => void }) => (
-    <div data-testid="tool-list">
-      <button onClick={() => onSelect('1')}>选择</button>
-    </div>
+    <ul role="list" aria-label="工具列表">
+      <li>
+        <button onClick={() => onSelect('1')}>选择</button>
+      </li>
+    </ul>
   ),
 }));
 
@@ -23,6 +25,6 @@ describe('ToolListPage', () => {
 
   it('should render tool list component', () => {
     renderWithProviders(<ToolListPage />);
-    expect(screen.getByTestId('tool-list')).toBeInTheDocument();
+    expect(screen.getByRole('list', { name: '工具列表' })).toBeInTheDocument();
   });
 });

@@ -63,7 +63,7 @@ export function AgentFormFields({ register, errors, watch, setValue }: AgentForm
         </p>
       </div>
 
-      {/* 工具绑定区 — TODO(human): 实现 ToolSelector 核心逻辑 */}
+      {/* 工具绑定区 */}
       <ToolSelector
         selectedIds={watch('tool_ids') ?? []}
         onChange={(ids) => setValue('tool_ids', ids)}

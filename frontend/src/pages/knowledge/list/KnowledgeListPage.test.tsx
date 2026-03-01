@@ -13,13 +13,19 @@ vi.mock('@/features/knowledge', () => ({
     onSelect: (id: string) => void;
     onCreate: () => void;
   }) => (
-    <div data-testid="knowledge-list">
-      <button onClick={() => onSelect('1')}>选择</button>
-      <button onClick={onCreate}>创建</button>
-    </div>
+    <ul role="list" aria-label="知识库列表">
+      <li>
+        <button onClick={() => onSelect('1')}>选择</button>
+        <button onClick={onCreate}>创建</button>
+      </li>
+    </ul>
   ),
   KnowledgeCreateDialog: ({ open }: { open: boolean }) =>
-    open ? <div data-testid="knowledge-create-dialog">创建对话框</div> : null,
+    open ? (
+      <div role="dialog" aria-label="创建知识库">
+        创建对话框
+      </div>
+    ) : null,
 }));
 
 import KnowledgeListPage from './index';
@@ -32,6 +38,6 @@ describe('KnowledgeListPage', () => {
 
   it('should render knowledge list component', () => {
     renderWithProviders(<KnowledgeListPage />);
-    expect(screen.getByTestId('knowledge-list')).toBeInTheDocument();
+    expect(screen.getByRole('list', { name: '知识库列表' })).toBeInTheDocument();
   });
 });

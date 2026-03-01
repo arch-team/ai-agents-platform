@@ -5,10 +5,15 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 import { ToolSelector } from './ToolSelector';
 
-// Mock useApprovedTools hook
+// Mock useApprovedTools hook + TOOL_TYPE_LABELS 常量
 const mockUseApprovedTools = vi.fn();
 vi.mock('@/features/tool-catalog', () => ({
   useApprovedTools: () => mockUseApprovedTools(),
+  TOOL_TYPE_LABELS: {
+    mcp_server: 'MCP Server',
+    api: 'API',
+    function: 'Function',
+  } as Record<string, string>,
 }));
 
 function renderWithProviders(ui: React.ReactElement) {

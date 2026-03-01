@@ -6,10 +6,14 @@ import { renderWithProviders } from '../../../tests/utils';
 
 // Mock feature 组件，避免 API 调用
 vi.mock('@/features/insights', () => ({
-  InsightsSummary: () => <div data-testid="insights-summary">概览统计</div>,
-  CostBreakdownChart: () => <div data-testid="cost-breakdown">成本分布</div>,
-  UsageTrendChart: () => <div data-testid="usage-trend">使用趋势</div>,
-  DateRangePicker: () => <div data-testid="date-range-picker">日期选择器</div>,
+  InsightsSummary: () => <section aria-label="概览统计">概览统计</section>,
+  CostBreakdownChart: () => <section aria-label="成本分布">成本分布</section>,
+  UsageTrendChart: () => <section aria-label="使用趋势">使用趋势</section>,
+  DateRangePicker: () => (
+    <div role="group" aria-label="日期选择器">
+      日期选择器
+    </div>
+  ),
 }));
 
 import InsightsPage from './index';
@@ -22,9 +26,9 @@ describe('InsightsPage', () => {
 
   it('should render insights components', () => {
     renderWithProviders(<InsightsPage />);
-    expect(screen.getByTestId('insights-summary')).toBeInTheDocument();
-    expect(screen.getByTestId('cost-breakdown')).toBeInTheDocument();
-    expect(screen.getByTestId('usage-trend')).toBeInTheDocument();
-    expect(screen.getByTestId('date-range-picker')).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: '概览统计' })).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: '成本分布' })).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: '使用趋势' })).toBeInTheDocument();
+    expect(screen.getByRole('group', { name: '日期选择器' })).toBeInTheDocument();
   });
 });

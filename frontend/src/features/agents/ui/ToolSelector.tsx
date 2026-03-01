@@ -1,12 +1,8 @@
 // 工具选择器 — Agent 表单中选择要绑定的已审批工具
 
-import { useApprovedTools } from '@/features/tool-catalog';
+import { useApprovedTools, TOOL_TYPE_LABELS, type Tool } from '@/features/tool-catalog';
 
 import { Spinner } from '@/shared/ui';
-
-import { TOOL_TYPE_LABELS } from '@/features/tool-catalog/api/types';
-
-import type { Tool } from '@/features/tool-catalog/api/types';
 
 interface ToolSelectorProps {
   selectedIds: number[];

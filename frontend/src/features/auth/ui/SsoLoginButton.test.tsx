@@ -10,6 +10,11 @@ import { renderWithProviders } from '../../../../tests/utils';
 
 import { SsoLoginButton } from './SsoLoginButton';
 
+// Mock URL 验证，使测试中的 SSO URL 通过白名单
+vi.mock('@/shared/lib/isValidRedirectUrl', () => ({
+  isValidRedirectUrl: () => true,
+}));
+
 const BASE_URL = 'http://localhost:8000';
 
 // 用 vi.fn 拦截 window.location.href 赋值

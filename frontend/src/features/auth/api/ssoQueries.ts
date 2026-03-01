@@ -3,6 +3,7 @@
 import { useMutation } from '@tanstack/react-query';
 
 import { apiClient } from '@/shared/api';
+import { isValidRedirectUrl } from '@/shared/lib/isValidRedirectUrl';
 
 import type { SsoInitRequest, SsoInitResponse } from './ssoTypes';
 
@@ -17,7 +18,10 @@ export function useSsoInit() {
       return data;
     },
     onSuccess: (data) => {
-      // 跳转到 IdP 认证页
+      // 白名单验证 — 防止开放重定向攻击
+      if (!isValidRedirectUrl(data.redirect_url)) {
+        throw new Error('SSO 返回了不可信的重定向地址');
+      }
       window.location.href = data.redirect_url;
     },
   });

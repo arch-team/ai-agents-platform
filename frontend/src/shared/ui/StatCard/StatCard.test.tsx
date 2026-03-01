@@ -5,7 +5,7 @@ import { StatCard } from './StatCard';
 
 describe('StatCard', () => {
   const defaultProps = {
-    icon: <span data-testid="icon">图标</span>,
+    icon: <span aria-hidden="true">图标</span>,
     iconBgClass: 'bg-blue-100',
     label: '总数',
     value: 42,
@@ -20,7 +20,7 @@ describe('StatCard', () => {
 
   it('应该渲染图标', () => {
     render(<StatCard {...defaultProps} />);
-    expect(screen.getByTestId('icon')).toBeInTheDocument();
+    expect(screen.getByText('图标')).toBeInTheDocument();
   });
 
   it('应该在加载时显示 Spinner', () => {
