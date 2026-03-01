@@ -13,6 +13,10 @@ export default defineConfig({
     globals: true,
     environment: 'jsdom',
     setupFiles: ['./tests/setup.ts'],
+    // 测试环境 API base URL，与 MSW handlers 中的 BASE_URL 对齐
+    env: {
+      VITE_API_BASE_URL: 'http://localhost:8000',
+    },
     css: true,
     exclude: ['tests/e2e/**', 'node_modules/**'],
     coverage: {
