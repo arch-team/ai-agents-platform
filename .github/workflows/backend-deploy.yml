@@ -92,7 +92,7 @@ jobs:
         working-directory: backend
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
       - name: 安装 uv
@@ -143,7 +143,7 @@ jobs:
       - name: 回滚模式提示
         if: github.event.inputs.action == 'rollback'
         run: echo "::warning::回滚模式 — 将部署 commit ${{ github.event.inputs.rollback-commit }}"
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         if: github.event.inputs.action == 'rollback' && github.event.inputs.rollback-db == 'true'
         with:
           python-version: '3.12'
@@ -262,7 +262,7 @@ jobs:
       - name: 回滚模式提示
         if: github.event.inputs.action == 'rollback'
         run: echo "::warning::回滚模式 — 将部署 commit ${{ github.event.inputs.rollback-commit }}"
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         if: github.event.inputs.action == 'rollback' && github.event.inputs.rollback-db == 'true'
         with:
           python-version: '3.12'
