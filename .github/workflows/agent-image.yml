@@ -96,6 +96,7 @@ jobs:
       - name: 容器镜像安全扫描
         uses: aquasecurity/trivy-action@0.28.0
         with:
+          scan-type: image
           image-ref: ${{ steps.ecr-login.outputs.registry }}/${{ env.ECR_REPO_PREFIX }}-dev:${{ github.sha }}
           format: table
           exit-code: 1
@@ -151,6 +152,7 @@ jobs:
       - name: 容器镜像安全扫描
         uses: aquasecurity/trivy-action@0.28.0
         with:
+          scan-type: image
           image-ref: ${{ steps.ecr-login.outputs.registry }}/${{ env.ECR_REPO_PREFIX }}-prod:${{ github.sha }}
           format: table
           exit-code: 1
