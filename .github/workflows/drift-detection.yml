@@ -75,7 +75,7 @@ jobs:
               labels: ['infra', 'drift-detection']
             });
       - name: 上传漂移报告
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: steps.cdk-diff.outputs.drift_detected == 'true'
         with:
           name: drift-report-${{ matrix.environment }}

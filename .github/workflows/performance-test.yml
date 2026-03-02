@@ -59,7 +59,7 @@ jobs:
             --html performance-report.html \
             || true
       - name: 上传性能测试报告
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always() && env.SKIP_TEST != 'true'
         with:
           name: performance-report
