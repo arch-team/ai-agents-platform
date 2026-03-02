@@ -117,7 +117,7 @@ jobs:
           cache: 'pnpm'
           cache-dependency-path: infra/pnpm-lock.yaml
 
-      - uses: aws-actions/configure-aws-credentials@v4
+      - uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
@@ -186,7 +186,7 @@ jobs:
           cache: 'pnpm'
           cache-dependency-path: infra/pnpm-lock.yaml
 
-      - uses: aws-actions/configure-aws-credentials@v4
+      - uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
@@ -238,7 +238,7 @@ jobs:
           cache: 'pnpm'
           cache-dependency-path: infra/pnpm-lock.yaml
 
-      - uses: aws-actions/configure-aws-credentials@v4
+      - uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ secrets.AWS_PROD_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
