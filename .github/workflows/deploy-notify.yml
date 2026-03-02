@@ -56,7 +56,7 @@ jobs:
           } >> "$GITHUB_OUTPUT"
 
       - name: 创建 GitHub Issue 通知
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             const title = `🚨 部署失败: ${{ steps.info.outputs.workflow }}`;
