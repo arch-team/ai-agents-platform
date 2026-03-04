@@ -1,7 +1,7 @@
 # 开发贡献指南
 
 > **自动生成**: 基于 `pyproject.toml`, `package.json`, `.env.example` 等配置文件
-> **最后更新**: 2026-02-27
+> **最后更新**: 2026-03-02
 
 ---
 
@@ -124,6 +124,9 @@ cd infra && pnpm exec cdk --version
 | `pnpm test:watch` | 监听模式测试 |
 | `pnpm test:coverage` | 测试 + 覆盖率 |
 | `pnpm test:ui` | Vitest UI 模式 |
+| `pnpm test:e2e` | Playwright E2E 测试 |
+| `pnpm test:e2e:ui` | Playwright UI 模式 E2E 测试 |
+| `pnpm test:e2e:headed` | Playwright 有头模式 E2E 测试 |
 | **一键验证** | |
 | `pnpm lint && pnpm format:check && pnpm typecheck && pnpm test:coverage` | PR 前必跑 |
 
@@ -253,7 +256,18 @@ frontend-quality.yml ← frontend-ci.yml (PR/push)
 | `agent-image.yml` | push to main `backend/Dockerfile.agent` | Agent 运行时镜像构建推送 ECR |
 | `deploy-notify.yml` | 部署工作流完成 | 部署失败时自动创建 GitHub Issue 通知 |
 
-### 6.5 通用优化
+### 6.5 运维与安全工作流
+
+| 工作流 | 触发条件 | 内容 |
+|--------|---------|------|
+| `security-scan.yml` | 每周一 09:00 UTC / 手动 | 后端 (bandit + pip-audit) + 前端 (pnpm audit) 安全扫描 |
+| `performance-test.yml` | 每周一 11:00 UTC / 手动 | Locust 性能测试 (可配置目标 URL 和持续时间) |
+| `backup-verify.yml` | 每月 1 号 06:00 UTC / 手动 | Aurora 快照状态检查 (dev + prod) |
+| `drift-detection.yml` | 每周三 08:00 UTC / 手动 | CDK Diff 基础设施漂移检测 (漂移时自动创建 Issue) |
+| `release.yml` | 手动触发 | 版本发布 (git-cliff 生成 Changelog + GitHub Release) |
+| `labeler.yml` | PR 创建/同步 | 根据变更路径自动添加 PR 标签 |
+
+### 6.6 通用优化
 
 - **最小权限原则**: 所有工作流默认 `permissions: {}`，各 job 按需声明
 - **并发控制**: 同一分支/PR 上的新推送自动取消旧的运行
