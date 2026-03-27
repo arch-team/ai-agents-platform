@@ -86,3 +86,31 @@ cd infra/     # 加载 infra/.claude/CLAUDE.md
 |--------|---------|
 | 后端 | [backend/.claude/CLAUDE.md](../backend/.claude/CLAUDE.md) |
 | 通用规则 | [.claude/rules/common.md](.claude/rules/common.md) |
+
+---
+
+<!-- devpace-start -->
+# AI Agents Platform
+
+> 基于 Amazon Bedrock AgentCore 的企业级 AI Agents 平台
+
+## 研发协作
+
+本项目使用 `.devpace/` 管理迭代研发。行为规则由 devpace Plugin 的 `rules/devpace-rules.md` 自动注入，此处不重复。
+
+### .devpace/ 文件参考
+
+| 文件 | 何时读 |
+|------|--------|
+| `state.md` | 每次会话开始（必读） |
+| `backlog/CR-*.md` | 推进模式 |
+| `project.md` | 变更分析 或 用户要求看全景 |
+| `rules/workflow.md` | 推进模式（状态机定义） |
+| `rules/checks.md` | 推进模式（质量检查定义） |
+| `iterations/current.md` | 查进度 或 变更分析 |
+| `metrics/dashboard.md` | /pace-retro 或 /pace-status metrics |
+
+## 业务目标
+
+OBJ-1: 构建企业级 AI Agents 平台（product，长期 12 个月）— 自助创建部署 Agent / 完整企业管控 / 知识库集成
+<!-- devpace-end -->
