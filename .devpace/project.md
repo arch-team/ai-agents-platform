@@ -81,7 +81,7 @@ AI Agents Platform (OBJ-1)
 │   └── PF-11: 评测 Pipeline（自动化评测流水线）  [backend:evaluation]
 │
 ├── BR-6: 平台治理 [P1] → requirements/BR-006.md
-│   ├── PF-12: 用户认证（登录/注册/Token 管理）  [backend:auth, frontend:auth]
+│   ├── PF-12: 用户认证（登录/注册/Token 管理）  [backend:auth, frontend:auth] → CR-001 ⏳
 │   ├── PF-13: 审计日志（操作记录查询）  [backend:audit]
 │   ├── PF-14: 成本计费（用量统计 + 预算管理）  [backend:billing, frontend:billing]
 │   └── PF-15: 使用洞察（数据分析 + 报表）  [backend:insights, frontend:insights]
