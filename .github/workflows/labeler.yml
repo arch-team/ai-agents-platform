@@ -13,7 +13,7 @@ jobs:
     name: 根据路径自动添加标签
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/labeler@v5
+      - uses: actions/labeler@v6
         with:
           repo-token: "${{ secrets.GITHUB_TOKEN }}"
           configuration-path: .github/labeler.yml
