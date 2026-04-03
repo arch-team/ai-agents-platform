@@ -1,9 +1,19 @@
 import * as cdk from 'aws-cdk-lib';
+import * as iam from 'aws-cdk-lib/aws-iam';
 import * as logs from 'aws-cdk-lib/aws-logs';
 import type { EnvironmentName } from './types';
 
 /** 项目名称 */
 export const PROJECT_NAME = 'ai-agents-platform';
+
+/** 项目名下划线版本 (AWS 资源名不支持短横线时使用，如 AgentCore Runtime) */
+export const PROJECT_NAME_UNDERSCORE = PROJECT_NAME.replace(/-/g, '_');
+
+/** Stack 命名短前缀 (避免 CloudFormation 128 字符限制) */
+export const STACK_PREFIX = 'ai-agents-plat';
+
+/** 数据库默认端口 (Aurora MySQL) */
+export const DB_PORT = 3306;
 
 /**
  * 获取必须标签。
@@ -44,9 +54,18 @@ export function isProd(envName: EnvironmentName): boolean {
 
 /**
  * 获取 CORS 允许的源列表。
- * @remarks Dev 环境包含 localhost 和 CloudFront; Prod 仅允许 CloudFront
+ * @remarks 优先使用 cdk.json 中的 corsAllowedOrigins 配置; 未配置时使用默认值
+ * @param envName - 环境名称
+ * @param configuredOrigins - cdk.json 中配置的 CORS 源列表 (可选)
  */
-export function getCorsAllowedOrigins(envName: EnvironmentName): string[] {
+export function getCorsAllowedOrigins(
+  envName: EnvironmentName,
+  configuredOrigins?: string[],
+): string[] {
+  if (configuredOrigins && configuredOrigins.length > 0) {
+    return configuredOrigins;
+  }
+  // 回退默认值 — 建议将 CloudFront 域名迁移到 cdk.json environments 配置中
   if (envName === 'prod') {
     return ['https://d1dlap8e3g6mt5.cloudfront.net'];
   }
@@ -82,6 +101,17 @@ export function getBedrockResourceArns(accountId: string): string[] {
     `arn:aws:bedrock:*:${accountId}:inference-profile/*`,
     `arn:aws:bedrock:*:${accountId}:application-inference-profile/*`,
   ];
+}
+
+/**
+ * 创建 Bedrock InvokeModel IAM 策略声明。
+ * @remarks ComputeStack 和 AgentCoreStack 共享，避免重复构造 PolicyStatement
+ */
+export function createBedrockInvokePolicy(accountId: string): iam.PolicyStatement {
+  return new iam.PolicyStatement({
+    actions: [...BEDROCK_INVOKE_ACTIONS],
+    resources: getBedrockResourceArns(accountId),
+  });
 }
 
 /** Bedrock 评估 Pipeline 所需的 IAM actions (M13 评估功能) */

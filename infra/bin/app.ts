@@ -3,7 +3,15 @@ import 'source-map-support/register';
 import * as cdk from 'aws-cdk-lib';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import { AwsSolutionsChecks } from 'cdk-nag';
-import { getEnvironmentConfig, getRequiredTags, isDev, isProd } from '../lib/config';
+import {
+  getEnvironmentConfig,
+  getRequiredTags,
+  isDev,
+  isProd,
+  STACK_PREFIX,
+  VALID_AGENT_RUNTIME_MODES,
+  type AgentRuntimeMode,
+} from '../lib/config';
 import {
   NetworkStack,
   SecurityStack,
@@ -28,7 +36,7 @@ cdk.Aspects.of(app).add(new AwsSolutionsChecks({ verbose: true }));
 
 // 提取公共环境配置，避免重复构建 env 对象
 const cdkEnv = { account: envConfig.account, region: envConfig.region };
-const prefix = `ai-agents-plat`; // Stack 命名前缀
+const prefix = STACK_PREFIX;
 const env = envConfig.envName;
 
 // Stack 实例化 — 命名规范: ai-agents-plat-{stack}-{env}
@@ -71,12 +79,19 @@ agentCoreStack.addDependency(networkStack);
 
 // Agent 运行时模式: 从 CDK Context 读取，默认 'agentcore_runtime'
 // 用法: cdk deploy --context agentRuntimeMode=in_process (切换到本地 CLI 模式)
-const agentRuntimeMode = app.node.tryGetContext('agentRuntimeMode') ?? 'agentcore_runtime';
+const rawAgentRuntimeMode = (app.node.tryGetContext('agentRuntimeMode') ??
+  'agentcore_runtime') as string;
+if (!VALID_AGENT_RUNTIME_MODES.includes(rawAgentRuntimeMode as AgentRuntimeMode)) {
+  throw new Error(
+    `无效的 agentRuntimeMode: "${rawAgentRuntimeMode}"，支持的值: ${VALID_AGENT_RUNTIME_MODES.join(', ')}`,
+  );
+}
+const agentRuntimeMode = rawAgentRuntimeMode as AgentRuntimeMode;
 
 const computeStack = new ComputeStack(app, `${prefix}-compute-${env}`, {
   env: cdkEnv,
   vpc: networkStack.vpc,
-  dbSecurityGroup: securityStack.dbSecurityGroup,
+  apiSecurityGroupId: securityStack.apiSecurityGroup.securityGroupId,
   databaseSecret: databaseStack.dbSecret,
   databaseEndpoint: databaseStack.cluster.clusterEndpoint.hostname,
   // 使用 ARN 字符串避免跨 Stack 循环依赖 (CDK 2.1100+ 行为变化)
@@ -101,16 +116,12 @@ const computeStack = new ComputeStack(app, `${prefix}-compute-${env}`, {
   agentcoreGatewayUrl: agentCoreStack.gatewayUrl,
   gatewayTokenEndpoint: agentCoreStack.gatewayTokenEndpoint,
   gatewayCognitoClientId: agentCoreStack.gatewayCognitoClientId,
-  // Gateway Client Secret (手动创建在 Secrets Manager，CDK 不管理 Secret 值)
-  gatewayClientSecretArn: isDev(env)
-    ? 'arn:aws:secretsmanager:us-east-1:897473508751:secret:ai-agents-platform/dev/gateway-client-secret-pzJqgX'
-    : undefined, // Prod: 待 Prod 部署时配置
-  // 默认管理员密码 (启动时 seed_default_admin 创建管理员账户)
-  adminPasswordSecretArn: isDev(env)
-    ? 'arn:aws:secretsmanager:us-east-1:897473508751:secret:dev/ai-agents-platform/admin-password-Err3Aq'
-    : isProd(env)
-      ? 'arn:aws:secretsmanager:us-east-1:897473508751:secret:prod/ai-agents-platform/admin-password-YvsOVI'
-      : undefined,
+  // CORS 允许源 (从 cdk.json 环境配置读取，覆盖 constants.ts 默认值)
+  corsAllowedOrigins: envConfig.corsAllowedOrigins,
+  // Gateway Client Secret (手动创建在 Secrets Manager，ARN 从 cdk.json 环境配置读取)
+  gatewayClientSecretArn: envConfig.gatewayClientSecretArn,
+  // 默认管理员密码 (启动时 seed_default_admin 创建管理员账户，ARN 从 cdk.json 环境配置读取)
+  adminPasswordSecretArn: envConfig.adminPasswordSecretArn,
   // Dev: 非工作时段 (UTC 12:00 = 北京 20:00) 缩减到 0，工作时段 (UTC 00:00 = 北京 08:00) 恢复到 1
   ...(isDev(env) && {
     scheduledScaling: {

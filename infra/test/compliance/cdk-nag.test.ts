@@ -115,7 +115,7 @@ describe('CDK Nag 合规测试', () => {
     const app = new cdk.App();
     const {
       vpc,
-      dbSecurityGroup,
+      apiSecurityGroupId,
       encryptionKeyArn,
       databaseSecret,
       jwtSecretArn,
@@ -125,7 +125,7 @@ describe('CDK Nag 合规测试', () => {
     const stack = new ComputeStack(app, 'TestComputeStack', {
       env: TEST_ENV,
       vpc,
-      dbSecurityGroup,
+      apiSecurityGroupId,
       databaseSecret,
       databaseEndpoint,
       encryptionKeyArn,

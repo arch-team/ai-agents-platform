@@ -50,6 +50,8 @@ export interface EcsServiceConstructProps {
   readonly healthCheckCommand?: string[];
   /** 定时缩放配置 — Dev 环境非工作时段自动缩减 ECS 任务数以降低成本 @default undefined (不启用定时缩放) */
   readonly scheduledScaling?: ScheduledScalingConfig;
+  /** 外部传入的服务安全组 (来自 SecurityStack 集中管理) — 未传入时内部自建 */
+  readonly serviceSecurityGroup?: ec2.ISecurityGroup;
 }
 
 /**
@@ -62,7 +64,7 @@ export class EcsServiceConstruct extends Construct {
   /** Fargate 服务 */
   public readonly service: ecs.FargateService;
   /** ECS 服务安全组 */
-  public readonly serviceSecurityGroup: ec2.SecurityGroup;
+  public readonly serviceSecurityGroup: ec2.ISecurityGroup;
   /** 容器端口 */
   public readonly containerPort: number;
 
@@ -91,16 +93,23 @@ export class EcsServiceConstruct extends Construct {
       containerInsightsV2: ecs.ContainerInsights.ENABLED,
     });
 
-    this.serviceSecurityGroup = new ec2.SecurityGroup(this, 'ServiceSg', {
-      vpc,
-      description: 'ECS Fargate service security group - ALB ingress only',
-      allowAllOutbound: true,
-    });
-    this.serviceSecurityGroup.addIngressRule(
-      albSecurityGroup,
-      ec2.Port.tcp(containerPort),
-      'Allow ALB to access container port',
-    );
+    // 优先使用 SecurityStack 集中管理的安全组，未传入时内部自建 (向后兼容)
+    if (props.serviceSecurityGroup) {
+      this.serviceSecurityGroup = props.serviceSecurityGroup;
+      // 外部 SG 跨 Stack: L2 addIngressRule 会产生循环依赖
+      // ALB 入站规则由调用方 (ComputeStack) 通过 L1 CfnSecurityGroupIngress 添加
+    } else {
+      this.serviceSecurityGroup = new ec2.SecurityGroup(this, 'ServiceSg', {
+        vpc,
+        description: 'ECS Fargate service security group - ALB ingress only',
+        allowAllOutbound: true,
+      });
+      this.serviceSecurityGroup.addIngressRule(
+        albSecurityGroup,
+        ec2.Port.tcp(containerPort),
+        'Allow ALB to access container port',
+      );
+    }
 
     const logGroup = new logs.LogGroup(this, 'LogGroup', {
       logGroupName: `/ecs/${PROJECT_NAME}/${envName}`,

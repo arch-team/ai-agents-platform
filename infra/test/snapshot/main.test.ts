@@ -74,7 +74,7 @@ describe('Snapshot Tests', () => {
     const app = new cdk.App();
     const {
       vpc,
-      dbSecurityGroup,
+      apiSecurityGroupId,
       encryptionKeyArn,
       databaseSecret,
       jwtSecretArn,
@@ -84,7 +84,7 @@ describe('Snapshot Tests', () => {
     const stack = new ComputeStack(app, 'TestComputeStack', {
       env: TEST_ENV,
       vpc,
-      dbSecurityGroup,
+      apiSecurityGroupId,
       databaseSecret,
       databaseEndpoint,
       encryptionKeyArn,

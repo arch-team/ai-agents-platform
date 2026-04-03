@@ -1043,7 +1043,7 @@ exports[`Snapshot Tests ComputeStack 快照匹配 1`] = `
       },
       "Type": "AWS::EC2::SecurityGroup",
     },
-    "AlbAlbSgtoTestComputeStackEcsServiceSg348721848000575893C1": {
+    "AlbAlbSgtoTestComputeStackApiSgRef804A75CE800045BD27E4": {
       "Metadata": {
         "cdk_nag": {
           "rules_to_suppress": [
@@ -1055,12 +1055,9 @@ exports[`Snapshot Tests ComputeStack 快照匹配 1`] = `
         },
       },
       "Properties": {
-        "Description": "Allow ALB to forward traffic to ECS containers",
+        "Description": "Load balancer to target",
         "DestinationSecurityGroupId": {
-          "Fn::GetAtt": [
-            "EcsServiceSg09379F9C",
-            "GroupId",
-          ],
+          "Fn::ImportValue": "DepsStack:ExportsOutputFnGetAttTestApiSg37FBFAEBGroupId1769FE8B",
         },
         "FromPort": 8000,
         "GroupId": {
@@ -1127,6 +1124,60 @@ exports[`Snapshot Tests ComputeStack 快照匹配 1`] = `
       },
       "Type": "AWS::ElasticLoadBalancingV2::TargetGroup",
     },
+    "AlbToEcsEgress": {
+      "Properties": {
+        "Description": "Allow ALB to forward traffic to ECS containers",
+        "DestinationSecurityGroupId": {
+          "Fn::ImportValue": "DepsStack:ExportsOutputFnGetAttTestApiSg37FBFAEBGroupId1769FE8B",
+        },
+        "FromPort": 8000,
+        "GroupId": {
+          "Fn::GetAtt": [
+            "AlbAlbSg6E384B2D",
+            "GroupId",
+          ],
+        },
+        "IpProtocol": "tcp",
+        "ToPort": 8000,
+      },
+      "Type": "AWS::EC2::SecurityGroupEgress",
+    },
+    "AlbToEcsIngress": {
+      "Properties": {
+        "Description": "Allow ALB to access ECS container port",
+        "FromPort": 8000,
+        "GroupId": {
+          "Fn::ImportValue": "DepsStack:ExportsOutputFnGetAttTestApiSg37FBFAEBGroupId1769FE8B",
+        },
+        "IpProtocol": "tcp",
+        "SourceSecurityGroupId": {
+          "Fn::GetAtt": [
+            "AlbAlbSg6E384B2D",
+            "GroupId",
+          ],
+        },
+        "ToPort": 8000,
+      },
+      "Type": "AWS::EC2::SecurityGroupIngress",
+    },
+    "ApiSgReffromTestComputeStackAlbAlbSgEC54E79F8000747419D9": {
+      "Properties": {
+        "Description": "Load balancer to target",
+        "FromPort": 8000,
+        "GroupId": {
+          "Fn::ImportValue": "DepsStack:ExportsOutputFnGetAttTestApiSg37FBFAEBGroupId1769FE8B",
+        },
+        "IpProtocol": "tcp",
+        "SourceSecurityGroupId": {
+          "Fn::GetAtt": [
+            "AlbAlbSg6E384B2D",
+            "GroupId",
+          ],
+        },
+        "ToPort": 8000,
+      },
+      "Type": "AWS::EC2::SecurityGroupIngress",
+    },
     "EcsClusterEAC0C105": {
       "Properties": {
         "ClusterName": "ai-agents-dev",
@@ -1192,10 +1243,7 @@ exports[`Snapshot Tests ComputeStack 快照匹配 1`] = `
             "AssignPublicIp": "DISABLED",
             "SecurityGroups": [
               {
-                "Fn::GetAtt": [
-                  "EcsServiceSg09379F9C",
-                  "GroupId",
-                ],
+                "Fn::ImportValue": "DepsStack:ExportsOutputFnGetAttTestApiSg37FBFAEBGroupId1769FE8B",
               },
             ],
             "Subnets": [
@@ -1216,43 +1264,6 @@ exports[`Snapshot Tests ComputeStack 快照匹配 1`] = `
         },
       },
       "Type": "AWS::ECS::Service",
-    },
-    "EcsServiceSg09379F9C": {
-      "Properties": {
-        "GroupDescription": "ECS Fargate service security group - ALB ingress only",
-        "SecurityGroupEgress": [
-          {
-            "CidrIp": "0.0.0.0/0",
-            "Description": "Allow all outbound traffic by default",
-            "IpProtocol": "-1",
-          },
-        ],
-        "VpcId": {
-          "Fn::ImportValue": "DepsStack:ExportsOutputRefTestVpcE77CE67811D13B85",
-        },
-      },
-      "Type": "AWS::EC2::SecurityGroup",
-    },
-    "EcsServiceSgfromTestComputeStackAlbAlbSgEC54E79F800056A11E9A": {
-      "Properties": {
-        "Description": "Allow ALB to access container port",
-        "FromPort": 8000,
-        "GroupId": {
-          "Fn::GetAtt": [
-            "EcsServiceSg09379F9C",
-            "GroupId",
-          ],
-        },
-        "IpProtocol": "tcp",
-        "SourceSecurityGroupId": {
-          "Fn::GetAtt": [
-            "AlbAlbSg6E384B2D",
-            "GroupId",
-          ],
-        },
-        "ToPort": 8000,
-      },
-      "Type": "AWS::EC2::SecurityGroupIngress",
     },
     "EcsTaskDefDB85D591": {
       "Metadata": {
@@ -1712,6 +1723,11 @@ exports[`Snapshot Tests ComputeStack 快照匹配 1`] = `
               "Effect": "Allow",
               "Resource": "arn:aws:bedrock:*:000000000000:evaluation-job/*",
             },
+            {
+              "Action": "ce:GetCostAndUsage",
+              "Effect": "Allow",
+              "Resource": "*",
+            },
           ],
           "Version": "2012-10-17",
         },
@@ -1723,24 +1739,6 @@ exports[`Snapshot Tests ComputeStack 快照匹配 1`] = `
         ],
       },
       "Type": "AWS::IAM::Policy",
-    },
-    "EcsToDbIngress": {
-      "Properties": {
-        "Description": "Allow ECS service to access Aurora MySQL",
-        "FromPort": 3306,
-        "GroupId": {
-          "Fn::ImportValue": "DepsStack:ExportsOutputFnGetAttTestDbSgB0618BB6GroupIdE332AF82",
-        },
-        "IpProtocol": "tcp",
-        "SourceSecurityGroupId": {
-          "Fn::GetAtt": [
-            "EcsServiceSg09379F9C",
-            "GroupId",
-          ],
-        },
-        "ToPort": 3306,
-      },
-      "Type": "AWS::EC2::SecurityGroupIngress",
     },
     "EvalScheduleRule5DBEF2D0": {
       "Properties": {

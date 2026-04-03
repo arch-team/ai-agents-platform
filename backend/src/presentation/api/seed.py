@@ -6,10 +6,14 @@ from src.shared.infrastructure.settings import get_settings
 
 
 async def seed_default_admin() -> None:
-    """启动时创建默认管理员账户（幂等：已存在则跳过）。"""
+    """启动时同步默认管理员账户（upsert: 不存在则创建，存在则同步密码和状态）。
+
+    Secrets Manager 中的 DEFAULT_ADMIN_PASSWORD 是 Source of Truth。
+    每次启动时验证 DB 中的密码哈希是否匹配，不匹配则更新，同时解除账户锁定。
+    """
     import structlog
 
-    from src.modules.auth.application.services.password_service import hash_password
+    from src.modules.auth.application.services.password_service import hash_password, verify_password
     from src.modules.auth.domain.entities.user import User
     from src.modules.auth.infrastructure.persistence.repositories.user_repository_impl import UserRepositoryImpl
     from src.shared.domain.value_objects.role import Role
@@ -21,30 +25,51 @@ async def seed_default_admin() -> None:
 
     admin_pwd = settings.DEFAULT_ADMIN_PASSWORD.get_secret_value()
     if not admin_pwd:
-        log.info("default_admin_skip", reason="DEFAULT_ADMIN_PASSWORD 未配置, 跳过默认管理员创建")
+        log.info("default_admin_skip", reason="DEFAULT_ADMIN_PASSWORD 未配置, 跳过默认管理员同步")
         return
 
     async with session_factory() as session:
         try:
             repo = UserRepositoryImpl(session=session)
             existing = await repo.get_by_email(settings.DEFAULT_ADMIN_EMAIL)
-            if existing is not None:
-                log.info("default_admin_exists", email=settings.DEFAULT_ADMIN_EMAIL)
+
+            if existing is None:
+                admin = User(
+                    email=settings.DEFAULT_ADMIN_EMAIL,
+                    hashed_password=hash_password(admin_pwd),
+                    name=settings.DEFAULT_ADMIN_NAME,
+                    role=Role.ADMIN,
+                )
+                created = await repo.create(admin)
+                await session.commit()
+                log.info("default_admin_created", user_id=created.id, email=settings.DEFAULT_ADMIN_EMAIL)
                 return
 
-            admin = User(
-                email=settings.DEFAULT_ADMIN_EMAIL,
-                hashed_password=hash_password(admin_pwd),
-                name=settings.DEFAULT_ADMIN_NAME,
-                role=Role.ADMIN,
-            )
-            created = await repo.create(admin)
-            await session.commit()
-            log.info(
-                "default_admin_created",
-                user_id=created.id,
-                email=settings.DEFAULT_ADMIN_EMAIL,
-            )
+            synced_fields: list[str] = []
+
+            if not verify_password(admin_pwd, existing.hashed_password):
+                existing.hashed_password = hash_password(admin_pwd)
+                synced_fields.append("password")
+
+            if existing.is_locked or existing.failed_login_count > 0:
+                existing.reset_failed_logins()
+                synced_fields.append("unlock")
+
+            # 确保管理员角色和激活状态
+            if existing.role != Role.ADMIN:
+                existing.role = Role.ADMIN
+                synced_fields.append("role")
+            if not existing.is_active:
+                existing.is_active = True
+                synced_fields.append("activate")
+
+            if synced_fields:
+                await repo.update(existing)
+                await session.commit()
+                log.info("default_admin_synced", email=settings.DEFAULT_ADMIN_EMAIL, synced=synced_fields)
+            else:
+                log.info("default_admin_ok", email=settings.DEFAULT_ADMIN_EMAIL)
+
         except Exception:
             await session.rollback()
             log.exception("default_admin_seed_failed")
