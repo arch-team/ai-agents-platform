@@ -1,5 +1,6 @@
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import { Construct } from 'constructs';
+import { DB_PORT } from '../../config';
 
 export interface SecurityGroupsConstructProps {
   /** 安全组所在的 VPC */
@@ -24,6 +25,8 @@ export class SecurityGroupsConstruct extends Construct {
     super(scope, id);
     const { vpc, enablePublicIngress = false } = props;
 
+    // 设计决策: 保留 apiSecurityGroup 并由 ECS 使用 (方案 B)
+    // 理由: 集中安全组管理 + DB 入站规则统一配置 + 支持未来多服务共享
     // API 服务安全组 — 出站允许全部（需访问 AWS 服务端点、外部 API 等）
     this.apiSecurityGroup = new ec2.SecurityGroup(this, 'ApiSg', {
       vpc,
@@ -46,7 +49,7 @@ export class SecurityGroupsConstruct extends Construct {
     });
     this.dbSecurityGroup.addIngressRule(
       this.apiSecurityGroup,
-      ec2.Port.tcp(3306),
+      ec2.Port.tcp(DB_PORT),
       'Allow API service to access MySQL',
     );
   }

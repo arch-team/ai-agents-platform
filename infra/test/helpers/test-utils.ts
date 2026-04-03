@@ -78,6 +78,9 @@ export function createCrossStackDbDependencies(
 /** 跨 Stack Compute 依赖集返回类型 */
 export interface CrossStackComputeDependencies {
   readonly vpc: ec2.Vpc;
+  /** API 服务安全组 ID (集中管理，供 ComputeStack 使用) */
+  readonly apiSecurityGroupId: string;
+  /** 数据库安全组 (供 DatabaseStack 使用) */
   readonly dbSecurityGroup: ec2.SecurityGroup;
   /** KMS Key 对象 — 供 DatabaseStack 等需要 IKey 的场景使用 */
   readonly encryptionKey: kms.Key;
@@ -98,6 +101,10 @@ export function createCrossStackComputeDependencies(
 ): CrossStackComputeDependencies {
   const depsStack = new cdk.Stack(app, 'DepsStack', env ? { env } : undefined);
   const vpc = createTestVpc(depsStack);
+  const apiSecurityGroup = new ec2.SecurityGroup(depsStack, 'TestApiSg', {
+    vpc,
+    allowAllOutbound: true,
+  });
   const dbSecurityGroup = new ec2.SecurityGroup(depsStack, 'TestDbSg', {
     vpc,
     allowAllOutbound: false,
@@ -114,6 +121,7 @@ export function createCrossStackComputeDependencies(
   const databaseEndpoint = 'test-cluster.cluster-xyz.us-east-1.rds.amazonaws.com';
   return {
     vpc,
+    apiSecurityGroupId: apiSecurityGroup.securityGroupId,
     dbSecurityGroup,
     encryptionKey,
     encryptionKeyArn: encryptionKey.keyArn,
@@ -140,6 +148,7 @@ export function createMonitoringTestDeps(
 ): MonitoringTestDependencies {
   const {
     vpc,
+    apiSecurityGroupId,
     dbSecurityGroup,
     databaseSecret,
     jwtSecretArn,
@@ -159,7 +168,7 @@ export function createMonitoringTestDeps(
   const computeStack = new ComputeStack(app, 'TestComputeStack', {
     ...(env ? { env } : {}),
     vpc,
-    dbSecurityGroup,
+    apiSecurityGroupId,
     databaseSecret,
     databaseEndpoint,
     encryptionKeyArn,
