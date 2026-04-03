@@ -28,6 +28,18 @@ class TestEvalPipelineEntity:
         pipeline = make_pipeline()
         assert pipeline.status == PipelineStatus.SCHEDULED
 
+    def test_empty_model_ids_raises(self) -> None:
+        """model_ids 为空列表时验证失败。"""
+        from pydantic import ValidationError
+
+        with pytest.raises(ValidationError, match="model_ids"):
+            EvalPipeline(
+                suite_id=1,
+                agent_id=1,
+                trigger="manual",
+                model_ids=[],
+            )
+
     def test_start_transitions_scheduled_to_running(self) -> None:
         pipeline = make_pipeline()
         pipeline.start()

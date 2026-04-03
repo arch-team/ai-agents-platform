@@ -105,6 +105,12 @@ const computeStack = new ComputeStack(app, `${prefix}-compute-${env}`, {
   gatewayClientSecretArn: isDev(env)
     ? 'arn:aws:secretsmanager:us-east-1:897473508751:secret:ai-agents-platform/dev/gateway-client-secret-pzJqgX'
     : undefined, // Prod: 待 Prod 部署时配置
+  // 默认管理员密码 (启动时 seed_default_admin 创建管理员账户)
+  adminPasswordSecretArn: isDev(env)
+    ? 'arn:aws:secretsmanager:us-east-1:897473508751:secret:dev/ai-agents-platform/admin-password-Err3Aq'
+    : isProd(env)
+      ? 'arn:aws:secretsmanager:us-east-1:897473508751:secret:prod/ai-agents-platform/admin-password-YvsOVI'
+      : undefined,
   // Dev: 非工作时段 (UTC 12:00 = 北京 20:00) 缩减到 0，工作时段 (UTC 00:00 = 北京 08:00) 恢复到 1
   ...(isDev(env) && {
     scheduledScaling: {

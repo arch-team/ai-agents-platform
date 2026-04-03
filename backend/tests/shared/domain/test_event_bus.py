@@ -185,3 +185,18 @@ class TestEventBus:
         # Assert — 第二个 handler 仍被调用
         assert len(received) == 1
         assert received[0].payload == "async-isolation"
+
+    @pytest.mark.asyncio
+    async def test_publish_async_idempotent(self) -> None:
+        """异步发布幂等性：相同 event_id 的事件不重复处理。"""
+        # Arrange
+        received: list[_TestEvent] = []
+        self.bus.subscribe(_TestEvent, received.append)
+        event = _TestEvent(payload="async-once")
+
+        # Act — 同一事件异步发布两次
+        await self.bus.publish_async(event)
+        await self.bus.publish_async(event)
+
+        # Assert — 只处理一次
+        assert len(received) == 1

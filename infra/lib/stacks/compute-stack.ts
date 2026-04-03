@@ -63,6 +63,8 @@ export interface ComputeStackProps extends BaseStackProps {
   readonly agentcoreGatewayUrl?: string;
   /** AgentCore Memory ID — Agent 跨会话长期记忆 @default '' */
   readonly agentcoreMemoryId?: string;
+  /** 默认管理员密码 Secret ARN (Prod 环境必需) @default undefined */
+  readonly adminPasswordSecretArn?: string;
 }
 
 /**
@@ -162,6 +164,19 @@ export class ComputeStack extends cdk.Stack {
                   'GatewayClientSecret',
                   props.gatewayClientSecretArn,
                 ),
+              ),
+            }
+          : {}),
+        // 默认管理员密码 (Prod 环境必需, Settings 启动校验)
+        ...(props.adminPasswordSecretArn
+          ? {
+              DEFAULT_ADMIN_PASSWORD: ecs.Secret.fromSecretsManager(
+                secretsmanager.Secret.fromSecretCompleteArn(
+                  this,
+                  'AdminPasswordSecret',
+                  props.adminPasswordSecretArn,
+                ),
+                'admin_password',
               ),
             }
           : {}),

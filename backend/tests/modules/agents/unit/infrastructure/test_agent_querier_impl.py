@@ -167,3 +167,15 @@ class TestAgentQuerierImpl:
 
         assert result is not None
         assert result.enable_memory is False
+
+    @pytest.mark.asyncio
+    async def test_agent_id_none_raises_value_error(self) -> None:
+        """Agent ID 为 None 时 _to_active_agent_info 抛出 ValueError。"""
+        agent = _make_agent()
+        agent.id = None  # type: ignore[assignment]
+        repo = AsyncMock(spec=IAgentRepository)
+        repo.get_by_id.return_value = agent
+        querier = AgentQuerierImpl(agent_repository=repo)
+
+        with pytest.raises(ValueError, match="Agent ID 不能为空"):
+            await querier.get_active_agent(1)

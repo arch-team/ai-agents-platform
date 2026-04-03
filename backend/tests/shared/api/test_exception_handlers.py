@@ -32,6 +32,7 @@ class TestExceptionHandlers:
 
     def test_entity_not_found_returns_404(self):
         """EntityNotFoundError 映射为 404。"""
+
         # Arrange
         @self.app.get("/test")
         def _endpoint():
@@ -50,6 +51,7 @@ class TestExceptionHandlers:
 
     def test_duplicate_entity_returns_409(self):
         """DuplicateEntityError 映射为 409。"""
+
         # Arrange
         @self.app.get("/test")
         def _endpoint():
@@ -67,6 +69,7 @@ class TestExceptionHandlers:
 
     def test_invalid_state_transition_returns_409(self):
         """InvalidStateTransitionError 映射为 409。"""
+
         # Arrange
         @self.app.get("/test")
         def _endpoint():
@@ -88,6 +91,7 @@ class TestExceptionHandlers:
 
     def test_validation_error_returns_422(self):
         """ValidationError 映射为 422。"""
+
         # Arrange
         @self.app.get("/test")
         def _endpoint():
@@ -106,6 +110,7 @@ class TestExceptionHandlers:
 
     def test_resource_quota_exceeded_returns_429(self):
         """ResourceQuotaExceededError 映射为 429。"""
+
         # Arrange
         @self.app.get("/test")
         def _endpoint():
@@ -123,6 +128,7 @@ class TestExceptionHandlers:
 
     def test_generic_domain_error_returns_400(self):
         """未知 DomainError 子类映射为 400。"""
+
         # Arrange
         @self.app.get("/test")
         def _endpoint():
@@ -140,6 +146,7 @@ class TestExceptionHandlers:
 
     def test_unhandled_exception_returns_500(self):
         """未处理异常映射为 500, 不暴露内部信息。"""
+
         # Arrange
         @self.app.get("/test")
         def _endpoint():
@@ -160,6 +167,7 @@ class TestExceptionHandlers:
 
     def test_error_response_format(self):
         """错误响应符合 ErrorResponse 格式。"""
+
         # Arrange
         @self.app.get("/test")
         def _endpoint():
@@ -175,3 +183,22 @@ class TestExceptionHandlers:
         assert "code" in data
         assert "message" in data
         assert "details" in data
+
+    def test_subclass_isinstance_fallback(self):
+        """DomainError 子类的子类通过 isinstance 匹配映射到正确状态码。"""
+
+        # Arrange — 创建 EntityNotFoundError 的子类（不在精确映射中）
+        class SpecialNotFoundError(EntityNotFoundError):
+            pass
+
+        @self.app.get("/test")
+        def _endpoint():
+            raise SpecialNotFoundError(entity_type="Resource", entity_id=99)
+
+        client = TestClient(self.app)
+
+        # Act
+        response = client.get("/test")
+
+        # Assert — 通过 isinstance 匹配到 EntityNotFoundError -> 404
+        assert response.status_code == 404

@@ -159,7 +159,7 @@ def _handle_tools_list(request_id: int | str | None) -> dict[str, Any]:
     return _make_response(request_id, {"tools": TOOLS})
 
 
-async def _handle_tools_call(
+async def _handle_tools_call(  # noqa: PLR0911
     request_id: int | str | None,
     params: dict[str, Any],
     adapter: MemoryAdapter,
