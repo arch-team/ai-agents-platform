@@ -22,13 +22,24 @@
         "account": "897473508751",
         "region": "us-east-1",
         "vpcCidr": "10.0.0.0/16",
-        "alertEmail": "platform-team@example.com"
+        "alertEmail": "platform-team@example.com",
+        "corsAllowedOrigins": [
+          "http://localhost:3000",
+          "http://localhost:5173",
+          "https://d2k7ovgb2e4af9.cloudfront.net"
+        ],
+        "gatewayClientSecretArn": "arn:aws:secretsmanager:us-east-1:897473508751:secret:ai-agents-platform/dev/gateway-client-secret-pzJqgX",
+        "adminPasswordSecretArn": "arn:aws:secretsmanager:us-east-1:897473508751:secret:dev/ai-agents-platform/admin-password-Err3Aq"
       },
       "prod": {
         "account": "897473508751",
         "region": "us-east-1",
         "vpcCidr": "10.2.0.0/16",
-        "alertEmail": "platform-team@example.com"
+        "alertEmail": "platform-team@example.com",
+        "corsAllowedOrigins": [
+          "https://d1dlap8e3g6mt5.cloudfront.net"
+        ],
+        "adminPasswordSecretArn": "arn:aws:secretsmanager:us-east-1:897473508751:secret:prod/ai-agents-platform/admin-password-YvsOVI"
       }
     }
   }

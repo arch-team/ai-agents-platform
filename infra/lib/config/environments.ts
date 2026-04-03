@@ -43,5 +43,8 @@ export function getEnvironmentConfig(app: cdk.App): EnvironmentConfig {
     vpcCidr: config.vpcCidr,
     envName: envName as EnvironmentName,
     alertEmail: config.alertEmail,
+    corsAllowedOrigins: config.corsAllowedOrigins,
+    gatewayClientSecretArn: config.gatewayClientSecretArn,
+    adminPasswordSecretArn: config.adminPasswordSecretArn,
   };
 }

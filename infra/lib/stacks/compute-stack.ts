@@ -13,15 +13,16 @@ import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
 import { NagSuppressions } from 'cdk-nag';
 import { Construct } from 'constructs';
 import {
-  BEDROCK_INVOKE_ACTIONS,
   BEDROCK_EVAL_ACTIONS,
-  getBedrockResourceArns,
   getBedrockEvalResourceArns,
+  createBedrockInvokePolicy,
   getCorsAllowedOrigins,
   getLogRetention,
   getRemovalPolicy,
   isDev,
+  DB_PORT,
   PROJECT_NAME,
+  type AgentRuntimeMode,
   type BaseStackProps,
   type EnvironmentName,
 } from '../config';
@@ -31,8 +32,8 @@ import { EcsServiceConstruct, type ScheduledScalingConfig } from '../constructs/
 export interface ComputeStackProps extends BaseStackProps {
   /** ECS 服务所在的 VPC */
   readonly vpc: ec2.IVpc;
-  /** 数据库安全组 — 用于添加 ECS → DB 入站规则 */
-  readonly dbSecurityGroup: ec2.ISecurityGroup;
+  /** API 服务安全组 ID — 使用 ID 字符串避免跨 Stack 循环依赖 (同 encryptionKeyArn 模式) */
+  readonly apiSecurityGroupId: string;
   /** 数据库凭证 Secret */
   readonly databaseSecret: secretsmanager.ISecret;
   /** 数据库连接端点 */
@@ -50,7 +51,7 @@ export interface ComputeStackProps extends BaseStackProps {
   /** AgentCore Runtime ARN — agentcore_runtime 模式必需 @default '' */
   readonly agentcoreRuntimeArn?: string;
   /** Agent 运行时模式: in_process (本地 CLI) / agentcore_runtime (AgentCore 托管) @default 'in_process' */
-  readonly agentRuntimeMode?: string;
+  readonly agentRuntimeMode?: AgentRuntimeMode;
   /** 定时缩放配置 — Dev 环境非工作时段自动缩减 ECS 任务数 @default undefined (不启用定时缩放) */
   readonly scheduledScaling?: ScheduledScalingConfig;
   /** AgentCore Gateway Cognito Token Endpoint URL @default '' */
@@ -65,6 +66,8 @@ export interface ComputeStackProps extends BaseStackProps {
   readonly agentcoreMemoryId?: string;
   /** 默认管理员密码 Secret ARN (Prod 环境必需) @default undefined */
   readonly adminPasswordSecretArn?: string;
+  /** CORS 允许源列表 — 从 cdk.json 环境配置读取，覆盖默认值 */
+  readonly corsAllowedOrigins?: string[];
 }
 
 /**
@@ -86,13 +89,21 @@ export class ComputeStack extends cdk.Stack {
 
     const {
       vpc,
-      dbSecurityGroup,
+      apiSecurityGroupId,
       databaseSecret,
       databaseEndpoint,
       encryptionKeyArn,
       jwtSecretArn,
       envName,
     } = props;
+
+    // 在本 Stack 内重新导入 SecurityStack 的 API 安全组，避免跨 Stack 循环依赖
+    const apiSecurityGroup = ec2.SecurityGroup.fromSecurityGroupId(
+      this,
+      'ApiSgRef',
+      apiSecurityGroupId,
+      { allowAllOutbound: true },
+    );
 
     // 在本 Stack 内重新导入 Security 资源，避免跨 Stack grant* 循环依赖
     const jwtSecret = secretsmanager.Secret.fromSecretCompleteArn(
@@ -109,10 +120,11 @@ export class ComputeStack extends cdk.Stack {
       envName,
     });
 
-    // ECS Service Construct
+    // ECS Service Construct — 使用 SecurityStack 集中管理的 apiSecurityGroup
     const ecsConstruct = new EcsServiceConstruct(this, 'Ecs', {
       vpc,
       albSecurityGroup: albConstruct.albSecurityGroup,
+      serviceSecurityGroup: apiSecurityGroup,
       envName,
       cpu: props.cpu,
       memoryLimitMiB: props.memoryLimitMiB,
@@ -124,11 +136,13 @@ export class ComputeStack extends cdk.Stack {
       environment: {
         APP_ENV: envName === 'prod' ? 'production' : 'development',
         DATABASE_HOST: databaseEndpoint,
-        DATABASE_PORT: '3306',
+        DATABASE_PORT: String(DB_PORT),
         AWS_REGION: cdk.Stack.of(this).region,
         LOG_LEVEL: envName === 'prod' ? 'INFO' : 'DEBUG',
-        // CORS: 前端 S3 静态站点域名 (从 config/constants 集中管理)
-        CORS_ALLOWED_ORIGINS: JSON.stringify(getCorsAllowedOrigins(envName)),
+        // CORS: 前端 S3 静态站点域名 (优先使用 cdk.json 环境配置，回退到 constants 默认值)
+        CORS_ALLOWED_ORIGINS: JSON.stringify(
+          getCorsAllowedOrigins(envName, props.corsAllowedOrigins),
+        ),
         // Secrets Manager ARN — 应用可选择直接读取 (备用路径, ECS Secrets 为主路径)
         DB_SECRET_ARN: databaseSecret.secretArn,
         JWT_SECRET_ARN: jwtSecret.secretArn,
@@ -183,26 +197,30 @@ export class ComputeStack extends cdk.Stack {
       },
     });
 
-    // Stack 层组装: ALB → ECS 显式出站规则 (安全组出站收窄)
-    albConstruct.albSecurityGroup.addEgressRule(
-      ecsConstruct.serviceSecurityGroup,
-      ec2.Port.tcp(ecsConstruct.containerPort),
-      'Allow ALB to forward traffic to ECS containers',
-    );
-
     // 注册 ECS 服务到 ALB Target Group
     albConstruct.targetGroup.addTarget(ecsConstruct.service);
 
-    // 允许 ECS 服务访问数据库 (3306)
-    // 使用 CfnSecurityGroupIngress 避免跨 Stack 循环依赖
-    new ec2.CfnSecurityGroupIngress(this, 'EcsToDbIngress', {
-      groupId: dbSecurityGroup.securityGroupId,
-      sourceSecurityGroupId: ecsConstruct.serviceSecurityGroup.securityGroupId,
+    // ALB ↔ ECS 安全组规则: 全部使用 L1 避免 SecurityStack ↔ ComputeStack 循环依赖
+    // (L2 addEgressRule/addIngressRule 会创建隐式跨 Stack 双向引用)
+    new ec2.CfnSecurityGroupEgress(this, 'AlbToEcsEgress', {
+      groupId: albConstruct.albSecurityGroup.securityGroupId,
+      destinationSecurityGroupId: apiSecurityGroupId,
       ipProtocol: 'tcp',
-      fromPort: 3306,
-      toPort: 3306,
-      description: 'Allow ECS service to access Aurora MySQL',
+      fromPort: ecsConstruct.containerPort,
+      toPort: ecsConstruct.containerPort,
+      description: 'Allow ALB to forward traffic to ECS containers',
     });
+    new ec2.CfnSecurityGroupIngress(this, 'AlbToEcsIngress', {
+      groupId: apiSecurityGroupId,
+      sourceSecurityGroupId: albConstruct.albSecurityGroup.securityGroupId,
+      ipProtocol: 'tcp',
+      fromPort: ecsConstruct.containerPort,
+      toPort: ecsConstruct.containerPort,
+      description: 'Allow ALB to access ECS container port',
+    });
+
+    // ECS → DB 入站规则: ECS 使用 SecurityStack 的 apiSecurityGroup，
+    // SecurityGroupsConstruct 中已配置 apiSecurityGroup → dbSecurityGroup:3306，无需重复添加
 
     // 授权 ECS Task Role 读取数据库 Secret 和 JWT Secret (应用运行时访问)
     // jwtSecret/encryptionKey 已在本 Stack 内通过 ARN 重新导入，grant 不会跨 Stack
@@ -218,10 +236,7 @@ export class ComputeStack extends cdk.Stack {
     // 参考: claude-code-bedrock-container.md — IAM inference-profile 权限
     const accountId = cdk.Stack.of(this).account;
     ecsConstruct.service.taskDefinition.taskRole.addToPrincipalPolicy(
-      new iam.PolicyStatement({
-        actions: [...BEDROCK_INVOKE_ACTIONS],
-        resources: getBedrockResourceArns(accountId),
-      }),
+      createBedrockInvokePolicy(accountId),
     );
 
     // 授权 ECS Task Role 调用 AgentCore Runtime (agentcore_runtime 模式: Agent 执行托管)
@@ -260,6 +275,14 @@ export class ComputeStack extends cdk.Stack {
       new iam.PolicyStatement({
         actions: [...BEDROCK_EVAL_ACTIONS],
         resources: getBedrockEvalResourceArns(accountId),
+      }),
+    );
+
+    // 授权 ECS Task Role 调用 Cost Explorer (Insights 模块: 查询 Bedrock 真实账单)
+    ecsConstruct.service.taskDefinition.taskRole.addToPrincipalPolicy(
+      new iam.PolicyStatement({
+        actions: ['ce:GetCostAndUsage'],
+        resources: ['*'], // Cost Explorer API 不支持资源级权限
       }),
     );
 

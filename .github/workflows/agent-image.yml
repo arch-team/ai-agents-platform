@@ -103,8 +103,40 @@ jobs:
           trivy image --image-src remote --platform ${{ env.IMAGE_PLATFORM }} --severity CRITICAL,HIGH --exit-code 1 --format table --ignorefile ${{ env.TRIVY_IGNOREFILE }} \
             ${{ steps.ecr-login.outputs.registry }}/${{ env.ECR_REPO_PREFIX }}-dev:${{ github.sha }}
 
-      - name: 输出镜像推送通知
-        run: echo "::notice::镜像已推送:${{ steps.ecr-login.outputs.registry }}/${{ env.ECR_REPO_PREFIX }}-dev:latest"
+      - name: 更新 AgentCore Runtime (拉取新镜像)
+        run: |
+          # 从 CloudFormation Output 读取 Runtime 配置，避免硬编码
+          STACK_NAME="ai-agents-plat-agentcore-dev"
+          RUNTIME_ARN=$(aws cloudformation describe-stacks --stack-name "$STACK_NAME" \
+            --query "Stacks[0].Outputs[?OutputKey=='RuntimeArn'].OutputValue" --output text)
+          RUNTIME_ID=$(echo "$RUNTIME_ARN" | grep -oP 'runtime/\K.*')
+
+          # 获取当前 Runtime 配置 (role-arn, network-configuration)
+          RUNTIME_CONFIG=$(aws bedrock-agentcore-control get-agent-runtime --agent-runtime-id "$RUNTIME_ID")
+          ROLE_ARN=$(echo "$RUNTIME_CONFIG" | jq -r '.roleArn')
+          NETWORK_CONFIG=$(echo "$RUNTIME_CONFIG" | jq -c '.networkConfiguration')
+          IMAGE_URI="${{ steps.ecr-login.outputs.registry }}/${{ env.ECR_REPO_PREFIX }}-dev:latest"
+
+          aws bedrock-agentcore-control update-agent-runtime \
+            --agent-runtime-id "$RUNTIME_ID" \
+            --agent-runtime-artifact "{\"containerConfiguration\":{\"containerUri\":\"$IMAGE_URI\"}}" \
+            --role-arn "$ROLE_ARN" \
+            --network-configuration "$NETWORK_CONFIG" \
+            --description "Auto-updated by CI (commit ${{ github.sha }})"
+
+          echo "::notice::Runtime 已更新: $RUNTIME_ID"
+
+      - name: 等待 Runtime 就绪
+        run: |
+          RUNTIME_ID=$(aws cloudformation describe-stacks --stack-name "ai-agents-plat-agentcore-dev" \
+            --query "Stacks[0].Outputs[?OutputKey=='RuntimeArn'].OutputValue" --output text | grep -oP 'runtime/\K.*')
+          for i in $(seq 1 12); do
+            STATUS=$(aws bedrock-agentcore-control get-agent-runtime --agent-runtime-id "$RUNTIME_ID" --query 'status' --output text)
+            echo "Runtime status: $STATUS (attempt $i/12)"
+            [ "$STATUS" = "READY" ] && exit 0
+            sleep 10
+          done
+          echo "::warning::Runtime 未在 120s 内就绪 (status: $STATUS)"
 
   # ============================================================
   # 提升 Agent 镜像至 Prod 环境 (复用 Dev 镜像, 需要手动审批)
@@ -153,5 +185,35 @@ jobs:
           trivy image --image-src remote --platform ${{ env.IMAGE_PLATFORM }} --severity CRITICAL,HIGH --exit-code 1 --format table --ignorefile ${{ env.TRIVY_IGNOREFILE }} \
             ${{ steps.ecr-login.outputs.registry }}/${{ env.ECR_REPO_PREFIX }}-prod:${{ github.sha }}
 
-      - name: 输出镜像推送通知
-        run: echo "::notice::镜像已推送:${{ steps.ecr-login.outputs.registry }}/${{ env.ECR_REPO_PREFIX }}-prod:latest"
+      - name: 更新 AgentCore Runtime (拉取新镜像)
+        run: |
+          STACK_NAME="ai-agents-plat-agentcore-prod"
+          RUNTIME_ARN=$(aws cloudformation describe-stacks --stack-name "$STACK_NAME" \
+            --query "Stacks[0].Outputs[?OutputKey=='RuntimeArn'].OutputValue" --output text)
+          RUNTIME_ID=$(echo "$RUNTIME_ARN" | grep -oP 'runtime/\K.*')
+
+          RUNTIME_CONFIG=$(aws bedrock-agentcore-control get-agent-runtime --agent-runtime-id "$RUNTIME_ID")
+          ROLE_ARN=$(echo "$RUNTIME_CONFIG" | jq -r '.roleArn')
+          NETWORK_CONFIG=$(echo "$RUNTIME_CONFIG" | jq -c '.networkConfiguration')
+          IMAGE_URI="${{ steps.ecr-login.outputs.registry }}/${{ env.ECR_REPO_PREFIX }}-prod:latest"
+
+          aws bedrock-agentcore-control update-agent-runtime \
+            --agent-runtime-id "$RUNTIME_ID" \
+            --agent-runtime-artifact "{\"containerConfiguration\":{\"containerUri\":\"$IMAGE_URI\"}}" \
+            --role-arn "$ROLE_ARN" \
+            --network-configuration "$NETWORK_CONFIG" \
+            --description "Auto-updated by CI (commit ${{ github.sha }})"
+
+          echo "::notice::Prod Runtime 已更新: $RUNTIME_ID"
+
+      - name: 等待 Runtime 就绪
+        run: |
+          RUNTIME_ID=$(aws cloudformation describe-stacks --stack-name "ai-agents-plat-agentcore-prod" \
+            --query "Stacks[0].Outputs[?OutputKey=='RuntimeArn'].OutputValue" --output text | grep -oP 'runtime/\K.*')
+          for i in $(seq 1 12); do
+            STATUS=$(aws bedrock-agentcore-control get-agent-runtime --agent-runtime-id "$RUNTIME_ID" --query 'status' --output text)
+            echo "Prod Runtime status: $STATUS (attempt $i/12)"
+            [ "$STATUS" = "READY" ] && exit 0
+            sleep 10
+          done
+          echo "::warning::Prod Runtime 未在 120s 内就绪 (status: $STATUS)"

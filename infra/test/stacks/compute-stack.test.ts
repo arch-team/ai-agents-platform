@@ -11,7 +11,7 @@ describe('ComputeStack', () => {
     const app = new cdk.App();
     const {
       vpc,
-      dbSecurityGroup,
+      apiSecurityGroupId,
       databaseSecret,
       jwtSecretArn,
       databaseEndpoint,
@@ -20,7 +20,7 @@ describe('ComputeStack', () => {
 
     stack = new ComputeStack(app, 'TestComputeStack', {
       vpc,
-      dbSecurityGroup,
+      apiSecurityGroupId,
       databaseSecret,
       databaseEndpoint,
       encryptionKeyArn,
@@ -170,9 +170,12 @@ describe('ComputeStack', () => {
       });
     });
 
-    it('应创建 ECS 服务安全组', () => {
-      template.hasResourceProperties('AWS::EC2::SecurityGroup', {
-        GroupDescription: 'ECS Fargate service security group - ALB ingress only',
+    it('应创建 ALB → ECS 安全组入站规则 (L1, 避免跨 Stack 循环依赖)', () => {
+      template.hasResourceProperties('AWS::EC2::SecurityGroupIngress', {
+        IpProtocol: 'tcp',
+        FromPort: 8000,
+        ToPort: 8000,
+        Description: 'Allow ALB to access ECS container port',
       });
     });
   });
@@ -225,7 +228,7 @@ describe('ComputeStack', () => {
   });
 
   describe('Eval Trigger Lambda', () => {
-    it('应创建评估触发 Lambda 函数 (Python 3.14, ARM_64)', () => {
+    it('应创建评估触发 Lambda 函数 (Python 3.13, ARM_64)', () => {
       template.hasResourceProperties('AWS::Lambda::Function', {
         FunctionName: 'ai-agents-platform-eval-trigger-dev',
         Runtime: 'python3.13',

@@ -1,7 +1,6 @@
 import * as cdk from 'aws-cdk-lib';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as ecr from 'aws-cdk-lib/aws-ecr';
-import * as iam from 'aws-cdk-lib/aws-iam';
 import {
   Runtime,
   AgentRuntimeArtifact,
@@ -19,10 +18,10 @@ import { NagSuppressions } from 'cdk-nag';
 import { Construct } from 'constructs';
 import {
   PROJECT_NAME,
+  PROJECT_NAME_UNDERSCORE,
   getRemovalPolicy,
   isProd,
-  BEDROCK_INVOKE_ACTIONS,
-  getBedrockResourceArns,
+  createBedrockInvokePolicy,
   type BaseStackProps,
 } from '../config';
 
@@ -75,7 +74,7 @@ export class AgentCoreStack extends cdk.Stack {
     });
 
     // 2. AgentCore Runtime — 部署 Claude Agent SDK Agent 容器
-    const runtimeName = `${PROJECT_NAME.replace(/-/g, '_')}_${envName}`;
+    const runtimeName = `${PROJECT_NAME_UNDERSCORE}_${envName}`;
 
     // AgentCore Runtime 仅支持部分 AZ (us-east-1 不支持 use1-az6)
     // 限制为前 2 个 AZ 的私有子网，避免部署失败
@@ -100,14 +99,9 @@ export class AgentCoreStack extends cdk.Stack {
     });
 
     // 为 Runtime 的执行角色添加 Bedrock InvokeModel 权限
-    // 限制到 foundation-model 和 inference-profile 资源 (与 ComputeStack 一致)
+    // 限制到 foundation-model 和 inference-profile 资源 (与 ComputeStack 共享工厂函数)
     const accountId = cdk.Stack.of(this).account;
-    this.runtime.addToRolePolicy(
-      new iam.PolicyStatement({
-        actions: [...BEDROCK_INVOKE_ACTIONS],
-        resources: getBedrockResourceArns(accountId),
-      }),
-    );
+    this.runtime.addToRolePolicy(createBedrockInvokePolicy(accountId));
 
     this.runtimeArn = this.runtime.agentRuntimeArn;
 
@@ -129,7 +123,7 @@ export class AgentCoreStack extends cdk.Stack {
     this.gatewayCognitoClientId = this.gateway.userPoolClient?.userPoolClientId ?? '';
 
     // 4. AgentCore Memory — Agent 跨会话长期记忆存储
-    const memoryName = `${PROJECT_NAME.replace(/-/g, '_')}_memory_${envName}`;
+    const memoryName = `${PROJECT_NAME_UNDERSCORE}_memory_${envName}`;
     this.memory = new Memory(this, 'AgentMemory', {
       memoryName,
       description: `AI Agents Platform - ${envName} Agent Memory`,

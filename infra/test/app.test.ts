@@ -50,7 +50,7 @@ function createStackGroup(app: cdk.App): StackGroup {
   const computeStack = new ComputeStack(app, 'TestComputeStack', {
     env: TEST_ENV,
     vpc: networkStack.vpc,
-    dbSecurityGroup: securityStack.dbSecurityGroup,
+    apiSecurityGroupId: securityStack.apiSecurityGroup.securityGroupId,
     databaseSecret: databaseStack.dbSecret,
     databaseEndpoint: databaseStack.cluster.clusterEndpoint.hostname,
     encryptionKeyArn: securityStack.encryptionKey.keyArn,
