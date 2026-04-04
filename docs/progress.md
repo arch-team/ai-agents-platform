@@ -11,12 +11,12 @@
 - **Dev 环境**: 后端 ECS (1024 CPU/2048 MiB) + 前端 S3 + CORS + Bedrock IAM ✅ | ALB `ai-agents-dev-546356512.us-east-1.elb.amazonaws.com`
 - **Prod 环境**: 后端 ECS (512 CPU/1024 MiB/2 任务) + Aurora db.r6g.large (Writer+Reader) ✅ | ALB `ai-agents-prod-1419512933.us-east-1.elb.amazonaws.com`
 - **Stack 命名**: `ai-agents-plat-{stack}-{env}` (v1.4 规范化, **14 个 Stack** — 新增 storage)
-- **测试**: 后端 2459 测试 + 基础设施 240 测试 + 前端 767 单元测试 = **3466 测试**
+- **测试**: 后端 2474 测试 + 基础设施 240 测试 + 前端 767 单元测试 = **3481 测试**
 - **Eval 框架**: EvalPipeline 已实现 (BedrockEvalAdapter + EventBridge 定时触发 + CloudWatch 面板)
 - **后端模块**: 12 个 (11 业务 + shared, 新增 skills) | **前端**: 200+ 源文件, FSD 架构, 13 页面
 - **SDK**: claude-agent-sdk 0.1.35 | bedrock-agentcore 1.3.0
 - **环境策略**: Dev (开发+验证) + Prod (生产)，无 Staging (v1.4 简化)
-- **M17 验收结果**: ruff ✅ | mypy 519 文件 ✅ | pytest 2459 passed / 88.44% 覆盖率 ✅ | 架构合规 15/15 ✅ | infra 240 tests ✅ | frontend 767 tests ✅
+- **M17 验收结果**: ruff ✅ | mypy 519 文件 ✅ | pytest 2474 passed / 89.01% 覆盖率 ✅ | 架构合规 15/15 ✅ | infra 240 tests ✅ | frontend 767 tests ✅
 - **下一步**: M17 feat/agent-blueprint PR 创建 + review → 合并到 main → M17-C (Templates 升级 + 监控面板)
 
 ## 模块状态
@@ -1014,7 +1014,8 @@ auth SSO (#10-#12)    ── 100% 并行 ──── ┤──► 前端 (#13-#
 7. ~~**pytest-cov 缺失**~~ → ✅ 已安装 pytest-cov 7.0.0 + pytest-asyncio 1.3.0 + aiosqlite 0.22.1 + greenlet 3.3.1
 8. ~~**test_database_defaults 测试失败**~~ → ✅ 修复: 所有 Settings 单元测试添加 `_env_file=None` 隔离 `.env` 文件，确保测试验证代码默认值而非环境覆盖值
 9. ~~**OTEL instrumentation-sqlalchemy 安装问题**~~ → ✅ 根因: `python -m pytest` 调用了系统 Python 而非 uv 虚拟环境；统一使用 `uv run pytest` 后 1673 测试全通过
-10. **M17 feat/agent-blueprint PR 待创建** — 14 commits, 152 文件, 12372 行新增, 需 review 后合并
+10. **M17 feat/agent-blueprint PR 待创建** — 17 commits, 155 文件, 需 review 后合并
+13. **代码审查遗留 (低优先级)**: IAgentCreator 接口职责膨胀(ISP)、SSE 流生成器 3 处重复、Builder generate/refine 核心逻辑重复、severity 字符串类型化(建议 StrEnum)、async 方法内同步 I/O(建议 asyncio.to_thread)
 11. **M17-C: Templates 升级** — TemplateConfig 扩展关联预置 Skill 路径 (本次时间不足，标记为后续)
 12. **M17-C: CloudWatch 监控面板** — 每个独立 Runtime 的 CPU/内存/调用量; Runtime 成本治理 (ARCHIVED 自动销毁)
 10. ~~**infra 快照测试过期**~~ → ✅ 快照已更新 + worker 泄漏修复 (workerIdleMemoryLimit)，161 测试全通过
@@ -1051,6 +1052,7 @@ auth SSO (#10-#12)    ── 100% 并行 ──── ┤──► 前端 (#13-#
 
 | # | 日期 | 类型 | 完成项 | 关键决策 |
 |---|------|------|-------|---------|
+| 68 | 2026-04-05 | 审查 | M17 代码审查: 三维并行审查 (复用+质量+效率), 修复 7 项 (N+1查询/assert安全/boto3单例/TOCTOU/tar泄漏/路径校验/类型), 补测试 15 个 (skill_querier 38→100%, agent_creator 40→98%, builder_adapter 34→100%), 覆盖率 88.44→89.01% | lru_cache 单例模式用于无状态适配器; _require_blueprint_deps 返回元组替代 assert 类型收窄 |
 | 67 | 2026-04-04 | Milestone | M17 Task 13-15: CDK StorageStack (S3+EFS) + 存量迁移脚本 + 全量质量检查 (2459+240+767=3466 tests, 88.44% 覆盖率) | S3 加密用 S3_MANAGED (规范一致); Templates 升级标记 M17-C 后续 |
 | 66 | 2026-03-04 | 验收 | **M16 验收通过**: ruff✅ mypy(470文件)✅ pytest(2293passed/88.89%覆盖率)✅ 架构合规(15/15)✅; Checklist全项通过(分层/安全/SDK/API); progress.md任务状态修正(#1-3,#6-9→已完成) | MemoryAdapter 145行略超100行标准(合理); M16正式关闭, 下一步Prod部署或M17规划 |
 | 65 | 2026-02-28 | Milestone | **M16 #11 E2E**: 13集成测试(5场景:查询链路/工具传递/无工具/部分失效/GatewayAuth); **Memory后端完成**: MemoryAdapter→SDK MemorySessionManager重写(23测试)+IMemoryService扩展(list/get/delete)+enable_memory全链路(AgentConfig→ORM→Migration→API→DTO)+Memory REST API 5端点(18测试); 后端2220+测试/前端420+测试 | 全局Memory+namespace隔离; SDK MemorySessionManager(actor/session分区); NoOp降级保留; Agent Teams 2并行Agent |
