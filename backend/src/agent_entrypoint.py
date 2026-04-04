@@ -2,9 +2,14 @@
 
 将 Claude Agent SDK 包装为 AgentCore Runtime 可部署的应用。
 部署到 AgentCore Runtime 后，通过 invoke_agent_runtime() API 调用。
+
+启动时支持从 S3 下载 Workspace (Blueprint 工作目录):
+环境变量 WORKSPACE_S3_URI 指向 workspace.tar.gz，解压到 /workspace/。
 """
 
+import logging
 import os
+import tarfile
 from typing import Any
 
 from bedrock_agentcore.runtime import BedrockAgentCoreApp
@@ -15,6 +20,57 @@ from src.modules.execution.infrastructure.external.sdk_message_utils import (
     extract_usage,
 )
 
+
+_logger = logging.getLogger(__name__)
+
+# S3 Workspace 同步配置
+WORKSPACE_S3_URI = os.environ.get("WORKSPACE_S3_URI", "")
+WORKSPACE_DIR = "/workspace"
+
+
+def _parse_s3_uri(uri: str) -> tuple[str, str]:
+    """解析 s3://bucket/key 格式的 URI，返回 (bucket, key)。"""
+    if not uri.startswith("s3://"):
+        msg = f"无效的 S3 URI: {uri}"
+        raise ValueError(msg)
+    path = uri[5:]  # 去掉 "s3://"
+    bucket, _, key = path.partition("/")
+    if not bucket or not key:
+        msg = f"无效的 S3 URI (缺少 bucket 或 key): {uri}"
+        raise ValueError(msg)
+    return bucket, key
+
+
+def sync_workspace() -> None:
+    """从 S3 下载并解压 Workspace — 容器启动时执行一次。
+
+    兼容无 WORKSPACE_S3_URI 的旧模式 (V1 Agent): 直接跳过。
+    """
+    if not WORKSPACE_S3_URI:
+        _logger.info("WORKSPACE_S3_URI 未设置, 跳过 Workspace 同步 (V1 兼容模式)")
+        return
+
+    import boto3
+
+    bucket, key = _parse_s3_uri(WORKSPACE_S3_URI)
+    local_tar = "/tmp/workspace.tar.gz"  # noqa: S108
+
+    _logger.info("开始同步 Workspace: %s → %s", WORKSPACE_S3_URI, WORKSPACE_DIR)
+    s3 = boto3.client("s3")
+    s3.download_file(bucket, key, local_tar)
+
+    from pathlib import Path
+
+    Path(WORKSPACE_DIR).mkdir(parents=True, exist_ok=True)
+    with tarfile.open(local_tar) as tar:
+        tar.extractall(WORKSPACE_DIR)  # noqa: S202
+
+    Path(local_tar).unlink()
+    _logger.info("Workspace 同步完成: %s", WORKSPACE_DIR)
+
+
+# 容器启动时同步 Workspace (invoke handler 之前)
+sync_workspace()
 
 app = BedrockAgentCoreApp()
 

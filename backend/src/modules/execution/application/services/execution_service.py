@@ -103,6 +103,7 @@ class ExecutionService:
         gateway_auth: IGatewayAuthService | None = None,
         memory_adapter: IMemoryService | None = None,
         memory_id: str = "",
+        local_agent_runtime: IAgentRuntime | None = None,
         stats_repo_factory: Callable[
             [],
             tuple[
@@ -119,6 +120,7 @@ class ExecutionService:
         self._agent_querier = agent_querier
         self._knowledge_querier = knowledge_querier
         self._agent_runtime = agent_runtime
+        self._local_agent_runtime = local_agent_runtime
         self._tool_querier = tool_querier
         self._gateway_url = gateway_url
         self._gateway_auth = gateway_auth
@@ -493,14 +495,30 @@ class ExecutionService:
         )
 
     def _should_use_agent_runtime(self, agent_info: ActiveAgentInfo) -> bool:
-        """判断是否使用 Agent 运行时路径。"""
-        return agent_info.runtime_type == "agent" and self._agent_runtime is not None
+        """判断是否使用 Agent 运行时路径。
 
-    async def _execute_agent(self, ctx: _SendContext) -> tuple[str, int]:
-        """通过 IAgentRuntime 执行（Agent 模式）。返回 (content, total_tokens)。"""
+        三模式路由: 主 runtime 或 local runtime 有一个可用即走 Agent 路径。
+        """
+        if agent_info.runtime_type != "agent":
+            return False
+        if self._agent_runtime is not None:
+            return True
+        # 模式2 降级: 主 runtime 不可用但 local runtime 可用 (DRAFT + workspace_path)
+        return agent_info.workspace_path != "" and self._local_agent_runtime is not None
+
+    def _select_runtime(self, ctx: _SendContext) -> IAgentRuntime:
+        """根据三模式路由选择 runtime: 模式2 优先 local, 其他用 main。"""
+        # 模式2: 本地 cwd — 优先使用 local_agent_runtime
+        if ctx.agent_info.workspace_path and not ctx.agent_info.runtime_arn and self._local_agent_runtime is not None:
+            return self._local_agent_runtime
         if self._agent_runtime is None:
             msg = "Agent runtime 未配置"
             raise ValueError(msg)
+        return self._agent_runtime
+
+    async def _execute_agent(self, ctx: _SendContext) -> tuple[str, int]:
+        """通过 IAgentRuntime 执行（Agent 模式）。返回 (content, total_tokens)。"""
+        runtime = self._select_runtime(ctx)
         with tracer.start_as_current_span(
             "agent.execute",
             attributes={
@@ -512,7 +530,7 @@ class ExecutionService:
             tools = await self._get_agent_tools(ctx.agent_info.id)
             gateway_auth_token = await self._get_gateway_auth_token(tools)
             request = self._build_agent_request(ctx, tools, gateway_auth_token=gateway_auth_token)
-            response = await self._agent_runtime.execute(request)
+            response = await runtime.execute(request)
             total_tokens = response.input_tokens + response.output_tokens
             return response.content, total_tokens
 
@@ -539,13 +557,11 @@ class ExecutionService:
 
     async def _create_agent_stream(self, ctx: _SendContext) -> AsyncIterator[AgentResponseChunk]:
         """创建 Agent 路径的流式迭代器。"""
-        if self._agent_runtime is None:
-            msg = "Agent runtime 未配置"
-            raise ValueError(msg)
+        runtime = self._select_runtime(ctx)
         tools = await self._get_agent_tools(ctx.agent_info.id)
         gateway_auth_token = await self._get_gateway_auth_token(tools)
         request = self._build_agent_request(ctx, tools, gateway_auth_token=gateway_auth_token)
-        return await self._agent_runtime.execute_stream(request)
+        return await runtime.execute_stream(request)
 
     async def _create_llm_stream(self, ctx: _SendContext) -> AsyncIterator[LLMStreamChunk]:
         """创建 LLM 降级路径的流式迭代器。"""
@@ -620,10 +636,32 @@ class ExecutionService:
         *,
         gateway_auth_token: str = "",
     ) -> AgentRequest:
-        """构建 AgentRequest。"""
+        """构建 AgentRequest — 三模式路由。
+
+        模式1: runtime_arn → 专属 Runtime 容器, cwd="/workspace"
+        模式2: workspace_path → 本地 cwd, CLAUDE.md 提供 system_prompt
+        模式3: V1 兼容 → 内联 system_prompt (不变)
+        """
+        system_prompt = ctx.system_prompt
+        cwd = ""
+        runtime_arn = ""
+
+        if ctx.agent_info.runtime_arn:
+            # 模式1: 专属 Runtime — CLAUDE.md + Skills 提供 system_prompt
+            # 注意: 清空 system_prompt 会丢弃 RAG/Memory 注入内容,
+            # 这是 by-design: Blueprint Agent 用 Skills 替代 RAG, Memory 通过 MCP 独立处理
+            runtime_arn = ctx.agent_info.runtime_arn
+            cwd = "/workspace"
+            system_prompt = ""
+        elif ctx.agent_info.workspace_path:
+            # 模式2: 本地 cwd — CLAUDE.md + Skills 提供 system_prompt (同模式1)
+            cwd = ctx.agent_info.workspace_path
+            system_prompt = ""
+        # 模式3: V1 兼容 — system_prompt 保持不变
+
         return AgentRequest(
             prompt=ctx.created_user_msg.content,
-            system_prompt=ctx.system_prompt,
+            system_prompt=system_prompt,
             model_id=ctx.agent_info.model_id,
             tools=tools,
             history=ctx.llm_messages,
@@ -633,6 +671,8 @@ class ExecutionService:
             gateway_auth_token=gateway_auth_token,
             enable_teams=ctx.agent_info.enable_teams,
             memory_id=self._memory_id if ctx.agent_info.enable_memory else "",
+            cwd=cwd,
+            runtime_arn=runtime_arn,
         )
 
     async def _prepare_for_send(

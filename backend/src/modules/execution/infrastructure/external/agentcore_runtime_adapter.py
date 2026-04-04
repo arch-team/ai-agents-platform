@@ -76,16 +76,18 @@ class AgentCoreRuntimeAdapter(IAgentRuntime):
         """同步执行 Agent (阻塞式调用 AgentCore Runtime)。"""
         payload = self._build_payload(request)
 
+        # 三模式路由: 优先使用请求级 runtime_arn (专属 Runtime), 否则用默认
+        effective_arn = request.runtime_arn or self._runtime_arn
         try:
             response = await asyncio.to_thread(
                 self._client.invoke_agent_runtime,
-                agentRuntimeArn=self._runtime_arn,
+                agentRuntimeArn=effective_arn,
                 payload=json.dumps(payload),
             )
         except DomainError:
             raise
         except Exception as e:
-            logger.exception("agentcore_runtime_invoke_failed", runtime_arn=self._runtime_arn)
+            logger.exception("agentcore_runtime_invoke_failed", runtime_arn=effective_arn)
             raise DomainError(
                 message="Agent 服务暂时不可用, 请稍后重试",
                 code="AGENTCORE_RUNTIME_ERROR",
