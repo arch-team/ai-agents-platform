@@ -4,6 +4,7 @@ import {
   NetworkStack,
   SecurityStack,
   DatabaseStack,
+  StorageStack,
   ComputeStack,
   AgentCoreStack,
   MonitoringStack,
@@ -94,6 +95,19 @@ describe('Snapshot Tests', () => {
 
     // Docker asset hash 标准化，避免 backend/ 文件变更导致快照失败
     expect(normalizeDockerHashes(Template.fromStack(stack).toJSON())).toMatchSnapshot();
+  });
+
+  it('StorageStack 快照匹配', () => {
+    const app = new cdk.App();
+    const vpc = createVpcDependency(app, TEST_ENV);
+
+    const stack = new StorageStack(app, 'TestStorageStack', {
+      env: TEST_ENV,
+      vpc,
+      envName: 'dev',
+    });
+
+    expect(Template.fromStack(stack).toJSON()).toMatchSnapshot();
   });
 
   it('AgentCoreStack 快照匹配', () => {

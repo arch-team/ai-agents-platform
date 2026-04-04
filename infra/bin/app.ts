@@ -16,6 +16,7 @@ import {
   NetworkStack,
   SecurityStack,
   DatabaseStack,
+  StorageStack,
   ComputeStack,
   AgentCoreStack,
   MonitoringStack,
@@ -69,13 +70,24 @@ const databaseStack = new DatabaseStack(app, `${prefix}-database-${env}`, {
 databaseStack.addDependency(networkStack);
 databaseStack.addDependency(securityStack);
 
+// StorageStack — S3 Workspace 存储桶 + EFS Skill Library (M17: Agent Blueprint)
+const storageStack = new StorageStack(app, `${prefix}-storage-${env}`, {
+  env: cdkEnv,
+  vpc: networkStack.vpc,
+  envName: env,
+});
+storageStack.addDependency(networkStack);
+
 // AgentCore (ComputeStack 之前创建, 因为 ComputeStack 需要 Runtime ARN)
 const agentCoreStack = new AgentCoreStack(app, `${prefix}-agentcore-${env}`, {
   env: cdkEnv,
   vpc: networkStack.vpc,
   envName: env,
+  // M17: Runtime 启动时从 S3 下载 Agent 工作目录
+  workspaceBucket: storageStack.workspaceBucket,
 });
 agentCoreStack.addDependency(networkStack);
+agentCoreStack.addDependency(storageStack);
 
 // Agent 运行时模式: 从 CDK Context 读取，默认 'agentcore_runtime'
 // 用法: cdk deploy --context agentRuntimeMode=in_process (切换到本地 CLI 模式)
@@ -118,6 +130,10 @@ const computeStack = new ComputeStack(app, `${prefix}-compute-${env}`, {
   gatewayCognitoClientId: agentCoreStack.gatewayCognitoClientId,
   // CORS 允许源 (从 cdk.json 环境配置读取，覆盖 constants.ts 默认值)
   corsAllowedOrigins: envConfig.corsAllowedOrigins,
+  // M17: S3 Workspace 存储桶 + EFS Skill Library (Agent Blueprint)
+  workspaceBucket: storageStack.workspaceBucket,
+  skillLibraryFs: storageStack.skillLibraryFs,
+  efsSecurityGroup: storageStack.efsSecurityGroup,
   // Gateway Client Secret (手动创建在 Secrets Manager，ARN 从 cdk.json 环境配置读取)
   gatewayClientSecretArn: envConfig.gatewayClientSecretArn,
   // 默认管理员密码 (启动时 seed_default_admin 创建管理员账户，ARN 从 cdk.json 环境配置读取)
@@ -136,6 +152,7 @@ computeStack.addDependency(networkStack);
 computeStack.addDependency(securityStack);
 computeStack.addDependency(databaseStack);
 computeStack.addDependency(agentCoreStack);
+computeStack.addDependency(storageStack);
 
 const monitoringStack = new MonitoringStack(app, `${prefix}-monitoring-${env}`, {
   env: cdkEnv,

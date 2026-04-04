@@ -15,3 +15,5 @@ export { FrontendStack } from './frontend-stack';
 export type { FrontendStackProps } from './frontend-stack';
 export { BillingStack } from './billing-stack';
 export type { BillingStackProps } from './billing-stack';
+export { StorageStack } from './storage-stack';
+export type { StorageStackProps } from './storage-stack';

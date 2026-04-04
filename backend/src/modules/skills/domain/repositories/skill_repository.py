@@ -28,7 +28,12 @@ class ISkillRepository(IRepository[Skill, int]):
 
     @abstractmethod
     async def search(
-        self, keyword: str, *, category: SkillCategory | None = None, offset: int = 0, limit: int = 20,
+        self,
+        keyword: str,
+        *,
+        category: SkillCategory | None = None,
+        offset: int = 0,
+        limit: int = 20,
     ) -> list[Skill]:
         """搜索 Skill。"""
 

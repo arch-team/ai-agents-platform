@@ -3,17 +3,19 @@ import {
   NetworkStack,
   SecurityStack,
   DatabaseStack,
+  StorageStack,
   ComputeStack,
   AgentCoreStack,
   MonitoringStack,
 } from '../lib/stacks';
 import { TEST_ENV, TEST_VPC_CIDR } from './helpers/test-utils';
 
-/** 完整 6 层 Stack 组合的返回类型 */
+/** 完整 Stack 组合的返回类型 */
 interface StackGroup {
   readonly networkStack: NetworkStack;
   readonly securityStack: SecurityStack;
   readonly databaseStack: DatabaseStack;
+  readonly storageStack: StorageStack;
   readonly computeStack: ComputeStack;
   readonly agentCoreStack: AgentCoreStack;
   readonly monitoringStack: MonitoringStack;
@@ -47,6 +49,13 @@ function createStackGroup(app: cdk.App): StackGroup {
   databaseStack.addDependency(networkStack);
   databaseStack.addDependency(securityStack);
 
+  const storageStack = new StorageStack(app, 'TestStorageStack', {
+    env: TEST_ENV,
+    vpc: networkStack.vpc,
+    envName: 'dev',
+  });
+  storageStack.addDependency(networkStack);
+
   const computeStack = new ComputeStack(app, 'TestComputeStack', {
     env: TEST_ENV,
     vpc: networkStack.vpc,
@@ -60,13 +69,16 @@ function createStackGroup(app: cdk.App): StackGroup {
   computeStack.addDependency(networkStack);
   computeStack.addDependency(securityStack);
   computeStack.addDependency(databaseStack);
+  computeStack.addDependency(storageStack);
 
   const agentCoreStack = new AgentCoreStack(app, 'TestAgentCoreStack', {
     env: TEST_ENV,
     vpc: networkStack.vpc,
+    workspaceBucket: storageStack.workspaceBucket,
     envName: 'dev',
   });
   agentCoreStack.addDependency(networkStack);
+  agentCoreStack.addDependency(storageStack);
 
   const monitoringStack = new MonitoringStack(app, 'TestMonitoringStack', {
     env: TEST_ENV,
@@ -85,6 +97,7 @@ function createStackGroup(app: cdk.App): StackGroup {
     networkStack,
     securityStack,
     databaseStack,
+    storageStack,
     computeStack,
     agentCoreStack,
     monitoringStack,
@@ -92,13 +105,14 @@ function createStackGroup(app: cdk.App): StackGroup {
 }
 
 describe('CDK App 集成测试', () => {
-  it('应能创建完整的 6 个 Stack', () => {
+  it('应能创建完整的 7 个 Stack', () => {
     const app = new cdk.App();
     const stacks = createStackGroup(app);
 
     expect(stacks.networkStack).toBeDefined();
     expect(stacks.securityStack).toBeDefined();
     expect(stacks.databaseStack).toBeDefined();
+    expect(stacks.storageStack).toBeDefined();
     expect(stacks.computeStack).toBeDefined();
     expect(stacks.agentCoreStack).toBeDefined();
     expect(stacks.monitoringStack).toBeDefined();
@@ -110,6 +124,7 @@ describe('CDK App 集成测试', () => {
       networkStack,
       securityStack,
       databaseStack,
+      storageStack,
       computeStack,
       agentCoreStack,
       monitoringStack,
@@ -122,13 +137,18 @@ describe('CDK App 集成测试', () => {
     expect(databaseStack.dependencies).toContain(networkStack);
     expect(databaseStack.dependencies).toContain(securityStack);
 
-    // ComputeStack 依赖 NetworkStack + SecurityStack + DatabaseStack
+    // StorageStack 依赖 NetworkStack
+    expect(storageStack.dependencies).toContain(networkStack);
+
+    // ComputeStack 依赖 NetworkStack + SecurityStack + DatabaseStack + StorageStack
     expect(computeStack.dependencies).toContain(networkStack);
     expect(computeStack.dependencies).toContain(securityStack);
     expect(computeStack.dependencies).toContain(databaseStack);
+    expect(computeStack.dependencies).toContain(storageStack);
 
-    // AgentCoreStack 依赖 NetworkStack
+    // AgentCoreStack 依赖 NetworkStack + StorageStack
     expect(agentCoreStack.dependencies).toContain(networkStack);
+    expect(agentCoreStack.dependencies).toContain(storageStack);
 
     // MonitoringStack 依赖 DatabaseStack + ComputeStack + SecurityStack
     expect(monitoringStack.dependencies).toContain(databaseStack);

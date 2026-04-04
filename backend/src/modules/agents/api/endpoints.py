@@ -124,7 +124,6 @@ async def archive_agent(agent_id: int, service: ServiceDep, current_user: Curren
 # ── Blueprint 生命周期端点 ──
 
 
-
 LifecycleServiceDep = Annotated[AgentService, Depends(get_lifecycle_agent_service)]
 
 
