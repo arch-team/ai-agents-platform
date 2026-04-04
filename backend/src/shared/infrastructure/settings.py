@@ -84,6 +84,13 @@ class Settings(BaseSettings):
     # Agent 运行时模式: in_process (本地 Claude Agent SDK) / agentcore_runtime (AgentCore Runtime 托管)
     AGENT_RUNTIME_MODE: str = "in_process"
 
+    # Blueprint 生命周期配置
+    ENV_NAME: str = "dev"  # 环境名称 (Runtime 命名用)
+    WORKSPACE_ROOT: str = ""  # Agent 工作目录根路径 (EFS 挂载路径, 开发环境可用 /tmp)
+    SKILL_LIBRARY_ROOT: str = ""  # Skill 库根路径 (EFS 挂载路径, 开发环境可用 /tmp)
+    WORKSPACE_S3_BUCKET: str = ""  # S3 Workspace 存储桶
+    AGENTCORE_ECR_REPO_URI: str = ""  # AgentCore Runtime ECR 镜像 URI
+
     # Bedrock Knowledge Base 配置 (开发环境允许为空)
     BEDROCK_KB_ROLE_ARN: str = ""
     BEDROCK_KB_EMBEDDING_MODEL_ARN: str = ""

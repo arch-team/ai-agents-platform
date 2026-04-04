@@ -4,7 +4,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query, status
 
-from src.modules.agents.api.dependencies import get_agent_service
+from src.modules.agents.api.dependencies import get_agent_service, get_lifecycle_agent_service
 from src.modules.agents.api.schemas.requests import CreateAgentRequest, UpdateAgentRequest
 from src.modules.agents.api.schemas.responses import (
     AgentConfigResponse,
@@ -118,4 +118,32 @@ async def activate_agent(agent_id: int, service: ServiceDep, current_user: Curre
 async def archive_agent(agent_id: int, service: ServiceDep, current_user: CurrentUserDep) -> AgentResponse:
     """归档 Agent。"""
     agent = await service.archive_agent(agent_id, current_user.id)
+    return _to_response(agent)
+
+
+# ── Blueprint 生命周期端点 ──
+
+
+
+LifecycleServiceDep = Annotated[AgentService, Depends(get_lifecycle_agent_service)]
+
+
+@router.post("/{agent_id}/start-testing")
+async def start_testing(agent_id: int, service: LifecycleServiceDep, current_user: CurrentUserDep) -> AgentResponse:
+    """开始测试: DRAFT → TESTING。创建专属 Runtime。"""
+    agent = await service.start_testing(agent_id, current_user.id)
+    return _to_response(agent)
+
+
+@router.post("/{agent_id}/go-live")
+async def go_live(agent_id: int, service: LifecycleServiceDep, current_user: CurrentUserDep) -> AgentResponse:
+    """上线发布: TESTING → ACTIVE。复用同一 Runtime。"""
+    agent = await service.go_live(agent_id, current_user.id)
+    return _to_response(agent)
+
+
+@router.post("/{agent_id}/take-offline")
+async def take_offline(agent_id: int, service: LifecycleServiceDep, current_user: CurrentUserDep) -> AgentResponse:
+    """下线归档: ACTIVE → ARCHIVED。销毁 Runtime。"""
+    agent = await service.take_offline(agent_id, current_user.id)
     return _to_response(agent)

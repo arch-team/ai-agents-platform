@@ -3,18 +3,26 @@
 import asyncio
 from collections.abc import Callable
 from dataclasses import replace
+from pathlib import Path
+
+import structlog
 
 from src.modules.agents.application.dto.agent_dto import (
     AgentDTO,
     CreateAgentDTO,
     UpdateAgentDTO,
 )
+from src.modules.agents.application.interfaces.agent_runtime_manager import IAgentRuntimeManager
+from src.modules.agents.application.interfaces.workspace_manager import IWorkspaceManager
 from src.modules.agents.domain.entities.agent import Agent
 from src.modules.agents.domain.events import (
     AgentActivatedEvent,
     AgentArchivedEvent,
     AgentCreatedEvent,
     AgentDeletedEvent,
+    AgentGoLiveEvent,
+    AgentTakenOfflineEvent,
+    AgentTestingStartedEvent,
     AgentUpdatedEvent,
     BaseAgentEvent,
 )
@@ -22,20 +30,33 @@ from src.modules.agents.domain.exceptions import (
     AgentNameDuplicateError,
     AgentNotFoundError,
 )
+from src.modules.agents.domain.repositories.agent_blueprint_repository import IAgentBlueprintRepository
 from src.modules.agents.domain.repositories.agent_repository import IAgentRepository
 from src.modules.agents.domain.value_objects.agent_config import AgentConfig
 from src.modules.agents.domain.value_objects.agent_status import AgentStatus
 from src.shared.application.dtos import PagedResult
 from src.shared.application.ownership import check_ownership, get_or_raise
 from src.shared.domain.event_bus import event_bus
-from src.shared.domain.exceptions import InvalidStateTransitionError
+from src.shared.domain.exceptions import DomainError, InvalidStateTransitionError
+
+
+logger = structlog.get_logger(__name__)
 
 
 class AgentService:
     """Agent 业务服务，编排 Agent 的 CRUD 和状态变更用例。"""
 
-    def __init__(self, repository: IAgentRepository) -> None:
+    def __init__(
+        self,
+        repository: IAgentRepository,
+        blueprint_repository: IAgentBlueprintRepository | None = None,
+        workspace_manager: IWorkspaceManager | None = None,
+        runtime_manager: IAgentRuntimeManager | None = None,
+    ) -> None:
         self._repository = repository
+        self._blueprint_repo = blueprint_repository
+        self._workspace_manager = workspace_manager
+        self._runtime_manager = runtime_manager
 
     async def create_agent(self, dto: CreateAgentDTO, owner_id: int) -> AgentDTO:
         """创建 Agent（默认 DRAFT）。同 owner 下名称不可重复。
@@ -235,6 +256,127 @@ class AgentService:
             Agent.archive,
             AgentArchivedEvent,
         )
+
+    # ── Blueprint 生命周期编排 ──
+
+    async def start_testing(self, agent_id: int, operator_id: int) -> AgentDTO:
+        """开始测试: DRAFT → TESTING。
+
+        编排流程:
+        1. 校验 DRAFT 状态 + Blueprint 存在
+        2. WorkspaceManager.upload_to_s3() → 获取 S3 URI
+        3. AgentRuntimeManager.provision() → 获取 runtime_arn
+        4. 保存 runtime_arn 到 Blueprint
+        5. Agent → TESTING
+
+        Raises:
+            AgentNotFoundError, DomainError, InvalidStateTransitionError
+        """
+        self._require_blueprint_deps()
+        assert self._blueprint_repo is not None
+        assert self._workspace_manager is not None
+        assert self._runtime_manager is not None
+
+        agent = await self._get_owned_agent(agent_id, operator_id)
+        agent.start_testing()
+
+        blueprint_info = await self._blueprint_repo.get_runtime_info(agent_id)
+        if blueprint_info is None:
+            raise DomainError(message="Agent 没有 Blueprint, 无法开始测试", code="BLUEPRINT_NOT_FOUND")
+        if not blueprint_info.workspace_path:
+            raise DomainError(message="Agent 工作目录未创建, 无法开始测试", code="WORKSPACE_NOT_FOUND")
+
+        workspace_s3_uri = await self._workspace_manager.upload_to_s3(
+            Path(blueprint_info.workspace_path),
+            agent_id,
+        )
+
+        try:
+            runtime_info = await self._runtime_manager.provision(agent_id, workspace_s3_uri)
+        except Exception:
+            logger.exception("start_testing_provision_failed", agent_id=agent_id)
+            raise
+
+        await self._blueprint_repo.update_runtime_info(
+            agent_id,
+            runtime_arn=runtime_info.runtime_arn,
+            workspace_s3_uri=workspace_s3_uri,
+        )
+
+        updated = await self._repository.update(agent)
+        if updated.id is None:
+            msg = "Agent 状态变更后 ID 不能为空"
+            raise ValueError(msg)
+
+        await event_bus.publish_async(
+            AgentTestingStartedEvent(
+                agent_id=updated.id,
+                owner_id=updated.owner_id,
+                runtime_arn=runtime_info.runtime_arn,
+            ),
+        )
+
+        logger.info("agent_testing_started", agent_id=agent_id, runtime_arn=runtime_info.runtime_arn)
+        return self._to_dto(updated)
+
+    async def go_live(self, agent_id: int, operator_id: int) -> AgentDTO:
+        """上线发布: TESTING → ACTIVE。同一 Runtime，开放给最终用户。
+
+        Raises:
+            AgentNotFoundError, DomainError, InvalidStateTransitionError
+        """
+        agent = await self._get_owned_agent(agent_id, operator_id)
+        agent.activate()
+        updated = await self._repository.update(agent)
+        if updated.id is None:
+            msg = "Agent 状态变更后 ID 不能为空"
+            raise ValueError(msg)
+        await event_bus.publish_async(
+            AgentGoLiveEvent(agent_id=updated.id, owner_id=updated.owner_id),
+        )
+        logger.info("agent_go_live", agent_id=agent_id)
+        return self._to_dto(updated)
+
+    async def take_offline(self, agent_id: int, operator_id: int) -> AgentDTO:
+        """下线归档: ACTIVE → ARCHIVED。销毁 Runtime 释放资源。
+
+        Raises:
+            AgentNotFoundError, DomainError, InvalidStateTransitionError
+        """
+        self._require_blueprint_deps()
+        assert self._blueprint_repo is not None
+        assert self._runtime_manager is not None
+
+        agent = await self._get_owned_agent(agent_id, operator_id)
+        blueprint_info = await self._blueprint_repo.get_runtime_info(agent_id)
+        runtime_arn = blueprint_info.runtime_arn if blueprint_info else ""
+
+        agent.archive()
+        updated = await self._repository.update(agent)
+        if updated.id is None:
+            msg = "Agent 状态变更后 ID 不能为空"
+            raise ValueError(msg)
+
+        if runtime_arn:
+            try:
+                await self._runtime_manager.deprovision(runtime_arn)
+                await self._blueprint_repo.clear_runtime_info(agent_id)
+            except Exception:
+                logger.exception("take_offline_deprovision_failed", agent_id=agent_id, runtime_arn=runtime_arn)
+
+        await event_bus.publish_async(
+            AgentTakenOfflineEvent(agent_id=updated.id, owner_id=updated.owner_id),
+        )
+        logger.info("agent_taken_offline", agent_id=agent_id)
+        return self._to_dto(updated)
+
+    def _require_blueprint_deps(self) -> None:
+        """校验 Blueprint 相关依赖已注入。"""
+        if self._blueprint_repo is None or self._workspace_manager is None or self._runtime_manager is None:
+            raise DomainError(
+                message="Blueprint 生命周期管理依赖未注入",
+                code="MISSING_BLUEPRINT_DEPS",
+            )
 
     # ── 内部辅助方法 ──
 
