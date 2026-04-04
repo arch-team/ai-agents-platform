@@ -22,6 +22,10 @@ from src.modules.knowledge.infrastructure.persistence.repositories.knowledge_bas
     KnowledgeBaseRepositoryImpl,
 )
 from src.modules.knowledge.infrastructure.services.knowledge_querier_impl import KnowledgeQuerierImpl
+from src.modules.skills.infrastructure.persistence.repositories.skill_repository_impl import (
+    SkillRepositoryImpl,
+)
+from src.modules.skills.infrastructure.services.skill_querier_impl import SkillQuerierImpl
 from src.modules.tool_catalog.infrastructure.persistence.repositories.tool_repository_impl import (
     ToolRepositoryImpl,
 )
@@ -29,6 +33,7 @@ from src.modules.tool_catalog.infrastructure.services.tool_querier_impl import T
 from src.shared.domain.interfaces.agent_creator import IAgentCreator
 from src.shared.domain.interfaces.agent_querier import IAgentQuerier
 from src.shared.domain.interfaces.knowledge_querier import IKnowledgeQuerier
+from src.shared.domain.interfaces.skill_querier import ISkillQuerier
 from src.shared.domain.interfaces.tool_querier import IToolQuerier
 from src.shared.infrastructure.database import get_db
 from src.shared.infrastructure.settings import get_settings
@@ -84,3 +89,11 @@ async def get_knowledge_querier(
     kb_repo = KnowledgeBaseRepositoryImpl(session=session)
     knowledge_svc = get_bedrock_knowledge_client()
     return KnowledgeQuerierImpl(kb_repository=kb_repo, knowledge_service=knowledge_svc)
+
+
+async def get_skill_querier(
+    session: Annotated[AsyncSession, Depends(get_db)],
+) -> ISkillQuerier:
+    """创建 ISkillQuerier 实例（供 agents/builder 模块使用）。"""
+    skill_repo = SkillRepositoryImpl(session=session)
+    return SkillQuerierImpl(skill_repository=skill_repo)
