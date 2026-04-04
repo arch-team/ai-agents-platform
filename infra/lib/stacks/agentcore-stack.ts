@@ -110,7 +110,7 @@ export class AgentCoreStack extends cdk.Stack {
 
     // M17: 授权 Runtime 读取 S3 Workspace 存储桶 (容器启动时下载 Agent 工作目录)
     if (props.workspaceBucket) {
-      props.workspaceBucket.grantRead(this.runtime.role!);
+      props.workspaceBucket.grantRead(this.runtime.role);
     }
 
     // 3. AgentCore Gateway — MCP 协议统一工具入口

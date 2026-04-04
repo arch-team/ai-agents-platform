@@ -31,7 +31,7 @@ export class StorageStack extends cdk.Stack {
     // 1. S3 Bucket — Agent Workspace 持久化 (AgentCore Runtime 启动时下载)
     this.workspaceBucket = new s3.Bucket(this, 'WorkspaceBucket', {
       bucketName: `${PROJECT_NAME}-workspaces-${envName}`,
-      encryption: s3.BucketEncryption.KMS_MANAGED,
+      encryption: s3.BucketEncryption.S3_MANAGED,
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
       enforceSSL: true,
       versioned: true,
