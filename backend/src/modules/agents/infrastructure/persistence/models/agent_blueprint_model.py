@@ -26,6 +26,7 @@ class AgentBlueprintModel(Base):
         index=True,
     )
     version: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default="draft")
 
     # 结构化配置 (JSON 列)
     persona_config: Mapped[str] = mapped_column(Text, nullable=False, default="{}")

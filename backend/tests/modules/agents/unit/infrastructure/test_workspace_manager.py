@@ -188,3 +188,75 @@ class TestWorkspaceManagerUploadToS3:
         assert uri.startswith("s3://my-workspace-bucket/")
         assert "42" in uri
         assert uri.endswith(".tar.gz")
+
+    @pytest.mark.asyncio
+    async def test_upload_creates_tar_gz(self, manager: WorkspaceManagerImpl, tmp_path: Path) -> None:
+        import tarfile
+
+        workspace = tmp_path / "workspaces" / "42"
+        workspace.mkdir(parents=True)
+        (workspace / "CLAUDE.md").write_text("# Agent", encoding="utf-8")
+        (workspace / "skills").mkdir()
+
+        await manager.upload_to_s3(workspace_path=workspace, agent_id=42)
+        tar_path = tmp_path / "workspaces" / "42_workspace.tar.gz"
+        assert tar_path.exists()
+        with tarfile.open(tar_path, "r:gz") as tar:
+            names = tar.getnames()
+            assert "./CLAUDE.md" in names
+            assert "./skills" in names
+
+
+@pytest.mark.unit
+class TestWorkspaceManagerUpdateWorkspace:
+    """update_workspace 测试 — 清理旧目录 + 重新生成。"""
+
+    @pytest.fixture
+    def workspace_root(self, tmp_path: Path) -> Path:
+        return tmp_path / "agent-workspaces"
+
+    @pytest.fixture
+    def skill_library_root(self, tmp_path: Path) -> Path:
+        lib = tmp_path / "skill-library"
+        lib.mkdir()
+        return lib
+
+    @pytest.fixture
+    def manager(self, workspace_root: Path, skill_library_root: Path) -> WorkspaceManagerImpl:
+        return WorkspaceManagerImpl(
+            workspace_root=workspace_root,
+            skill_library_root=skill_library_root,
+            s3_bucket="test-bucket",
+        )
+
+    @pytest.mark.asyncio
+    async def test_update_replaces_old_workspace(self, manager: WorkspaceManagerImpl, workspace_root: Path) -> None:
+        blueprint_v1 = _make_blueprint(persona_role="V1 角色")
+        await manager.create_workspace(agent_id=1, blueprint=blueprint_v1)
+        old_claude_md = (workspace_root / "1" / "CLAUDE.md").read_text(encoding="utf-8")
+        assert "V1 角色" in old_claude_md
+
+        blueprint_v2 = _make_blueprint(persona_role="V2 角色")
+        result = await manager.update_workspace(agent_id=1, blueprint=blueprint_v2)
+        new_claude_md = (result / "CLAUDE.md").read_text(encoding="utf-8")
+        assert "V2 角色" in new_claude_md
+        assert "V1 角色" not in new_claude_md
+
+    @pytest.mark.asyncio
+    async def test_update_removes_stale_skills(
+        self,
+        manager: WorkspaceManagerImpl,
+        workspace_root: Path,
+        skill_library_root: Path,
+    ) -> None:
+        skill_dir = skill_library_root / "published" / "old-skill" / "v1"
+        skill_dir.mkdir(parents=True)
+        (skill_dir / "SKILL.md").write_text("old", encoding="utf-8")
+
+        blueprint_v1 = _make_blueprint(skill_paths=("published/old-skill/v1",))
+        await manager.create_workspace(agent_id=1, blueprint=blueprint_v1)
+        assert (workspace_root / "1" / "skills" / "old-skill").exists()
+
+        blueprint_v2 = _make_blueprint(skill_paths=())
+        await manager.update_workspace(agent_id=1, blueprint=blueprint_v2)
+        assert not (workspace_root / "1" / "skills" / "old-skill").exists()

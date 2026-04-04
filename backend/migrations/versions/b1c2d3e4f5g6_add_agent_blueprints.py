@@ -24,6 +24,7 @@ def upgrade() -> None:
         sa.Column("id", sa.Integer(), autoincrement=True, nullable=False),
         sa.Column("agent_id", sa.Integer(), nullable=False),
         sa.Column("version", sa.Integer(), nullable=False, server_default="1"),
+        sa.Column("status", sa.String(20), nullable=False, server_default="draft"),
         sa.Column("persona_config", sa.Text(), nullable=False, server_default="{}"),
         sa.Column("memory_config", sa.Text(), nullable=False, server_default="{}"),
         sa.Column("guardrails", sa.Text(), nullable=False, server_default="[]"),
@@ -70,12 +71,16 @@ def upgrade() -> None:
     )
     op.create_index("ix_agent_blueprint_tool_bindings_blueprint_id", "agent_blueprint_tool_bindings", ["blueprint_id"])
 
-    # agents 表添加 blueprint_id 列
+    # agents 表添加 blueprint_id 列 (FK 引用 agent_blueprints)
     op.add_column("agents", sa.Column("blueprint_id", sa.Integer(), nullable=True))
+    op.create_foreign_key(
+        "fk_agents_blueprint_id", "agents", "agent_blueprints", ["blueprint_id"], ["id"], ondelete="SET NULL"
+    )
 
 
 def downgrade() -> None:
     """回滚 Blueprint 相关表和列。"""
+    op.drop_constraint("fk_agents_blueprint_id", "agents", type_="foreignkey")
     op.drop_column("agents", "blueprint_id")
     op.drop_index("ix_agent_blueprint_tool_bindings_blueprint_id", table_name="agent_blueprint_tool_bindings")
     op.drop_table("agent_blueprint_tool_bindings")

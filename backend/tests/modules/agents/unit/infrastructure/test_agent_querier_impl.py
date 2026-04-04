@@ -179,3 +179,74 @@ class TestAgentQuerierImpl:
 
         with pytest.raises(ValueError, match="Agent ID 不能为空"):
             await querier.get_active_agent(1)
+
+    # ── TESTING 状态 + Blueprint 扩展字段 ──
+
+    @pytest.mark.asyncio
+    async def test_testing_agent_is_queryable(self) -> None:
+        """TESTING 状态的 Agent 应可查询（用于测试沙盒）。"""
+        repo = AsyncMock(spec=IAgentRepository)
+        repo.get_by_id.return_value = _make_agent(status=AgentStatus.TESTING)
+        querier = AgentQuerierImpl(agent_repository=repo)
+
+        result = await querier.get_active_agent(1)
+
+        assert result is not None
+        assert result.id == 1
+
+    @pytest.mark.asyncio
+    async def test_no_session_factory_returns_empty_blueprint_fields(self) -> None:
+        """无 session_factory 时 Blueprint 字段为空字符串（V1 兼容）。"""
+        agent = _make_agent()
+        agent.blueprint_id = 10
+        repo = AsyncMock(spec=IAgentRepository)
+        repo.get_by_id.return_value = agent
+        querier = AgentQuerierImpl(agent_repository=repo, session_factory=None)
+
+        result = await querier.get_active_agent(1)
+
+        assert result is not None
+        assert result.workspace_path == ""
+        assert result.runtime_arn == ""
+        assert result.workspace_s3_uri == ""
+
+    @pytest.mark.asyncio
+    async def test_no_blueprint_id_returns_empty_blueprint_fields(self) -> None:
+        """blueprint_id 为 None 时 Blueprint 字段为空字符串。"""
+        agent = _make_agent()
+        assert agent.blueprint_id is None
+        repo = AsyncMock(spec=IAgentRepository)
+        repo.get_by_id.return_value = agent
+        querier = AgentQuerierImpl(agent_repository=repo)
+
+        result = await querier.get_active_agent(1)
+
+        assert result is not None
+        assert result.workspace_path == ""
+        assert result.runtime_arn == ""
+        assert result.workspace_s3_uri == ""
+
+    def test_to_active_agent_info_with_blueprint_data(self) -> None:
+        """_to_active_agent_info 正确填充 Blueprint 字段。"""
+        agent = _make_agent()
+        bp_data = {
+            "workspace_path": "/workspaces/1",
+            "runtime_arn": "arn:aws:agentcore:us-east-1:123:runtime/agent_1",
+            "workspace_s3_uri": "s3://bucket/agent-workspaces/1/workspace.tar.gz",
+        }
+
+        result = AgentQuerierImpl._to_active_agent_info(agent, bp_data)
+
+        assert result.workspace_path == "/workspaces/1"
+        assert result.runtime_arn == "arn:aws:agentcore:us-east-1:123:runtime/agent_1"
+        assert result.workspace_s3_uri == "s3://bucket/agent-workspaces/1/workspace.tar.gz"
+
+    def test_to_active_agent_info_without_blueprint_data(self) -> None:
+        """无 Blueprint 数据时三个字段为空字符串。"""
+        agent = _make_agent()
+
+        result = AgentQuerierImpl._to_active_agent_info(agent, None)
+
+        assert result.workspace_path == ""
+        assert result.runtime_arn == ""
+        assert result.workspace_s3_uri == ""
