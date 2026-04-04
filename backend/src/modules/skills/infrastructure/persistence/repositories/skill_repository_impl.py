@@ -123,6 +123,13 @@ class SkillRepositoryImpl(PydanticRepository[Skill, SkillModel, int], ISkillRepo
     async def count_by_creator(self, creator_id: int) -> int:
         return await self._count_where(SkillModel.creator_id == creator_id)
 
+    async def get_by_ids(self, ids: list[int]) -> list[Skill]:
+        if not ids:
+            return []
+        stmt = select(SkillModel).where(SkillModel.id.in_(ids))
+        result = await self._session.execute(stmt)
+        return [self._to_entity(m) for m in result.scalars().all()]
+
     async def increment_usage_count(self, skill_id: int) -> None:
         model = await self._get_model_or_raise(skill_id)
         model.usage_count += 1

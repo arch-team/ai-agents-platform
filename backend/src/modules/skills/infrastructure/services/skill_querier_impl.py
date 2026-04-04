@@ -13,22 +13,22 @@ class SkillQuerierImpl(ISkillQuerier):
         self._repository = skill_repository
 
     async def get_published_skills(self, skill_ids: list[int]) -> list[SkillInfo]:
-        result: list[SkillInfo] = []
-        for skill_id in skill_ids:
-            skill = await self._repository.get_by_id(skill_id)
-            if skill and skill.status == SkillStatus.PUBLISHED:
-                result.append(
-                    SkillInfo(
-                        id=skill.id or 0,
-                        name=skill.name,
-                        description=skill.description,
-                        category=skill.category.value,
-                        trigger_description=skill.trigger_description,
-                        version=skill.version,
-                        file_path=skill.file_path,
-                    ),
-                )
-        return result
+        if not skill_ids:
+            return []
+        skills = await self._repository.get_by_ids(skill_ids)
+        return [
+            SkillInfo(
+                id=skill.id or 0,
+                name=skill.name,
+                description=skill.description,
+                category=skill.category.value,
+                trigger_description=skill.trigger_description,
+                version=skill.version,
+                file_path=skill.file_path,
+            )
+            for skill in skills
+            if skill.status == SkillStatus.PUBLISHED
+        ]
 
     async def list_published_skills(self, *, category: str | None = None, limit: int = 20) -> list[SkillSummary]:
         if category:

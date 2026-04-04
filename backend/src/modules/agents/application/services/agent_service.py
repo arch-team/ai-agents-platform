@@ -272,27 +272,24 @@ class AgentService:
         Raises:
             AgentNotFoundError, DomainError, InvalidStateTransitionError
         """
-        self._require_blueprint_deps()
-        assert self._blueprint_repo is not None
-        assert self._workspace_manager is not None
-        assert self._runtime_manager is not None
+        bp_repo, ws_mgr, rt_mgr = self._require_blueprint_deps()
 
         agent = await self._get_owned_agent(agent_id, operator_id)
         agent.start_testing()
 
-        blueprint_info = await self._blueprint_repo.get_runtime_info(agent_id)
+        blueprint_info = await bp_repo.get_runtime_info(agent_id)
         if blueprint_info is None:
             raise DomainError(message="Agent 没有 Blueprint, 无法开始测试", code="BLUEPRINT_NOT_FOUND")
         if not blueprint_info.workspace_path:
             raise DomainError(message="Agent 工作目录未创建, 无法开始测试", code="WORKSPACE_NOT_FOUND")
 
-        workspace_s3_uri = await self._workspace_manager.upload_to_s3(
+        workspace_s3_uri = await ws_mgr.upload_to_s3(
             Path(blueprint_info.workspace_path),
             agent_id,
         )
 
         try:
-            runtime_info = await self._runtime_manager.provision(agent_id, workspace_s3_uri)
+            runtime_info = await rt_mgr.provision(agent_id, workspace_s3_uri)
         except DomainError:
             logger.exception("start_testing_provision_domain_error", agent_id=agent_id)
             raise
@@ -300,7 +297,7 @@ class AgentService:
             logger.exception("start_testing_provision_failed", agent_id=agent_id)
             raise DomainError(message="Runtime 创建失败, 请稍后重试", code="RUNTIME_PROVISION_ERROR") from exc
 
-        await self._blueprint_repo.update_runtime_info(
+        await bp_repo.update_runtime_info(
             agent_id,
             runtime_arn=runtime_info.runtime_arn,
             workspace_s3_uri=workspace_s3_uri,
@@ -353,12 +350,10 @@ class AgentService:
         Raises:
             AgentNotFoundError, DomainError, InvalidStateTransitionError
         """
-        self._require_blueprint_deps()
-        assert self._blueprint_repo is not None
-        assert self._runtime_manager is not None
+        bp_repo, _, rt_mgr = self._require_blueprint_deps()
 
         agent = await self._get_owned_agent(agent_id, operator_id)
-        blueprint_info = await self._blueprint_repo.get_runtime_info(agent_id)
+        blueprint_info = await bp_repo.get_runtime_info(agent_id)
         runtime_arn = blueprint_info.runtime_arn if blueprint_info else ""
 
         agent.archive()
@@ -369,8 +364,8 @@ class AgentService:
 
         if runtime_arn:
             try:
-                await self._runtime_manager.deprovision(runtime_arn)
-                await self._blueprint_repo.clear_runtime_info(agent_id)
+                await rt_mgr.deprovision(runtime_arn)
+                await bp_repo.clear_runtime_info(agent_id)
             except Exception:
                 logger.exception("take_offline_deprovision_failed", agent_id=agent_id, runtime_arn=runtime_arn)
 
@@ -380,13 +375,16 @@ class AgentService:
         logger.info("agent_taken_offline", agent_id=agent_id)
         return self._to_dto(updated)
 
-    def _require_blueprint_deps(self) -> None:
-        """校验 Blueprint 相关依赖已注入。"""
+    def _require_blueprint_deps(
+        self,
+    ) -> tuple["IAgentBlueprintRepository", "IWorkspaceManager", "IAgentRuntimeManager"]:
+        """校验 Blueprint 相关依赖已注入，返回类型收窄的引用。"""
         if self._blueprint_repo is None or self._workspace_manager is None or self._runtime_manager is None:
             raise DomainError(
                 message="Blueprint 生命周期管理依赖未注入",
                 code="MISSING_BLUEPRINT_DEPS",
             )
+        return self._blueprint_repo, self._workspace_manager, self._runtime_manager
 
     # ── 内部辅助方法 ──
 

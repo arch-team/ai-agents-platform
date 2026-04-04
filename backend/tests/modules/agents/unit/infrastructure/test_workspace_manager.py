@@ -190,9 +190,7 @@ class TestWorkspaceManagerUploadToS3:
         assert uri.endswith(".tar.gz")
 
     @pytest.mark.asyncio
-    async def test_upload_creates_tar_gz(self, manager: WorkspaceManagerImpl, tmp_path: Path) -> None:
-        import tarfile
-
+    async def test_upload_cleans_up_tar_file(self, manager: WorkspaceManagerImpl, tmp_path: Path) -> None:
         workspace = tmp_path / "workspaces" / "42"
         workspace.mkdir(parents=True)
         (workspace / "CLAUDE.md").write_text("# Agent", encoding="utf-8")
@@ -200,11 +198,8 @@ class TestWorkspaceManagerUploadToS3:
 
         await manager.upload_to_s3(workspace_path=workspace, agent_id=42)
         tar_path = tmp_path / "workspaces" / "42_workspace.tar.gz"
-        assert tar_path.exists()
-        with tarfile.open(tar_path, "r:gz") as tar:
-            names = tar.getnames()
-            assert "./CLAUDE.md" in names
-            assert "./skills" in names
+        # tar 文件应在上传后被清理
+        assert not tar_path.exists()
 
 
 @pytest.mark.unit

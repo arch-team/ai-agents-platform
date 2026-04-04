@@ -33,6 +33,7 @@ from src.modules.tool_catalog.infrastructure.services.tool_querier_impl import T
 from src.shared.domain.interfaces.agent_creator import IAgentCreator
 from src.shared.domain.interfaces.agent_querier import IAgentQuerier
 from src.shared.domain.interfaces.knowledge_querier import IKnowledgeQuerier
+from src.shared.domain.interfaces.skill_creator import ISkillCreator
 from src.shared.domain.interfaces.skill_querier import ISkillQuerier
 from src.shared.domain.interfaces.tool_querier import IToolQuerier
 from src.shared.infrastructure.database import get_db
@@ -63,51 +64,63 @@ async def get_agent_querier(
     return AgentQuerierImpl(agent_repository=agent_repo)
 
 
-async def get_agent_creator(
-    session: Annotated[AsyncSession, Depends(get_db)],
-) -> IAgentCreator:
-    """创建 IAgentCreator 实例（供 builder 模块使用, V2 含 Blueprint + Workspace）。"""
+@lru_cache(maxsize=1)
+def _get_workspace_manager() -> object:
+    """创建 WorkspaceManagerImpl 单例。延迟导入避免循环依赖。"""
+    import tempfile
     from pathlib import Path
 
     from src.modules.agents.infrastructure.external.workspace_manager import WorkspaceManagerImpl
-    from src.modules.agents.infrastructure.persistence.repositories.agent_blueprint_repository_impl import (
-        AgentBlueprintRepositoryImpl,
-    )
 
     settings = get_settings()
-    agent_repo = AgentRepositoryImpl(session=session)
-    blueprint_repo = AgentBlueprintRepositoryImpl(session=session)
-    import tempfile
-
-    import boto3
-
-    from src.modules.agents.infrastructure.external.agentcore_runtime_manager import AgentCoreRuntimeManager
-
     _tmp = Path(tempfile.gettempdir())
-    workspace_mgr = WorkspaceManagerImpl(
+    return WorkspaceManagerImpl(
         workspace_root=Path(settings.WORKSPACE_ROOT) if settings.WORKSPACE_ROOT else _tmp / "agent-workspaces",
         skill_library_root=Path(settings.SKILL_LIBRARY_ROOT) if settings.SKILL_LIBRARY_ROOT else _tmp / "skill-library",
         s3_bucket=settings.WORKSPACE_S3_BUCKET,
     )
+
+
+@lru_cache(maxsize=1)
+def _get_runtime_manager() -> object:
+    """创建 AgentCoreRuntimeManager 单例。延迟导入避免循环依赖。"""
+    import boto3
+
+    from src.modules.agents.infrastructure.external.agentcore_runtime_manager import AgentCoreRuntimeManager
+
+    settings = get_settings()
     agentcore_client = boto3.client("bedrock-agentcore", region_name=settings.AWS_REGION)
-    runtime_mgr = AgentCoreRuntimeManager(
+    return AgentCoreRuntimeManager(
         client=agentcore_client,
         ecr_repo_uri=settings.AGENTCORE_ECR_REPO_URI,
         env_name=settings.ENV_NAME,
     )
 
-    # H9 修复: AgentService 必须注入 Blueprint 生命周期依赖, 否则 auto_start_testing 无法工作
+
+async def get_agent_creator(
+    session: Annotated[AsyncSession, Depends(get_db)],
+) -> IAgentCreator:
+    """创建 IAgentCreator 实例（供 builder 模块使用, V2 含 Blueprint + Workspace）。"""
+    from src.modules.agents.infrastructure.persistence.repositories.agent_blueprint_repository_impl import (
+        AgentBlueprintRepositoryImpl,
+    )
+
+    agent_repo = AgentRepositoryImpl(session=session)
+    blueprint_repo = AgentBlueprintRepositoryImpl(session=session)
+    workspace_mgr = _get_workspace_manager()
+    runtime_mgr = _get_runtime_manager()
+
     agent_service = AgentService(
         repository=agent_repo,
         blueprint_repository=blueprint_repo,
-        workspace_manager=workspace_mgr,
-        runtime_manager=runtime_mgr,
+        workspace_manager=workspace_mgr,  # type: ignore[arg-type]
+        runtime_manager=runtime_mgr,  # type: ignore[arg-type]
     )
     return AgentCreatorImpl(
         agent_service=agent_service,
         agent_repository=agent_repo,
         blueprint_repository=blueprint_repo,
-        workspace_manager=workspace_mgr,
+        workspace_manager=workspace_mgr,  # type: ignore[arg-type]
     )
 
 
@@ -140,11 +153,8 @@ async def get_skill_querier(
 
 async def get_skill_creator(
     session: Annotated[AsyncSession, Depends(get_db)],
-) -> object:
-    """创建 ISkillCreator 实例（供 builder 模块创建 Skill 使用）。
-
-    延迟导入避免循环依赖。返回类型声明为 object 以避免顶层导入。
-    """
+) -> ISkillCreator:
+    """创建 ISkillCreator 实例（供 builder 模块创建 Skill 使用）。延迟导入避免循环依赖。"""
     from pathlib import Path
 
     from src.modules.skills.application.services.skill_service import SkillService

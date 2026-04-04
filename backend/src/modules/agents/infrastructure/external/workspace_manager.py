@@ -48,16 +48,18 @@ class WorkspaceManagerImpl(IWorkspaceManager):
     async def upload_to_s3(self, workspace_path: Path, agent_id: int) -> str:
         tar_name = "workspace.tar.gz"
         tar_path = workspace_path.parent / f"{agent_id}_{tar_name}"
-        with tarfile.open(tar_path, "w:gz") as tar:
-            tar.add(workspace_path, arcname=".")
-        s3_key = f"agent-workspaces/{agent_id}/{tar_name}"
-        # TODO: 实际 S3 上传 (boto3) 在集成时实现; 当前返回预期 URI
-        return f"s3://{self._s3_bucket}/{s3_key}"
+        try:
+            with tarfile.open(tar_path, "w:gz") as tar:
+                tar.add(workspace_path, arcname=".")
+            s3_key = f"agent-workspaces/{agent_id}/{tar_name}"
+            # TODO: 实际 S3 上传 (boto3) 在集成时实现; 当前返回预期 URI
+            return f"s3://{self._s3_bucket}/{s3_key}"
+        finally:
+            tar_path.unlink(missing_ok=True)
 
     async def update_workspace(self, agent_id: int, blueprint: BlueprintDTO) -> Path:
         workspace = self._workspace_root / str(agent_id)
-        if workspace.exists():
-            shutil.rmtree(workspace)
+        shutil.rmtree(workspace, ignore_errors=True)
         return await self.create_workspace(agent_id, blueprint)
 
     def _render_claude_md(self, blueprint: BlueprintDTO) -> str:
@@ -99,8 +101,7 @@ class WorkspaceManagerImpl(IWorkspaceManager):
         parts = Path(skill_relative_path).parts
         skill_name = parts[-2] if len(parts) >= 2 else parts[-1]
         target = target_skills_dir / skill_name
-        if target.exists():
-            shutil.rmtree(target)
+        shutil.rmtree(target, ignore_errors=True)
         shutil.copytree(source, target)
 
     @staticmethod
@@ -109,9 +110,6 @@ class WorkspaceManagerImpl(IWorkspaceManager):
         if path.startswith("/"):
             msg = f"路径安全校验失败: 不允许绝对路径 '{path}'"
             raise ValueError(msg)
-        normalized = Path(path).resolve()
         if ".." in Path(path).parts:
             msg = f"路径安全校验失败: 不允许路径遍历 '{path}'"
             raise ValueError(msg)
-        # 确保规范化后没有逃逸
-        _ = normalized

@@ -34,8 +34,7 @@ class SkillFileManagerImpl(ISkillFileManager):
         src_dir = self._root / draft_path
         rel_path = f"published/{skill_name}/v{version}"
         dest_dir = self._root / rel_path
-        if dest_dir.exists():
-            shutil.rmtree(dest_dir)
+        shutil.rmtree(dest_dir, ignore_errors=True)
         shutil.copytree(src_dir, dest_dir)
         return rel_path
 
@@ -57,15 +56,13 @@ class SkillFileManagerImpl(ISkillFileManager):
 
     async def delete_draft(self, draft_path: str) -> None:
         target = self._root / draft_path
-        if target.exists():
-            shutil.rmtree(target)
+        shutil.rmtree(target, ignore_errors=True)
 
     async def copy_to_workspace(self, published_path: str, workspace_skills_dir: str, skill_name: str) -> None:
         self._validate_name(skill_name)
         src_dir = self._root / published_path
         dest_dir = Path(workspace_skills_dir) / skill_name
-        if dest_dir.exists():
-            shutil.rmtree(dest_dir)
+        shutil.rmtree(dest_dir, ignore_errors=True)
         shutil.copytree(src_dir, dest_dir)
 
     # ── 内部辅助 ──

@@ -42,5 +42,9 @@ class ISkillRepository(IRepository[Skill, int]):
         """按创建者统计 Skill 数量。"""
 
     @abstractmethod
+    async def get_by_ids(self, ids: list[int]) -> list[Skill]:
+        """批量按 ID 查询 Skill。"""
+
+    @abstractmethod
     async def increment_usage_count(self, skill_id: int) -> None:
         """增加 Skill 使用次数。"""
