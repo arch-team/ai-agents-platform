@@ -11,6 +11,12 @@ from src.modules.agents.domain.exceptions import (
     AgentNotFoundError,
 )
 from src.modules.agents.domain.repositories.agent_repository import IAgentRepository
+from src.modules.agents.domain.value_objects.agent_blueprint import (
+    Guardrail,
+    MemoryConfig,
+    Persona,
+    ToolBinding,
+)
 from src.modules.agents.domain.value_objects.agent_config import AgentConfig
 from src.modules.agents.domain.value_objects.agent_status import AgentStatus
 
@@ -26,5 +32,9 @@ __all__ = [
     "AgentNotFoundError",
     "AgentStatus",
     "AgentUpdatedEvent",
+    "Guardrail",
     "IAgentRepository",
+    "MemoryConfig",
+    "Persona",
+    "ToolBinding",
 ]

@@ -49,6 +49,7 @@ class AgentRepositoryImpl(PydanticRepository[Agent, AgentModel, int], IAgentRepo
             "enable_teams",
             "enable_memory",
             "tool_ids",
+            "blueprint_id",
         },
     )
 
@@ -71,6 +72,7 @@ class AgentRepositoryImpl(PydanticRepository[Agent, AgentModel, int], IAgentRepo
                 enable_memory=model.enable_memory,
                 tool_ids=_deserialize_tool_ids(model.tool_ids),
             ),
+            blueprint_id=model.blueprint_id,
             created_at=model.created_at,
             updated_at=model.updated_at,
         )
@@ -81,6 +83,7 @@ class AgentRepositoryImpl(PydanticRepository[Agent, AgentModel, int], IAgentRepo
             "description": entity.description,
             "system_prompt": entity.system_prompt,
             "status": entity.status.value,
+            "blueprint_id": entity.blueprint_id,
             "model_id": entity.config.model_id,
             "temperature": entity.config.temperature,
             "max_tokens": entity.config.max_tokens,
@@ -96,6 +99,7 @@ class AgentRepositoryImpl(PydanticRepository[Agent, AgentModel, int], IAgentRepo
         return AgentModel(
             id=entity.id,
             owner_id=entity.owner_id,
+            department_id=entity.department_id,
             created_at=entity.created_at,
             updated_at=entity.updated_at,
             **self._flatten_config(entity),

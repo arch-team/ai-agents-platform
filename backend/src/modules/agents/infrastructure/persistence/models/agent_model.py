@@ -63,6 +63,7 @@ class AgentModel(Base):
     tool_ids: Mapped[str] = mapped_column(Text, nullable=False, default="[]")
 
     department_id: Mapped[int | None] = mapped_column(Integer, nullable=True, default=None, index=True)
+    blueprint_id: Mapped[int | None] = mapped_column(Integer, nullable=True, default=None)
 
     created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=utc_now)
     updated_at: Mapped[datetime] = mapped_column(
