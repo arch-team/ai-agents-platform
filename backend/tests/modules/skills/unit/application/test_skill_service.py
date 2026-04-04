@@ -6,6 +6,12 @@ import pytest
 
 from src.modules.skills.application.dto.skill_dto import CreateSkillDTO, UpdateSkillDTO
 from src.modules.skills.application.services.skill_service import SkillService
+from src.modules.skills.domain.events import (
+    SkillArchivedEvent,
+    SkillCreatedEvent,
+    SkillDeletedEvent,
+    SkillPublishedEvent,
+)
 from src.modules.skills.domain.exceptions import SkillNotFoundError
 from src.modules.skills.domain.value_objects.skill_status import SkillStatus
 from src.shared.domain.exceptions import ForbiddenError, InvalidStateTransitionError
@@ -22,6 +28,7 @@ class TestCreateSkill:
         skill_service: SkillService,
         mock_skill_repo: AsyncMock,
         mock_file_manager: AsyncMock,
+        mock_event_bus: AsyncMock,
     ) -> None:
         """创建时应保存 SKILL.md 草稿并将 file_path 写入实体。"""
         mock_file_manager.save_draft.return_value = "drafts/return-processing"
@@ -34,6 +41,12 @@ class TestCreateSkill:
         mock_file_manager.save_draft.assert_called_once()
         assert result.file_path == "drafts/return-processing"
         assert result.status == SkillStatus.DRAFT.value
+        # 验证事件发布
+        mock_event_bus.publish_async.assert_called_once()
+        event = mock_event_bus.publish_async.call_args[0][0]
+        assert isinstance(event, SkillCreatedEvent)
+        assert event.skill_id == 1
+        assert event.name == "return-processing"
 
     @pytest.mark.asyncio
     async def test_create_skill_without_skill_md(
@@ -41,6 +54,7 @@ class TestCreateSkill:
         skill_service: SkillService,
         mock_skill_repo: AsyncMock,
         mock_file_manager: AsyncMock,
+        mock_event_bus: AsyncMock,
     ) -> None:
         """不提供 skill_md 时不应调用 file_manager。"""
         mock_skill_repo.get_by_name.return_value = None
@@ -51,6 +65,8 @@ class TestCreateSkill:
 
         mock_file_manager.save_draft.assert_not_called()
         assert result.file_path == ""
+        # 即使无 skill_md，创建事件仍应发布
+        mock_event_bus.publish_async.assert_called_once()
 
 
 @pytest.mark.unit
@@ -132,8 +148,9 @@ class TestDeleteSkill:
         skill_service: SkillService,
         mock_skill_repo: AsyncMock,
         mock_file_manager: AsyncMock,
+        mock_event_bus: AsyncMock,
     ) -> None:
-        """删除 DRAFT Skill 应同时清理文件。"""
+        """删除 DRAFT Skill 应同时清理文件并发布事件。"""
         skill = make_skill(status=SkillStatus.DRAFT, file_path="drafts/test")
         mock_skill_repo.get_by_id.return_value = skill
 
@@ -141,6 +158,8 @@ class TestDeleteSkill:
 
         mock_skill_repo.delete.assert_called_once_with(1)
         mock_file_manager.delete_draft.assert_called_once_with("drafts/test")
+        event = mock_event_bus.publish_async.call_args[0][0]
+        assert isinstance(event, SkillDeletedEvent)
 
     @pytest.mark.asyncio
     async def test_delete_published_skill_raises(
@@ -166,8 +185,9 @@ class TestPublishSkill:
         skill_service: SkillService,
         mock_skill_repo: AsyncMock,
         mock_file_manager: AsyncMock,
+        mock_event_bus: AsyncMock,
     ) -> None:
-        """发布应调用 file_manager.publish 并更新 file_path。"""
+        """发布应调用 file_manager.publish 并更新 file_path，发布事件。"""
         skill = make_skill(status=SkillStatus.DRAFT, file_path="drafts/return-processing")
         mock_skill_repo.get_by_id.return_value = skill
         mock_file_manager.publish.return_value = "published/return-processing/v1"
@@ -178,6 +198,9 @@ class TestPublishSkill:
         mock_file_manager.publish.assert_called_once_with("drafts/return-processing", "退货处理", version=1)
         assert result.status == SkillStatus.PUBLISHED.value
         assert result.file_path == "published/return-processing/v1"
+        event = mock_event_bus.publish_async.call_args[0][0]
+        assert isinstance(event, SkillPublishedEvent)
+        assert event.version == 1
 
 
 @pytest.mark.unit
@@ -189,6 +212,7 @@ class TestArchiveSkill:
         self,
         skill_service: SkillService,
         mock_skill_repo: AsyncMock,
+        mock_event_bus: AsyncMock,
     ) -> None:
         skill = make_skill(status=SkillStatus.PUBLISHED)
         mock_skill_repo.get_by_id.return_value = skill
@@ -196,6 +220,8 @@ class TestArchiveSkill:
 
         result = await skill_service.archive_skill(1, operator_id=1)
         assert result.status == SkillStatus.ARCHIVED.value
+        event = mock_event_bus.publish_async.call_args[0][0]
+        assert isinstance(event, SkillArchivedEvent)
 
 
 @pytest.mark.unit

@@ -7,13 +7,19 @@ from src.modules.skills.application.dto.skill_dto import (
 )
 from src.modules.skills.application.interfaces.skill_file_manager import ISkillFileManager
 from src.modules.skills.domain.entities.skill import Skill
+from src.modules.skills.domain.events import (
+    SkillArchivedEvent,
+    SkillCreatedEvent,
+    SkillDeletedEvent,
+    SkillPublishedEvent,
+)
 from src.modules.skills.domain.exceptions import SkillNotFoundError
 from src.modules.skills.domain.repositories.skill_repository import ISkillRepository
 from src.modules.skills.domain.value_objects.skill_category import SkillCategory
 from src.modules.skills.domain.value_objects.skill_status import SkillStatus
 from src.shared.application.dtos import PagedResult
 from src.shared.application.ownership import check_ownership, get_or_raise
-from src.shared.domain.event_bus import event_bus  # noqa: F401
+from src.shared.domain.event_bus import event_bus
 from src.shared.domain.exceptions import InvalidStateTransitionError
 
 
@@ -43,6 +49,10 @@ class SkillService:
             file_path=file_path,
         )
         created = await self._repository.create(skill)
+        created_id = self._require_id(created)
+        await event_bus.publish_async(
+            SkillCreatedEvent(skill_id=created_id, creator_id=creator_id, name=created.name),
+        )
         return self._to_dto(created)
 
     async def get_skill(self, skill_id: int) -> SkillDTO:
@@ -113,6 +123,9 @@ class SkillService:
         if skill.file_path:
             await self._file_manager.delete_draft(skill.file_path)
         await self._repository.delete(skill_id)
+        await event_bus.publish_async(
+            SkillDeletedEvent(skill_id=skill_id, creator_id=skill.creator_id),
+        )
 
     async def publish_skill(self, skill_id: int, operator_id: int) -> SkillDTO:
         """发布 Skill: 文件系统版本化复制 + 实体状态转换 + 持久化。
@@ -125,6 +138,10 @@ class SkillService:
         skill.update_file_path(published_path)
         skill.publish()
         updated = await self._repository.update(skill)
+        updated_id = self._require_id(updated)
+        await event_bus.publish_async(
+            SkillPublishedEvent(skill_id=updated_id, creator_id=updated.creator_id, version=updated.version),
+        )
         return self._to_dto(updated)
 
     async def archive_skill(self, skill_id: int, operator_id: int) -> SkillDTO:
@@ -136,6 +153,10 @@ class SkillService:
         skill = await self._get_owned_skill(skill_id, operator_id)
         skill.archive()
         updated = await self._repository.update(skill)
+        updated_id = self._require_id(updated)
+        await event_bus.publish_async(
+            SkillArchivedEvent(skill_id=updated_id, creator_id=updated.creator_id),
+        )
         return self._to_dto(updated)
 
     async def list_published_skills(
@@ -175,6 +196,13 @@ class SkillService:
         skill = await self._get_skill_or_raise(skill_id)
         check_ownership(skill, operator_id, owner_field="creator_id", error_code="FORBIDDEN_SKILL")
         return skill
+
+    @staticmethod
+    def _require_id(skill: Skill) -> int:
+        if skill.id is None:
+            msg = "Skill 持久化后 ID 不能为空"
+            raise ValueError(msg)
+        return skill.id
 
     @staticmethod
     def _to_dto(skill: Skill) -> SkillDTO:
