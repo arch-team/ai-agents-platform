@@ -31,6 +31,13 @@ class BuilderSessionModel(Base):
         nullable=True,
     )
     department_id: Mapped[int | None] = mapped_column(Integer, nullable=True, default=None, index=True)
+
+    # V2: 多轮对话和 Blueprint
+    messages: Mapped[list | None] = mapped_column(JSON, nullable=True, default=None)  # type: ignore[type-arg]
+    template_id: Mapped[int | None] = mapped_column(Integer, nullable=True, default=None)
+    selected_skill_ids: Mapped[list | None] = mapped_column(JSON, nullable=True, default=None)  # type: ignore[type-arg]
+    generated_blueprint: Mapped[dict | None] = mapped_column(JSON, nullable=True, default=None)  # type: ignore[type-arg]
+
     created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=utc_now)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime,

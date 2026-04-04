@@ -308,6 +308,8 @@ ignore = [
 "migrations/**/*.py" = ["ALL"]
 # __init__ 文件
 "__init__.py" = ["D104", "F401"]
+# LLM Prompt 模板 (包含大量中文，是给 LLM 的文本不是 bug)
+"**/builder_prompts.py" = ["RUF001", "RUF003", "E501"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"

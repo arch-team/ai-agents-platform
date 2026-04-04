@@ -66,10 +66,32 @@ async def get_agent_querier(
 async def get_agent_creator(
     session: Annotated[AsyncSession, Depends(get_db)],
 ) -> IAgentCreator:
-    """创建 IAgentCreator 实例（供 builder 模块使用）。"""
+    """创建 IAgentCreator 实例（供 builder 模块使用, V2 含 Blueprint + Workspace）。"""
+    from pathlib import Path
+
+    from src.modules.agents.infrastructure.external.workspace_manager import WorkspaceManagerImpl
+    from src.modules.agents.infrastructure.persistence.repositories.agent_blueprint_repository_impl import (
+        AgentBlueprintRepositoryImpl,
+    )
+
+    settings = get_settings()
     agent_repo = AgentRepositoryImpl(session=session)
     agent_service = AgentService(repository=agent_repo)
-    return AgentCreatorImpl(agent_service=agent_service)
+    blueprint_repo = AgentBlueprintRepositoryImpl(session=session)
+    import tempfile
+
+    _tmp = Path(tempfile.gettempdir())
+    workspace_mgr = WorkspaceManagerImpl(
+        workspace_root=Path(settings.WORKSPACE_ROOT) if settings.WORKSPACE_ROOT else _tmp / "agent-workspaces",
+        skill_library_root=Path(settings.SKILL_LIBRARY_ROOT) if settings.SKILL_LIBRARY_ROOT else _tmp / "skill-library",
+        s3_bucket=settings.WORKSPACE_S3_BUCKET,
+    )
+    return AgentCreatorImpl(
+        agent_service=agent_service,
+        agent_repository=agent_repo,
+        blueprint_repository=blueprint_repo,
+        workspace_manager=workspace_mgr,
+    )
 
 
 async def get_tool_querier(
@@ -97,3 +119,23 @@ async def get_skill_querier(
     """创建 ISkillQuerier 实例（供 agents/builder 模块使用）。"""
     skill_repo = SkillRepositoryImpl(session=session)
     return SkillQuerierImpl(skill_repository=skill_repo)
+
+
+async def get_skill_creator(
+    session: Annotated[AsyncSession, Depends(get_db)],
+) -> object:
+    """创建 ISkillCreator 实例（供 builder 模块创建 Skill 使用）。
+
+    延迟导入避免循环依赖。返回类型声明为 object 以避免顶层导入。
+    """
+    from pathlib import Path
+
+    from src.modules.skills.application.services.skill_service import SkillService
+    from src.modules.skills.infrastructure.external.skill_file_manager_impl import SkillFileManagerImpl
+    from src.modules.skills.infrastructure.services.skill_creator_impl import SkillCreatorImpl
+
+    settings = get_settings()
+    skill_repo = SkillRepositoryImpl(session=session)
+    file_manager = SkillFileManagerImpl(workspace_root=Path(settings.SKILL_LIBRARY_ROOT))
+    skill_service = SkillService(repository=skill_repo, file_manager=file_manager)
+    return SkillCreatorImpl(skill_service=skill_service)
