@@ -4,6 +4,9 @@
 export { BuilderChat } from './ui/BuilderChat';
 export { BuilderPreview } from './ui/BuilderPreview';
 export { BuilderActions } from './ui/BuilderActions';
+export { SkillCard } from './ui/SkillCard';
+export { BuilderToolSelector } from './ui/ToolSelector';
+export { TestSandbox } from './ui/TestSandbox';
 
 // Store hooks
 export {
@@ -15,13 +18,49 @@ export {
   useBuilderIsConfirming,
   useBuilderError,
   useBuilderActions,
+  // V2
+  useBuilderPhase,
+  useBuilderMessages,
+  useBuilderBlueprint,
+  useBuilderCreatedAgentId,
+  useBuilderConfigOverrides,
 } from './model/store';
 
 // API hooks
-export { useGetBuilderSession, builderKeys } from './api/queries';
-export { useCreateBuilderSession, useConfirmBuilderSession } from './api/mutations';
-export { useBuilderStream } from './api/stream';
+export {
+  useGetBuilderSession,
+  useAvailableTools,
+  useAvailableSkills,
+  builderKeys,
+} from './api/queries';
+export {
+  useCreateBuilderSession,
+  useConfirmBuilderSession,
+  useConfirmAndTest,
+  useStartTesting,
+  useGoLive,
+  useCancelBuilderSession,
+} from './api/mutations';
+export { useBuilderStream, useBlueprintStream } from './api/stream';
 
 // 类型
-export type { BuilderSession, AgentConfig, BuilderStreamChunk } from './api/types';
+export type {
+  BuilderSession,
+  AgentConfig,
+  BuilderStreamChunk,
+  // V2
+  BuilderPhase,
+  GeneratedBlueprint,
+  BlueprintStreamChunk,
+  Persona,
+  SkillDefinition,
+  ToolBinding,
+  MemoryConfig,
+  Guardrail,
+  ChatMessage,
+  AvailableToolResponse,
+  AvailableSkillResponse,
+  SkillSummary,
+  BlueprintConfigOverrides,
+} from './api/types';
 export type { BuilderState } from './model/types';

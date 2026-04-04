@@ -1,89 +1,109 @@
-// BuilderPreview 组件单元测试
+// BuilderPreview 组件单元测试 (V2 Blueprint)
 
 import { render, screen } from '@testing-library/react';
 import { describe, it, expect, beforeEach } from 'vitest';
 
+import type { GeneratedBlueprint } from '../api/types';
 import { useBuilderStore } from '../model/store';
-import type { AgentConfig } from '../api/types';
 
 import { BuilderPreview } from './BuilderPreview';
 
-// 重置 store 状态，确保测试隔离
 beforeEach(() => {
   useBuilderStore.getState().reset();
 });
 
-const mockConfig: AgentConfig = {
-  name: '客服 Agent',
-  description: '处理用户问题的客服助手',
-  system_prompt: '你是一个专业的客服代表，需要礼貌地回答用户问题。',
-  model_id: 'anthropic.us.anthropic.claude-haiku-4-5-20251001-v1:0-20241022-v2:0',
-  temperature: 0.7,
-  max_tokens: 2048,
+const mockBlueprint: GeneratedBlueprint = {
+  persona: {
+    role: '客服代表',
+    background: '专业处理用户退换货和订单查询',
+    tone: '友好且专业',
+  },
+  skills: [
+    {
+      name: '退换货处理',
+      trigger_description: '用户提出退换货请求时触发',
+      steps: ['确认订单信息', '检查退换货政策', '生成退换货单'],
+      rules: ['7天无理由退换', '需要订单号'],
+    },
+  ],
+  tool_bindings: [{ tool_id: 1, display_name: '订单查询 API', usage_hint: '查询用户订单状态' }],
+  knowledge_base_ids: [101],
+  memory_config: { enabled: true, strategy: 'conversation', retain_fields: ['user_id'] },
+  guardrails: [{ rule: '不得泄露用户隐私', severity: 'block' }],
 };
 
 describe('BuilderPreview', () => {
-  it('config 为 null 时显示占位内容', () => {
+  it('blueprint 为 null 时显示占位内容', () => {
     render(<BuilderPreview />);
 
-    expect(screen.getByText('生成完成后，Agent 配置将在此处预览')).toBeInTheDocument();
+    expect(screen.getByText('描述你的 Agent 需求后，蓝图将在此处预览')).toBeInTheDocument();
   });
 
-  it('生成中且 config 为 null 时显示生成中占位', () => {
+  it('生成中且 blueprint 为 null 时显示生成中占位', () => {
     useBuilderStore.setState({ isGenerating: true });
 
     render(<BuilderPreview />);
 
-    expect(screen.getByText('正在生成 Agent 配置，请稍候…')).toBeInTheDocument();
+    expect(screen.getByText('正在生成 Agent 蓝图，请稍候…')).toBeInTheDocument();
   });
 
-  it('有配置时展示可编辑的 Agent 名称', () => {
-    useBuilderStore.setState({ generatedConfig: mockConfig });
+  it('有 blueprint 时展示角色定义', () => {
+    useBuilderStore.setState({ generatedBlueprint: mockBlueprint, phase: 'configure' });
 
     render(<BuilderPreview />);
 
-    expect(screen.getByDisplayValue('客服 Agent')).toBeInTheDocument();
+    expect(screen.getByText('客服代表')).toBeInTheDocument();
+    expect(screen.getByText('专业处理用户退换货和订单查询')).toBeInTheDocument();
   });
 
-  it('有配置时展示描述', () => {
-    useBuilderStore.setState({ generatedConfig: mockConfig });
+  it('有 blueprint 时展示技能列表', () => {
+    useBuilderStore.setState({ generatedBlueprint: mockBlueprint, phase: 'configure' });
 
     render(<BuilderPreview />);
 
-    expect(screen.getByText('处理用户问题的客服助手')).toBeInTheDocument();
+    expect(screen.getByText('退换货处理')).toBeInTheDocument();
+    expect(screen.getByText('用户提出退换货请求时触发')).toBeInTheDocument();
   });
 
-  it('有配置时展示系统提示词', () => {
-    useBuilderStore.setState({ generatedConfig: mockConfig });
+  it('有 blueprint 时展示工具绑定', () => {
+    useBuilderStore.setState({ generatedBlueprint: mockBlueprint, phase: 'configure' });
 
     render(<BuilderPreview />);
 
-    expect(
-      screen.getByText('你是一个专业的客服代表，需要礼貌地回答用户问题。'),
-    ).toBeInTheDocument();
+    expect(screen.getByText('订单查询 API')).toBeInTheDocument();
+    expect(screen.getByText('查询用户订单状态')).toBeInTheDocument();
   });
 
-  it('有配置时展示温度参数', () => {
-    useBuilderStore.setState({ generatedConfig: mockConfig });
+  it('有 blueprint 时展示知识库标签', () => {
+    useBuilderStore.setState({ generatedBlueprint: mockBlueprint, phase: 'configure' });
 
     render(<BuilderPreview />);
 
-    expect(screen.getByText('0.7')).toBeInTheDocument();
+    expect(screen.getByText('KB-101')).toBeInTheDocument();
   });
 
-  it('有配置时展示 max_tokens 参数', () => {
-    useBuilderStore.setState({ generatedConfig: mockConfig });
+  it('有 blueprint 时展示记忆配置', () => {
+    useBuilderStore.setState({ generatedBlueprint: mockBlueprint, phase: 'configure' });
 
     render(<BuilderPreview />);
 
-    expect(screen.getByText('2048')).toBeInTheDocument();
+    expect(screen.getByText('已启用')).toBeInTheDocument();
   });
 
-  it('有配置时显示"Agent 配置预览"标题', () => {
-    useBuilderStore.setState({ generatedConfig: mockConfig });
+  it('有 blueprint 时展示护栏规则', () => {
+    useBuilderStore.setState({ generatedBlueprint: mockBlueprint, phase: 'configure' });
 
     render(<BuilderPreview />);
 
-    expect(screen.getByText('Agent 配置预览')).toBeInTheDocument();
+    expect(screen.getByText('不得泄露用户隐私')).toBeInTheDocument();
+    expect(screen.getByText('阻断')).toBeInTheDocument();
+  });
+
+  it('testing 阶段显示只读标题', () => {
+    useBuilderStore.setState({ generatedBlueprint: mockBlueprint, phase: 'testing' });
+
+    render(<BuilderPreview />);
+
+    expect(screen.getByText('Agent 蓝图（只读）')).toBeInTheDocument();
   });
 });
