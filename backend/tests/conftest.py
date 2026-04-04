@@ -7,10 +7,31 @@ import pytest
 import pytest_asyncio
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker, create_async_engine
 
+from src.modules.agents.infrastructure.persistence.models.agent_blueprint_model import (
+    AgentBlueprintModel,  # noqa: F401
+    AgentBlueprintSkillModel,  # noqa: F401
+    AgentBlueprintToolBindingModel,  # noqa: F401
+)
+from src.modules.agents.infrastructure.persistence.models.agent_model import AgentModel  # noqa: F401
+from src.modules.auth.infrastructure.persistence.models.refresh_token_model import RefreshTokenModel  # noqa: F401
+
+# 导入所有 ORM Model 以注册到 Base.metadata（与 migrations/env.py 保持一致）
+from src.modules.auth.infrastructure.persistence.models.user_model import UserModel  # noqa: F401
+from src.modules.execution.infrastructure.persistence.models.conversation_model import ConversationModel  # noqa: F401
+from src.modules.execution.infrastructure.persistence.models.message_model import MessageModel  # noqa: F401
+from src.modules.insights.infrastructure.persistence.models.usage_record_model import UsageRecordModel  # noqa: F401
+from src.modules.knowledge.infrastructure.persistence.models.document_model import DocumentModel  # noqa: F401
+from src.modules.knowledge.infrastructure.persistence.models.knowledge_base_model import (
+    KnowledgeBaseModel,  # noqa: F401
+)
+from src.modules.skills.infrastructure.persistence.models.skill_model import SkillModel  # noqa: F401
+from src.modules.templates.infrastructure.persistence.models.template_model import TemplateModel  # noqa: F401
+from src.modules.tool_catalog.infrastructure.persistence.models.tool_model import ToolModel  # noqa: F401
 from src.shared.infrastructure.database import Base
 
 
 # -- pytest 命令行选项 --
+
 
 def pytest_addoption(parser: pytest.Parser) -> None:
     parser.addoption(
@@ -25,7 +46,8 @@ def pytest_configure(config: pytest.Config) -> None:
     if not config.getoption("--mysql", default=False):
         # 未启用 --mysql 时, 自动跳过 @pytest.mark.mysql 标记的测试
         config.addinivalue_line(
-            "markers", "mysql: 需要 MySQL 数据库的测试",
+            "markers",
+            "mysql: 需要 MySQL 数据库的测试",
         )
 
 
@@ -38,6 +60,7 @@ def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item
 
 
 # -- 异步后端 --
+
 
 @pytest.fixture(scope="session")
 def anyio_backend() -> str:
