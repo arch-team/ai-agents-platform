@@ -10,6 +10,8 @@
 import logging
 import os
 import tarfile
+import tempfile
+from pathlib import Path
 from typing import Any
 
 from bedrock_agentcore.runtime import BedrockAgentCoreApp
@@ -53,19 +55,31 @@ def sync_workspace() -> None:
     import boto3
 
     bucket, key = _parse_s3_uri(WORKSPACE_S3_URI)
-    local_tar = "/tmp/workspace.tar.gz"  # noqa: S108
 
     _logger.info("开始同步 Workspace: %s → %s", WORKSPACE_S3_URI, WORKSPACE_DIR)
     s3 = boto3.client("s3")
-    s3.download_file(bucket, key, local_tar)
 
-    from pathlib import Path
+    # C2 修复: 使用 tempfile 避免并发竞态
+    fd, local_tar = tempfile.mkstemp(suffix=".tar.gz")
+    os.close(fd)
 
-    Path(WORKSPACE_DIR).mkdir(parents=True, exist_ok=True)
-    with tarfile.open(local_tar) as tar:
-        tar.extractall(WORKSPACE_DIR)  # noqa: S202
+    try:
+        s3.download_file(bucket, key, local_tar)
 
-    Path(local_tar).unlink()
+        workspace_root = Path(WORKSPACE_DIR).resolve()
+        workspace_root.mkdir(parents=True, exist_ok=True)
+
+        with tarfile.open(local_tar) as tar:
+            # C1 修复: 逐一校验 tar 成员路径防止 ZIP Slip 路径遍历
+            for member in tar.getmembers():
+                member_path = (workspace_root / member.name).resolve()
+                if not member_path.is_relative_to(workspace_root):
+                    msg = f"路径遍历风险, 拒绝解压: {member.name}"
+                    raise ValueError(msg)
+            tar.extractall(WORKSPACE_DIR)  # noqa: S202
+    finally:
+        Path(local_tar).unlink(missing_ok=True)
+
     _logger.info("Workspace 同步完成: %s", WORKSPACE_DIR)
 
 

@@ -58,9 +58,12 @@ export function useConfirmAndTest() {
       );
       return data;
     },
-    onSuccess: (_data, { sessionId }) => {
+    onSuccess: (data, { sessionId }) => {
       void queryClient.invalidateQueries({ queryKey: builderKeys.session(sessionId) });
-      void queryClient.invalidateQueries({ queryKey: agentKeys.lists() });
+      // H8 修复: 仅在后端返回 created_agent_id 时才 invalidate agent 列表
+      if (data.created_agent_id) {
+        void queryClient.invalidateQueries({ queryKey: agentKeys.lists() });
+      }
     },
   });
 }

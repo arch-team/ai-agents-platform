@@ -184,6 +184,7 @@ class TestGoLive:
     async def test_go_live_success(
         self,
         mock_agent_repo: AsyncMock,
+        mock_blueprint_repo: AsyncMock,
         lifecycle_service: AgentService,
         mock_event_bus: AsyncMock,
     ) -> None:
@@ -191,6 +192,13 @@ class TestGoLive:
         agent = make_agent(status=AgentStatus.TESTING, owner_id=100)
         mock_agent_repo.get_by_id.return_value = agent
         mock_agent_repo.update.return_value = agent
+        # go_live 前 runtime 应已 provisioned
+        mock_blueprint_repo.get_runtime_info.return_value = BlueprintRuntimeInfo(
+            blueprint_id=10,
+            workspace_path="/workspace/agent-workspaces/1",
+            runtime_arn="arn:aws:bedrock-agentcore:us-east-1:123:runtime/agent-1-dev",
+            workspace_s3_uri="s3://bucket/agent-workspaces/1/workspace.tar.gz",
+        )
 
         result = await lifecycle_service.go_live(agent_id=1, operator_id=100)
         assert agent.status == AgentStatus.ACTIVE

@@ -1,6 +1,6 @@
 // Builder SSE 流式 hook — V1 + V2 stream hooks
 
-import { useCallback, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 
 import { useQueryClient } from '@tanstack/react-query';
 
@@ -21,6 +21,13 @@ export function useBuilderStream(token: string | null) {
   const abort = useCallback(() => {
     abortControllerRef.current?.abort();
     abortControllerRef.current = null;
+  }, []);
+
+  // H7 修复: 组件卸载时清理 SSE 连接防止内存泄漏
+  useEffect(() => {
+    return () => {
+      abortControllerRef.current?.abort();
+    };
   }, []);
 
   const startGeneration = useCallback(
@@ -71,6 +78,13 @@ export function useBlueprintStream(token: string | null) {
   const abort = useCallback(() => {
     abortControllerRef.current?.abort();
     abortControllerRef.current = null;
+  }, []);
+
+  // H7 修复: 组件卸载时清理 SSE 连接防止内存泄漏
+  useEffect(() => {
+    return () => {
+      abortControllerRef.current?.abort();
+    };
   }, []);
 
   // 首次 Blueprint 生成

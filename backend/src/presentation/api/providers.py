@@ -76,15 +76,32 @@ async def get_agent_creator(
 
     settings = get_settings()
     agent_repo = AgentRepositoryImpl(session=session)
-    agent_service = AgentService(repository=agent_repo)
     blueprint_repo = AgentBlueprintRepositoryImpl(session=session)
     import tempfile
+
+    import boto3
+
+    from src.modules.agents.infrastructure.external.agentcore_runtime_manager import AgentCoreRuntimeManager
 
     _tmp = Path(tempfile.gettempdir())
     workspace_mgr = WorkspaceManagerImpl(
         workspace_root=Path(settings.WORKSPACE_ROOT) if settings.WORKSPACE_ROOT else _tmp / "agent-workspaces",
         skill_library_root=Path(settings.SKILL_LIBRARY_ROOT) if settings.SKILL_LIBRARY_ROOT else _tmp / "skill-library",
         s3_bucket=settings.WORKSPACE_S3_BUCKET,
+    )
+    agentcore_client = boto3.client("bedrock-agentcore", region_name=settings.AWS_REGION)
+    runtime_mgr = AgentCoreRuntimeManager(
+        client=agentcore_client,
+        ecr_repo_uri=settings.AGENTCORE_ECR_REPO_URI,
+        env_name=settings.ENV_NAME,
+    )
+
+    # H9 修复: AgentService 必须注入 Blueprint 生命周期依赖, 否则 auto_start_testing 无法工作
+    agent_service = AgentService(
+        repository=agent_repo,
+        blueprint_repository=blueprint_repo,
+        workspace_manager=workspace_mgr,
+        runtime_manager=runtime_mgr,
     )
     return AgentCreatorImpl(
         agent_service=agent_service,

@@ -293,9 +293,12 @@ class AgentService:
 
         try:
             runtime_info = await self._runtime_manager.provision(agent_id, workspace_s3_uri)
-        except Exception:
-            logger.exception("start_testing_provision_failed", agent_id=agent_id)
+        except DomainError:
+            logger.exception("start_testing_provision_domain_error", agent_id=agent_id)
             raise
+        except Exception as exc:
+            logger.exception("start_testing_provision_failed", agent_id=agent_id)
+            raise DomainError(message="Runtime 创建失败, 请稍后重试", code="RUNTIME_PROVISION_ERROR") from exc
 
         await self._blueprint_repo.update_runtime_info(
             agent_id,
@@ -326,6 +329,13 @@ class AgentService:
             AgentNotFoundError, DomainError, InvalidStateTransitionError
         """
         agent = await self._get_owned_agent(agent_id, operator_id)
+
+        # M13 修复: TESTING Agent 上线前校验 runtime_arn 已 provisioned
+        if agent.status == AgentStatus.TESTING and self._blueprint_repo is not None:
+            bp_info = await self._blueprint_repo.get_runtime_info(agent_id)
+            if bp_info and not bp_info.runtime_arn:
+                raise DomainError(message="Agent Runtime 未就绪, 无法上线", code="RUNTIME_NOT_READY")
+
         agent.activate()
         updated = await self._repository.update(agent)
         if updated.id is None:

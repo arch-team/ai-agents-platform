@@ -141,6 +141,9 @@ def _parse_skill(body: str) -> ParsedSkill:
     return ParsedSkill(name=name, trigger=trigger, steps=tuple(steps), rules=tuple(rules))
 
 
+_VALID_SEVERITIES = frozenset({"warn", "block"})
+
+
 def _parse_tools(body: str) -> list[ParsedToolBinding]:
     """解析 TOOLS 段内容。"""
     bindings: list[ParsedToolBinding] = []
@@ -150,7 +153,13 @@ def _parse_tools(body: str) -> list[ParsedToolBinding]:
             continue
         content = stripped.lstrip("- ").strip()
         parts = _parse_comma_kv(content)
-        tool_id = int(parts.get("tool_id", "0"))
+        # H4 修复: 验证 tool_id 合法性 (0 表示自定义工具, 允许)
+        try:
+            tool_id = int(parts.get("tool_id", "0"))
+        except ValueError:
+            continue
+        if tool_id < 0:
+            continue
         display_name = parts.get("display_name", "").strip()
         usage_hint = parts.get("usage_hint", "").strip()
         if display_name:
@@ -169,6 +178,9 @@ def _parse_guardrails(body: str) -> list[ParsedGuardrail]:
         parts = _parse_comma_kv(content)
         rule_text = parts.get("rule", "").strip()
         severity = parts.get("severity", "warn").strip()
+        # H4 修复: 验证 severity 枚举合法性
+        if severity not in _VALID_SEVERITIES:
+            severity = "warn"
         if rule_text:
             guardrails.append(ParsedGuardrail(rule=rule_text, severity=severity))
     return guardrails
