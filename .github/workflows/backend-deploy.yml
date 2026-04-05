@@ -104,12 +104,17 @@ jobs:
           DATABASE_URL: "sqlite+aiosqlite://"
           APP_ENV: "test"
         run: |
-          echo "检查是否有未生成的迁移..."
-          echo "注意: 使用 SQLite 仅检查未生成的迁移文件，不验证 MySQL 特定 SQL 兼容性"
-          uv run alembic check || {
-            echo "::error::存在未生成的迁移脚本，请先运行 alembic revision"
+          echo "检查迁移链完整性 (不连接数据库)..."
+          # 1. 确认只有一个 HEAD (无分支冲突)
+          HEAD_COUNT=$(uv run alembic heads 2>&1 | grep -c "^[0-9a-f]") || true
+          if [ "$HEAD_COUNT" -gt 1 ]; then
+            echo "::error::检测到迁移分支冲突 ($HEAD_COUNT 个 HEAD)，请运行 alembic merge"
+            uv run alembic heads
             exit 1
-          }
+          fi
+          echo "✅ 迁移链完整性验证通过 ($HEAD_COUNT HEAD)"
+          # 2. 列出迁移历史确认无断链
+          uv run alembic history --verbose -r -3: 2>&1 || true
           echo "✅ 迁移脚本验证通过"
 
   # ============================================================

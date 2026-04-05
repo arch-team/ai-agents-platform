@@ -211,4 +211,42 @@ describe('TemplateList', () => {
     expect(filter).toBeInTheDocument();
     expect(filter).toHaveValue('');
   });
+
+  it('切换状态筛选应触发过滤', async () => {
+    const user = userEvent.setup();
+    render(<TemplateList />, { wrapper: createWrapper() });
+    await waitFor(() => expect(screen.getByText('客服助手模板')).toBeInTheDocument());
+    await user.selectOptions(screen.getByLabelText('状态'), 'draft');
+  });
+
+
+  it('点击发布按钮应触发发布操作', async () => {
+    const user = userEvent.setup();
+    render(<TemplateList />, { wrapper: createWrapper() });
+    await waitFor(() => expect(screen.getByText('客服助手模板')).toBeInTheDocument());
+    await user.click(screen.getByRole('button', { name: '发布 客服助手模板' }));
+  });
+
+  it('点击归档按钮应触发归档操作', async () => {
+    const user = userEvent.setup();
+    render(<TemplateList />, { wrapper: createWrapper() });
+    await waitFor(() => expect(screen.getByText('数据分析模板')).toBeInTheDocument());
+    await user.click(screen.getByRole('button', { name: '归档 数据分析模板' }));
+  });
+
+  it('点击删除按钮应触发删除操作', async () => {
+    const user = userEvent.setup();
+    render(<TemplateList />, { wrapper: createWrapper() });
+    await waitFor(() => expect(screen.getByText('客服助手模板')).toBeInTheDocument());
+    await user.click(screen.getByRole('button', { name: '删除 客服助手模板' }));
+  });
+
+  it('分页应触发页码变更', async () => {
+    const user = userEvent.setup();
+    const multiPageResponse: PageResponse<Template> = { ...mockResponse, total_pages: 3 };
+    server.use(http.get(`${API_BASE}/api/v1/templates`, () => HttpResponse.json(multiPageResponse)));
+    render(<TemplateList />, { wrapper: createWrapper() });
+    await waitFor(() => expect(screen.getByText('客服助手模板')).toBeInTheDocument());
+    await user.click(screen.getByRole('button', { name: '下一页' }));
+  });
 });

@@ -1,5 +1,5 @@
 // builder API hooks 单元测试
-import { renderHook, waitFor } from '@testing-library/react';
+import { act, renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { http, HttpResponse } from 'msw';
 import { describe, it, expect } from 'vitest';
@@ -9,6 +9,14 @@ import { createElement } from 'react';
 import { server } from '../../../../tests/mocks/server';
 
 import { useGetBuilderSession } from './queries';
+import {
+  useCreateBuilderSession,
+  useConfirmBuilderSession,
+  useConfirmAndTest,
+  useStartTesting,
+  useGoLive,
+  useCancelBuilderSession,
+} from './mutations';
 
 import type { BuilderSession } from './types';
 
@@ -80,6 +88,115 @@ describe('builder API hooks', () => {
       });
 
       await waitFor(() => expect(result.current.isError).toBe(true));
+    });
+  });
+
+  describe('useCreateBuilderSession', () => {
+    it('应成功创建 Builder 会话', async () => {
+      server.use(
+        http.post(`${API_BASE}/api/v1/builder/sessions`, () =>
+          HttpResponse.json(mockSession, { status: 201 }),
+        ),
+      );
+
+      const { result } = renderHook(() => useCreateBuilderSession(), { wrapper: createWrapper() });
+
+      await act(async () => {
+        await result.current.mutateAsync({ prompt: '创建客服 Agent' });
+      });
+
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
+      expect(result.current.data?.id).toBe(1);
+    });
+  });
+
+  describe('useConfirmBuilderSession', () => {
+    it('应成功确认会话', async () => {
+      server.use(
+        http.post(`${API_BASE}/api/v1/builder/sessions/:id/confirm`, () =>
+          HttpResponse.json({ ...mockSession, created_agent_id: 42 }),
+        ),
+      );
+
+      const { result } = renderHook(() => useConfirmBuilderSession(), { wrapper: createWrapper() });
+
+      await act(async () => {
+        await result.current.mutateAsync({ sessionId: 1, nameOverride: '客服助手' });
+      });
+
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    });
+  });
+
+  describe('useConfirmAndTest', () => {
+    it('应成功确认并启动测试', async () => {
+      server.use(
+        http.post(`${API_BASE}/api/v1/builder/sessions/:id/confirm`, () =>
+          HttpResponse.json({ ...mockSession, created_agent_id: 42 }),
+        ),
+      );
+
+      const { result } = renderHook(() => useConfirmAndTest(), { wrapper: createWrapper() });
+
+      await act(async () => {
+        await result.current.mutateAsync({ sessionId: 1, auto_start_testing: true });
+      });
+
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    });
+  });
+
+  describe('useStartTesting', () => {
+    it('应成功触发开始测试', async () => {
+      server.use(
+        http.post(`${API_BASE}/api/v1/agents/:id/start-testing`, () =>
+          HttpResponse.json({ id: 1, name: '客服助手', status: 'testing' }),
+        ),
+      );
+
+      const { result } = renderHook(() => useStartTesting(), { wrapper: createWrapper() });
+
+      await act(async () => {
+        await result.current.mutateAsync(1);
+      });
+
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    });
+  });
+
+  describe('useGoLive', () => {
+    it('应成功触发上线', async () => {
+      server.use(
+        http.post(`${API_BASE}/api/v1/agents/:id/go-live`, () =>
+          HttpResponse.json({ id: 1, name: '客服助手', status: 'active' }),
+        ),
+      );
+
+      const { result } = renderHook(() => useGoLive(), { wrapper: createWrapper() });
+
+      await act(async () => {
+        await result.current.mutateAsync(1);
+      });
+
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    });
+  });
+
+  describe('useCancelBuilderSession', () => {
+    it('应成功取消会话', async () => {
+      server.use(
+        http.post(`${API_BASE}/api/v1/builder/sessions/:id/cancel`, () =>
+          HttpResponse.json({ ...mockSession, status: 'cancelled' }),
+        ),
+      );
+
+      const { result } = renderHook(() => useCancelBuilderSession(), { wrapper: createWrapper() });
+
+      await act(async () => {
+        await result.current.mutateAsync(1);
+      });
+
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
     });
   });
 });

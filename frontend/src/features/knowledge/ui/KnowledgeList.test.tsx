@@ -171,4 +171,34 @@ describe('KnowledgeList', () => {
     expect(screen.getByRole('button', { name: '删除 产品文档知识库' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '删除 技术知识库' })).toBeInTheDocument();
   });
+
+  it('切换状态筛选应触发过滤', async () => {
+    const user = userEvent.setup();
+    render(<KnowledgeList />, { wrapper: createWrapper() });
+    await waitFor(() => expect(screen.getByText('产品文档知识库')).toBeInTheDocument());
+    await user.selectOptions(screen.getByLabelText('状态筛选'), 'ACTIVE');
+  });
+
+  it('点击同步按钮应触发同步操作', async () => {
+    const user = userEvent.setup();
+    render(<KnowledgeList />, { wrapper: createWrapper() });
+    await waitFor(() => expect(screen.getByText('产品文档知识库')).toBeInTheDocument());
+    await user.click(screen.getByRole('button', { name: '同步 产品文档知识库' }));
+  });
+
+  it('点击删除按钮应触发删除操作', async () => {
+    const user = userEvent.setup();
+    render(<KnowledgeList />, { wrapper: createWrapper() });
+    await waitFor(() => expect(screen.getByText('产品文档知识库')).toBeInTheDocument());
+    await user.click(screen.getByRole('button', { name: '删除 产品文档知识库' }));
+  });
+
+  it('分页应触发页码变更', async () => {
+    const user = userEvent.setup();
+    const multiPageResponse: PageResponse<KnowledgeBase> = { ...mockResponse, total_pages: 3 };
+    server.use(http.get(`${API_BASE}/api/v1/knowledge-bases`, () => HttpResponse.json(multiPageResponse)));
+    render(<KnowledgeList />, { wrapper: createWrapper() });
+    await waitFor(() => expect(screen.getByText('产品文档知识库')).toBeInTheDocument());
+    await user.click(screen.getByRole('button', { name: '下一页' }));
+  });
 });

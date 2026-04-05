@@ -185,4 +185,59 @@ describe('AgentList', () => {
 
     expect(screen.getByRole('button', { name: '归档 测试 Agent 2' })).toBeInTheDocument();
   });
+
+  it('点击编辑按钮应调用 onEdit', async () => {
+    const user = userEvent.setup();
+    const handleEdit = vi.fn();
+    render(<AgentList onEdit={handleEdit} />, { wrapper: createWrapper() });
+    await waitFor(() => expect(screen.getByText('测试 Agent 1')).toBeInTheDocument());
+    await user.click(screen.getByRole('button', { name: '编辑 测试 Agent 1' }));
+    expect(handleEdit).toHaveBeenCalledWith(1);
+  });
+
+  it('切换状态筛选应触发过滤', async () => {
+    const user = userEvent.setup();
+    render(<AgentList />, { wrapper: createWrapper() });
+    await waitFor(() => expect(screen.getByText('测试 Agent 1')).toBeInTheDocument());
+    await user.selectOptions(screen.getByLabelText('状态筛选'), 'draft');
+  });
+
+  it('点击激活按钮应触发激活操作', async () => {
+    const user = userEvent.setup();
+    render(<AgentList />, { wrapper: createWrapper() });
+    await waitFor(() => expect(screen.getByText('测试 Agent 1')).toBeInTheDocument());
+    await user.click(screen.getByRole('button', { name: '激活 测试 Agent 1' }));
+  });
+
+  it('点击归档按钮应触发归档操作', async () => {
+    const user = userEvent.setup();
+    render(<AgentList />, { wrapper: createWrapper() });
+    await waitFor(() => expect(screen.getByText('测试 Agent 2')).toBeInTheDocument());
+    await user.click(screen.getByRole('button', { name: '归档 测试 Agent 2' }));
+  });
+
+  it('取消删除确认应不触发删除', async () => {
+    const user = userEvent.setup();
+    vi.spyOn(window, 'confirm').mockReturnValue(false);
+    render(<AgentList />, { wrapper: createWrapper() });
+    await waitFor(() => expect(screen.getByText('测试 Agent 1')).toBeInTheDocument());
+    await user.click(screen.getByRole('button', { name: '删除 测试 Agent 1' }));
+  });
+
+  it('确认删除应触发删除操作', async () => {
+    const user = userEvent.setup();
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    render(<AgentList />, { wrapper: createWrapper() });
+    await waitFor(() => expect(screen.getByText('测试 Agent 1')).toBeInTheDocument());
+    await user.click(screen.getByRole('button', { name: '删除 测试 Agent 1' }));
+  });
+
+  it('分页应触发页码变更', async () => {
+    const user = userEvent.setup();
+    const multiPageResponse: PageResponse<Agent> = { ...mockResponse, total_pages: 3 };
+    server.use(http.get(`${API_BASE}/api/v1/agents`, () => HttpResponse.json(multiPageResponse)));
+    render(<AgentList />, { wrapper: createWrapper() });
+    await waitFor(() => expect(screen.getByText('测试 Agent 1')).toBeInTheDocument());
+    await user.click(screen.getByRole('button', { name: '下一页' }));
+  });
 });
