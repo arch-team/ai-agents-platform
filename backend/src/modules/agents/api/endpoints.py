@@ -4,7 +4,10 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query, status
 
-from src.modules.agents.api.dependencies import get_agent_service, get_lifecycle_agent_service
+from src.modules.agents.api.dependencies import (
+    get_agent_service,
+    get_lifecycle_agent_service,
+)
 from src.modules.agents.api.schemas.requests import CreateAgentRequest, UpdateAgentRequest
 from src.modules.agents.api.schemas.responses import (
     AgentConfigResponse,
@@ -171,3 +174,59 @@ async def take_offline(agent_id: int, service: LifecycleServiceDep, current_user
     """下线归档: ACTIVE → ARCHIVED。销毁 Runtime。"""
     agent = await service.take_offline(agent_id, current_user.id)
     return _to_response(agent)
+
+
+# ── Blueprint 详情端点 ──
+
+from src.modules.agents.api.dependencies import get_blueprint_repository  # noqa: E402
+from src.modules.agents.api.schemas.responses import (  # noqa: E402
+    BlueprintDetailResponse,
+    BlueprintGuardrailResponse,
+    BlueprintPersonaResponse,
+    BlueprintToolBindingResponse,
+)
+from src.modules.agents.domain.repositories.agent_blueprint_repository import (  # noqa: E402
+    IAgentBlueprintRepository,
+)
+
+
+BlueprintRepoDep = Annotated[IAgentBlueprintRepository, Depends(get_blueprint_repository)]
+
+
+@router.get("/{agent_id}/blueprint")
+async def get_blueprint(
+    agent_id: int,
+    service: ServiceDep,
+    current_user: CurrentUserDep,
+    blueprint_repo: BlueprintRepoDep,
+) -> BlueprintDetailResponse:
+    """获取 Agent 的 Blueprint 完整配置信息。"""
+    from src.shared.domain.exceptions import EntityNotFoundError
+
+    # 校验所有权
+    await service.get_owned_agent(agent_id, current_user.id)
+
+    detail = await blueprint_repo.get_blueprint_detail(agent_id)
+    if detail is None:
+        entity_name = "Blueprint"
+        raise EntityNotFoundError(entity_type=entity_name, entity_id=agent_id)
+
+    persona_data = detail.persona or {}
+    return BlueprintDetailResponse(
+        persona=BlueprintPersonaResponse(
+            role=persona_data.get("role", ""),
+            background=persona_data.get("background", ""),
+            tone=persona_data.get("tone", ""),
+        ),
+        guardrails=[
+            BlueprintGuardrailResponse(rule=g.get("rule", ""), severity=g.get("severity", "warn"))
+            for g in detail.guardrails
+        ],
+        memory_config=detail.memory_config,
+        knowledge_base_ids=detail.knowledge_base_ids,
+        skill_ids=detail.skill_ids,
+        tool_bindings=[
+            BlueprintToolBindingResponse(tool_id=tb.tool_id, display_name=tb.display_name, usage_hint=tb.usage_hint)
+            for tb in detail.tool_bindings
+        ],
+    )

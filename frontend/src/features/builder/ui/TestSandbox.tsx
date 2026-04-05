@@ -1,21 +1,34 @@
 // TestSandbox — 测试沙盒面板
-// 调用 start-testing API 创建 Runtime，就绪后提供真实对话界面
-// 展示工具调用和知识库引用的可视化反馈
+// 调用 start-testing API 创建 Runtime，就绪后通过 execution API 提供真实对话
+// 使用 shared 层 parseSSEStream + apiClient，避免跨 feature 依赖
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 
 import { useAgent } from '@/features/agents';
+import { apiClient } from '@/shared/api';
+import { env } from '@/shared/config/env';
+import { extractApiError } from '@/shared/lib/extractApiError';
+import { parseSSEStream } from '@/shared/lib/parseSSEStream';
 import { Button, Spinner } from '@/shared/ui';
 
 import { useBuilderCreatedAgentId } from '../model/store';
 
-// 工具调用引用
+// SSE 响应 chunk 类型（与 execution 模块 SSEChunk 结构一致）
+interface SSEChunk {
+  content: string;
+  done: boolean;
+  message_id?: number;
+  token_count?: number;
+  error?: string;
+}
+
+// 工具调用引用（预留，后续扩展 SSE chunk 时填充）
 interface ToolCallRef {
   tool_name: string;
   status: 'pending' | 'success' | 'error';
 }
 
-// 知识库引用
+// 知识库引用（预留，后续扩展 SSE chunk 时填充）
 interface KnowledgeRef {
   source: string;
   section?: string;
@@ -28,19 +41,107 @@ interface TestMessage {
   knowledge_refs?: KnowledgeRef[];
 }
 
-export function TestSandbox() {
+interface TestSandboxProps {
+  /** 认证 token，由页面层从 auth store 获取后传入（避免跨 feature 依赖） */
+  token: string | null;
+}
+
+export function TestSandbox({ token }: TestSandboxProps) {
   const agentId = useBuilderCreatedAgentId();
   const { data: agent, isLoading: isLoadingAgent } = useAgent(agentId ?? undefined);
   const [testMessages, setTestMessages] = useState<TestMessage[]>([]);
+  const [streamingContent, setStreamingContent] = useState('');
   const [inputValue, setInputValue] = useState('');
   const [isSending, setIsSending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const conversationIdRef = useRef<number | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
+  // 自动滚动到底部
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [testMessages]);
+  }, [testMessages, streamingContent]);
+
+  // 组件卸载时取消进行中的 SSE 连接
+  useEffect(() => {
+    return () => {
+      abortControllerRef.current?.abort();
+    };
+  }, []);
 
   const isRuntimeReady = agent?.status === 'testing';
+
+  const handleSendMessage = useCallback(
+    async (e: React.FormEvent<HTMLFormElement>) => {
+      e.preventDefault();
+      const text = inputValue.trim();
+      if (!text || isSending || !agentId) return;
+
+      // 添加用户消息到列表
+      setTestMessages((prev) => [...prev, { role: 'user', content: text }]);
+      setInputValue('');
+      setIsSending(true);
+      setError(null);
+      setStreamingContent('');
+
+      // 取消上一次未完成的 SSE 连接
+      abortControllerRef.current?.abort();
+      const controller = new AbortController();
+      abortControllerRef.current = controller;
+
+      try {
+        // 首次发送时创建对话
+        if (conversationIdRef.current === null) {
+          const { data } = await apiClient.post<{ id: number }>('/api/v1/conversations', {
+            agent_id: agentId,
+            title: `测试对话 — Agent #${agentId}`,
+          });
+          conversationIdRef.current = data.id;
+        }
+
+        const conversationId = conversationIdRef.current;
+        const url = `${env.VITE_API_BASE_URL}/api/v1/conversations/${conversationId}/messages/stream`;
+
+        let accumulated = '';
+
+        for await (const chunk of parseSSEStream<SSEChunk>({
+          url,
+          token,
+          method: 'POST',
+          body: { content: text },
+          signal: controller.signal,
+        })) {
+          if (chunk.error) {
+            throw new Error(chunk.error);
+          }
+          if (chunk.content) {
+            accumulated += chunk.content;
+            setStreamingContent(accumulated);
+          }
+          if (chunk.done) {
+            break;
+          }
+        }
+
+        // 流完成 → 将完整响应添加到消息列表
+        if (accumulated) {
+          setTestMessages((prev) => [...prev, { role: 'agent', content: accumulated }]);
+        }
+      } catch (err) {
+        // 用户主动取消时不显示错误
+        if (err instanceof DOMException && err.name === 'AbortError') {
+          return;
+        }
+        setError(extractApiError(err, '发送消息失败，请重试'));
+      } finally {
+        abortControllerRef.current = null;
+        setIsSending(false);
+        setStreamingContent('');
+      }
+    },
+    [inputValue, isSending, agentId, token],
+  );
 
   // Runtime 尚未就绪
   if (!agentId || isLoadingAgent || !isRuntimeReady) {
@@ -55,32 +156,6 @@ export function TestSandbox() {
     );
   }
 
-  const handleSendMessage = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const text = inputValue.trim();
-    if (!text || isSending) return;
-
-    const userMsg: TestMessage = { role: 'user', content: text };
-    setTestMessages((prev) => [...prev, userMsg]);
-    setInputValue('');
-    setIsSending(true);
-
-    // TODO: 对接 execution 模块的实际对话 API (路由到 TESTING Runtime)
-    // 当前使用占位响应演示工具调用和知识库引用的可视化格式
-    setTimeout(() => {
-      setTestMessages((prev) => [
-        ...prev,
-        {
-          role: 'agent',
-          content: `[测试环境] Agent Runtime 已就绪 (Agent #${agentId})。实际对话功能将在 execution 模块集成后启用。`,
-          tool_calls: [{ tool_name: '订单查询 API', status: 'success' }],
-          knowledge_refs: [{ source: '退换货政策', section: '§3.2 退货流程' }],
-        },
-      ]);
-      setIsSending(false);
-    }, 1000);
-  };
-
   return (
     <div className="flex h-full flex-col">
       {/* 沙盒头部 */}
@@ -94,7 +169,7 @@ export function TestSandbox() {
 
       {/* 测试对话区域 */}
       <div className="flex-1 overflow-y-auto p-4">
-        {testMessages.length === 0 && (
+        {testMessages.length === 0 && !streamingContent && (
           <div className="flex h-full items-center justify-center text-gray-400">
             <div className="text-center">
               <p className="text-3xl">🧪</p>
@@ -112,7 +187,14 @@ export function TestSandbox() {
           ))}
         </div>
 
-        {isSending && (
+        {/* 流式输出区域 */}
+        {streamingContent && (
+          <div className="mt-3">
+            <TestMessageBubble message={{ role: 'agent', content: streamingContent }} />
+          </div>
+        )}
+
+        {isSending && !streamingContent && (
           <div className="mt-3 flex items-center gap-2 text-gray-500">
             <Spinner />
             <span className="text-sm">Agent 正在思考…</span>
@@ -121,6 +203,13 @@ export function TestSandbox() {
 
         <div ref={messagesEndRef} />
       </div>
+
+      {/* 错误提示 */}
+      {error && (
+        <div className="border-t border-red-100 bg-red-50 px-4 py-2">
+          <p className="text-sm text-red-600">{error}</p>
+        </div>
+      )}
 
       {/* 测试输入区域 */}
       <form onSubmit={(e) => void handleSendMessage(e)} className="border-t border-gray-200 p-4">

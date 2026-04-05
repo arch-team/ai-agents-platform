@@ -8,6 +8,7 @@ import type { AgentFilters } from '../model/types';
 import type {
   AgentListResponse,
   AgentPreviewResponse,
+  BlueprintDetail,
   CreateAgentRequest,
   UpdateAgentRequest,
 } from './types';
@@ -19,6 +20,7 @@ export const agentKeys = {
   list: (filters: AgentFilters) => [...agentKeys.lists(), filters] as const,
   details: () => [...agentKeys.all, 'detail'] as const,
   detail: (id: number) => [...agentKeys.details(), id] as const,
+  blueprint: (id: number) => [...agentKeys.all, 'blueprint', id] as const,
 };
 
 // 刷新列表缓存并更新详情缓存的通用回调
@@ -116,6 +118,18 @@ export function useArchiveAgent() {
   });
 }
 
+// 查询 Agent Blueprint 详情
+export function useAgentBlueprint(agentId: number | undefined) {
+  return useQuery({
+    queryKey: agentKeys.blueprint(agentId ?? 0),
+    queryFn: async () => {
+      const { data } = await apiClient.get<BlueprintDetail>(`/api/v1/agents/${agentId}/blueprint`);
+      return data;
+    },
+    enabled: !!agentId,
+  });
+}
+
 // 预览 Agent（单轮测试对话，不持久化）
 export function usePreviewAgent() {
   return useMutation({
@@ -126,5 +140,43 @@ export function usePreviewAgent() {
       );
       return data;
     },
+  });
+}
+
+// ── Blueprint 生命周期 mutations ──
+
+// 开始测试 (DRAFT → TESTING)
+export function useStartTesting() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: number) => {
+      const { data } = await apiClient.post<Agent>(`/api/v1/agents/${id}/start-testing`);
+      return data;
+    },
+    onSuccess: (data) => invalidateAndUpdateDetail(queryClient, data),
+  });
+}
+
+// 上线发布 (TESTING → ACTIVE)
+export function useGoLive() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: number) => {
+      const { data } = await apiClient.post<Agent>(`/api/v1/agents/${id}/go-live`);
+      return data;
+    },
+    onSuccess: (data) => invalidateAndUpdateDetail(queryClient, data),
+  });
+}
+
+// 下线归档 (ACTIVE → ARCHIVED)
+export function useTakeOffline() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: number) => {
+      const { data } = await apiClient.post<Agent>(`/api/v1/agents/${id}/take-offline`);
+      return data;
+    },
+    onSuccess: (data) => invalidateAndUpdateDetail(queryClient, data),
   });
 }

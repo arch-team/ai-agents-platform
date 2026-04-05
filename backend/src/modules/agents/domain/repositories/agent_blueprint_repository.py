@@ -14,6 +14,28 @@ class BlueprintRuntimeInfo:
     workspace_s3_uri: str
 
 
+@dataclass(frozen=True)
+class BlueprintToolBindingInfo:
+    """Blueprint 工具绑定详情。"""
+
+    tool_id: int
+    display_name: str
+    usage_hint: str
+
+
+@dataclass(frozen=True)
+class BlueprintDetailInfo:
+    """Blueprint 完整配置信息 — Agent 详情页展示用。"""
+
+    blueprint_id: int
+    persona: dict[str, str]
+    guardrails: list[dict[str, str]]
+    memory_config: dict[str, object]
+    knowledge_base_ids: list[int]
+    skill_ids: list[int]
+    tool_bindings: list[BlueprintToolBindingInfo]
+
+
 @dataclass
 class CreateBlueprintDTO:
     """创建 Blueprint 的数据传输对象。"""
@@ -70,3 +92,7 @@ class IAgentBlueprintRepository(ABC):
     @abstractmethod
     async def clear_runtime_info(self, agent_id: int) -> None:
         """清除 Blueprint 的 runtime_arn (归档时调用)。"""
+
+    @abstractmethod
+    async def get_blueprint_detail(self, agent_id: int) -> BlueprintDetailInfo | None:
+        """获取 Blueprint 完整配置信息 (含 persona, guardrails, skills, tool_bindings)。"""

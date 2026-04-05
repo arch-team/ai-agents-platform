@@ -401,3 +401,62 @@ class TestAgentsEndpointsStructure:
     def test_archive_endpoint_exists(self, app) -> None:
         routes = [r.path for r in app.routes]
         assert "/api/v1/agents/{agent_id}/archive" in routes
+
+    def test_blueprint_endpoint_exists(self, app) -> None:
+        routes = [r.path for r in app.routes]
+        assert "/api/v1/agents/{agent_id}/blueprint" in routes
+
+
+@pytest.mark.integration
+class TestGetBlueprintEndpoint:
+    """GET /api/v1/agents/{agent_id}/blueprint tests."""
+
+    def test_returns_blueprint_detail(self, client: TestClient, mock_service: AsyncMock) -> None:
+        """200 + 返回 BlueprintDetailResponse。"""
+        from src.modules.agents.api.dependencies import get_blueprint_repository
+        from src.modules.agents.domain.repositories.agent_blueprint_repository import (
+            BlueprintDetailInfo,
+            BlueprintToolBindingInfo,
+        )
+
+        mock_service.get_owned_agent.return_value = _make_agent_dto()
+
+        mock_bp_repo = AsyncMock()
+        mock_bp_repo.get_blueprint_detail.return_value = BlueprintDetailInfo(
+            blueprint_id=10,
+            persona={"role": "客服助手", "background": "电商领域", "tone": "friendly"},
+            guardrails=[{"rule": "不透露内部信息", "severity": "block"}],
+            memory_config={"enabled": True},
+            knowledge_base_ids=[1, 2],
+            skill_ids=[3],
+            tool_bindings=[BlueprintToolBindingInfo(tool_id=5, display_name="订单查询", usage_hint="查询订单状态")],
+        )
+
+        app = client.app
+        app.dependency_overrides[get_blueprint_repository] = lambda: mock_bp_repo
+
+        response = client.get("/api/v1/agents/1/blueprint")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["persona"]["role"] == "客服助手"
+        assert data["persona"]["tone"] == "friendly"
+        assert len(data["guardrails"]) == 1
+        assert data["guardrails"][0]["severity"] == "block"
+        assert data["knowledge_base_ids"] == [1, 2]
+        assert data["skill_ids"] == [3]
+        assert data["tool_bindings"][0]["display_name"] == "订单查询"
+
+    def test_returns_404_when_no_blueprint(self, client: TestClient, mock_service: AsyncMock) -> None:
+        """没有 Blueprint 时返回 404。"""
+        from src.modules.agents.api.dependencies import get_blueprint_repository
+
+        mock_service.get_owned_agent.return_value = _make_agent_dto()
+        mock_bp_repo = AsyncMock()
+        mock_bp_repo.get_blueprint_detail.return_value = None
+
+        app = client.app
+        app.dependency_overrides[get_blueprint_repository] = lambda: mock_bp_repo
+
+        response = client.get("/api/v1/agents/1/blueprint")
+        assert response.status_code == 404

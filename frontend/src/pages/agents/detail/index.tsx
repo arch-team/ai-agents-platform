@@ -7,6 +7,10 @@ import {
   useActivateAgent,
   useArchiveAgent,
   usePreviewAgent,
+  useAgentBlueprint,
+  useStartTesting,
+  useGoLive,
+  useTakeOffline,
   AgentStatusBadge,
   MemoryPanel,
 } from '@/features/agents';
@@ -23,8 +27,12 @@ export default function AgentDetailPage() {
 
   const { data: agent, isLoading, error } = useAgent(id);
   const { data: conversationsData } = useConversations(id);
+  const { data: blueprint } = useAgentBlueprint(id);
   const activateMutation = useActivateAgent();
   const archiveMutation = useArchiveAgent();
+  const startTestingMutation = useStartTesting();
+  const goLiveMutation = useGoLive();
+  const takeOfflineMutation = useTakeOffline();
   const createConversation = useCreateConversation();
 
   // 预览面板状态
@@ -72,6 +80,9 @@ export default function AgentDetailPage() {
       {[
         { mutation: activateMutation, message: '激活 Agent 失败' },
         { mutation: archiveMutation, message: '归档 Agent 失败' },
+        { mutation: startTestingMutation, message: '开始测试失败' },
+        { mutation: goLiveMutation, message: '上线发布失败' },
+        { mutation: takeOfflineMutation, message: '下线失败' },
       ].map(
         ({ mutation, message }) =>
           mutation.isError && (
@@ -95,12 +106,37 @@ export default function AgentDetailPage() {
             <Button
               variant="primary"
               size="sm"
-              loading={activateMutation.isPending}
-              onClick={() => activateMutation.mutate(agent.id)}
-              aria-label={`激活 ${agent.name}`}
+              loading={startTestingMutation.isPending}
+              onClick={() => startTestingMutation.mutate(agent.id)}
+              aria-label={`开始测试 ${agent.name}`}
             >
-              激活
+              开始测试
             </Button>
+          )}
+          {agent.status === 'testing' && (
+            <>
+              <Button
+                variant="primary"
+                size="sm"
+                loading={goLiveMutation.isPending}
+                onClick={() => goLiveMutation.mutate(agent.id)}
+                aria-label={`上线发布 ${agent.name}`}
+              >
+                上线发布
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setShowPreview(!showPreview);
+                  previewMutation.reset();
+                }}
+                aria-expanded={showPreview}
+                aria-controls="preview-panel"
+              >
+                测试对话
+              </Button>
+            </>
           )}
           {agent.status === 'active' && (
             <>
@@ -128,13 +164,16 @@ export default function AgentDetailPage() {
               <Button
                 variant="outline"
                 size="sm"
-                loading={archiveMutation.isPending}
-                onClick={() => archiveMutation.mutate(agent.id)}
-                aria-label={`归档 ${agent.name}`}
+                loading={takeOfflineMutation.isPending}
+                onClick={() => takeOfflineMutation.mutate(agent.id)}
+                aria-label={`下线 ${agent.name}`}
               >
-                归档
+                下线
               </Button>
             </>
+          )}
+          {agent.status === 'archived' && (
+            <span className="text-sm text-gray-500">已归档（只读）</span>
           )}
           <Button variant="outline" size="sm" onClick={() => navigate('/agents')}>
             返回列表
@@ -208,7 +247,7 @@ export default function AgentDetailPage() {
         </Card>
       )}
 
-      {/* Agent 详情信息 */}
+      {/* Agent 配置信息 */}
       <Card className="mb-6">
         <h2 className="mb-4 text-lg font-semibold text-gray-900">配置信息</h2>
         <dl className="grid gap-4 sm:grid-cols-2">
@@ -225,16 +264,79 @@ export default function AgentDetailPage() {
             </div>
           ))}
         </dl>
-
-        {agent.system_prompt && (
-          <div className="mt-4 border-t border-gray-100 pt-4">
-            <dt className="text-sm font-medium text-gray-500">系统提示词</dt>
-            <dd className="mt-1 whitespace-pre-wrap rounded-md bg-gray-50 p-3 text-sm text-gray-700">
-              {agent.system_prompt}
-            </dd>
-          </div>
-        )}
       </Card>
+
+      {/* Blueprint 详情 */}
+      {blueprint && (
+        <Card className="mb-6">
+          <h2 className="mb-4 text-lg font-semibold text-gray-900">Blueprint</h2>
+
+          {/* 角色定义 */}
+          {blueprint.persona && (blueprint.persona.role || blueprint.persona.background) && (
+            <div className="mb-4">
+              <h3 className="mb-2 text-sm font-medium text-gray-500">角色定义</h3>
+              <dl className="grid gap-2 sm:grid-cols-3">
+                {blueprint.persona.role && (
+                  <div>
+                    <dt className="text-xs text-gray-400">角色</dt>
+                    <dd className="text-sm text-gray-900">{blueprint.persona.role}</dd>
+                  </div>
+                )}
+                {blueprint.persona.background && (
+                  <div>
+                    <dt className="text-xs text-gray-400">背景</dt>
+                    <dd className="text-sm text-gray-900">{blueprint.persona.background}</dd>
+                  </div>
+                )}
+                {blueprint.persona.tone && (
+                  <div>
+                    <dt className="text-xs text-gray-400">语气</dt>
+                    <dd className="text-sm text-gray-900">{blueprint.persona.tone}</dd>
+                  </div>
+                )}
+              </dl>
+            </div>
+          )}
+
+          {/* 工具绑定 */}
+          {blueprint.tool_bindings.length > 0 && (
+            <div className="mb-4 border-t border-gray-100 pt-4">
+              <h3 className="mb-2 text-sm font-medium text-gray-500">工具绑定</h3>
+              <ul className="space-y-1">
+                {blueprint.tool_bindings.map((tb) => (
+                  <li key={tb.tool_id} className="flex items-center gap-2 text-sm">
+                    <span className="font-medium text-gray-900">{tb.display_name}</span>
+                    {tb.usage_hint && <span className="text-gray-500">— {tb.usage_hint}</span>}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {/* 安全护栏 */}
+          {blueprint.guardrails.length > 0 && (
+            <div className="border-t border-gray-100 pt-4">
+              <h3 className="mb-2 text-sm font-medium text-gray-500">安全护栏</h3>
+              <ul className="space-y-1">
+                {blueprint.guardrails.map((g, i) => (
+                  <li key={i} className="flex items-center gap-2 text-sm">
+                    <span
+                      className={`inline-block rounded px-1.5 py-0.5 text-xs font-medium ${
+                        g.severity === 'block'
+                          ? 'bg-red-100 text-red-700'
+                          : 'bg-yellow-100 text-yellow-700'
+                      }`}
+                    >
+                      {g.severity}
+                    </span>
+                    <span className="text-gray-900">{g.rule}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </Card>
+      )}
 
       {/* 记忆管理面板 — 仅当 enable_memory 开启时展示 */}
       {agent.config.enable_memory && (

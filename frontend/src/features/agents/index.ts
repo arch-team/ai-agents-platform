@@ -14,6 +14,10 @@ export {
   useActivateAgent,
   useArchiveAgent,
   usePreviewAgent,
+  useAgentBlueprint,
+  useStartTesting,
+  useGoLive,
+  useTakeOffline,
 } from './api/queries';
 
 // Memory Hooks
@@ -30,6 +34,7 @@ export type {
   UpdateAgentRequest,
   AgentListResponse,
   AgentPreviewResponse,
+  BlueprintDetail,
 } from './api/types';
 export type { MemoryItem, SaveMemoryRequest, SearchMemoryRequest } from './api/memory-queries';
 export type { AgentFilters } from './model/types';
