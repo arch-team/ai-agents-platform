@@ -30,7 +30,7 @@ class TestSkillLifecycle:
         admin_headers: dict[str, str],
         resource_tracker: ResourceTracker,
     ) -> None:
-        """创建 Skill，初始状态为 DRAFT（不发送 skill_md，避免 EFS 写入 500）。"""
+        """创建 Skill，初始状态为 DRAFT。"""
         resp = http.post(
             "/api/v1/skills",
             json={
@@ -38,6 +38,7 @@ class TestSkillLifecycle:
                 "description": "处理客户退货、退款咨询的标准操作流程",
                 "category": "customer_service",
                 "trigger_description": "当客户提到退货、退款、换货时使用",
+                "skill_md": "# 退货处理\n\n## 步骤\n1. 确认订单\n2. 核实退货原因\n3. 生成退货单",
             },
             headers=admin_headers,
         )
