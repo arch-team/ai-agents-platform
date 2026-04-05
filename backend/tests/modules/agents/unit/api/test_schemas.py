@@ -22,23 +22,25 @@ class TestCreateAgentRequest:
         req = CreateAgentRequest(name="test-agent")
         assert req.name == "test-agent"
         assert req.description == ""
-        assert req.system_prompt == ""
+        assert req.persona_role == ""
         assert req.model_id == MODEL_CLAUDE_HAIKU_45
         assert req.temperature == 0.7
         assert req.max_tokens == 2048
         assert req.runtime_type == "agent"
 
-    def test_valid_request_with_all_fields(self) -> None:
+    def test_valid_request_with_persona(self) -> None:
         req = CreateAgentRequest(
             name="my-agent",
             description="A test agent",
-            system_prompt="You are helpful.",
+            persona_role="客服助手",
+            persona_background="熟悉安克产品",
             model_id="custom-model",
             temperature=0.5,
             max_tokens=1024,
         )
         assert req.name == "my-agent"
         assert req.description == "A test agent"
+        assert req.persona_role == "客服助手"
         assert req.temperature == 0.5
 
     def test_empty_name_raises(self) -> None:
@@ -102,7 +104,6 @@ class TestUpdateAgentRequest:
         req = UpdateAgentRequest()
         assert req.name is None
         assert req.description is None
-        assert req.system_prompt is None
         assert req.model_id is None
         assert req.temperature is None
         assert req.max_tokens is None

@@ -12,6 +12,7 @@ from src.modules.agents.domain.exceptions import AgentNameDuplicateError, AgentN
 from src.modules.auth.api.dependencies import get_current_user
 from src.modules.auth.application.dto.user_dto import UserDTO
 from src.presentation.api.main import create_app
+from src.presentation.api.providers import get_agent_creator
 from src.shared.application.dtos import PagedResult
 from src.shared.domain.constants import MODEL_CLAUDE_HAIKU_45
 from src.shared.domain.exceptions import InvalidStateTransitionError, ValidationError
@@ -70,14 +71,21 @@ def mock_service() -> AsyncMock:
 
 
 @pytest.fixture
+def mock_creator() -> AsyncMock:
+    """IAgentCreator Mock (用于 POST /agents Blueprint 创建)。"""
+    return AsyncMock()
+
+
+@pytest.fixture
 def mock_user() -> UserDTO:
     return _make_user_dto()
 
 
 @pytest.fixture
-def app(mock_service: AsyncMock, mock_user: UserDTO):
+def app(mock_service: AsyncMock, mock_creator: AsyncMock, mock_user: UserDTO):
     test_app = create_app()
     test_app.dependency_overrides[get_agent_service] = lambda: mock_service
+    test_app.dependency_overrides[get_agent_creator] = lambda: mock_creator
     test_app.dependency_overrides[get_current_user] = lambda: mock_user
     return test_app
 
@@ -91,9 +99,16 @@ def client(app) -> TestClient:
 class TestCreateAgentEndpoint:
     """POST /api/v1/agents tests."""
 
-    def test_create_success(self, client: TestClient, mock_service: AsyncMock) -> None:
-        """201 + 返回 AgentResponse。"""
-        mock_service.create_agent.return_value = _make_agent_dto()
+    def test_create_success(self, client: TestClient, mock_creator: AsyncMock, mock_service: AsyncMock) -> None:
+        """201 + 返回 AgentResponse (通过 IAgentCreator 创建 Blueprint)。"""
+        from src.shared.domain.interfaces.agent_creator import CreatedAgentInfo
+
+        mock_creator.create_agent_with_blueprint.return_value = CreatedAgentInfo(
+            id=1,
+            name="test-agent",
+            status="draft",
+        )
+        mock_service.get_owned_agent.return_value = _make_agent_dto()
 
         response = client.post(
             "/api/v1/agents",
@@ -106,11 +121,11 @@ class TestCreateAgentEndpoint:
         assert data["status"] == "draft"
         assert "config" in data
         assert data["config"]["model_id"] == MODEL_CLAUDE_HAIKU_45
-        mock_service.create_agent.assert_called_once()
+        mock_creator.create_agent_with_blueprint.assert_called_once()
 
-    def test_create_duplicate_name(self, client: TestClient, mock_service: AsyncMock) -> None:
+    def test_create_duplicate_name(self, client: TestClient, mock_creator: AsyncMock) -> None:
         """409 名称重复。"""
-        mock_service.create_agent.side_effect = AgentNameDuplicateError("test-agent")
+        mock_creator.create_agent_with_blueprint.side_effect = AgentNameDuplicateError("test-agent")
 
         response = client.post(
             "/api/v1/agents",
@@ -121,11 +136,11 @@ class TestCreateAgentEndpoint:
         data = response.json()
         assert "DUPLICATE" in data["code"]
 
-    def test_create_without_auth(self, mock_service: AsyncMock) -> None:
+    def test_create_without_auth(self, mock_service: AsyncMock, mock_creator: AsyncMock) -> None:
         """401 未认证。"""
         test_app = create_app()
         test_app.dependency_overrides[get_agent_service] = lambda: mock_service
-        # 不 override get_current_user，让 HTTPBearer 拦截
+        test_app.dependency_overrides[get_agent_creator] = lambda: mock_creator
         unauthenticated_client = TestClient(test_app)
 
         response = unauthenticated_client.post(
@@ -135,24 +150,22 @@ class TestCreateAgentEndpoint:
 
         assert response.status_code in (401, 403)
 
-    def test_create_viewer_role_forbidden(self, mock_service: AsyncMock) -> None:
+    def test_create_viewer_role_forbidden(self, mock_service: AsyncMock, mock_creator: AsyncMock) -> None:
         """403 VIEWER 角色无权创建 Agent。"""
-        # Arrange
         viewer_user = _make_user_dto(role="viewer")
         test_app = create_app()
         test_app.dependency_overrides[get_agent_service] = lambda: mock_service
+        test_app.dependency_overrides[get_agent_creator] = lambda: mock_creator
         test_app.dependency_overrides[get_current_user] = lambda: viewer_user
         viewer_client = TestClient(test_app)
 
-        # Act
         response = viewer_client.post(
             "/api/v1/agents",
             json={"name": "test-agent"},
         )
 
-        # Assert
         assert response.status_code == 403
-        mock_service.create_agent.assert_not_called()
+        mock_creator.create_agent_with_blueprint.assert_not_called()
 
     def test_create_invalid_name_empty(self, client: TestClient) -> None:
         """422 空名称。"""

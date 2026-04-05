@@ -11,18 +11,27 @@ from src.modules.agents.api.schemas.responses import (
     AgentListResponse,
     AgentResponse,
 )
-from src.modules.agents.application.dto.agent_dto import AgentDTO, CreateAgentDTO, UpdateAgentDTO
+from src.modules.agents.application.dto.agent_dto import AgentDTO, UpdateAgentDTO
 from src.modules.agents.application.services.agent_service import AgentService
 from src.modules.agents.domain.value_objects.agent_status import AgentStatus
 from src.modules.auth.api.dependencies import get_current_user, require_role
 from src.modules.auth.application.dto.user_dto import UserDTO
+from src.presentation.api.providers import get_agent_creator
 from src.shared.api.schemas import calc_total_pages
+from src.shared.domain.interfaces.agent_creator import (
+    BlueprintData,
+    CreateAgentWithBlueprintRequest,
+    IAgentCreator,
+    PersonaData,
+    ToolBindingData,
+)
 from src.shared.domain.value_objects.role import Role
 
 
 router = APIRouter(prefix="/api/v1/agents", tags=["agents"])
 
 ServiceDep = Annotated[AgentService, Depends(get_agent_service)]
+AgentCreatorDep = Annotated[IAgentCreator, Depends(get_agent_creator)]
 CurrentUserDep = Annotated[UserDTO, Depends(get_current_user)]
 
 
@@ -53,12 +62,28 @@ def _to_response(dto: AgentDTO) -> AgentResponse:
 @router.post("", status_code=status.HTTP_201_CREATED)
 async def create_agent(
     request: CreateAgentRequest,
+    agent_creator: AgentCreatorDep,
     service: ServiceDep,
     current_user: Annotated[UserDTO, Depends(require_role(Role.DEVELOPER, Role.ADMIN))],
 ) -> AgentResponse:
-    """创建 Agent。仅 DEVELOPER 和 ADMIN 可创建。"""
-    dto = CreateAgentDTO(**request.model_dump())
-    agent = await service.create_agent(dto, current_user.id)
+    """创建 Agent (自动创建最小 Blueprint)。仅 DEVELOPER 和 ADMIN 可创建。"""
+    blueprint = BlueprintData(
+        persona=PersonaData(
+            role=request.persona_role or request.name,
+            background=request.persona_background or request.description,
+            tone=request.persona_tone,
+        ),
+        tool_bindings=tuple(ToolBindingData(tool_id=tid, display_name="") for tid in request.tool_ids),
+        memory_enabled=request.enable_memory,
+    )
+    cmd = CreateAgentWithBlueprintRequest(
+        name=request.name,
+        blueprint=blueprint,
+        description=request.description,
+        model_id=request.model_id,
+    )
+    result = await agent_creator.create_agent_with_blueprint(cmd, current_user.id)
+    agent = await service.get_owned_agent(result.id, current_user.id)
     return _to_response(agent)
 
 
