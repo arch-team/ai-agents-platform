@@ -4454,7 +4454,7 @@ exports[`Snapshot Tests StorageStack 快照匹配 1`] = `
         },
       },
       "Properties": {
-        "GroupDescription": "EFS Skill Library security group — allows NFS access from ECS",
+        "GroupDescription": "EFS Skill Library security group - allows NFS access from ECS",
         "SecurityGroupEgress": [
           {
             "CidrIp": "255.255.255.255/32",

@@ -61,7 +61,7 @@ export class StorageStack extends cdk.Stack {
     // 2. EFS FileSystem — Skill Library + Agent Workspaces (ECS 实时读写)
     this.efsSecurityGroup = new ec2.SecurityGroup(this, 'EfsSecurityGroup', {
       vpc,
-      description: 'EFS Skill Library security group — allows NFS access from ECS',
+      description: 'EFS Skill Library security group - allows NFS access from ECS',
       allowAllOutbound: false,
     });
 
