@@ -327,8 +327,14 @@ class AgentService:
         """
         agent = await self._get_owned_agent(agent_id, operator_id)
 
-        # M13 修复: TESTING Agent 上线前校验 runtime_arn 已 provisioned
-        if agent.status == AgentStatus.TESTING and self._blueprint_repo is not None:
+        if agent.status != AgentStatus.TESTING:
+            raise InvalidStateTransitionError(
+                entity_type="Agent",
+                current_state=agent.status.value,
+                target_state="active (go-live)",
+            )
+
+        if self._blueprint_repo is not None:
             bp_info = await self._blueprint_repo.get_runtime_info(agent_id)
             if bp_info and not bp_info.runtime_arn:
                 raise DomainError(message="Agent Runtime 未就绪, 无法上线", code="RUNTIME_NOT_READY")
@@ -353,6 +359,14 @@ class AgentService:
         bp_repo, _, rt_mgr = self._require_blueprint_deps()
 
         agent = await self._get_owned_agent(agent_id, operator_id)
+
+        if agent.status != AgentStatus.ACTIVE:
+            raise InvalidStateTransitionError(
+                entity_type="Agent",
+                current_state=agent.status.value,
+                target_state="archived (take-offline)",
+            )
+
         blueprint_info = await bp_repo.get_runtime_info(agent_id)
         runtime_arn = blueprint_info.runtime_arn if blueprint_info else ""
 

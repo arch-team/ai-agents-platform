@@ -134,8 +134,10 @@ class SkillService:
             SkillNotFoundError, ForbiddenError, InvalidStateTransitionError, ValidationError
         """
         skill = await self._get_owned_skill(skill_id, operator_id)
-        published_path = await self._file_manager.publish(skill.file_path, skill.name, version=skill.version)
-        skill.update_file_path(published_path)
+        published_path = ""
+        if skill.file_path:
+            published_path = await self._file_manager.publish(skill.file_path, skill.name, version=skill.version)
+            skill.update_file_path(published_path)
         skill.publish()
         updated = await self._repository.update(skill)
         updated_id = self._require_id(updated)
