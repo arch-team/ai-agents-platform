@@ -7,7 +7,6 @@ from src.modules.agents.domain.entities.agent import Agent
 from src.modules.agents.domain.value_objects.agent_config import AgentConfig
 from src.modules.agents.domain.value_objects.agent_status import AgentStatus
 from src.shared.domain.exceptions import InvalidStateTransitionError
-from src.shared.domain.exceptions import ValidationError as DomainValidationError
 
 
 @pytest.mark.unit
@@ -58,42 +57,62 @@ class TestAgentCreation:
 
 @pytest.fixture
 def draft_agent() -> Agent:
-    """可激活的草稿 Agent（带 system_prompt）。"""
+    """草稿 Agent。"""
     return Agent(name="Test Agent", owner_id=1, system_prompt="你是助手")
+
+
+@pytest.fixture
+def testing_agent() -> Agent:
+    """TESTING 状态的 Agent（可激活）。"""
+    agent = Agent(name="Test Agent", owner_id=1, system_prompt="你是助手")
+    agent.start_testing()
+    return agent
 
 
 @pytest.mark.unit
 class TestAgentActivate:
-    def test_activate_from_draft_succeeds(self, draft_agent: Agent) -> None:
-        draft_agent.activate()
-        assert draft_agent.status == AgentStatus.ACTIVE
+    """activate() 仅允许 TESTING -> ACTIVE (V1 DRAFT->ACTIVE 路径已移除)。"""
 
-    def test_activate_updates_timestamp(self, draft_agent: Agent) -> None:
-        original = draft_agent.updated_at
-        draft_agent.activate()
-        assert draft_agent.updated_at is not None
+    def test_activate_from_testing_succeeds(self, testing_agent: Agent) -> None:
+        testing_agent.activate()
+        assert testing_agent.status == AgentStatus.ACTIVE
+
+    def test_activate_updates_timestamp(self, testing_agent: Agent) -> None:
+        original = testing_agent.updated_at
+        testing_agent.activate()
+        assert testing_agent.updated_at is not None
         assert original is not None
-        assert draft_agent.updated_at >= original
+        assert testing_agent.updated_at >= original
 
-    def test_activate_without_system_prompt_raises(self) -> None:
-        agent = Agent(name="Test", owner_id=1)
-        with pytest.raises(DomainValidationError, match="系统提示词"):
+    def test_activate_from_draft_raises(self) -> None:
+        """DRAFT 不能直接激活，必须先经过 TESTING。"""
+        agent = Agent(name="Test", owner_id=1, system_prompt="提示")
+        with pytest.raises(InvalidStateTransitionError):
             agent.activate()
 
-    def test_activate_with_blank_system_prompt_raises(self) -> None:
-        agent = Agent(name="Test", owner_id=1, system_prompt="   ")
-        with pytest.raises(DomainValidationError, match="系统提示词"):
-            agent.activate()
+    def test_activate_from_active_raises(self, testing_agent: Agent) -> None:
+        testing_agent.activate()
+        with pytest.raises(InvalidStateTransitionError):
+            testing_agent.activate()
 
-    @pytest.mark.parametrize(
-        "setup_action",
-        ["activate", "archive"],
-        ids=["from_active", "from_archived"],
-    )
-    def test_activate_from_non_draft_raises(self, draft_agent: Agent, setup_action: str) -> None:
-        getattr(draft_agent, setup_action)()
+    def test_activate_from_archived_raises(self, draft_agent: Agent) -> None:
+        draft_agent.archive()
         with pytest.raises(InvalidStateTransitionError):
             draft_agent.activate()
+
+
+@pytest.mark.unit
+class TestAgentStartTesting:
+    """start_testing(): DRAFT -> TESTING。"""
+
+    def test_start_testing_from_draft(self, draft_agent: Agent) -> None:
+        draft_agent.start_testing()
+        assert draft_agent.status == AgentStatus.TESTING
+
+    def test_start_testing_from_active_raises(self, testing_agent: Agent) -> None:
+        testing_agent.activate()
+        with pytest.raises(InvalidStateTransitionError):
+            testing_agent.start_testing()
 
 
 @pytest.mark.unit
@@ -102,10 +121,14 @@ class TestAgentArchive:
         draft_agent.archive()
         assert draft_agent.status == AgentStatus.ARCHIVED
 
-    def test_archive_from_active_succeeds(self, draft_agent: Agent) -> None:
-        draft_agent.activate()
-        draft_agent.archive()
-        assert draft_agent.status == AgentStatus.ARCHIVED
+    def test_archive_from_testing_succeeds(self, testing_agent: Agent) -> None:
+        testing_agent.archive()
+        assert testing_agent.status == AgentStatus.ARCHIVED
+
+    def test_archive_from_active_succeeds(self, testing_agent: Agent) -> None:
+        testing_agent.activate()
+        testing_agent.archive()
+        assert testing_agent.status == AgentStatus.ARCHIVED
 
     def test_archive_updates_timestamp(self, draft_agent: Agent) -> None:
         original = draft_agent.updated_at

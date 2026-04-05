@@ -19,7 +19,6 @@ from src.modules.agents.domain.value_objects.agent_status import AgentStatus
 from src.shared.domain.exceptions import (
     DomainError,
     InvalidStateTransitionError,
-    ValidationError,
 )
 from tests.modules.agents.conftest import make_agent
 
@@ -423,13 +422,13 @@ class TestAgentServiceDelete:
 @pytest.mark.unit
 class TestAgentServiceActivate:
     @pytest.mark.asyncio
-    async def test_activate_draft_agent_success(
+    async def test_activate_testing_agent_success(
         self,
         mock_agent_repo: AsyncMock,
         agent_service: AgentService,
         mock_event_bus: AsyncMock,
     ) -> None:
-        agent = make_agent(status=AgentStatus.DRAFT, system_prompt="你是一个助手")
+        agent = make_agent(status=AgentStatus.TESTING, system_prompt="你是一个助手")
         mock_agent_repo.get_by_id.return_value = agent
         mock_agent_repo.update.side_effect = lambda a: a
 
@@ -440,7 +439,22 @@ class TestAgentServiceActivate:
         mock_event_bus.publish_async.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_activate_non_draft_raises(
+    async def test_activate_from_draft_raises(
+        self,
+        mock_agent_repo: AsyncMock,
+        agent_service: AgentService,
+    ) -> None:
+        """DRAFT 不能直接激活，必须先经过 TESTING。"""
+        mock_agent_repo.get_by_id.return_value = make_agent(
+            status=AgentStatus.DRAFT,
+            system_prompt="prompt",
+        )
+
+        with pytest.raises(InvalidStateTransitionError):
+            await agent_service.activate_agent(1, operator_id=100)
+
+    @pytest.mark.asyncio
+    async def test_activate_from_active_raises(
         self,
         mock_agent_repo: AsyncMock,
         agent_service: AgentService,
@@ -451,20 +465,6 @@ class TestAgentServiceActivate:
         )
 
         with pytest.raises(InvalidStateTransitionError):
-            await agent_service.activate_agent(1, operator_id=100)
-
-    @pytest.mark.asyncio
-    async def test_activate_without_system_prompt_raises(
-        self,
-        mock_agent_repo: AsyncMock,
-        agent_service: AgentService,
-    ) -> None:
-        mock_agent_repo.get_by_id.return_value = make_agent(
-            status=AgentStatus.DRAFT,
-            system_prompt="",
-        )
-
-        with pytest.raises(ValidationError, match="系统提示词"):
             await agent_service.activate_agent(1, operator_id=100)
 
     @pytest.mark.asyncio
