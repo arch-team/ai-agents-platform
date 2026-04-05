@@ -1,5 +1,6 @@
 # Dependabot 依赖自动更新配置
 # 文档: https://docs.github.com/en/code-security/dependabot/dependabot-version-updates
+# 触发重新检查: 2026-04-05
 
 version: 2
 
