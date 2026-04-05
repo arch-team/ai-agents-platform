@@ -11,7 +11,7 @@
 - **Dev 环境**: 后端 ECS (1024 CPU/2048 MiB) + 前端 S3 + CORS + Bedrock IAM ✅ | ALB `ai-agents-dev-546356512.us-east-1.elb.amazonaws.com`
 - **Prod 环境**: 后端 ECS (512 CPU/1024 MiB/2 任务) + Aurora db.r6g.large (Writer+Reader) ✅ | ALB `ai-agents-prod-1419512933.us-east-1.elb.amazonaws.com`
 - **Stack 命名**: `ai-agents-plat-{stack}-{env}` (v1.4 规范化, **14 个 Stack** — 新增 storage)
-- **测试**: 后端 2474 测试 + 基础设施 240 测试 + 前端 767 单元测试 = **3481 测试**
+- **测试**: 后端 2479 测试 + 基础设施 240 测试 + 前端 770 单元测试 = **3489 测试**
 - **Eval 框架**: EvalPipeline 已实现 (BedrockEvalAdapter + EventBridge 定时触发 + CloudWatch 面板)
 - **后端模块**: 12 个 (11 业务 + shared, 新增 skills) | **前端**: 200+ 源文件, FSD 架构, 13 页面
 - **SDK**: claude-agent-sdk 0.1.35 | bedrock-agentcore 1.3.0
@@ -1052,11 +1052,9 @@ auth SSO (#10-#12)    ── 100% 并行 ──── ┤──► 前端 (#13-#
 
 | # | 日期 | 类型 | 完成项 | 关键决策 |
 |---|------|------|-------|---------|
+| 69 | 2026-04-05 | 优化 | feat/blueprint-optimization 分支: Task 10 TestSandbox 真实执行集成 (setTimeout mock → shared parseSSEStream + apiClient), 新增 10 个前端测试, 全量验证通过 (2479+240+770=3489 tests) | FSD 合规: 使用 shared 层 SSE 解析器 + 本地状态管理, 不跨 feature 依赖 execution store |
 | 68 | 2026-04-05 | 审查 | M17 代码审查: 三维并行审查 (复用+质量+效率), 修复 7 项 (N+1查询/assert安全/boto3单例/TOCTOU/tar泄漏/路径校验/类型), 补测试 15 个 (skill_querier 38→100%, agent_creator 40→98%, builder_adapter 34→100%), 覆盖率 88.44→89.01% | lru_cache 单例模式用于无状态适配器; _require_blueprint_deps 返回元组替代 assert 类型收窄 |
 | 67 | 2026-04-04 | Milestone | M17 Task 13-15: CDK StorageStack (S3+EFS) + 存量迁移脚本 + 全量质量检查 (2459+240+767=3466 tests, 88.44% 覆盖率) | S3 加密用 S3_MANAGED (规范一致); Templates 升级标记 M17-C 后续 |
 | 66 | 2026-03-04 | 验收 | **M16 验收通过**: ruff✅ mypy(470文件)✅ pytest(2293passed/88.89%覆盖率)✅ 架构合规(15/15)✅; Checklist全项通过(分层/安全/SDK/API); progress.md任务状态修正(#1-3,#6-9→已完成) | MemoryAdapter 145行略超100行标准(合理); M16正式关闭, 下一步Prod部署或M17规划 |
 | 65 | 2026-02-28 | Milestone | **M16 #11 E2E**: 13集成测试(5场景:查询链路/工具传递/无工具/部分失效/GatewayAuth); **Memory后端完成**: MemoryAdapter→SDK MemorySessionManager重写(23测试)+IMemoryService扩展(list/get/delete)+enable_memory全链路(AgentConfig→ORM→Migration→API→DTO)+Memory REST API 5端点(18测试); 后端2220+测试/前端420+测试 | 全局Memory+namespace隔离; SDK MemorySessionManager(actor/session分区); NoOp降级保留; Agent Teams 2并行Agent |
-| 64 | 2026-02-28 | Milestone | **M16 #4-5 验证**: 后端 ToolQuerier+list_by_ids_and_status 已实现(490测试全通过, tool_ids 26+用例); **M16 #10 前端**: types.ts+api/types.ts+validation.ts 添加 tool_ids; ToolSelector 组件实现(checkbox卡片列表+三态处理+无障碍); AgentFormFields 集成 setValue; 9 新测试+420 前端测试全通过 | Agent Teams 3 并行 Agent(backend-verify+frontend-types+leader); react-hook-form 多选用 setValue 而非 register; fieldset+legend 语义化复选组 |
-| 63 | 2026-02-28 | Dev 部署验证 + 根因修复 | **M16 Dev 部署验证**: CDK快照+迁移MySQL TEXT DEFAULT+Gateway Secret 3项修复后部署成功; **根因分析**: AgentCore Runtime invoke返回`{response:StreamingBody}`但adapter读`body`→空内容; **修复**: adapter优先读response字段+AGENTCORE_GATEWAY_URL注入+StreamingBody测试; **Agent CRUD验证**: 8/8✅; **对话**: Runtime invoke本地12秒OK, ECS经ALB 504超时(60s idle); 后端2153测试+CDK 222测试全通过 | SDK响应字段名不匹配(response vs body); ALB idle timeout需>60s或转SSE; MySQL TEXT不支持DEFAULT(三步迁移) |
-| 62 | 2026-02-28 | Milestone | M16 Agent 工具绑定 + Gateway 认证开发 (Step 1-4 并行) | Agent Teams 并行开发, JSON 列存储 tool_ids |
 

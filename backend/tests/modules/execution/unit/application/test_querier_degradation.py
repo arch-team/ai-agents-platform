@@ -127,7 +127,7 @@ class TestToolQuerierDegradation:
     async def test_tool_querier_exception_returns_empty_tools(self) -> None:
         """IToolQuerier.list_approved_tools 抛出异常时, Agent 以空工具继续执行。"""
         conv_repo, msg_repo, agent_querier, llm_client = _setup_base_mocks()
-        agent_querier.get_active_agent.return_value = _make_agent_info(runtime_type="agent")
+        agent_querier.get_executable_agent.return_value = _make_agent_info(runtime_type="agent")
 
         agent_runtime = AsyncMock(spec=IAgentRuntime)
         agent_runtime.execute.return_value = AgentResponseChunk(
@@ -167,7 +167,7 @@ class TestToolQuerierDegradation:
         """流式模式: IToolQuerier 异常时, Agent 以空工具继续流式执行。"""
         conv_repo, msg_repo, agent_querier, llm_client = _setup_base_mocks()
         msg_repo.update.side_effect = lambda m: m
-        agent_querier.get_active_agent.return_value = _make_agent_info(runtime_type="agent")
+        agent_querier.get_executable_agent.return_value = _make_agent_info(runtime_type="agent")
 
         async def _agent_gen():  # type: ignore[no-untyped-def]
             yield AgentResponseChunk(content="降级流式")
@@ -214,7 +214,7 @@ class TestKnowledgeQuerierDegradation:
     async def test_knowledge_querier_exception_skips_rag(self) -> None:
         """IKnowledgeQuerier.retrieve 抛出异常时, 跳过 RAG 注入, 正常回复。"""
         conv_repo, msg_repo, agent_querier, llm_client = _setup_base_mocks()
-        agent_querier.get_active_agent.return_value = _make_agent_info(
+        agent_querier.get_executable_agent.return_value = _make_agent_info(
             runtime_type="basic",
             knowledge_base_id=42,
         )
@@ -247,7 +247,7 @@ class TestKnowledgeQuerierDegradation:
         """流式模式: IKnowledgeQuerier 异常时跳过 RAG, 正常流式回复。"""
         conv_repo, msg_repo, agent_querier, llm_client = _setup_base_mocks()
         msg_repo.update.side_effect = lambda m: m
-        agent_querier.get_active_agent.return_value = _make_agent_info(
+        agent_querier.get_executable_agent.return_value = _make_agent_info(
             runtime_type="basic",
             knowledge_base_id=42,
         )
@@ -300,7 +300,7 @@ class TestMemoryServiceDegradation:
     async def test_memory_service_exception_skips_injection(self) -> None:
         """IMemoryService.recall_memory 抛出异常时, 跳过记忆注入, 正常回复。"""
         conv_repo, msg_repo, agent_querier, llm_client = _setup_base_mocks()
-        agent_querier.get_active_agent.return_value = _make_agent_info(
+        agent_querier.get_executable_agent.return_value = _make_agent_info(
             runtime_type="basic",
             enable_memory=True,
         )

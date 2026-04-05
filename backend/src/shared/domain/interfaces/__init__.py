@@ -1,4 +1,5 @@
 from src.shared.domain.interfaces.agent_creator import IAgentCreator
+from src.shared.domain.interfaces.agent_lifecycle import IAgentLifecycle
 from src.shared.domain.interfaces.agent_querier import ActiveAgentInfo, IAgentQuerier
 from src.shared.domain.interfaces.knowledge_querier import (
     IKnowledgeQuerier,
@@ -13,6 +14,7 @@ __all__ = [
     "ActiveAgentInfo",
     "ApprovedToolInfo",
     "IAgentCreator",
+    "IAgentLifecycle",
     "IAgentQuerier",
     "IKnowledgeQuerier",
     "ISkillCreator",

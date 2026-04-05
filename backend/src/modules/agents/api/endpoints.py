@@ -4,25 +4,37 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query, status
 
-from src.modules.agents.api.dependencies import get_agent_service, get_lifecycle_agent_service
+from src.modules.agents.api.dependencies import (
+    get_agent_service,
+    get_lifecycle_agent_service,
+)
 from src.modules.agents.api.schemas.requests import CreateAgentRequest, UpdateAgentRequest
 from src.modules.agents.api.schemas.responses import (
     AgentConfigResponse,
     AgentListResponse,
     AgentResponse,
 )
-from src.modules.agents.application.dto.agent_dto import AgentDTO, CreateAgentDTO, UpdateAgentDTO
+from src.modules.agents.application.dto.agent_dto import AgentDTO, UpdateAgentDTO
 from src.modules.agents.application.services.agent_service import AgentService
 from src.modules.agents.domain.value_objects.agent_status import AgentStatus
 from src.modules.auth.api.dependencies import get_current_user, require_role
 from src.modules.auth.application.dto.user_dto import UserDTO
+from src.presentation.api.providers import get_agent_creator
 from src.shared.api.schemas import calc_total_pages
+from src.shared.domain.interfaces.agent_creator import (
+    BlueprintData,
+    CreateAgentWithBlueprintRequest,
+    IAgentCreator,
+    PersonaData,
+    ToolBindingData,
+)
 from src.shared.domain.value_objects.role import Role
 
 
 router = APIRouter(prefix="/api/v1/agents", tags=["agents"])
 
 ServiceDep = Annotated[AgentService, Depends(get_agent_service)]
+AgentCreatorDep = Annotated[IAgentCreator, Depends(get_agent_creator)]
 CurrentUserDep = Annotated[UserDTO, Depends(get_current_user)]
 
 
@@ -53,12 +65,28 @@ def _to_response(dto: AgentDTO) -> AgentResponse:
 @router.post("", status_code=status.HTTP_201_CREATED)
 async def create_agent(
     request: CreateAgentRequest,
+    agent_creator: AgentCreatorDep,
     service: ServiceDep,
     current_user: Annotated[UserDTO, Depends(require_role(Role.DEVELOPER, Role.ADMIN))],
 ) -> AgentResponse:
-    """创建 Agent。仅 DEVELOPER 和 ADMIN 可创建。"""
-    dto = CreateAgentDTO(**request.model_dump())
-    agent = await service.create_agent(dto, current_user.id)
+    """创建 Agent (自动创建最小 Blueprint)。仅 DEVELOPER 和 ADMIN 可创建。"""
+    blueprint = BlueprintData(
+        persona=PersonaData(
+            role=request.persona_role or request.name,
+            background=request.persona_background or request.description,
+            tone=request.persona_tone,
+        ),
+        tool_bindings=tuple(ToolBindingData(tool_id=tid, display_name="") for tid in request.tool_ids),
+        memory_enabled=request.enable_memory,
+    )
+    cmd = CreateAgentWithBlueprintRequest(
+        name=request.name,
+        blueprint=blueprint,
+        description=request.description,
+        model_id=request.model_id,
+    )
+    result = await agent_creator.create_agent_with_blueprint(cmd, current_user.id)
+    agent = await service.get_owned_agent(result.id, current_user.id)
     return _to_response(agent)
 
 
@@ -146,3 +174,59 @@ async def take_offline(agent_id: int, service: LifecycleServiceDep, current_user
     """下线归档: ACTIVE → ARCHIVED。销毁 Runtime。"""
     agent = await service.take_offline(agent_id, current_user.id)
     return _to_response(agent)
+
+
+# ── Blueprint 详情端点 ──
+
+from src.modules.agents.api.dependencies import get_blueprint_repository  # noqa: E402
+from src.modules.agents.api.schemas.responses import (  # noqa: E402
+    BlueprintDetailResponse,
+    BlueprintGuardrailResponse,
+    BlueprintPersonaResponse,
+    BlueprintToolBindingResponse,
+)
+from src.modules.agents.domain.repositories.agent_blueprint_repository import (  # noqa: E402
+    IAgentBlueprintRepository,
+)
+
+
+BlueprintRepoDep = Annotated[IAgentBlueprintRepository, Depends(get_blueprint_repository)]
+
+
+@router.get("/{agent_id}/blueprint")
+async def get_blueprint(
+    agent_id: int,
+    service: ServiceDep,
+    current_user: CurrentUserDep,
+    blueprint_repo: BlueprintRepoDep,
+) -> BlueprintDetailResponse:
+    """获取 Agent 的 Blueprint 完整配置信息。"""
+    from src.shared.domain.exceptions import EntityNotFoundError
+
+    # 校验所有权
+    await service.get_owned_agent(agent_id, current_user.id)
+
+    detail = await blueprint_repo.get_blueprint_detail(agent_id)
+    if detail is None:
+        entity_name = "Blueprint"
+        raise EntityNotFoundError(entity_type=entity_name, entity_id=agent_id)
+
+    persona_data = detail.persona or {}
+    return BlueprintDetailResponse(
+        persona=BlueprintPersonaResponse(
+            role=persona_data.get("role", ""),
+            background=persona_data.get("background", ""),
+            tone=persona_data.get("tone", ""),
+        ),
+        guardrails=[
+            BlueprintGuardrailResponse(rule=g.get("rule", ""), severity=g.get("severity", "warn"))
+            for g in detail.guardrails
+        ],
+        memory_config=detail.memory_config,
+        knowledge_base_ids=detail.knowledge_base_ids,
+        skill_ids=detail.skill_ids,
+        tool_bindings=[
+            BlueprintToolBindingResponse(tool_id=tb.tool_id, display_name=tb.display_name, usage_hint=tb.usage_hint)
+            for tb in detail.tool_bindings
+        ],
+    )

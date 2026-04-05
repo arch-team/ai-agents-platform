@@ -1,10 +1,7 @@
 """Claude Builder 适配器。
 
-SDK-First 薄封装层：委托 claude_agent_sdk 生成 Agent 配置/Blueprint,
+SDK-First 薄封装层：委托 claude_agent_sdk 生成 Agent Blueprint,
 仅做 prompt 组装 + 流式输出转换。封装层 < 100 行。
-
-V1: generate_config — 单轮 JSON 配置生成 (向后兼容)
-V2: generate_blueprint — 多轮 SOP 引导式 Blueprint 生成
 """
 
 from collections.abc import AsyncIterator
@@ -22,33 +19,14 @@ from src.modules.builder.infrastructure.external.builder_prompts import (
     build_system_prompt,
     format_platform_context,
 )
-from src.shared.domain.constants import AGENT_DEFAULT_MODEL_ID
 from src.shared.domain.exceptions import DomainError
 
 
 log = structlog.get_logger(__name__)
 
-_V1_SYSTEM_PROMPT = (
-    "你是一个 Agent 配置生成助手。根据用户描述,生成一个 JSON 格式的 Agent 配置。\n"
-    "请严格返回以下 JSON 格式(不要包含其他文字):\n"
-    "{\n"
-    '  "name": "Agent 名称",\n'
-    '  "description": "Agent 描述",\n'
-    '  "system_prompt": "Agent 的系统提示词",\n'
-    f'  "model_id": "{AGENT_DEFAULT_MODEL_ID}",\n'
-    '  "temperature": 0.7,\n'
-    '  "max_tokens": 4096\n'
-    "}"
-)
-
 
 class ClaudeBuilderAdapter(IBuilderLLMService):
     """Claude Agent SDK 适配器（SDK-First，薄封装）。"""
-
-    async def generate_config(self, prompt: str) -> AsyncIterator[str]:
-        """V1: 单轮 JSON 配置生成。"""
-        full_prompt = f"请根据以下需求生成 Agent 配置:\n{prompt}"
-        yield await self._call_sdk(full_prompt, _V1_SYSTEM_PROMPT)
 
     async def generate_blueprint(
         self,

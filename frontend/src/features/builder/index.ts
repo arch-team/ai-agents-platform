@@ -13,12 +13,10 @@ export {
   useBuilderStore,
   useBuilderSessionId,
   useBuilderStreamContent,
-  useBuilderGeneratedConfig,
   useBuilderIsGenerating,
   useBuilderIsConfirming,
   useBuilderError,
   useBuilderActions,
-  // V2
   useBuilderPhase,
   useBuilderMessages,
   useBuilderBlueprint,
@@ -41,7 +39,7 @@ export {
   useGoLive,
   useCancelBuilderSession,
 } from './api/mutations';
-export { useBuilderStream, useBlueprintStream } from './api/stream';
+export { useBlueprintStream } from './api/stream';
 
 // 类型
 export type {

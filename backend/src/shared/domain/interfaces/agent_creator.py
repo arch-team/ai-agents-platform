@@ -6,6 +6,14 @@ builder 模块依赖此接口创建 Agent，
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
+from enum import StrEnum
+
+
+class GuardrailSeverity(StrEnum):
+    """安全护栏严重级别。"""
+
+    WARN = "warn"
+    BLOCK = "block"
 
 
 # ── V1: 简单 Agent 创建 ──
@@ -58,7 +66,7 @@ class GuardrailData:
     """Agent 安全护栏 (跨模块值对象)。"""
 
     rule: str
-    severity: str = "warn"
+    severity: GuardrailSeverity = GuardrailSeverity.WARN
 
 
 @dataclass(frozen=True)
@@ -86,38 +94,18 @@ class CreateAgentWithBlueprintRequest:
 
 
 class IAgentCreator(ABC):
-    """跨模块 Agent 创建接口。"""
+    """跨模块 Agent 创建接口 (ISP: 生命周期操作移至 IAgentLifecycle)。"""
 
     @abstractmethod
     async def create_agent(self, request: CreateAgentRequest, owner_id: int) -> CreatedAgentInfo:
         """V1: 创建简单 Agent (system_prompt 模式)。"""
         ...
 
+    @abstractmethod
     async def create_agent_with_blueprint(
         self,
         request: CreateAgentWithBlueprintRequest,
         owner_id: int,
     ) -> CreatedAgentInfo:
-        """V2: 创建带 Blueprint 的 Agent (workspace 模式)。
-
-        默认实现: 回退到 V1 (从 Blueprint.persona 生成 system_prompt)。
-        agents 模块的实现会覆写此方法，完整执行 workspace 创建流程。
-        """
-        system_prompt = f"你是{request.blueprint.persona.role}。{request.blueprint.persona.background}"
-        return await self.create_agent(
-            CreateAgentRequest(
-                name=request.name,
-                system_prompt=system_prompt,
-                description=request.description,
-                model_id=request.model_id,
-            ),
-            owner_id,
-        )
-
-    async def start_testing(self, agent_id: int, operator_id: int) -> CreatedAgentInfo:
-        """触发 Agent 进入 TESTING 状态 (创建 Runtime)。
-
-        默认实现: 无操作, 返回当前状态。
-        agents 模块的实现会覆写，执行 S3 上传 + Runtime 创建。
-        """
-        return CreatedAgentInfo(id=agent_id, name="", status="draft")
+        """V2: 创建带 Blueprint 的 Agent (workspace 模式)。"""
+        ...

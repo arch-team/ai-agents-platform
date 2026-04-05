@@ -24,12 +24,13 @@ from src.shared.domain.interfaces.agent_creator import (
     CreatedAgentInfo,
     IAgentCreator,
 )
+from src.shared.domain.interfaces.agent_lifecycle import IAgentLifecycle
 
 
 log = structlog.get_logger(__name__)
 
 
-class AgentCreatorImpl(IAgentCreator):
+class AgentCreatorImpl(IAgentCreator, IAgentLifecycle):
     """通过 AgentService 实现 IAgentCreator 接口。"""
 
     def __init__(
@@ -74,7 +75,8 @@ class AgentCreatorImpl(IAgentCreator):
         bp = request.blueprint
 
         if self._blueprint_repo is None or self._workspace_manager is None or self._agent_repo is None:
-            return await super().create_agent_with_blueprint(request, owner_id)
+            msg = "Blueprint 依赖未注入 (blueprint_repo, workspace_manager, agent_repo 均需提供)"
+            raise RuntimeError(msg)
 
         # 1. 创建 Agent (DRAFT)
         system_prompt = f"你是{bp.persona.role}。{bp.persona.background}"
@@ -145,7 +147,19 @@ class AgentCreatorImpl(IAgentCreator):
         )
         return agent_info
 
+    # ── IAgentLifecycle 实现 ──
+
     async def start_testing(self, agent_id: int, operator_id: int) -> CreatedAgentInfo:
         """触发 DRAFT → TESTING: S3 上传 + Runtime 创建。"""
         agent_dto = await self._agent_service.start_testing(agent_id, operator_id)
+        return CreatedAgentInfo(id=agent_dto.id, name=agent_dto.name, status=agent_dto.status)
+
+    async def go_live(self, agent_id: int, operator_id: int) -> CreatedAgentInfo:
+        """触发 TESTING → ACTIVE: Agent 上线。"""
+        agent_dto = await self._agent_service.go_live(agent_id, operator_id)
+        return CreatedAgentInfo(id=agent_dto.id, name=agent_dto.name, status=agent_dto.status)
+
+    async def take_offline(self, agent_id: int, operator_id: int) -> CreatedAgentInfo:
+        """触发 ACTIVE → ARCHIVED: Agent 下线, 销毁 Runtime。"""
+        agent_dto = await self._agent_service.take_offline(agent_id, operator_id)
         return CreatedAgentInfo(id=agent_dto.id, name=agent_dto.name, status=agent_dto.status)

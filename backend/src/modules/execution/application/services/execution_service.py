@@ -143,7 +143,7 @@ class ExecutionService:
         Raises:
             AgentNotAvailableError: Agent 不存在或非 ACTIVE
         """
-        agent_info = await self._agent_querier.get_active_agent(dto.agent_id)
+        agent_info = await self._agent_querier.get_executable_agent(dto.agent_id)
         if agent_info is None:
             raise AgentNotAvailableError(dto.agent_id)
 
@@ -636,32 +636,25 @@ class ExecutionService:
         *,
         gateway_auth_token: str = "",
     ) -> AgentRequest:
-        """构建 AgentRequest — 三模式路由。
+        """构建 AgentRequest — 二模式路由 (V1 兼容模式已移除)。
 
         模式1: runtime_arn → 专属 Runtime 容器, cwd="/workspace"
-        模式2: workspace_path → 本地 cwd, CLAUDE.md 提供 system_prompt
-        模式3: V1 兼容 → 内联 system_prompt (不变)
+        模式2: workspace_path → 本地 cwd, CLAUDE.md 提供指令
         """
-        system_prompt = ctx.system_prompt
         cwd = ""
         runtime_arn = ""
 
         if ctx.agent_info.runtime_arn:
-            # 模式1: 专属 Runtime — CLAUDE.md + Skills 提供 system_prompt
-            # 注意: 清空 system_prompt 会丢弃 RAG/Memory 注入内容,
-            # 这是 by-design: Blueprint Agent 用 Skills 替代 RAG, Memory 通过 MCP 独立处理
+            # 模式1: 专属 Runtime
             runtime_arn = ctx.agent_info.runtime_arn
             cwd = "/workspace"
-            system_prompt = ""
         elif ctx.agent_info.workspace_path:
-            # 模式2: 本地 cwd — CLAUDE.md + Skills 提供 system_prompt (同模式1)
+            # 模式2: 本地 cwd
             cwd = ctx.agent_info.workspace_path
-            system_prompt = ""
-        # 模式3: V1 兼容 — system_prompt 保持不变
 
         return AgentRequest(
             prompt=ctx.created_user_msg.content,
-            system_prompt=system_prompt,
+            system_prompt="",
             model_id=ctx.agent_info.model_id,
             tools=tools,
             history=ctx.llm_messages,
@@ -690,7 +683,7 @@ class ExecutionService:
         self._check_ownership(conversation, user_id)
         self._check_active(conversation)
 
-        agent_info = await self._agent_querier.get_active_agent(conversation.agent_id)
+        agent_info = await self._agent_querier.get_executable_agent(conversation.agent_id)
         if agent_info is None:
             raise AgentNotAvailableError(conversation.agent_id)
 

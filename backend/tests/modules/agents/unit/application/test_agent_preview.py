@@ -40,7 +40,7 @@ class TestPreviewAgent:
     async def test_preview_success(self) -> None:
         """正常预览返回 AgentPreviewResponse。"""
         mock_querier = AsyncMock()
-        mock_querier.get_active_agent.return_value = _make_active_agent_info()
+        mock_querier.get_executable_agent.return_value = _make_active_agent_info()
         mock_runtime = AsyncMock()
         mock_runtime.execute.return_value = AgentResponseChunk(
             content="你好! 我是一个 AI 助手。",
@@ -69,7 +69,7 @@ class TestPreviewAgent:
     async def test_preview_agent_not_found_raises(self) -> None:
         """Agent 不存在时抛出 AgentNotAvailableError。"""
         mock_querier = AsyncMock()
-        mock_querier.get_active_agent.return_value = None
+        mock_querier.get_executable_agent.return_value = None
         mock_runtime = AsyncMock()
 
         with pytest.raises(AgentNotAvailableError):
@@ -85,9 +85,9 @@ class TestPreviewAgent:
 
     @pytest.mark.asyncio
     async def test_preview_agent_not_active_raises(self) -> None:
-        """Agent 非 ACTIVE 状态时 get_active_agent 返回 None, 抛出 AgentNotAvailableError。"""
+        """Agent 非 ACTIVE 状态时 get_executable_agent 返回 None, 抛出 AgentNotAvailableError。"""
         mock_querier = AsyncMock()
-        mock_querier.get_active_agent.return_value = None
+        mock_querier.get_executable_agent.return_value = None
         mock_runtime = AsyncMock()
 
         with pytest.raises(AgentNotAvailableError):

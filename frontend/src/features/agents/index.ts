@@ -1,6 +1,5 @@
 // UI 组件
 export { AgentList } from './ui/AgentList';
-export { AgentCreateForm } from './ui/AgentCreateForm';
 export { AgentStatusBadge } from './ui/AgentStatusBadge';
 export { MemoryPanel } from './ui/MemoryPanel';
 
@@ -15,6 +14,10 @@ export {
   useActivateAgent,
   useArchiveAgent,
   usePreviewAgent,
+  useAgentBlueprint,
+  useStartTesting,
+  useGoLive,
+  useTakeOffline,
 } from './api/queries';
 
 // Memory Hooks
@@ -31,6 +34,7 @@ export type {
   UpdateAgentRequest,
   AgentListResponse,
   AgentPreviewResponse,
+  BlueprintDetail,
 } from './api/types';
 export type { MemoryItem, SaveMemoryRequest, SearchMemoryRequest } from './api/memory-queries';
 export type { AgentFilters } from './model/types';

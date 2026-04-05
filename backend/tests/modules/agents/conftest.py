@@ -20,6 +20,7 @@ def make_agent(
     status: AgentStatus = AgentStatus.DRAFT,
     owner_id: int = 100,
     config: AgentConfig | None = None,
+    blueprint_id: int | None = None,
 ) -> Agent:
     """创建测试用 Agent 实体。"""
     return Agent(
@@ -30,6 +31,7 @@ def make_agent(
         status=status,
         owner_id=owner_id,
         config=config or AgentConfig(),
+        blueprint_id=blueprint_id,
     )
 
 

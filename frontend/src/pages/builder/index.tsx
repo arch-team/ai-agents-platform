@@ -153,7 +153,7 @@ export default function BuilderPage() {
               <BuilderPreview />
             </div>
             <div className="w-7/12 overflow-hidden">
-              <TestSandbox />
+              <TestSandbox token={token} />
             </div>
           </>
         )}

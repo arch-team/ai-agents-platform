@@ -39,12 +39,12 @@ class TestAgentQuerierImpl:
         assert issubclass(AgentQuerierImpl, IAgentQuerier)
 
     @pytest.mark.asyncio
-    async def test_get_active_agent_success(self) -> None:
+    async def test_get_executable_agent_success(self) -> None:
         repo = AsyncMock(spec=IAgentRepository)
         repo.get_by_id.return_value = _make_agent()
         querier = AgentQuerierImpl(agent_repository=repo)
 
-        result = await querier.get_active_agent(1)
+        result = await querier.get_executable_agent(1)
 
         assert result is not None
         assert isinstance(result, ActiveAgentInfo)
@@ -53,32 +53,32 @@ class TestAgentQuerierImpl:
         assert result.model_id == MODEL_CLAUDE_HAIKU_45
 
     @pytest.mark.asyncio
-    async def test_get_active_agent_not_found(self) -> None:
+    async def test_get_executable_agent_not_found(self) -> None:
         repo = AsyncMock(spec=IAgentRepository)
         repo.get_by_id.return_value = None
         querier = AgentQuerierImpl(agent_repository=repo)
 
-        result = await querier.get_active_agent(999)
+        result = await querier.get_executable_agent(999)
 
         assert result is None
 
     @pytest.mark.asyncio
-    async def test_get_active_agent_not_active_draft(self) -> None:
+    async def test_get_executable_agent_not_active_draft(self) -> None:
         repo = AsyncMock(spec=IAgentRepository)
         repo.get_by_id.return_value = _make_agent(status=AgentStatus.DRAFT)
         querier = AgentQuerierImpl(agent_repository=repo)
 
-        result = await querier.get_active_agent(1)
+        result = await querier.get_executable_agent(1)
 
         assert result is None
 
     @pytest.mark.asyncio
-    async def test_get_active_agent_not_active_archived(self) -> None:
+    async def test_get_executable_agent_not_active_archived(self) -> None:
         repo = AsyncMock(spec=IAgentRepository)
         repo.get_by_id.return_value = _make_agent(status=AgentStatus.ARCHIVED)
         querier = AgentQuerierImpl(agent_repository=repo)
 
-        result = await querier.get_active_agent(1)
+        result = await querier.get_executable_agent(1)
 
         assert result is None
 
@@ -96,7 +96,7 @@ class TestAgentQuerierImpl:
         repo.get_by_id.return_value = agent
         querier = AgentQuerierImpl(agent_repository=repo)
 
-        result = await querier.get_active_agent(1)
+        result = await querier.get_executable_agent(1)
 
         assert result is not None
         assert result.model_id == "custom-model"
@@ -114,7 +114,7 @@ class TestAgentQuerierImpl:
         repo.get_by_id.return_value = agent
         querier = AgentQuerierImpl(agent_repository=repo)
 
-        result = await querier.get_active_agent(1)
+        result = await querier.get_executable_agent(1)
 
         assert result is not None
         assert result.tool_ids == (10, 20, 30)
@@ -126,7 +126,7 @@ class TestAgentQuerierImpl:
         repo.get_by_id.return_value = agent
         querier = AgentQuerierImpl(agent_repository=repo)
 
-        result = await querier.get_active_agent(1)
+        result = await querier.get_executable_agent(1)
 
         assert result is not None
         assert result.tool_ids == ()
@@ -139,7 +139,7 @@ class TestAgentQuerierImpl:
         repo.get_by_id.return_value = agent
         querier = AgentQuerierImpl(agent_repository=repo)
 
-        result = await querier.get_active_agent(1)
+        result = await querier.get_executable_agent(1)
 
         assert result is not None
         assert result.runtime_type == "basic"
@@ -152,7 +152,7 @@ class TestAgentQuerierImpl:
         repo.get_by_id.return_value = agent
         querier = AgentQuerierImpl(agent_repository=repo)
 
-        result = await querier.get_active_agent(1)
+        result = await querier.get_executable_agent(1)
 
         assert result is not None
         assert result.enable_memory is True
@@ -163,7 +163,7 @@ class TestAgentQuerierImpl:
         repo.get_by_id.return_value = _make_agent()
         querier = AgentQuerierImpl(agent_repository=repo)
 
-        result = await querier.get_active_agent(1)
+        result = await querier.get_executable_agent(1)
 
         assert result is not None
         assert result.enable_memory is False
@@ -178,7 +178,7 @@ class TestAgentQuerierImpl:
         querier = AgentQuerierImpl(agent_repository=repo)
 
         with pytest.raises(ValueError, match="Agent ID 不能为空"):
-            await querier.get_active_agent(1)
+            await querier.get_executable_agent(1)
 
     # ── TESTING 状态 + Blueprint 扩展字段 ──
 
@@ -189,7 +189,7 @@ class TestAgentQuerierImpl:
         repo.get_by_id.return_value = _make_agent(status=AgentStatus.TESTING)
         querier = AgentQuerierImpl(agent_repository=repo)
 
-        result = await querier.get_active_agent(1)
+        result = await querier.get_executable_agent(1)
 
         assert result is not None
         assert result.id == 1
@@ -203,7 +203,7 @@ class TestAgentQuerierImpl:
         repo.get_by_id.return_value = agent
         querier = AgentQuerierImpl(agent_repository=repo, session_factory=None)
 
-        result = await querier.get_active_agent(1)
+        result = await querier.get_executable_agent(1)
 
         assert result is not None
         assert result.workspace_path == ""
@@ -219,7 +219,7 @@ class TestAgentQuerierImpl:
         repo.get_by_id.return_value = agent
         querier = AgentQuerierImpl(agent_repository=repo)
 
-        result = await querier.get_active_agent(1)
+        result = await querier.get_executable_agent(1)
 
         assert result is not None
         assert result.workspace_path == ""

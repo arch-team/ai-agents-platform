@@ -42,7 +42,7 @@ class TestAgentQuerierCache:
         querier = AgentQuerierImpl(agent_repository=repo)
 
         for _ in range(10):
-            result = await querier.get_active_agent(1)
+            result = await querier.get_executable_agent(1)
             assert result is not None
 
         repo.get_by_id.assert_called_once_with(1)
@@ -54,8 +54,8 @@ class TestAgentQuerierCache:
         repo.get_by_id.side_effect = lambda aid: _make_agent(agent_id=aid)
         querier = AgentQuerierImpl(agent_repository=repo)
 
-        result1 = await querier.get_active_agent(1)
-        result2 = await querier.get_active_agent(2)
+        result1 = await querier.get_executable_agent(1)
+        result2 = await querier.get_executable_agent(2)
 
         assert result1 is not None
         assert result2 is not None
@@ -71,7 +71,7 @@ class TestAgentQuerierCache:
         querier = AgentQuerierImpl(agent_repository=repo)
 
         for _ in range(5):
-            result = await querier.get_active_agent(999)
+            result = await querier.get_executable_agent(999)
             assert result is None
 
         repo.get_by_id.assert_called_once_with(999)
@@ -83,12 +83,12 @@ class TestAgentQuerierCache:
         repo.get_by_id.return_value = _make_agent()
         querier = AgentQuerierImpl(agent_repository=repo)
 
-        await querier.get_active_agent(1)
+        await querier.get_executable_agent(1)
         assert repo.get_by_id.call_count == 1
 
         querier.clear_cache()
 
-        await querier.get_active_agent(1)
+        await querier.get_executable_agent(1)
         assert repo.get_by_id.call_count == 2
 
     @pytest.mark.asyncio
@@ -98,8 +98,8 @@ class TestAgentQuerierCache:
         repo.get_by_id.return_value = _make_agent(status=AgentStatus.DRAFT)
         querier = AgentQuerierImpl(agent_repository=repo)
 
-        result1 = await querier.get_active_agent(1)
-        result2 = await querier.get_active_agent(1)
+        result1 = await querier.get_executable_agent(1)
+        result2 = await querier.get_executable_agent(1)
 
         assert result1 is None
         assert result2 is None

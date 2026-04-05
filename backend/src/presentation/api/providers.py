@@ -31,6 +31,7 @@ from src.modules.tool_catalog.infrastructure.persistence.repositories.tool_repos
 )
 from src.modules.tool_catalog.infrastructure.services.tool_querier_impl import ToolQuerierImpl
 from src.shared.domain.interfaces.agent_creator import IAgentCreator
+from src.shared.domain.interfaces.agent_lifecycle import IAgentLifecycle
 from src.shared.domain.interfaces.agent_querier import IAgentQuerier
 from src.shared.domain.interfaces.knowledge_querier import IKnowledgeQuerier
 from src.shared.domain.interfaces.skill_creator import ISkillCreator
@@ -122,6 +123,18 @@ async def get_agent_creator(
         blueprint_repository=blueprint_repo,
         workspace_manager=workspace_mgr,  # type: ignore[arg-type]
     )
+
+
+async def get_agent_lifecycle(
+    session: Annotated[AsyncSession, Depends(get_db)],
+) -> IAgentLifecycle:
+    """创建 IAgentLifecycle 实例（供 builder 模块使用）。
+
+    复用 AgentCreatorImpl (同时实现 IAgentCreator + IAgentLifecycle)。
+    """
+    creator = await get_agent_creator(session)
+    assert isinstance(creator, IAgentLifecycle)
+    return creator
 
 
 async def get_tool_querier(

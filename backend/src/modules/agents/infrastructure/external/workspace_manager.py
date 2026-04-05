@@ -1,5 +1,6 @@
 """WorkspaceManager 实现 — 从 Blueprint 生成 Claude Code 可运行的工作目录。"""
 
+import asyncio
 import json
 import shutil
 import tarfile
@@ -21,46 +22,69 @@ class WorkspaceManagerImpl(IWorkspaceManager):
 
     async def create_workspace(self, agent_id: int, blueprint: BlueprintDTO) -> Path:
         workspace = self._workspace_root / str(agent_id)
-        workspace.mkdir(parents=True, exist_ok=True)
-
-        # 1. 生成 CLAUDE.md
         claude_md = self._render_claude_md(blueprint)
-        (workspace / "CLAUDE.md").write_text(claude_md, encoding="utf-8")
+        settings = self._render_settings(blueprint)
+        settings_json = json.dumps(settings, ensure_ascii=False, indent=2)
 
-        # 2. 复制 Skills (版本化复制)
-        skills_dir = workspace / "skills"
-        skills_dir.mkdir(exist_ok=True)
+        # 路径校验 (同步, 无 I/O)
         for skill_path in blueprint.skill_paths:
             self._validate_path(skill_path)
-            self._copy_skill(skill_path, skills_dir)
 
-        # 3. 生成 .claude/settings.json
-        claude_dir = workspace / ".claude"
-        claude_dir.mkdir(exist_ok=True)
-        settings = self._render_settings(blueprint)
-        (claude_dir / "settings.json").write_text(
-            json.dumps(settings, ensure_ascii=False, indent=2),
-            encoding="utf-8",
+        # 文件系统操作委托到线程池, 避免阻塞事件循环
+        await asyncio.to_thread(
+            self._write_workspace_sync,
+            workspace,
+            claude_md,
+            settings_json,
+            blueprint.skill_paths,
         )
-
         return workspace
 
     async def upload_to_s3(self, workspace_path: Path, agent_id: int) -> str:
+        return await asyncio.to_thread(self._upload_to_s3_sync, workspace_path, agent_id)
+
+    async def update_workspace(self, agent_id: int, blueprint: BlueprintDTO) -> Path:
+        workspace = self._workspace_root / str(agent_id)
+        await asyncio.to_thread(shutil.rmtree, workspace, ignore_errors=True)
+        return await self.create_workspace(agent_id, blueprint)
+
+    # ── 同步文件操作 (由 asyncio.to_thread 调用) ──
+
+    def _write_workspace_sync(
+        self,
+        workspace: Path,
+        claude_md: str,
+        settings_json: str,
+        skill_paths: tuple[str, ...],
+    ) -> None:
+        """同步写入 workspace 文件。"""
+        workspace.mkdir(parents=True, exist_ok=True)
+
+        # 1. CLAUDE.md
+        (workspace / "CLAUDE.md").write_text(claude_md, encoding="utf-8")
+
+        # 2. Skills
+        skills_dir = workspace / "skills"
+        skills_dir.mkdir(exist_ok=True)
+        for skill_path in skill_paths:
+            self._copy_skill(skill_path, skills_dir)
+
+        # 3. .claude/settings.json
+        claude_dir = workspace / ".claude"
+        claude_dir.mkdir(exist_ok=True)
+        (claude_dir / "settings.json").write_text(settings_json, encoding="utf-8")
+
+    def _upload_to_s3_sync(self, workspace_path: Path, agent_id: int) -> str:
+        """同步 tar 打包 (实际 S3 上传待集成时实现)。"""
         tar_name = "workspace.tar.gz"
         tar_path = workspace_path.parent / f"{agent_id}_{tar_name}"
         try:
             with tarfile.open(tar_path, "w:gz") as tar:
                 tar.add(workspace_path, arcname=".")
             s3_key = f"agent-workspaces/{agent_id}/{tar_name}"
-            # TODO: 实际 S3 上传 (boto3) 在集成时实现; 当前返回预期 URI
             return f"s3://{self._s3_bucket}/{s3_key}"
         finally:
             tar_path.unlink(missing_ok=True)
-
-    async def update_workspace(self, agent_id: int, blueprint: BlueprintDTO) -> Path:
-        workspace = self._workspace_root / str(agent_id)
-        shutil.rmtree(workspace, ignore_errors=True)
-        return await self.create_workspace(agent_id, blueprint)
 
     def _render_claude_md(self, blueprint: BlueprintDTO) -> str:
         """生成 CLAUDE.md — Agent 的角色定义、行为规则和安全边界。"""

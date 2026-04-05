@@ -12,6 +12,7 @@ from src.modules.builder.domain.repositories.builder_session_repository import I
 from src.modules.builder.domain.value_objects.builder_status import BuilderStatus
 from src.shared.domain.constants import MODEL_CLAUDE_SONNET_46
 from src.shared.domain.interfaces.agent_creator import IAgentCreator
+from src.shared.domain.interfaces.agent_lifecycle import IAgentLifecycle
 from src.shared.domain.interfaces.skill_creator import ISkillCreator
 from src.shared.domain.interfaces.skill_querier import ISkillQuerier
 from src.shared.domain.interfaces.tool_querier import IToolQuerier
@@ -87,6 +88,12 @@ def mock_agent_creator() -> AsyncMock:
 
 
 @pytest.fixture
+def mock_agent_lifecycle() -> AsyncMock:
+    """IAgentLifecycle Mock。"""
+    return AsyncMock(spec=IAgentLifecycle)
+
+
+@pytest.fixture
 def mock_skill_creator() -> AsyncMock:
     """ISkillCreator Mock。"""
     return AsyncMock(spec=ISkillCreator)
@@ -123,6 +130,7 @@ def builder_service_v2(
     mock_session_repo: AsyncMock,
     mock_llm_service: AsyncMock,
     mock_agent_creator: AsyncMock,
+    mock_agent_lifecycle: AsyncMock,
     mock_skill_creator: AsyncMock,
     mock_tool_querier: AsyncMock,
     mock_skill_querier: AsyncMock,
@@ -132,6 +140,7 @@ def builder_service_v2(
         session_repo=mock_session_repo,
         llm_service=mock_llm_service,
         agent_creator=mock_agent_creator,
+        agent_lifecycle=mock_agent_lifecycle,
         skill_creator=mock_skill_creator,
         tool_querier=mock_tool_querier,
         skill_querier=mock_skill_querier,

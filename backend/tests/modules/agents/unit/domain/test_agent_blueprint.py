@@ -9,7 +9,7 @@ from src.modules.agents.domain.value_objects.agent_blueprint import (
     ToolBinding,
 )
 from src.modules.agents.domain.value_objects.agent_status import AgentStatus
-from src.shared.domain.exceptions import InvalidStateTransitionError, ValidationError
+from src.shared.domain.exceptions import InvalidStateTransitionError
 
 
 # ── Persona 值对象 ──────────────────────────────────────────────
@@ -133,28 +133,17 @@ class TestAgentStateTransitions:
         with pytest.raises(InvalidStateTransitionError):
             agent.start_testing()
 
-    # TESTING → ACTIVE (Blueprint 上线)
+    # TESTING → ACTIVE (Blueprint 上线, 唯一的激活路径)
     def test_activate_from_testing(self) -> None:
         agent = self._make_agent(AgentStatus.TESTING)
         agent.activate()
         assert agent.status == AgentStatus.ACTIVE
 
-    # DRAFT → ACTIVE (V1 兼容路径, 需要 system_prompt)
-    def test_activate_from_draft_with_prompt(self) -> None:
+    # DRAFT → ACTIVE 已移除 (所有 Agent 必须走 TESTING)
+    def test_activate_from_draft_raises(self) -> None:
         agent = self._make_agent(AgentStatus.DRAFT, system_prompt="你是客服")
-        agent.activate()
-        assert agent.status == AgentStatus.ACTIVE
-
-    def test_activate_from_draft_without_prompt_raises(self) -> None:
-        agent = self._make_agent(AgentStatus.DRAFT, system_prompt="")
-        with pytest.raises(ValidationError, match="系统提示词"):
+        with pytest.raises(InvalidStateTransitionError):
             agent.activate()
-
-    # TESTING 激活不需要 system_prompt (Blueprint 模式用 CLAUDE.md)
-    def test_activate_from_testing_without_prompt_ok(self) -> None:
-        agent = self._make_agent(AgentStatus.TESTING)
-        agent.activate()  # 不应抛异常
-        assert agent.status == AgentStatus.ACTIVE
 
     # ARCHIVED 不能激活
     def test_activate_from_archived_raises(self) -> None:

@@ -5,10 +5,8 @@ from pydantic import Field
 from src.modules.agents.domain.value_objects.agent_config import AgentConfig
 from src.modules.agents.domain.value_objects.agent_status import AgentStatus
 from src.shared.domain.base_entity import PydanticEntity
-from src.shared.domain.exceptions import ValidationError
 
 
-_ACTIVATABLE = frozenset({AgentStatus.DRAFT, AgentStatus.TESTING})
 _ARCHIVABLE = frozenset({AgentStatus.DRAFT, AgentStatus.TESTING, AgentStatus.ACTIVE})
 
 
@@ -31,17 +29,8 @@ class Agent(PydanticEntity):
         self.touch()
 
     def activate(self) -> None:
-        """激活 Agent。
-
-        TESTING → ACTIVE (Blueprint 上线, 无需 system_prompt)
-        DRAFT → ACTIVE (V1 兼容, 需要 system_prompt 非空)
-        """
-        self._require_status(self.status, _ACTIVATABLE, AgentStatus.ACTIVE.value)
-        if self.status == AgentStatus.DRAFT and not self.system_prompt.strip():
-            raise ValidationError(
-                message="激活 Agent 需要设置系统提示词",
-                field="system_prompt",
-            )
+        """激活 Agent。TESTING → ACTIVE (所有 Agent 走 Blueprint 路径)。"""
+        self._require_status(self.status, frozenset({AgentStatus.TESTING}), AgentStatus.ACTIVE.value)
         self.status = AgentStatus.ACTIVE
         self.touch()
 

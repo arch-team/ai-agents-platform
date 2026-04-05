@@ -55,6 +55,13 @@ def _get_workspace_manager() -> WorkspaceManagerImpl:
     )
 
 
+async def get_blueprint_repository(
+    session: Annotated[AsyncSession, Depends(get_db)],
+) -> AgentBlueprintRepositoryImpl:
+    """创建 AgentBlueprintRepository 实例 (Blueprint 详情查询用)。"""
+    return AgentBlueprintRepositoryImpl(session=session)
+
+
 async def get_lifecycle_agent_service(
     session: Annotated[AsyncSession, Depends(get_db)],
 ) -> AgentService:

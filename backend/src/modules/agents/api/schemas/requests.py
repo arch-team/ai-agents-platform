@@ -12,11 +12,10 @@ from src.shared.domain.constants import (
 
 
 class CreateAgentRequest(BaseModel):
-    """创建 Agent 请求。"""
+    """创建 Agent 请求 (自动创建最小 Blueprint)。"""
 
     name: str = Field(min_length=1, max_length=100)
     description: str = Field(max_length=500, default="")
-    system_prompt: str = Field(max_length=10000, default="")
     model_id: str = Field(default=AGENT_DEFAULT_MODEL_ID, max_length=200)
     temperature: float = Field(default=AGENT_DEFAULT_TEMPERATURE, ge=0.0, le=1.0)
     max_tokens: int = Field(default=AGENT_DEFAULT_MAX_TOKENS, ge=1, le=4096)
@@ -24,6 +23,10 @@ class CreateAgentRequest(BaseModel):
     enable_teams: bool = Field(default=AGENT_DEFAULT_ENABLE_TEAMS)
     enable_memory: bool = Field(default=False)
     tool_ids: list[int] = Field(default_factory=list, max_length=50)
+    # Blueprint Persona 字段 (快速创建入口)
+    persona_role: str = Field(default="", max_length=200)
+    persona_background: str = Field(default="", max_length=2000)
+    persona_tone: str = Field(default="", max_length=200)
 
 
 class UpdateAgentRequest(BaseModel):
@@ -31,7 +34,6 @@ class UpdateAgentRequest(BaseModel):
 
     name: str | None = Field(default=None, min_length=1, max_length=100)
     description: str | None = Field(default=None, max_length=500)
-    system_prompt: str | None = Field(default=None, max_length=10000)
     model_id: str | None = Field(default=None, max_length=200)
     temperature: float | None = Field(default=None, ge=0.0, le=1.0)
     max_tokens: int | None = Field(default=None, ge=1, le=4096)

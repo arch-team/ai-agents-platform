@@ -147,22 +147,17 @@ class TestCreateAgentWithBlueprintV2:
         mock_blueprint_repo.update_workspace_path.assert_awaited_once()
 
     @pytest.mark.asyncio
-    async def test_fallback_without_deps(self, mock_agent_service: AsyncMock) -> None:
-        """没有 blueprint_repo/workspace_manager 时降级到 V1。"""
+    async def test_raises_without_deps(self, mock_agent_service: AsyncMock) -> None:
+        """没有 blueprint_repo/workspace_manager 时抛出 RuntimeError (V1 降级已移除)。"""
         creator = AgentCreatorImpl(agent_service=mock_agent_service)
-
-        agent_dto = _make_agent_dto(id=1, name="降级 Agent")
-        mock_agent_service.create_agent.return_value = agent_dto
 
         request = CreateAgentWithBlueprintRequest(
             name="降级 Agent",
             description="desc",
             blueprint=BlueprintData(persona=PersonaData(role="助手", background="通用")),
         )
-        result = await creator.create_agent_with_blueprint(request, owner_id=100)
-
-        assert result.id == 1
-        assert result.name == "降级 Agent"
+        with pytest.raises(RuntimeError, match="Blueprint 依赖未注入"):
+            await creator.create_agent_with_blueprint(request, owner_id=100)
 
 
 @pytest.mark.unit
