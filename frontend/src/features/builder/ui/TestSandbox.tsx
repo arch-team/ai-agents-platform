@@ -214,17 +214,27 @@ export function TestSandbox({ token }: TestSandboxProps) {
       {/* 测试输入区域 */}
       <form onSubmit={(e) => void handleSendMessage(e)} className="border-t border-gray-200 p-4">
         <div className="flex gap-2">
+          <label htmlFor="test-message-input" className="sr-only">
+            测试消息输入
+          </label>
           <input
+            id="test-message-input"
             type="text"
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             disabled={isSending}
             placeholder="输入测试消息…"
+            aria-label="测试消息输入"
             className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm
               focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-500
               disabled:cursor-not-allowed disabled:bg-gray-50"
           />
-          <Button type="submit" disabled={isSending || !inputValue.trim()}>
+          <Button
+            type="submit"
+            disabled={isSending || !inputValue.trim()}
+            aria-label={isSending ? '正在发送消息' : '发送消息'}
+            aria-busy={isSending}
+          >
             发送
           </Button>
         </div>

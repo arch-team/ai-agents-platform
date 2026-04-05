@@ -128,12 +128,16 @@ class WorkspaceManagerImpl(IWorkspaceManager):
         shutil.rmtree(target, ignore_errors=True)
         shutil.copytree(source, target)
 
-    @staticmethod
-    def _validate_path(path: str) -> None:
-        """路径安全校验 — 拒绝路径遍历和绝对路径。"""
+    def _validate_path(self, path: str) -> None:
+        """路径安全校验 — 拒绝路径遍历、绝对路径和符号链接。"""
         if path.startswith("/"):
             msg = f"路径安全校验失败: 不允许绝对路径 '{path}'"
             raise ValueError(msg)
         if ".." in Path(path).parts:
             msg = f"路径安全校验失败: 不允许路径遍历 '{path}'"
+            raise ValueError(msg)
+        # 加固: resolve 后确认仍在 skill_library_root 下 (防止符号链接逃逸)
+        resolved = (self._skill_library_root / path).resolve()
+        if not resolved.is_relative_to(self._skill_library_root.resolve()):
+            msg = f"路径安全校验失败: 解析后路径逃逸根目录 '{path}'"
             raise ValueError(msg)

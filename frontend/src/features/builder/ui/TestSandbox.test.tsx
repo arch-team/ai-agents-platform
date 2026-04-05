@@ -97,13 +97,13 @@ describe('TestSandbox', () => {
     expect(screen.getByText('测试沙盒')).toBeInTheDocument();
     expect(screen.getByText('测试环境已就绪，开始和你的 Agent 对话')).toBeInTheDocument();
     expect(screen.getByPlaceholderText('输入测试消息…')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '发送' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '发送消息' })).toBeInTheDocument();
   });
 
   it('空消息时发送按钮禁用', () => {
     render(<TestSandbox token="test-token" />);
 
-    expect(screen.getByRole('button', { name: '发送' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: '发送消息' })).toBeDisabled();
   });
 
   // ── 发送消息 ──
@@ -127,7 +127,7 @@ describe('TestSandbox', () => {
 
     // 输入并发送消息
     await user.type(screen.getByPlaceholderText('输入测试消息…'), '你好');
-    await user.click(screen.getByRole('button', { name: '发送' }));
+    await user.click(screen.getByRole('button', { name: '发送消息' }));
 
     // 验证用户消息立即出现
     expect(screen.getByText('你好')).toBeInTheDocument();
@@ -168,7 +168,7 @@ describe('TestSandbox', () => {
     render(<TestSandbox token="test-token" />);
 
     await user.type(screen.getByPlaceholderText('输入测试消息…'), '第一条');
-    await user.click(screen.getByRole('button', { name: '发送' }));
+    await user.click(screen.getByRole('button', { name: '发送消息' }));
 
     await waitFor(() => {
       expect(screen.getByText('回复1')).toBeInTheDocument();
@@ -178,7 +178,7 @@ describe('TestSandbox', () => {
     mockParseSSEStream.mockReturnValueOnce(createMockSSEStream([{ content: '回复2', done: true }]));
 
     await user.type(screen.getByPlaceholderText('输入测试消息…'), '第二条');
-    await user.click(screen.getByRole('button', { name: '发送' }));
+    await user.click(screen.getByRole('button', { name: '发送消息' }));
 
     await waitFor(() => {
       expect(screen.getByText('回复2')).toBeInTheDocument();
@@ -201,7 +201,7 @@ describe('TestSandbox', () => {
     render(<TestSandbox token="test-token" />);
 
     await user.type(screen.getByPlaceholderText('输入测试消息…'), '测试');
-    await user.click(screen.getByRole('button', { name: '发送' }));
+    await user.click(screen.getByRole('button', { name: '发送消息' }));
 
     await waitFor(() => {
       expect(screen.getByText('Agent 执行超时')).toBeInTheDocument();
@@ -216,7 +216,7 @@ describe('TestSandbox', () => {
     render(<TestSandbox token="test-token" />);
 
     await user.type(screen.getByPlaceholderText('输入测试消息…'), '测试');
-    await user.click(screen.getByRole('button', { name: '发送' }));
+    await user.click(screen.getByRole('button', { name: '发送消息' }));
 
     await waitFor(() => {
       expect(screen.getByText('网络错误')).toBeInTheDocument();
@@ -245,12 +245,12 @@ describe('TestSandbox', () => {
     render(<TestSandbox token="test-token" />);
 
     await user.type(screen.getByPlaceholderText('输入测试消息…'), '测试');
-    await user.click(screen.getByRole('button', { name: '发送' }));
+    await user.click(screen.getByRole('button', { name: '发送消息' }));
 
-    // 发送中时输入框和按钮禁用
+    // 发送中时输入框和按钮禁用 (aria-label 切换为 '正在发送消息')
     await waitFor(() => {
       expect(screen.getByPlaceholderText('输入测试消息…')).toBeDisabled();
-      expect(screen.getByRole('button', { name: '发送' })).toBeDisabled();
+      expect(screen.getByRole('button', { name: '正在发送消息' })).toBeDisabled();
     });
 
     // 清理：解除挂起以避免测试泄漏
