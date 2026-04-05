@@ -1,13 +1,11 @@
 """Builder API 端点。"""
 
-import json
 from collections.abc import AsyncIterator
 from dataclasses import asdict
 from typing import Annotated
 
-import structlog
 from fastapi import APIRouter, Depends, status
-from sse_starlette import EventSourceResponse, ServerSentEvent
+from sse_starlette import EventSourceResponse
 
 from src.modules.auth.api.dependencies import get_current_user
 from src.modules.auth.application.dto.user_dto import UserDTO
@@ -20,10 +18,8 @@ from src.modules.builder.api.schemas.responses import (
 )
 from src.modules.builder.application.dto.builder_dto import BuilderSessionDTO, RefineBuilderDTO
 from src.modules.builder.application.services.builder_service import BuilderService
-from src.shared.domain.exceptions import DomainError
+from src.shared.api.sse_helpers import stream_sse_events
 
-
-logger = structlog.get_logger(__name__)
 
 router = APIRouter(prefix="/api/v1/builder", tags=["builder"])
 
@@ -53,37 +49,45 @@ async def create_builder_session(
     return _to_response(result)
 
 
+async def _blueprint_stream_with_result(
+    service: BuilderService,
+    session_id: int,
+    user_id: int,
+    stream: AsyncIterator[str],
+) -> AsyncIterator[dict[str, object]]:
+    """包装 Builder 流: chunks → blueprint 结果 → done。"""
+    async for chunk in stream:
+        yield {"content": chunk, "done": False}
+    session_dto = await service.get_session(session_id, user_id)
+    if session_dto.generated_blueprint:
+        yield {"blueprint": session_dto.generated_blueprint, "done": False}
+    yield {"content": "", "done": True}
+
+
 @router.post("/sessions/{session_id}/generate")
 async def generate_blueprint_stream(
     session_id: int,
     service: ServiceDep,
     current_user: CurrentUserDep,
 ) -> EventSourceResponse:
-    """V2: SSE 流式生成 Agent Blueprint (SOP 引导式)。"""
+    """SSE 流式生成 Agent Blueprint (SOP 引导式)。"""
     from src.shared.infrastructure.sse_connection_manager import get_sse_manager
 
-    sse_manager = get_sse_manager()
-
-    async def event_generator() -> AsyncIterator[ServerSentEvent]:
-        async with sse_manager.connect(current_user.id):
-            try:
-                async for chunk in service.generate_blueprint_stream(session_id, current_user.id):
-                    yield ServerSentEvent(data=json.dumps({"content": chunk, "done": False}))
-
-                session_dto = await service.get_session(session_id, current_user.id)
-                if session_dto.generated_blueprint:
-                    yield ServerSentEvent(
-                        data=json.dumps({"blueprint": session_dto.generated_blueprint, "done": False}),
-                    )
-
-                yield ServerSentEvent(data=json.dumps({"content": "", "done": True}))
-            except DomainError as e:
-                yield ServerSentEvent(data=json.dumps({"error": e.message, "done": True}))
-            except Exception:
-                logger.exception("builder_blueprint_stream_error", session_id=session_id)
-                yield ServerSentEvent(data=json.dumps({"error": "服务内部错误", "done": True}))
-
-    return EventSourceResponse(event_generator())
+    return EventSourceResponse(
+        stream_sse_events(
+            get_sse_manager(),
+            current_user.id,
+            _blueprint_stream_with_result(
+                service,
+                session_id,
+                current_user.id,
+                service.generate_blueprint_stream(session_id, current_user.id),
+            ),
+            format_chunk=lambda d: d,
+            log_event="builder_blueprint_stream_error",
+            session_id=session_id,
+        ),
+    )
 
 
 @router.post("/sessions/{session_id}/refine")
@@ -93,32 +97,25 @@ async def refine_builder_session(
     service: ServiceDep,
     current_user: CurrentUserDep,
 ) -> EventSourceResponse:
-    """V2: 多轮迭代 — 用户追加需求后重新生成 Blueprint。"""
+    """多轮迭代 — 用户追加需求后重新生成 Blueprint。"""
     from src.shared.infrastructure.sse_connection_manager import get_sse_manager
 
-    sse_manager = get_sse_manager()
     dto = RefineBuilderDTO(message=request.message)
-
-    async def event_generator() -> AsyncIterator[ServerSentEvent]:
-        async with sse_manager.connect(current_user.id):
-            try:
-                async for chunk in service.refine_session(session_id, current_user.id, dto=dto):
-                    yield ServerSentEvent(data=json.dumps({"content": chunk, "done": False}))
-
-                session_dto = await service.get_session(session_id, current_user.id)
-                if session_dto.generated_blueprint:
-                    yield ServerSentEvent(
-                        data=json.dumps({"blueprint": session_dto.generated_blueprint, "done": False}),
-                    )
-
-                yield ServerSentEvent(data=json.dumps({"content": "", "done": True}))
-            except DomainError as e:
-                yield ServerSentEvent(data=json.dumps({"error": e.message, "done": True}))
-            except Exception:
-                logger.exception("builder_refine_stream_error", session_id=session_id)
-                yield ServerSentEvent(data=json.dumps({"error": "服务内部错误", "done": True}))
-
-    return EventSourceResponse(event_generator())
+    return EventSourceResponse(
+        stream_sse_events(
+            get_sse_manager(),
+            current_user.id,
+            _blueprint_stream_with_result(
+                service,
+                session_id,
+                current_user.id,
+                service.refine_session(session_id, current_user.id, dto=dto),
+            ),
+            format_chunk=lambda d: d,
+            log_event="builder_refine_stream_error",
+            session_id=session_id,
+        ),
+    )
 
 
 @router.post("/sessions/{session_id}/confirm")

@@ -1,13 +1,11 @@
 """Execution API 端点。"""
 
-import json
-from collections.abc import AsyncIterator
 from dataclasses import asdict
 from typing import Annotated
 
 import structlog
 from fastapi import APIRouter, Depends, Query, status
-from sse_starlette import EventSourceResponse, ServerSentEvent
+from sse_starlette import EventSourceResponse
 
 from src.modules.auth.api.dependencies import get_current_user
 from src.modules.auth.application.dto.user_dto import UserDTO
@@ -28,7 +26,6 @@ from src.modules.execution.application.dto.execution_dto import (
 )
 from src.modules.execution.application.services.execution_service import ExecutionService
 from src.shared.api.schemas import calc_total_pages
-from src.shared.domain.exceptions import DomainError
 from src.shared.infrastructure.sse_connection_manager import SSEConnectionManager, get_sse_manager
 
 
@@ -128,20 +125,19 @@ async def send_message_stream(
     sse_manager: SSEManagerDep,
 ) -> EventSourceResponse:
     """SSE 流式发送消息。"""
+    from src.shared.api.sse_helpers import stream_sse_events
 
-    async def event_generator() -> AsyncIterator[ServerSentEvent]:
-        async with sse_manager.connect(current_user.id):
-            try:
-                dto = SendMessageDTO(content=request.content)
-                async for chunk in await service.send_message_stream(conversation_id, dto, current_user.id):
-                    yield ServerSentEvent(data=json.dumps(_stream_chunk_to_dict(chunk)))
-            except DomainError as e:
-                yield ServerSentEvent(data=json.dumps({"error": e.message, "done": True}))
-            except Exception:
-                logger.exception("sse_stream_error", conversation_id=conversation_id)
-                yield ServerSentEvent(data=json.dumps({"error": "服务内部错误", "done": True}))
-
-    return EventSourceResponse(event_generator())
+    dto = SendMessageDTO(content=request.content)
+    return EventSourceResponse(
+        stream_sse_events(
+            sse_manager,
+            current_user.id,
+            await service.send_message_stream(conversation_id, dto, current_user.id),
+            format_chunk=_stream_chunk_to_dict,
+            log_event="sse_stream_error",
+            conversation_id=conversation_id,
+        ),
+    )
 
 
 @router.post("/{conversation_id}/complete")
