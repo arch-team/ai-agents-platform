@@ -21,4 +21,4 @@ class TestAgentStatus:
 
     def test_all_members(self) -> None:
         members = {s.value for s in AgentStatus}
-        assert members == {"draft", "active", "archived"}
+        assert members == {"draft", "testing", "active", "archived"}

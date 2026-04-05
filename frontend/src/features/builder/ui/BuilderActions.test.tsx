@@ -1,98 +1,128 @@
-// BuilderActions 组件单元测试
+// BuilderActions 组件单元测试 (V2 阶段感知)
 
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
+import type { GeneratedBlueprint } from '../api/types';
 import { useBuilderStore } from '../model/store';
-import type { AgentConfig } from '../api/types';
 
 import { BuilderActions } from './BuilderActions';
 
-// 重置 store 状态，确保测试隔离
 beforeEach(() => {
   useBuilderStore.getState().reset();
 });
 
-const mockConfig: AgentConfig = {
-  name: '测试 Agent',
-  description: '测试描述',
-  system_prompt: '测试系统提示词',
-  model_id: 'anthropic.us.anthropic.claude-haiku-4-5-20251001-v1:0-20241022-v2:0',
-  temperature: 0.7,
-  max_tokens: 2048,
+const defaultProps = {
+  onCancel: vi.fn(),
+  onStartTesting: vi.fn(),
+  onGoLive: vi.fn(),
+  onBackToEdit: vi.fn(),
+};
+
+const mockBlueprint: GeneratedBlueprint = {
+  persona: { role: '测试', background: '测试' },
+  skills: [],
+  tool_bindings: [],
+  knowledge_base_ids: [],
+  memory_config: null,
+  guardrails: [],
 };
 
 describe('BuilderActions', () => {
-  it('sessionId 为 null 时不渲染任何内容', () => {
-    const { container } = render(<BuilderActions onConfirm={vi.fn()} onCancel={vi.fn()} />);
+  it('input 阶段且无 session 时不渲染', () => {
+    const { container } = render(<BuilderActions {...defaultProps} />);
 
-    expect(container.firstChild).toBeNull();
+    expect(container.querySelector('button')).toBeNull();
   });
 
-  it('有 sessionId 但生成未完成时，确认按钮禁用', () => {
-    useBuilderStore.setState({ sessionId: 1, isGenerating: true });
+  it('generating 阶段显示取消按钮', () => {
+    useBuilderStore.setState({ sessionId: 1, phase: 'generating' });
 
-    render(<BuilderActions onConfirm={vi.fn()} onCancel={vi.fn()} />);
+    render(<BuilderActions {...defaultProps} />);
 
-    expect(screen.getByRole('button', { name: '确认创建 Agent' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: '取消生成' })).toBeInTheDocument();
   });
 
-  it('有 sessionId 但没有配置时，确认按钮禁用', () => {
-    useBuilderStore.setState({ sessionId: 1, generatedConfig: null, isGenerating: false });
-
-    render(<BuilderActions onConfirm={vi.fn()} onCancel={vi.fn()} />);
-
-    expect(screen.getByRole('button', { name: '确认创建 Agent' })).toBeDisabled();
-  });
-
-  it('生成完成且有配置时，确认按钮可用', () => {
-    useBuilderStore.setState({
-      sessionId: 1,
-      generatedConfig: mockConfig,
-      isGenerating: false,
-    });
-
-    render(<BuilderActions onConfirm={vi.fn()} onCancel={vi.fn()} />);
-
-    expect(screen.getByRole('button', { name: '确认创建 Agent' })).not.toBeDisabled();
-  });
-
-  it('点击确认按钮触发 onConfirm 并传入 sessionId', async () => {
-    const handleConfirm = vi.fn();
-    const user = userEvent.setup();
-
-    useBuilderStore.setState({
-      sessionId: 42,
-      generatedConfig: mockConfig,
-      isGenerating: false,
-    });
-
-    render(<BuilderActions onConfirm={handleConfirm} onCancel={vi.fn()} />);
-
-    await user.click(screen.getByRole('button', { name: '确认创建 Agent' }));
-
-    expect(handleConfirm).toHaveBeenCalledWith(42, mockConfig.name);
-  });
-
-  it('点击取消按钮触发 onCancel', async () => {
+  it('点击取消生成触发 onCancel', async () => {
     const handleCancel = vi.fn();
     const user = userEvent.setup();
+    useBuilderStore.setState({ sessionId: 1, phase: 'generating' });
 
-    useBuilderStore.setState({ sessionId: 1 });
+    render(<BuilderActions {...defaultProps} onCancel={handleCancel} />);
 
-    render(<BuilderActions onConfirm={vi.fn()} onCancel={handleCancel} />);
-
-    await user.click(screen.getByRole('button', { name: '取消' }));
+    await user.click(screen.getByRole('button', { name: '取消生成' }));
 
     expect(handleCancel).toHaveBeenCalledTimes(1);
   });
 
-  it('正在确认时取消按钮被禁用', () => {
-    useBuilderStore.setState({ sessionId: 1, isConfirming: true });
+  it('configure 阶段显示取消和开始测试按钮', () => {
+    useBuilderStore.setState({
+      sessionId: 1,
+      phase: 'configure',
+      generatedBlueprint: mockBlueprint,
+    });
 
-    render(<BuilderActions onConfirm={vi.fn()} onCancel={vi.fn()} />);
+    render(<BuilderActions {...defaultProps} />);
 
-    expect(screen.getByRole('button', { name: '取消' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: '取消' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /开始测试/ })).toBeInTheDocument();
+  });
+
+  it('configure 阶段无 blueprint 时开始测试按钮禁用', () => {
+    useBuilderStore.setState({ sessionId: 1, phase: 'configure', generatedBlueprint: null });
+
+    render(<BuilderActions {...defaultProps} />);
+
+    expect(screen.getByRole('button', { name: /开始测试/ })).toBeDisabled();
+  });
+
+  it('点击开始测试触发 onStartTesting', async () => {
+    const handleStartTesting = vi.fn();
+    const user = userEvent.setup();
+    useBuilderStore.setState({
+      sessionId: 1,
+      phase: 'configure',
+      generatedBlueprint: mockBlueprint,
+    });
+
+    render(<BuilderActions {...defaultProps} onStartTesting={handleStartTesting} />);
+
+    await user.click(screen.getByRole('button', { name: /开始测试/ }));
+
+    expect(handleStartTesting).toHaveBeenCalledTimes(1);
+  });
+
+  it('testing 阶段显示返回修改和上线发布按钮', () => {
+    useBuilderStore.setState({ sessionId: 1, phase: 'testing' });
+
+    render(<BuilderActions {...defaultProps} />);
+
+    expect(screen.getByRole('button', { name: /返回修改/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /上线发布/ })).toBeInTheDocument();
+  });
+
+  it('点击上线发布触发 onGoLive', async () => {
+    const handleGoLive = vi.fn();
+    const user = userEvent.setup();
+    useBuilderStore.setState({ sessionId: 1, phase: 'testing' });
+
+    render(<BuilderActions {...defaultProps} onGoLive={handleGoLive} />);
+
+    await user.click(screen.getByRole('button', { name: /上线发布/ }));
+
+    expect(handleGoLive).toHaveBeenCalledTimes(1);
+  });
+
+  it('点击返回修改触发 onBackToEdit', async () => {
+    const handleBackToEdit = vi.fn();
+    const user = userEvent.setup();
+    useBuilderStore.setState({ sessionId: 1, phase: 'testing' });
+
+    render(<BuilderActions {...defaultProps} onBackToEdit={handleBackToEdit} />);
+
+    await user.click(screen.getByRole('button', { name: /返回修改/ }));
+
+    expect(handleBackToEdit).toHaveBeenCalledTimes(1);
   });
 });

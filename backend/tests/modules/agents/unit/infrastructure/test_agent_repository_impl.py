@@ -48,6 +48,7 @@ class TestAgentRepositoryImplStructure:
                 "enable_teams",
                 "enable_memory",
                 "tool_ids",
+                "blueprint_id",
             },
         )
         assert AgentRepositoryImpl._updatable_fields == expected

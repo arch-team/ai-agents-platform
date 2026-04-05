@@ -38,5 +38,22 @@ class AgentUpdatedEvent(BaseAgentEvent):
 
 
 @dataclass
+class AgentTestingStartedEvent(BaseAgentEvent):
+    """Agent 开始测试事件 — Runtime 已创建。"""
+
+    runtime_arn: str = ""
+
+
+@dataclass
+class AgentGoLiveEvent(BaseAgentEvent):
+    """Agent 上线事件 — TESTING → ACTIVE。"""
+
+
+@dataclass
+class AgentTakenOfflineEvent(BaseAgentEvent):
+    """Agent 下线事件 — Runtime 已销毁。"""
+
+
+@dataclass
 class AgentDeletedEvent(BaseAgentEvent):
     """Agent 删除事件。"""

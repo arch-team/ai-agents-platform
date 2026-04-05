@@ -66,6 +66,8 @@ from src.modules.knowledge.domain.exceptions import (
     KnowledgeBaseNameDuplicateError,
     KnowledgeBaseNotFoundError,
 )
+from src.modules.skills.api.endpoints import router as skills_router
+from src.modules.skills.domain.exceptions import SkillNotFoundError
 from src.modules.templates.api.endpoints import router as templates_router
 from src.modules.templates.domain.exceptions import (
     DuplicateTemplateNameError,
@@ -201,6 +203,8 @@ def create_app() -> FastAPI:
         AuditNotFoundError: 404,
         # builder
         BuilderSessionNotFoundError: 404,
+        # skills
+        SkillNotFoundError: 404,
         # billing
         DepartmentNotFoundError: 404,
         BudgetNotFoundError: 404,
@@ -237,6 +241,7 @@ def create_app() -> FastAPI:
     app.include_router(evaluation_router)
     app.include_router(audit_router)
     app.include_router(builder_router)
+    app.include_router(skills_router)
     app.include_router(stats_router)
 
     # Rate Limiting

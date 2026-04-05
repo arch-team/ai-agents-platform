@@ -151,6 +151,9 @@ async def get_execution_service(
         repo: IConversationRepository = ConversationRepositoryImpl(session=stats_session)
         return repo, _commit, _close
 
+    # 三模式路由: 始终提供 ClaudeAgentAdapter 作为本地执行路径 (模式2: DRAFT + workspace_path)
+    local_agent_runtime = ClaudeAgentAdapter()
+
     return ExecutionService(
         conversation_repo=conversation_repo,
         message_repo=message_repo,
@@ -165,6 +168,7 @@ async def get_execution_service(
         context_window=context_window,
         stream_session_commit=stream_session.commit,
         stream_session_close=stream_session.close,
+        local_agent_runtime=local_agent_runtime,
         memory_id=settings.AGENTCORE_MEMORY_ID,
         stats_repo_factory=_stats_repo_factory,  # type: ignore[arg-type]  # Awaitable vs Coroutine
     )

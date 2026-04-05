@@ -4308,3 +4308,560 @@ exports[`Snapshot Tests SecurityStack 快照匹配 1`] = `
   },
 }
 `;
+
+exports[`Snapshot Tests StorageStack 快照匹配 1`] = `
+{
+  "Outputs": {
+    "SkillLibraryEfsId": {
+      "Description": "Skill Library EFS 文件系统 ID",
+      "Value": {
+        "Ref": "SkillLibraryEfsA7F93355",
+      },
+    },
+    "WorkspaceBucketArn": {
+      "Description": "Workspace S3 Bucket ARN",
+      "Value": {
+        "Fn::GetAtt": [
+          "WorkspaceBucket53E30B92",
+          "Arn",
+        ],
+      },
+    },
+    "WorkspaceBucketName": {
+      "Description": "Workspace S3 Bucket 名称",
+      "Value": {
+        "Ref": "WorkspaceBucket53E30B92",
+      },
+    },
+  },
+  "Parameters": {
+    "BootstrapVersion": {
+      "Default": "/cdk-bootstrap/hnb659fds/version",
+      "Description": "Version of the CDK Bootstrap resources in this environment, automatically retrieved from SSM Parameter Store. [cdk:skip]",
+      "Type": "AWS::SSM::Parameter::Value<String>",
+    },
+  },
+  "Resources": {
+    "CustomS3AutoDeleteObjectsCustomResourceProviderHandler9D90184F": {
+      "DependsOn": [
+        "CustomS3AutoDeleteObjectsCustomResourceProviderRole3B1BD092",
+      ],
+      "Metadata": {
+        "cdk_nag": {
+          "rules_to_suppress": [
+            {
+              "id": "AwsSolutions-IAM4",
+              "reason": "Auto-delete objects custom resource Lambda uses AWS managed policy for log access (Dev environment only)",
+            },
+            {
+              "id": "AwsSolutions-IAM5",
+              "reason": "Auto-delete objects custom resource requires s3:DeleteObject* and s3:GetObject* wildcards to clean bucket contents (Dev environment only)",
+            },
+            {
+              "id": "AwsSolutions-L1",
+              "reason": "Auto-delete objects custom resource Lambda runtime is managed by CDK framework and uses the latest available runtime",
+            },
+          ],
+        },
+      },
+      "Properties": {
+        "Code": {
+          "S3Bucket": "cdk-hnb659fds-assets-000000000000-us-east-1",
+          "S3Key": "faa95a81ae7d7373f3e1f242268f904eb748d8d0fdd306e8a6fe515a1905a7d6.zip",
+        },
+        "Description": {
+          "Fn::Join": [
+            "",
+            [
+              "Lambda function for auto-deleting objects in ",
+              {
+                "Ref": "WorkspaceBucket53E30B92",
+              },
+              " S3 bucket.",
+            ],
+          ],
+        },
+        "Handler": "index.handler",
+        "MemorySize": 128,
+        "Role": {
+          "Fn::GetAtt": [
+            "CustomS3AutoDeleteObjectsCustomResourceProviderRole3B1BD092",
+            "Arn",
+          ],
+        },
+        "Runtime": "nodejs22.x",
+        "Timeout": 900,
+      },
+      "Type": "AWS::Lambda::Function",
+    },
+    "CustomS3AutoDeleteObjectsCustomResourceProviderRole3B1BD092": {
+      "Metadata": {
+        "cdk_nag": {
+          "rules_to_suppress": [
+            {
+              "id": "AwsSolutions-IAM4",
+              "reason": "Auto-delete objects custom resource Lambda uses AWS managed policy for log access (Dev environment only)",
+            },
+            {
+              "id": "AwsSolutions-IAM5",
+              "reason": "Auto-delete objects custom resource requires s3:DeleteObject* and s3:GetObject* wildcards to clean bucket contents (Dev environment only)",
+            },
+            {
+              "id": "AwsSolutions-L1",
+              "reason": "Auto-delete objects custom resource Lambda runtime is managed by CDK framework and uses the latest available runtime",
+            },
+          ],
+        },
+      },
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Sub": "arn:\${AWS::Partition}:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Role",
+    },
+    "EfsSecurityGroupEC5F36AC": {
+      "Metadata": {
+        "cdk_nag": {
+          "rules_to_suppress": [
+            {
+              "id": "AwsSolutions-IAM4",
+              "reason": "Auto-delete objects custom resource Lambda uses AWS managed policy for log access (Dev environment only)",
+            },
+            {
+              "id": "AwsSolutions-IAM5",
+              "reason": "Auto-delete objects custom resource requires s3:DeleteObject* and s3:GetObject* wildcards to clean bucket contents (Dev environment only)",
+            },
+            {
+              "id": "AwsSolutions-L1",
+              "reason": "Auto-delete objects custom resource Lambda runtime is managed by CDK framework and uses the latest available runtime",
+            },
+          ],
+        },
+      },
+      "Properties": {
+        "GroupDescription": "EFS Skill Library security group - allows NFS access from ECS",
+        "SecurityGroupEgress": [
+          {
+            "CidrIp": "255.255.255.255/32",
+            "Description": "Disallow all traffic",
+            "FromPort": 252,
+            "IpProtocol": "icmp",
+            "ToPort": 86,
+          },
+        ],
+        "VpcId": {
+          "Fn::ImportValue": "VpcStack:ExportsOutputRefTestVpcE77CE67811D13B85",
+        },
+      },
+      "Type": "AWS::EC2::SecurityGroup",
+    },
+    "SkillLibraryEfsA7F93355": {
+      "DeletionPolicy": "Delete",
+      "Metadata": {
+        "cdk_nag": {
+          "rules_to_suppress": [
+            {
+              "id": "AwsSolutions-IAM4",
+              "reason": "Auto-delete objects custom resource Lambda uses AWS managed policy for log access (Dev environment only)",
+            },
+            {
+              "id": "AwsSolutions-IAM5",
+              "reason": "Auto-delete objects custom resource requires s3:DeleteObject* and s3:GetObject* wildcards to clean bucket contents (Dev environment only)",
+            },
+            {
+              "id": "AwsSolutions-L1",
+              "reason": "Auto-delete objects custom resource Lambda runtime is managed by CDK framework and uses the latest available runtime",
+            },
+          ],
+        },
+      },
+      "Properties": {
+        "Encrypted": true,
+        "FileSystemTags": [
+          {
+            "Key": "Name",
+            "Value": "TestStorageStack/SkillLibraryEfs",
+          },
+        ],
+        "PerformanceMode": "generalPurpose",
+        "ThroughputMode": "bursting",
+      },
+      "Type": "AWS::EFS::FileSystem",
+      "UpdateReplacePolicy": "Delete",
+    },
+    "SkillLibraryEfsEfsMountTarget1F9739BF0": {
+      "Metadata": {
+        "cdk_nag": {
+          "rules_to_suppress": [
+            {
+              "id": "AwsSolutions-IAM4",
+              "reason": "Auto-delete objects custom resource Lambda uses AWS managed policy for log access (Dev environment only)",
+            },
+            {
+              "id": "AwsSolutions-IAM5",
+              "reason": "Auto-delete objects custom resource requires s3:DeleteObject* and s3:GetObject* wildcards to clean bucket contents (Dev environment only)",
+            },
+            {
+              "id": "AwsSolutions-L1",
+              "reason": "Auto-delete objects custom resource Lambda runtime is managed by CDK framework and uses the latest available runtime",
+            },
+          ],
+        },
+      },
+      "Properties": {
+        "FileSystemId": {
+          "Ref": "SkillLibraryEfsA7F93355",
+        },
+        "SecurityGroups": [
+          {
+            "Fn::GetAtt": [
+              "EfsSecurityGroupEC5F36AC",
+              "GroupId",
+            ],
+          },
+        ],
+        "SubnetId": {
+          "Fn::ImportValue": "VpcStack:ExportsOutputRefTestVpcPrivateSubnet1SubnetCC65D7717F2BDF55",
+        },
+      },
+      "Type": "AWS::EFS::MountTarget",
+    },
+    "SkillLibraryEfsEfsMountTarget2E36E5C30": {
+      "Metadata": {
+        "cdk_nag": {
+          "rules_to_suppress": [
+            {
+              "id": "AwsSolutions-IAM4",
+              "reason": "Auto-delete objects custom resource Lambda uses AWS managed policy for log access (Dev environment only)",
+            },
+            {
+              "id": "AwsSolutions-IAM5",
+              "reason": "Auto-delete objects custom resource requires s3:DeleteObject* and s3:GetObject* wildcards to clean bucket contents (Dev environment only)",
+            },
+            {
+              "id": "AwsSolutions-L1",
+              "reason": "Auto-delete objects custom resource Lambda runtime is managed by CDK framework and uses the latest available runtime",
+            },
+          ],
+        },
+      },
+      "Properties": {
+        "FileSystemId": {
+          "Ref": "SkillLibraryEfsA7F93355",
+        },
+        "SecurityGroups": [
+          {
+            "Fn::GetAtt": [
+              "EfsSecurityGroupEC5F36AC",
+              "GroupId",
+            ],
+          },
+        ],
+        "SubnetId": {
+          "Fn::ImportValue": "VpcStack:ExportsOutputRefTestVpcPrivateSubnet2SubnetDE0C64A2F7B9B6B1",
+        },
+      },
+      "Type": "AWS::EFS::MountTarget",
+    },
+    "SkillLibraryEfsEfsMountTarget3DF1D768D": {
+      "Metadata": {
+        "cdk_nag": {
+          "rules_to_suppress": [
+            {
+              "id": "AwsSolutions-IAM4",
+              "reason": "Auto-delete objects custom resource Lambda uses AWS managed policy for log access (Dev environment only)",
+            },
+            {
+              "id": "AwsSolutions-IAM5",
+              "reason": "Auto-delete objects custom resource requires s3:DeleteObject* and s3:GetObject* wildcards to clean bucket contents (Dev environment only)",
+            },
+            {
+              "id": "AwsSolutions-L1",
+              "reason": "Auto-delete objects custom resource Lambda runtime is managed by CDK framework and uses the latest available runtime",
+            },
+          ],
+        },
+      },
+      "Properties": {
+        "FileSystemId": {
+          "Ref": "SkillLibraryEfsA7F93355",
+        },
+        "SecurityGroups": [
+          {
+            "Fn::GetAtt": [
+              "EfsSecurityGroupEC5F36AC",
+              "GroupId",
+            ],
+          },
+        ],
+        "SubnetId": {
+          "Fn::ImportValue": "VpcStack:ExportsOutputRefTestVpcPrivateSubnet3Subnet2311D32FD57B696C",
+        },
+      },
+      "Type": "AWS::EFS::MountTarget",
+    },
+    "WorkspaceBucket53E30B92": {
+      "DeletionPolicy": "Delete",
+      "Metadata": {
+        "cdk_nag": {
+          "rules_to_suppress": [
+            {
+              "id": "AwsSolutions-S1",
+              "reason": "Workspace bucket access is audited via CloudTrail; dedicated access log bucket not needed for internal-only workspace storage",
+            },
+            {
+              "id": "AwsSolutions-IAM4",
+              "reason": "Auto-delete objects custom resource Lambda uses AWS managed policy for log access (Dev environment only)",
+            },
+            {
+              "id": "AwsSolutions-IAM5",
+              "reason": "Auto-delete objects custom resource requires s3:DeleteObject* and s3:GetObject* wildcards to clean bucket contents (Dev environment only)",
+            },
+            {
+              "id": "AwsSolutions-L1",
+              "reason": "Auto-delete objects custom resource Lambda runtime is managed by CDK framework and uses the latest available runtime",
+            },
+          ],
+        },
+      },
+      "Properties": {
+        "BucketEncryption": {
+          "ServerSideEncryptionConfiguration": [
+            {
+              "ServerSideEncryptionByDefault": {
+                "SSEAlgorithm": "AES256",
+              },
+            },
+          ],
+        },
+        "BucketName": "ai-agents-platform-workspaces-dev",
+        "LifecycleConfiguration": {
+          "Rules": [
+            {
+              "Status": "Enabled",
+              "Transitions": [
+                {
+                  "StorageClass": "STANDARD_IA",
+                  "TransitionInDays": 90,
+                },
+              ],
+            },
+            {
+              "NoncurrentVersionExpiration": {
+                "NoncurrentDays": 30,
+              },
+              "Status": "Enabled",
+            },
+            {
+              "AbortIncompleteMultipartUpload": {
+                "DaysAfterInitiation": 7,
+              },
+              "Status": "Enabled",
+            },
+          ],
+        },
+        "PublicAccessBlockConfiguration": {
+          "BlockPublicAcls": true,
+          "BlockPublicPolicy": true,
+          "IgnorePublicAcls": true,
+          "RestrictPublicBuckets": true,
+        },
+        "Tags": [
+          {
+            "Key": "aws-cdk:auto-delete-objects",
+            "Value": "true",
+          },
+        ],
+        "VersioningConfiguration": {
+          "Status": "Enabled",
+        },
+      },
+      "Type": "AWS::S3::Bucket",
+      "UpdateReplacePolicy": "Delete",
+    },
+    "WorkspaceBucketAutoDeleteObjectsCustomResource851E14A3": {
+      "DeletionPolicy": "Delete",
+      "DependsOn": [
+        "WorkspaceBucketPolicyDE4FEEC3",
+      ],
+      "Metadata": {
+        "cdk_nag": {
+          "rules_to_suppress": [
+            {
+              "id": "AwsSolutions-IAM4",
+              "reason": "Auto-delete objects custom resource Lambda uses AWS managed policy for log access (Dev environment only)",
+            },
+            {
+              "id": "AwsSolutions-IAM5",
+              "reason": "Auto-delete objects custom resource requires s3:DeleteObject* and s3:GetObject* wildcards to clean bucket contents (Dev environment only)",
+            },
+            {
+              "id": "AwsSolutions-L1",
+              "reason": "Auto-delete objects custom resource Lambda runtime is managed by CDK framework and uses the latest available runtime",
+            },
+          ],
+        },
+      },
+      "Properties": {
+        "BucketName": {
+          "Ref": "WorkspaceBucket53E30B92",
+        },
+        "ServiceToken": {
+          "Fn::GetAtt": [
+            "CustomS3AutoDeleteObjectsCustomResourceProviderHandler9D90184F",
+            "Arn",
+          ],
+        },
+      },
+      "Type": "Custom::S3AutoDeleteObjects",
+      "UpdateReplacePolicy": "Delete",
+    },
+    "WorkspaceBucketPolicyDE4FEEC3": {
+      "Metadata": {
+        "cdk_nag": {
+          "rules_to_suppress": [
+            {
+              "id": "AwsSolutions-IAM4",
+              "reason": "Auto-delete objects custom resource Lambda uses AWS managed policy for log access (Dev environment only)",
+            },
+            {
+              "id": "AwsSolutions-IAM5",
+              "reason": "Auto-delete objects custom resource requires s3:DeleteObject* and s3:GetObject* wildcards to clean bucket contents (Dev environment only)",
+            },
+            {
+              "id": "AwsSolutions-L1",
+              "reason": "Auto-delete objects custom resource Lambda runtime is managed by CDK framework and uses the latest available runtime",
+            },
+          ],
+        },
+      },
+      "Properties": {
+        "Bucket": {
+          "Ref": "WorkspaceBucket53E30B92",
+        },
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": "s3:*",
+              "Condition": {
+                "Bool": {
+                  "aws:SecureTransport": "false",
+                },
+              },
+              "Effect": "Deny",
+              "Principal": {
+                "AWS": "*",
+              },
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "WorkspaceBucket53E30B92",
+                    "Arn",
+                  ],
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      {
+                        "Fn::GetAtt": [
+                          "WorkspaceBucket53E30B92",
+                          "Arn",
+                        ],
+                      },
+                      "/*",
+                    ],
+                  ],
+                },
+              ],
+            },
+            {
+              "Action": [
+                "s3:PutBucketPolicy",
+                "s3:GetBucket*",
+                "s3:List*",
+                "s3:DeleteObject*",
+              ],
+              "Effect": "Allow",
+              "Principal": {
+                "AWS": {
+                  "Fn::GetAtt": [
+                    "CustomS3AutoDeleteObjectsCustomResourceProviderRole3B1BD092",
+                    "Arn",
+                  ],
+                },
+              },
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "WorkspaceBucket53E30B92",
+                    "Arn",
+                  ],
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      {
+                        "Fn::GetAtt": [
+                          "WorkspaceBucket53E30B92",
+                          "Arn",
+                        ],
+                      },
+                      "/*",
+                    ],
+                  ],
+                },
+              ],
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+      },
+      "Type": "AWS::S3::BucketPolicy",
+    },
+  },
+  "Rules": {
+    "CheckBootstrapVersion": {
+      "Assertions": [
+        {
+          "Assert": {
+            "Fn::Not": [
+              {
+                "Fn::Contains": [
+                  [
+                    "1",
+                    "2",
+                    "3",
+                    "4",
+                    "5",
+                  ],
+                  {
+                    "Ref": "BootstrapVersion",
+                  },
+                ],
+              },
+            ],
+          },
+          "AssertDescription": "CDK bootstrap stack version 6 required. Please run 'cdk bootstrap' with a recent version of the CDK CLI.",
+        },
+      ],
+    },
+  },
+}
+`;

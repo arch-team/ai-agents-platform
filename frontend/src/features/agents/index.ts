@@ -6,6 +6,7 @@ export { MemoryPanel } from './ui/MemoryPanel';
 
 // Hooks
 export {
+  agentKeys,
   useAgents,
   useAgent,
   useCreateAgent,

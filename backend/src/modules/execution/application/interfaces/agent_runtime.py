@@ -41,6 +41,7 @@ class AgentRequest:
     memory_id: str = ""  # AgentCore Memory 资源 ID
     max_turns: int = 20  # Agent Loop 最大轮次
     cwd: str = ""  # Agent 工作目录
+    runtime_arn: str = ""  # 专属 Runtime ARN (三模式路由: 模式1)
     enable_teams: bool = False  # 启用 Agent Teams 协作能力
 
 

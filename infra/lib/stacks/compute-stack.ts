@@ -5,10 +5,12 @@ import * as ecs from 'aws-cdk-lib/aws-ecs';
 import * as elbv2 from 'aws-cdk-lib/aws-elasticloadbalancingv2';
 import * as events from 'aws-cdk-lib/aws-events';
 import * as targets from 'aws-cdk-lib/aws-events-targets';
+import * as efs from 'aws-cdk-lib/aws-efs';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as kms from 'aws-cdk-lib/aws-kms';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as logs from 'aws-cdk-lib/aws-logs';
+import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
 import { NagSuppressions } from 'cdk-nag';
 import { Construct } from 'constructs';
@@ -68,6 +70,12 @@ export interface ComputeStackProps extends BaseStackProps {
   readonly adminPasswordSecretArn?: string;
   /** CORS 允许源列表 — 从 cdk.json 环境配置读取，覆盖默认值 */
   readonly corsAllowedOrigins?: string[];
+  /** S3 Workspace 存储桶 — Agent Blueprint 工作目录 (M17) @default undefined */
+  readonly workspaceBucket?: s3.IBucket;
+  /** EFS 文件系统 — Skill Library (M17) @default undefined */
+  readonly skillLibraryFs?: efs.IFileSystem;
+  /** EFS 安全组 — 用于添加 NFS 入站规则 (M17) @default undefined */
+  readonly efsSecurityGroup?: ec2.ISecurityGroup;
 }
 
 /**
@@ -285,6 +293,39 @@ export class ComputeStack extends cdk.Stack {
         resources: ['*'], // Cost Explorer API 不支持资源级权限
       }),
     );
+
+    // M17: S3 Workspace 存储桶读写权限 (WorkspaceManager 上传 + agent_entrypoint 下载)
+    if (props.workspaceBucket) {
+      props.workspaceBucket.grantReadWrite(ecsConstruct.service.taskDefinition.taskRole);
+    }
+
+    // M17: EFS Skill Library 挂载到 ECS 任务 (Builder 编辑态实时读写)
+    if (props.skillLibraryFs && props.efsSecurityGroup) {
+      // ECS → EFS NFS 安全组规则 (使用 L1 避免跨 Stack 循环依赖)
+      new ec2.CfnSecurityGroupIngress(this, 'EcsToEfsIngress', {
+        groupId: props.efsSecurityGroup.securityGroupId,
+        sourceSecurityGroupId: apiSecurityGroupId,
+        ipProtocol: 'tcp',
+        fromPort: 2049,
+        toPort: 2049,
+        description: 'Allow ECS containers to access EFS via NFS',
+      });
+
+      // 在 TaskDefinition 上添加 EFS Volume
+      ecsConstruct.service.taskDefinition.addVolume({
+        name: 'skill-library',
+        efsVolumeConfiguration: {
+          fileSystemId: props.skillLibraryFs.fileSystemId,
+        },
+      });
+
+      // 在容器上添加 MountPoint
+      ecsConstruct.service.taskDefinition.defaultContainer!.addMountPoints({
+        sourceVolume: 'skill-library',
+        containerPath: '/data/skill-library',
+        readOnly: false,
+      });
+    }
 
     // EventBridge 定时触发评估 Pipeline 的 Lambda 函数
     const evalLambda = this.createEvalTriggerLambda(albConstruct.alb.loadBalancerDnsName, envName);

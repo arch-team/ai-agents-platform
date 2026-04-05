@@ -1,22 +1,30 @@
 // Builder Zustand store 类型定义
 
-import type { AgentConfig } from '../api/types';
+import type {
+  AgentConfig,
+  BlueprintConfigOverrides,
+  BuilderPhase,
+  ChatMessage,
+  GeneratedBlueprint,
+} from '../api/types';
 
 export interface BuilderState {
-  /** 当前 Builder 会话 ID */
+  // ── V1 状态 (保留兼容) ──
   sessionId: number | null;
-  /** SSE 流式累积的文本内容 */
   streamContent: string;
-  /** 从 SSE 流中解析出的 Agent 配置 */
   generatedConfig: AgentConfig | null;
-  /** 是否正在生成中（SSE 连接中） */
   isGenerating: boolean;
-  /** 是否正在确认创建 Agent */
   isConfirming: boolean;
-  /** 错误信息 */
   error: string | null;
 
-  // Actions
+  // ── V2 Blueprint 状态 ──
+  phase: BuilderPhase;
+  messages: ChatMessage[];
+  generatedBlueprint: GeneratedBlueprint | null;
+  configOverrides: BlueprintConfigOverrides;
+  createdAgentId: number | null;
+
+  // ── V1 Actions ──
   setSessionId: (id: number | null) => void;
   appendStreamContent: (content: string) => void;
   setGeneratedConfig: (config: AgentConfig | null) => void;
@@ -24,4 +32,13 @@ export interface BuilderState {
   setConfirming: (confirming: boolean) => void;
   setError: (error: string | null) => void;
   reset: () => void;
+
+  // ── V2 Actions ──
+  setPhase: (phase: BuilderPhase) => void;
+  addMessage: (message: ChatMessage) => void;
+  setMessages: (messages: ChatMessage[]) => void;
+  setGeneratedBlueprint: (blueprint: GeneratedBlueprint | null) => void;
+  setCreatedAgentId: (id: number | null) => void;
+  setConfigOverrides: (overrides: Partial<BlueprintConfigOverrides>) => void;
+  resetStream: () => void;
 }

@@ -20,7 +20,11 @@ from src.modules.tool_catalog.infrastructure.persistence.models.tool_model impor
 from src.modules.knowledge.infrastructure.persistence.models.knowledge_base_model import KnowledgeBaseModel  # noqa: F401
 from src.modules.knowledge.infrastructure.persistence.models.document_model import DocumentModel  # noqa: F401
 from src.modules.insights.infrastructure.persistence.models.usage_record_model import UsageRecordModel  # noqa: F401
+from src.modules.skills.infrastructure.persistence.models.skill_model import SkillModel  # noqa: F401
 from src.modules.templates.infrastructure.persistence.models.template_model import TemplateModel  # noqa: F401
+from src.modules.agents.infrastructure.persistence.models.agent_blueprint_model import AgentBlueprintModel  # noqa: F401
+from src.modules.agents.infrastructure.persistence.models.agent_blueprint_model import AgentBlueprintSkillModel  # noqa: F401
+from src.modules.agents.infrastructure.persistence.models.agent_blueprint_model import AgentBlueprintToolBindingModel  # noqa: F401
 
 config = context.config
 

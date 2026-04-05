@@ -23,6 +23,10 @@ class BuilderSessionRepositoryImpl(
             "generated_config",
             "agent_name",
             "created_agent_id",
+            "messages",
+            "template_id",
+            "selected_skill_ids",
+            "generated_blueprint",
             "updated_at",
         },
     )
@@ -39,6 +43,10 @@ class BuilderSessionRepositoryImpl(
             generated_config=entity.generated_config,
             agent_name=entity.agent_name,
             created_agent_id=entity.created_agent_id,
+            messages=entity.messages or None,
+            template_id=entity.template_id,
+            selected_skill_ids=entity.selected_skill_ids or None,
+            generated_blueprint=entity.generated_blueprint,
             created_at=entity.created_at,
             updated_at=entity.updated_at,
         )
@@ -52,6 +60,10 @@ class BuilderSessionRepositoryImpl(
             generated_config=model.generated_config,
             agent_name=model.agent_name,
             created_agent_id=model.created_agent_id,
+            messages=model.messages or [],
+            template_id=model.template_id,
+            selected_skill_ids=model.selected_skill_ids or [],
+            generated_blueprint=model.generated_blueprint,
             created_at=model.created_at,
             updated_at=model.updated_at,
         )

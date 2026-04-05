@@ -25,6 +25,10 @@ class ActiveAgentInfo:
     tool_ids: tuple[int, ...] = ()
     enable_memory: bool = False
     knowledge_base_id: int | None = None
+    # Blueprint 扩展字段 (三模式路由用)
+    workspace_path: str = ""
+    runtime_arn: str = ""
+    workspace_s3_uri: str = ""
 
 
 class IAgentQuerier(ABC):

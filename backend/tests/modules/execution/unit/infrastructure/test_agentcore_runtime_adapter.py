@@ -284,3 +284,38 @@ class TestAgentRuntimeModeSwitch:
 
         settings = Settings(_env_file=None)
         assert settings.AGENT_RUNTIME_MODE == "in_process"
+
+
+# -- 动态 runtime_arn (三模式路由) --
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio(loop_scope="class")
+class TestAgentCoreRuntimeAdapterDynamicArn:
+    """测试 AgentCoreRuntimeAdapter 支持请求级 runtime_arn 覆盖。"""
+
+    async def test_request_runtime_arn_overrides_default(self) -> None:
+        """请求级 runtime_arn 优先于构造函数默认值。"""
+        mock_client = MagicMock()
+        mock_client.invoke_agent_runtime.return_value = _make_runtime_response()
+
+        adapter = AgentCoreRuntimeAdapter(client=mock_client, runtime_arn=_TEST_RUNTIME_ARN)
+        per_agent_arn = "arn:aws:bedrock-agentcore:us-east-1:123456789012:runtime/agent-42"
+        request = _make_request(runtime_arn=per_agent_arn)
+        await adapter.execute(request)
+
+        # 验证 invoke 使用了请求级 ARN, 而非默认 ARN
+        call_kwargs = mock_client.invoke_agent_runtime.call_args
+        assert call_kwargs.kwargs["agentRuntimeArn"] == per_agent_arn
+
+    async def test_empty_request_runtime_arn_uses_default(self) -> None:
+        """请求级 runtime_arn 为空时, 使用构造函数默认值。"""
+        mock_client = MagicMock()
+        mock_client.invoke_agent_runtime.return_value = _make_runtime_response()
+
+        adapter = AgentCoreRuntimeAdapter(client=mock_client, runtime_arn=_TEST_RUNTIME_ARN)
+        request = _make_request()  # runtime_arn 默认为 ""
+        await adapter.execute(request)
+
+        call_kwargs = mock_client.invoke_agent_runtime.call_args
+        assert call_kwargs.kwargs["agentRuntimeArn"] == _TEST_RUNTIME_ARN

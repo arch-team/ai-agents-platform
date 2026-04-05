@@ -6,7 +6,7 @@ export interface AgentConfig {
   enable_memory: boolean;
 }
 
-export type AgentStatus = 'draft' | 'active' | 'archived';
+export type AgentStatus = 'draft' | 'testing' | 'active' | 'archived';
 
 export interface Agent {
   id: number;

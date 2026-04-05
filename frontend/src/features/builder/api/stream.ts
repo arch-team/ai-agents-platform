@@ -1,25 +1,18 @@
-// Builder SSE 流式 hook — 通过 Zustand store 管理生成状态
+// Builder SSE 流式 hook — V1 + V2 stream hooks
 
-import { useCallback, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 
 import { useQueryClient } from '@tanstack/react-query';
 
 import { env } from '@/shared/config/env';
 import { extractApiError } from '@/shared/lib/extractApiError';
 
-import { streamBuilderSSE } from '../lib/sse';
+import { streamBlueprintGenerate, streamBlueprintRefine, streamBuilderSSE } from '../lib/sse';
 import { useBuilderActions } from '../model/store';
 
 import { builderKeys } from './queries';
 
-/**
- * Builder 流式生成 hook
- * 不使用 React Query mutation（SSE 不适合标准 mutation 模式）
- * 直接调用 streamBuilderSSE，通过 Zustand store 管理流式状态
- *
- * @param token - 认证 token，由调用方从 auth store 获取后传入（避免跨 feature 依赖）
- * @returns startGeneration 启动生成函数、abort 取消当前 SSE 连接的函数
- */
+// V1: 流式生成 Agent 配置
 export function useBuilderStream(token: string | null) {
   const { appendStreamContent, setGeneratedConfig, setGenerating, setError } = useBuilderActions();
   const queryClient = useQueryClient();
@@ -30,49 +23,35 @@ export function useBuilderStream(token: string | null) {
     abortControllerRef.current = null;
   }, []);
 
+  // H7 修复: 组件卸载时清理 SSE 连接防止内存泄漏
+  useEffect(() => {
+    return () => {
+      abortControllerRef.current?.abort();
+    };
+  }, []);
+
   const startGeneration = useCallback(
     async (sessionId: number) => {
-      // 取消上一次未完成的 SSE 连接
       abort();
-
       const controller = new AbortController();
       abortControllerRef.current = controller;
-
       setGenerating(true);
       setError(null);
 
       try {
         const url = `${env.VITE_API_BASE_URL}/api/v1/builder/sessions/${sessionId}/messages`;
-
         for await (const chunk of streamBuilderSSE(url, token, controller.signal)) {
-          if (chunk.error) {
-            throw new Error(chunk.error);
-          }
-
-          // 累积流式文本内容
-          if (chunk.content) {
-            appendStreamContent(chunk.content);
-          }
-
-          // 收到完整配置时更新预览
-          if (chunk.config) {
-            setGeneratedConfig(chunk.config);
-          }
-
-          if (chunk.done) {
-            break;
-          }
+          if (chunk.error) throw new Error(chunk.error);
+          if (chunk.content) appendStreamContent(chunk.content);
+          if (chunk.config) setGeneratedConfig(chunk.config);
+          if (chunk.done) break;
         }
       } catch (err) {
-        // 用户主动取消时不显示错误
-        if (err instanceof DOMException && err.name === 'AbortError') {
-          return;
-        }
+        if (err instanceof DOMException && err.name === 'AbortError') return;
         setError(extractApiError(err, '生成失败，请重试'));
       } finally {
         abortControllerRef.current = null;
         setGenerating(false);
-        // 流结束后刷新会话详情缓存
         void queryClient.invalidateQueries({ queryKey: builderKeys.session(sessionId) });
       }
     },
@@ -80,4 +59,145 @@ export function useBuilderStream(token: string | null) {
   );
 
   return { startGeneration, abort };
+}
+
+// V2: 流式生成 Blueprint + 迭代优化
+export function useBlueprintStream(token: string | null) {
+  const {
+    appendStreamContent,
+    setGeneratedBlueprint,
+    setGenerating,
+    setError,
+    addMessage,
+    setPhase,
+    resetStream,
+  } = useBuilderActions();
+  const queryClient = useQueryClient();
+  const abortControllerRef = useRef<AbortController | null>(null);
+
+  const abort = useCallback(() => {
+    abortControllerRef.current?.abort();
+    abortControllerRef.current = null;
+  }, []);
+
+  // H7 修复: 组件卸载时清理 SSE 连接防止内存泄漏
+  useEffect(() => {
+    return () => {
+      abortControllerRef.current?.abort();
+    };
+  }, []);
+
+  // 首次 Blueprint 生成
+  const startGeneration = useCallback(
+    async (sessionId: number) => {
+      abort();
+      const controller = new AbortController();
+      abortControllerRef.current = controller;
+      setGenerating(true);
+      setPhase('generating');
+      resetStream();
+
+      try {
+        const url = `${env.VITE_API_BASE_URL}/api/v1/builder/sessions/${sessionId}/generate`;
+        let assistantContent = '';
+
+        for await (const chunk of streamBlueprintGenerate(url, token, controller.signal)) {
+          if (chunk.error) throw new Error(chunk.error);
+          if (chunk.content) {
+            appendStreamContent(chunk.content);
+            assistantContent += chunk.content;
+          }
+          if (chunk.blueprint) setGeneratedBlueprint(chunk.blueprint);
+          if (chunk.done) break;
+        }
+
+        // 生成完成后添加助手消息并切换到 configure 阶段
+        if (assistantContent) {
+          addMessage({ role: 'assistant', content: assistantContent });
+        }
+        setPhase('configure');
+      } catch (err) {
+        if (err instanceof DOMException && err.name === 'AbortError') {
+          setPhase('input');
+          return;
+        }
+        setError(extractApiError(err, 'Blueprint 生成失败，请重试'));
+        setPhase('input');
+      } finally {
+        abortControllerRef.current = null;
+        setGenerating(false);
+        void queryClient.invalidateQueries({ queryKey: builderKeys.session(sessionId) });
+      }
+    },
+    [
+      appendStreamContent,
+      setGeneratedBlueprint,
+      setGenerating,
+      setError,
+      addMessage,
+      setPhase,
+      resetStream,
+      queryClient,
+      token,
+      abort,
+    ],
+  );
+
+  // Blueprint 迭代优化
+  const startRefinement = useCallback(
+    async (sessionId: number, message: string) => {
+      abort();
+      const controller = new AbortController();
+      abortControllerRef.current = controller;
+      setGenerating(true);
+      resetStream();
+
+      // 先添加用户消息
+      addMessage({ role: 'user', content: message });
+
+      try {
+        const url = `${env.VITE_API_BASE_URL}/api/v1/builder/sessions/${sessionId}/refine`;
+        let assistantContent = '';
+
+        for await (const chunk of streamBlueprintRefine(
+          url,
+          token,
+          { message },
+          controller.signal,
+        )) {
+          if (chunk.error) throw new Error(chunk.error);
+          if (chunk.content) {
+            appendStreamContent(chunk.content);
+            assistantContent += chunk.content;
+          }
+          if (chunk.blueprint) setGeneratedBlueprint(chunk.blueprint);
+          if (chunk.done) break;
+        }
+
+        if (assistantContent) {
+          addMessage({ role: 'assistant', content: assistantContent });
+        }
+      } catch (err) {
+        if (err instanceof DOMException && err.name === 'AbortError') return;
+        setError(extractApiError(err, '优化失败，请重试'));
+      } finally {
+        abortControllerRef.current = null;
+        setGenerating(false);
+        void queryClient.invalidateQueries({ queryKey: builderKeys.session(sessionId) });
+      }
+    },
+    [
+      appendStreamContent,
+      setGeneratedBlueprint,
+      setGenerating,
+      setError,
+      addMessage,
+      resetStream,
+      queryClient,
+      token,
+      abort,
+    ],
+  );
+
+  return { startGeneration, startRefinement, abort };
 }

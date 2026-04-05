@@ -1,6 +1,7 @@
 import * as cdk from 'aws-cdk-lib';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as ecr from 'aws-cdk-lib/aws-ecr';
+import * as s3 from 'aws-cdk-lib/aws-s3';
 import {
   Runtime,
   AgentRuntimeArtifact,
@@ -28,6 +29,8 @@ import {
 export interface AgentCoreStackProps extends BaseStackProps {
   /** Agent Runtime 所在的 VPC */
   readonly vpc: ec2.IVpc;
+  /** S3 Workspace 存储桶 — Runtime 启动时下载 Agent 工作目录 (M17) @default undefined */
+  readonly workspaceBucket?: s3.IBucket;
 }
 
 /**
@@ -104,6 +107,11 @@ export class AgentCoreStack extends cdk.Stack {
     this.runtime.addToRolePolicy(createBedrockInvokePolicy(accountId));
 
     this.runtimeArn = this.runtime.agentRuntimeArn;
+
+    // M17: 授权 Runtime 读取 S3 Workspace 存储桶 (容器启动时下载 Agent 工作目录)
+    if (props.workspaceBucket) {
+      props.workspaceBucket.grantRead(this.runtime.role);
+    }
 
     // 3. AgentCore Gateway — MCP 协议统一工具入口
     this.gateway = new Gateway(this, 'AgentGateway', {

@@ -4,6 +4,7 @@ import {
   NetworkStack,
   SecurityStack,
   DatabaseStack,
+  StorageStack,
   AgentCoreStack,
   ComputeStack,
   MonitoringStack,
@@ -92,6 +93,21 @@ describe('CDK Nag 合规测试', () => {
       ],
       true,
     );
+
+    expectNoNagErrors(app, stack);
+  });
+
+  it('StorageStack 应通过 AWS Solutions checks', () => {
+    const app = new cdk.App();
+    const vpc = createVpcDependency(app, TEST_ENV);
+
+    const stack = new StorageStack(app, 'TestStorageStack', {
+      env: TEST_ENV,
+      vpc,
+      envName: 'dev',
+    });
+
+    cdk.Aspects.of(stack).add(new AwsSolutionsChecks({ verbose: true }));
 
     expectNoNagErrors(app, stack);
   });

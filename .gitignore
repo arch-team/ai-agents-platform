@@ -102,6 +102,7 @@ node_modules/
 
 # CDK
 cdk.out*/
+cdk-diff-out/
 .cdk.staging/
 
 # Documentation build

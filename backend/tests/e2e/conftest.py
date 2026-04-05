@@ -21,6 +21,7 @@ _RESOURCE_ENDPOINTS: dict[str, str] = {
     "tool": "/api/v1/tools",
     "knowledge_base": "/api/v1/knowledge-bases",
     "test_suite": "/api/v1/test-suites",
+    "skill": "/api/v1/skills",
 }
 
 
@@ -44,7 +45,8 @@ def admin_token(http: httpx.Client) -> str:
         json={"email": ADMIN_EMAIL, "password": ADMIN_PASSWORD},
     )
     assert resp.status_code == 200, f"Admin 登录失败: {resp.text}"
-    return resp.json()["access_token"]
+    token: str = resp.json()["access_token"]
+    return token
 
 
 @pytest.fixture(scope="session")
@@ -112,3 +114,34 @@ def resource_tracker(
     tracker = ResourceTracker()
     yield tracker
     tracker.cleanup(http, admin_headers)
+
+
+def collect_sse_events(
+    base_url: str,
+    path: str,
+    headers: dict[str, str],
+    json_body: dict[str, object],
+    timeout: float = 60.0,
+) -> list[dict[str, object]]:
+    """发送 POST 请求并收集 SSE data 行，解析为 JSON 列表。
+
+    用于测试 Builder V2 的 /generate 和 /refine 端点。
+    """
+    import json
+
+    events: list[dict[str, object]] = []
+    url = f"{base_url}{path}"
+    with httpx.stream(
+        "POST",
+        url,
+        json=json_body,
+        headers={**headers, "Accept": "text/event-stream"},
+        timeout=timeout,
+    ) as resp:
+        assert resp.status_code == 200, f"SSE 请求失败: HTTP {resp.status_code}"
+        for line in resp.iter_lines():
+            if line.startswith("data: "):
+                payload = line[6:]
+                if payload.strip():
+                    events.append(json.loads(payload))
+    return events

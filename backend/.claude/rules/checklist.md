@@ -114,6 +114,36 @@
 
 ---
 
+## Task 完成验收（编码任务必检）
+
+> **触发时机**: 每个编码 Task 标记"已完成"之前，必须逐条确认。
+> **背景**: 防止"核心功能完成即标记完成"的偏差，确保交付物完整。
+
+### 计划对照
+
+- [ ] 实施方案中该 Task 的所有 `- [ ]` 子项均已实现
+- [ ] Task 描述中提到的"Test"类型交付物（单元测试 + 集成测试）均已创建
+- [ ] 如涉及新模块注册：main.py (router + 异常映射) + migrations/env.py (ORM import) 已更新
+
+### 参考模块一致性
+
+- [ ] 新模块与参考模块（如 agents）做结构 diff，确认无遗漏文件类型：
+  - `domain/events.py` — 领域事件
+  - `__init__.py` — 各层级导出（module / api / application / domain）
+  - `infrastructure/services/` — 跨模块 Querier 实现（如需要）
+  - `integration/` — Repository 集成测试 + API 端点集成测试
+- [ ] 新增的 `shared/domain/interfaces/` 接口已在 `providers.py` 注册工厂函数
+
+### 验收命令
+
+```bash
+# 结构 diff（将 agents 替换为新模块名）
+diff <(find src/modules/agents -name "*.py" -not -path "*__pycache__*" | sed 's|agents|{新模块}|g' | sort) \
+     <(find src/modules/{新模块} -name "*.py" -not -path "*__pycache__*" | sort)
+```
+
+---
+
 ## 预提交一键验证
 
 ```bash
