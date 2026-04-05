@@ -1,7 +1,7 @@
 """为 builder_sessions 表添加 V2 字段 (多轮对话 + Blueprint)。
 
-Revision ID: c2d3e4f5g6h7
-Revises: b1c2d3e4f5g6
+Revision ID: a05f3d568a82
+Revises: 020f072419b6
 Create Date: 2026-04-04
 """
 
@@ -10,8 +10,8 @@ from collections.abc import Sequence
 import sqlalchemy as sa
 from alembic import op
 
-revision: str = "c2d3e4f5g6h7"
-down_revision: str | Sequence[str] | None = "b1c2d3e4f5g6"
+revision: str = "a05f3d568a82"
+down_revision: str | Sequence[str] | None = "020f072419b6"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 

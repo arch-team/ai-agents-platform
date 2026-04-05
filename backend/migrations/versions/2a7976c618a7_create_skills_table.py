@@ -1,6 +1,6 @@
 """创建 skills 表。
 
-Revision ID: a1b2c3d4e5f6
+Revision ID: 2a7976c618a7
 Revises: z5a6b7c8d9e0
 Create Date: 2026-04-04
 """
@@ -10,7 +10,7 @@ from collections.abc import Sequence
 import sqlalchemy as sa
 from alembic import op
 
-revision: str = "a1b2c3d4e5f6"
+revision: str = "2a7976c618a7"
 down_revision: str = "z5a6b7c8d9e0"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None

@@ -1,7 +1,7 @@
 """添加 agent_blueprints + 关联表 + agents.blueprint_id。
 
-Revision ID: b1c2d3e4f5g6
-Revises: a1b2c3d4e5f6
+Revision ID: 020f072419b6
+Revises: 2a7976c618a7
 Create Date: 2026-04-04
 """
 
@@ -10,8 +10,8 @@ from collections.abc import Sequence
 import sqlalchemy as sa
 from alembic import op
 
-revision: str = "b1c2d3e4f5g6"
-down_revision: str | Sequence[str] | None = "a1b2c3d4e5f6"
+revision: str = "020f072419b6"
+down_revision: str | Sequence[str] | None = "2a7976c618a7"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
