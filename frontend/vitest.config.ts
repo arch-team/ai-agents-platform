@@ -23,7 +23,16 @@ export default defineConfig({
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
       include: ['src/**/*.{ts,tsx}'],
-      exclude: ['src/**/*.test.{ts,tsx}', 'src/**/index.ts', 'src/main.tsx'],
+      exclude: [
+        'src/**/*.test.{ts,tsx}',
+        'src/**/index.ts',
+        'src/main.tsx',
+        'src/**/types.ts', // 纯类型定义，无运行时代码
+        'src/**/ssoTypes.ts', // SSO 类型定义
+        'src/app/**', // app 层 (Provider/Route 由集成测试覆盖)
+        'src/**/stream.ts', // SSE stream hooks (async generator, 由 E2E 覆盖)
+        'src/**/sse.ts', // SSE 适配器 (由 E2E 覆盖)
+      ],
       thresholds: {
         lines: 80,
         functions: 80,
