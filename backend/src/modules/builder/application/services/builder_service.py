@@ -1,6 +1,5 @@
 """Builder 应用服务。"""
 
-import json
 from collections.abc import AsyncIterator
 
 import structlog
@@ -8,7 +7,6 @@ import structlog
 from src.modules.builder.application.blueprint_parser import parse_blueprint_output
 from src.modules.builder.application.dto.builder_dto import BuilderSessionDTO, RefineBuilderDTO, TriggerBuilderDTO
 from src.modules.builder.application.interfaces.builder_llm_service import (
-    BuilderMessage,
     IBuilderLLMService,
     PlatformContext,
     PlatformSkillInfo,
@@ -22,7 +20,6 @@ from src.shared.application.ownership import check_ownership
 from src.shared.domain.exceptions import InvalidStateTransitionError
 from src.shared.domain.interfaces.agent_creator import (
     BlueprintData,
-    CreateAgentRequest,
     CreateAgentWithBlueprintRequest,
     CreatedAgentInfo,
     GuardrailData,
@@ -40,10 +37,9 @@ log = structlog.get_logger(__name__)
 
 
 class BuilderService:
-    """Builder 业务服务，编排 Agent 配置生成和确认创建流程。
+    """Builder 业务服务，编排 Agent Blueprint 生成和确认创建流程。
 
-    V1: 单轮 JSON 配置 → create_agent
-    V2: 多轮 SOP 引导 → Blueprint → Skill 创建 → workspace Agent 创建
+    多轮 SOP 引导 → Blueprint → Skill 创建 → workspace Agent 创建
     """
 
     def __init__(
@@ -77,36 +73,8 @@ class BuilderService:
         log.info("builder_session_created", session_id=created.id, user_id=user_id)
         return BuilderSessionDTO.from_entity(created)
 
-    async def generate_config_stream(self, session_id: int, user_id: int) -> AsyncIterator[str]:
-        """V1: SSE 流式生成 Agent 配置 (JSON)。
-
-        PENDING -> GENERATING -> CONFIRMED (成功) / 保持 GENERATING (失败)
-        """
-        session = await self._get_owned_session(session_id, user_id)
-        session.start_generation()
-        session = await self._session_repo.update(session)
-
-        chunks: list[str] = []
-
-        async for chunk in self._llm_service.generate_config(session.prompt):
-            chunks.append(chunk)
-            yield chunk
-
-        # 尝试解析完整的生成结果 (LLM 可能用 markdown 代码围栏包裹 JSON)
-        full_text = "".join(chunks).strip()
-        if full_text.startswith("```"):
-            full_text = full_text.split("\n", 1)[-1].rsplit("```", 1)[0].strip()
-        try:
-            config = json.loads(full_text)
-            name = str(config.get("name", "未命名 Agent"))
-            session.complete_generation(config=config, name=name)
-            await self._session_repo.update(session)
-            log.info("builder_generation_completed", session_id=session_id)
-        except (json.JSONDecodeError, TypeError) as e:
-            log.warning("builder_generation_parse_failed", session_id=session_id, error=str(e))
-
     async def generate_blueprint_stream(self, session_id: int, user_id: int) -> AsyncIterator[str]:
-        """V2: SSE 流式生成 Agent Blueprint (SOP 引导式)。
+        """SSE 流式生成 Agent Blueprint (SOP 引导式)。
 
         PENDING -> GENERATING -> CONFIRMED (成功)
         """
@@ -114,18 +82,8 @@ class BuilderService:
         session.start_generation()
         session.add_message("user", session.prompt)
         await self._session_repo.update(session)
-
-        platform_context = await self._build_platform_context()
-        messages = [BuilderMessage(role=m["role"], content=m["content"]) for m in session.messages]
-
-        chunks: list[str] = []
-        async for chunk in self._llm_service.generate_blueprint(messages, platform_context):
-            chunks.append(chunk)
+        async for chunk in self._stream_and_parse_blueprint(session):
             yield chunk
-
-        full_text = "".join(chunks).strip()
-        self._try_parse_and_save_blueprint(session, full_text)
-        await self._session_repo.update(session)
 
     async def refine_session(
         self,
@@ -134,7 +92,7 @@ class BuilderService:
         *,
         dto: RefineBuilderDTO,
     ) -> AsyncIterator[str]:
-        """V2: 多轮迭代 — 用户追加需求 → LLM 更新 Blueprint。
+        """多轮迭代 — 用户追加需求 → LLM 更新 Blueprint。
 
         CONFIRMED -> GENERATING -> CONFIRMED
         """
@@ -142,18 +100,8 @@ class BuilderService:
         session.start_refinement()
         session.add_message("user", dto.message)
         await self._session_repo.update(session)
-
-        platform_context = await self._build_platform_context()
-        messages = [BuilderMessage(role=m["role"], content=m["content"]) for m in session.messages]
-
-        chunks: list[str] = []
-        async for chunk in self._llm_service.generate_blueprint(messages, platform_context):
-            chunks.append(chunk)
+        async for chunk in self._stream_and_parse_blueprint(session):
             yield chunk
-
-        full_text = "".join(chunks).strip()
-        self._try_parse_and_save_blueprint(session, full_text)
-        await self._session_repo.update(session)
 
     async def confirm_session(
         self,
@@ -163,11 +111,10 @@ class BuilderService:
         name_override: str | None = None,
         auto_start_testing: bool = False,
     ) -> BuilderSessionDTO:
-        """确认会话并创建 Agent。
+        """确认会话并创建 Agent (Blueprint 模式)。
 
-        V2 (有 Blueprint): 创建 Skills + 创建 Agent with Blueprint
-        V1 (无 Blueprint): 从 JSON 配置创建 Agent (向后兼容)
-        auto_start_testing=True 时, V2 创建后自动触发 DRAFT -> TESTING。
+        CONFIRMED 状态 = LLM 已完成 Blueprint 生成，可以创建 Agent。
+        auto_start_testing=True 时, 创建后自动触发 DRAFT -> TESTING。
         """
         session = await self._get_owned_session(session_id, user_id)
 
@@ -178,19 +125,17 @@ class BuilderService:
                 target_state="confirm_creation",
             )
 
-        if session.generated_blueprint:
-            agent_info = await self._confirm_v2(session, user_id, name_override=name_override)
-        elif session.generated_config:
-            agent_info = await self._confirm_v1(session, name_override=name_override)
-        else:
+        if not session.generated_blueprint:
             raise InvalidStateTransitionError(
                 entity_type="BuilderSession",
                 current_state=session.status.value,
                 target_state="confirm_creation",
             )
 
-        # V2: 可选触发 start_testing (通过 IAgentLifecycle)
-        if auto_start_testing and session.generated_blueprint and self._agent_lifecycle:
+        agent_info = await self._confirm_and_create_agent(session, user_id, name_override=name_override)
+
+        # 可选触发 start_testing (通过 IAgentLifecycle)
+        if auto_start_testing and self._agent_lifecycle:
             try:
                 await self._agent_lifecycle.start_testing(agent_info.id, user_id)
                 log.info("builder_auto_start_testing", agent_id=agent_info.id)
@@ -229,16 +174,16 @@ class BuilderService:
             return []
         return await self._skill_querier.list_published_skills()
 
-    # ── V2 内部编排 ──
+    # ── 内部编排 ──
 
-    async def _confirm_v2(
+    async def _confirm_and_create_agent(
         self,
         session: BuilderSession,
         user_id: int,
         *,
         name_override: str | None = None,
     ) -> CreatedAgentInfo:
-        """V2 确认流程: Blueprint → Skills → Agent。"""
+        """确认流程: Blueprint → Skills → Agent。"""
         bp = session.generated_blueprint
         assert bp is not None
 
@@ -296,28 +241,23 @@ class BuilderService:
             user_id,
         )
 
-    async def _confirm_v1(
-        self,
-        session: BuilderSession,
-        *,
-        name_override: str | None = None,
-    ) -> CreatedAgentInfo:
-        """V1 确认流程: JSON 配置 → create_agent。"""
-        config = session.generated_config
-        assert config is not None
-
-        agent_name = name_override or str(config.get("name", session.agent_name or "未命名 Agent"))
-        create_request = CreateAgentRequest(
-            name=agent_name,
-            description=str(config.get("description", "")),
-            system_prompt=str(config.get("system_prompt", "")),
-            model_id=str(config.get("model_id", "")),
-            temperature=float(config.get("temperature", 0.7)),
-            max_tokens=int(config.get("max_tokens", 4096)),
-        )
-        return await self._agent_creator.create_agent(create_request, session.user_id)
-
     # ── 内部辅助方法 ──
+
+    async def _stream_and_parse_blueprint(self, session: BuilderSession) -> AsyncIterator[str]:
+        """共享: LLM 流式生成 + Blueprint 解析 + 持久化。"""
+        from src.modules.builder.application.interfaces.builder_llm_service import BuilderMessage
+
+        platform_context = await self._build_platform_context()
+        messages = [BuilderMessage(role=m["role"], content=m["content"]) for m in session.messages]
+
+        chunks: list[str] = []
+        async for chunk in self._llm_service.generate_blueprint(messages, platform_context):
+            chunks.append(chunk)
+            yield chunk
+
+        full_text = "".join(chunks).strip()
+        self._try_parse_and_save_blueprint(session, full_text)
+        await self._session_repo.update(session)
 
     async def _get_owned_session(self, session_id: int, user_id: int) -> BuilderSession:
         """获取会话并校验所有权。"""

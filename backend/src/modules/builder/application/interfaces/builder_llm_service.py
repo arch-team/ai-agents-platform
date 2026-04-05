@@ -41,21 +41,7 @@ class PlatformContext:
 
 
 class IBuilderLLMService(ABC):
-    """Builder LLM 服务接口，负责调用 Claude Agent 生成 Agent 配置。
-
-    V1: generate_config — 单轮 JSON 配置生成
-    V2: generate_blueprint — 多轮 SOP 引导式 Blueprint 生成
-    """
-
-    @abstractmethod
-    async def generate_config(self, prompt: str) -> AsyncIterator[str]:
-        """V1: 根据用户 prompt 流式生成 Agent 配置 (JSON)。
-
-        Yields:
-            SSE 数据块（JSON 字符串片段）
-        """
-        ...
-        yield ""  # pragma: no cover
+    """Builder LLM 服务接口，负责调用 Claude Agent 生成 Agent Blueprint。"""
 
     @abstractmethod
     async def generate_blueprint(

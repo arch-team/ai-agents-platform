@@ -29,26 +29,6 @@ def adapter() -> ClaudeBuilderAdapter:
 
 
 @pytest.mark.unit
-class TestGenerateConfig:
-    """V1 配置生成。"""
-
-    @pytest.mark.asyncio
-    async def test_generate_config_yields_result(self, adapter: ClaudeBuilderAdapter) -> None:
-        mock_msg = _mock_result_message('{"name": "Agent"}')
-
-        async def mock_query(**kwargs: object):
-            yield mock_msg
-
-        with patch("src.modules.builder.infrastructure.external.claude_builder_adapter.query", side_effect=mock_query):
-            chunks: list[str] = []
-            async for chunk in adapter.generate_config("创建一个客服 Agent"):
-                chunks.append(chunk)
-
-        assert len(chunks) == 1
-        assert '{"name": "Agent"}' in chunks[0]
-
-
-@pytest.mark.unit
 class TestGenerateBlueprint:
     """V2 Blueprint 生成。"""
 
@@ -107,11 +87,12 @@ class TestCallSdkErrorHandling:
 
         with (
             patch(
-                "src.modules.builder.infrastructure.external.claude_builder_adapter.query", side_effect=mock_query_error,
+                "src.modules.builder.infrastructure.external.claude_builder_adapter.query",
+                side_effect=mock_query_error,
             ),
             pytest.raises(DomainError, match="Agent 配置生成失败"),
         ):
-            async for _ in adapter.generate_config("test"):
+            async for _ in adapter.generate_blueprint([BuilderMessage(role="user", content="test")]):
                 pass
 
     @pytest.mark.asyncio
@@ -123,7 +104,7 @@ class TestCallSdkErrorHandling:
 
         with patch("src.modules.builder.infrastructure.external.claude_builder_adapter.query", side_effect=mock_query):
             chunks: list[str] = []
-            async for chunk in adapter.generate_config("test"):
+            async for chunk in adapter.generate_blueprint([BuilderMessage(role="user", content="test")]):
                 chunks.append(chunk)
 
         assert chunks == [""]
@@ -139,7 +120,7 @@ class TestCallSdkErrorHandling:
 
         with patch("src.modules.builder.infrastructure.external.claude_builder_adapter.query", side_effect=mock_query):
             chunks: list[str] = []
-            async for chunk in adapter.generate_config("test"):
+            async for chunk in adapter.generate_blueprint([BuilderMessage(role="user", content="test")]):
                 chunks.append(chunk)
 
         assert chunks == [""]

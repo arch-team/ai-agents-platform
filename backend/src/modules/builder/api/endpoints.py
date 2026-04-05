@@ -53,37 +53,6 @@ async def create_builder_session(
     return _to_response(result)
 
 
-@router.post("/sessions/{session_id}/messages")
-async def generate_config_stream(
-    session_id: int,
-    service: ServiceDep,
-    current_user: CurrentUserDep,
-) -> EventSourceResponse:
-    """V1: SSE 流式生成 Agent 配置 (JSON)。"""
-    from src.shared.infrastructure.sse_connection_manager import get_sse_manager
-
-    sse_manager = get_sse_manager()
-
-    async def event_generator() -> AsyncIterator[ServerSentEvent]:
-        async with sse_manager.connect(current_user.id):
-            try:
-                async for chunk in service.generate_config_stream(session_id, current_user.id):
-                    yield ServerSentEvent(data=json.dumps({"content": chunk, "done": False}))
-
-                session_dto = await service.get_session(session_id, current_user.id)
-                if session_dto.generated_config:
-                    yield ServerSentEvent(data=json.dumps({"config": session_dto.generated_config, "done": False}))
-
-                yield ServerSentEvent(data=json.dumps({"content": "", "done": True}))
-            except DomainError as e:
-                yield ServerSentEvent(data=json.dumps({"error": e.message, "done": True}))
-            except Exception:
-                logger.exception("builder_sse_stream_error", session_id=session_id)
-                yield ServerSentEvent(data=json.dumps({"error": "服务内部错误", "done": True}))
-
-    return EventSourceResponse(event_generator())
-
-
 @router.post("/sessions/{session_id}/generate")
 async def generate_blueprint_stream(
     session_id: int,

@@ -162,42 +162,24 @@ class TestBuilderServiceConfirmV2:
         mock_agent_creator.create_agent_with_blueprint.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_confirm_v1_fallback_without_blueprint(
+    async def test_confirm_without_blueprint_raises(
         self,
         builder_service_v2: BuilderService,
         mock_session_repo: AsyncMock,
-        mock_agent_creator: AsyncMock,
     ) -> None:
-        """V1 兼容: 无 Blueprint 时走旧的 JSON 配置路径。"""
-        from tests.modules.builder.conftest import SAMPLE_GENERATED_CONFIG
-
+        """无 Blueprint 时 confirm 应抛出 InvalidStateTransitionError (V1 路径已移除)。"""
         session = make_builder_session(
             session_id=1,
             user_id=100,
             status=BuilderStatus.CONFIRMED,
-            generated_config=SAMPLE_GENERATED_CONFIG,
+            generated_config={"name": "test"},
             agent_name="代码审查助手",
             generated_blueprint=None,
         )
         mock_session_repo.get_by_id.return_value = session
 
-        agent_info = CreatedAgentInfo(id=42, name="代码审查助手", status="draft")
-        mock_agent_creator.create_agent.return_value = agent_info
-
-        confirmed = make_builder_session(
-            session_id=1,
-            user_id=100,
-            status=BuilderStatus.CONFIRMED,
-            generated_config=SAMPLE_GENERATED_CONFIG,
-            agent_name="代码审查助手",
-            created_agent_id=42,
-        )
-        mock_session_repo.update.return_value = confirmed
-
-        result = await builder_service_v2.confirm_session(1, 100)
-
-        assert result.created_agent_id == 42
-        mock_agent_creator.create_agent.assert_called_once()
+        with pytest.raises(InvalidStateTransitionError):
+            await builder_service_v2.confirm_session(1, 100)
 
 
 @pytest.mark.unit
