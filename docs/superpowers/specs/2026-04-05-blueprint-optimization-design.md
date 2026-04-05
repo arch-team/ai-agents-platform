@@ -79,6 +79,10 @@ class GuardrailData:
     severity: GuardrailSeverity = GuardrailSeverity.WARN
 ```
 
+> **兼容性**: `StrEnum` 是 `str` 子类，`GuardrailSeverity("warn")` 可从字符串构造。
+> 现有代码 `GuardrailData(severity=g.get("severity", "warn"))` 中 `dict.get()` 返回 `str`，
+> 传给 `GuardrailSeverity` 会隐式构造枚举值，无需修改调用方。
+
 #### 数据库迁移
 
 - 新增 Alembic migration: `agents.blueprint_id` 改为 NOT NULL
@@ -101,12 +105,16 @@ class GuardrailData:
     IAgentCreator
       └── create_agent(CreateAgentRequest)  # 统一方法，必须包含 BlueprintData
 
-  agent_lifecycle.py:
+  agent_lifecycle.py (新增共享接口):
     IAgentLifecycle
       ├── start_testing(agent_id, operator_id)
-      ├── go_live(agent_id, operator_id)
-      └── take_offline(agent_id, operator_id)
+      ├── go_live(agent_id, operator_id)       # 从 AgentService 提升
+      └── take_offline(agent_id, operator_id)  # 从 AgentService 提升
 ```
+
+> **说明**: `go_live` 和 `take_offline` 当前仅在 `AgentService` 内部实现，未暴露为共享接口。
+> 此次提升为 `IAgentLifecycle` 是因为 Builder 模块的 "confirm and test → go live" 流程需要跨模块调用。
+> 消费者: Builder 模块 (confirm_and_test、go_live 端点)。
 
 #### CreateAgentRequest 统一
 
@@ -168,30 +176,46 @@ async def _stream_and_parse_blueprint(self, session: BuilderSession) -> AsyncIte
 
 #### POST /api/v1/agents 变更
 
-端点路由保留，请求体扩展支持 Blueprint 字段:
+**定位**: 快速创建入口 — 自动生成最小 Blueprint。完整 Blueprint 创建仍走 Builder 流程。
+
+端点路由保留，请求体保留现有配置字段，移除 `system_prompt`，新增可选 Persona 字段:
 
 ```python
-# 请求体: 保持向后兼容的字段名
 class CreateAgentRequestSchema(BaseModel):
     name: str
     description: str = ""
-    model_id: str = ""
-    # 新增可选 Blueprint 字段
+    # 保留: 通用配置字段 (与 V1/V2 无关)
+    model_id: str = Field(default=AGENT_DEFAULT_MODEL_ID)
+    temperature: float = Field(default=AGENT_DEFAULT_TEMPERATURE)
+    max_tokens: int = Field(default=AGENT_DEFAULT_MAX_TOKENS)
+    runtime_type: str = Field(default="agent")
+    enable_teams: bool = False
+    enable_memory: bool = False
+    tool_ids: list[int] = Field(default_factory=list)
+    # 移除: system_prompt (Blueprint Persona 替代)
+    # 新增: 可选 Persona 字段 (快速创建简化入口)
     persona_role: str = ""        # 如未提供，用 name 作为 role
     persona_background: str = ""  # 如未提供，用 description
     persona_tone: str = ""
 ```
 
-内部自动构造 `BlueprintData`:
+内部自动构造最小 `BlueprintData`:
 ```python
+# tool_ids 转为 ToolBindingData
+tool_bindings = tuple(ToolBindingData(tool_id=tid, display_name="") for tid in request.tool_ids)
+
 blueprint = BlueprintData(
     persona=PersonaData(
         role=request.persona_role or request.name,
         background=request.persona_background or request.description,
         tone=request.persona_tone,
-    )
+    ),
+    tool_bindings=tool_bindings,
+    memory_enabled=request.enable_memory,
 )
 ```
+
+> **注意**: 此端点仅创建带最小 Blueprint 的 DRAFT Agent。Skills、Guardrails 等完整配置需通过 Builder 创建。
 
 #### Builder V1 端点移除
 
@@ -221,7 +245,24 @@ def _build_agent_request(self, ctx, tools, *, gateway_auth_token="") -> AgentReq
     )
 ```
 
-`ActiveAgentInfo` 中 `system_prompt` 字段可考虑移除（因 Blueprint 通过 CLAUDE.md 提供指令），但需评估 execution 模块内部其他使用场景（如 RAG 注入）。如 RAG 仍需 system_prompt 通道，保留但标记为内部使用。
+#### system_prompt 在 execution 模块中的设计决策
+
+**决策**: `ActiveAgentInfo.system_prompt` 保留，仅供 LLM 降级路径使用。
+
+**背景**: execution 模块的 `_prepare_for_send` 方法会将 RAG 和 Memory 上下文追加到 `system_prompt`。
+但对于 Blueprint Agent (Mode 1/2)，`_build_agent_request` 会将 `system_prompt` 置空 — 这意味着
+RAG/Memory 注入内容对 Blueprint Agent 已经是无效的。这是 **by-design**:
+
+- Blueprint Agent 用 **Skills** (SKILL.md) 替代 RAG 注入的知识
+- Blueprint Agent 用 **MCP Memory 工具** 替代 system_prompt 中的 Memory 注入
+- 代码中已有注释说明此行为 (`_build_agent_request` 第 651-652 行)
+
+**保留 `system_prompt` 的原因**: `runtime_type == "basic"` 的 Agent 走 LLM 降级路径 (`_execute_llm`)，
+仍需 `system_prompt` 作为 RAG/Memory 注入通道。此路径不受 Blueprint 优化影响。
+
+**不变**: `ActiveAgentInfo.system_prompt` 字段保留原样，无需修改。`Agent` 实体移除 `system_prompt`
+字段后，`AgentQuerierImpl` 在构建 `ActiveAgentInfo` 时将此字段设为空字符串
+(Blueprint Agent 不使用此字段)。
 
 ### 4.6 SSE + Infrastructure (Layer 6)
 
@@ -254,6 +295,8 @@ async def stream_sse_events(
 ```
 
 影响范围: builder 3 个 endpoint + execution 2 个 endpoint → 每个约从 20 行缩减为 5 行。
+
+> `shared/api/__init__.py` 需导出 `stream_sse_events`，与现有的 `exception_handlers` 和 `schemas` 导出模式一致。
 
 #### async I/O 修复
 
@@ -330,8 +373,9 @@ const { sendMessage, isStreaming } = useSendMessageStream();
 #### 后端变更
 
 Execution 模块需允许 TESTING 状态的 Agent 执行:
-- `IAgentQuerier.get_active_agent()` → 扩展为 `get_executable_agent()` (ACTIVE 或 TESTING)
-- 或新增 `get_testing_agent()` 查询方法
+- **决策**: `IAgentQuerier.get_active_agent()` 重命名为 `get_executable_agent()`，查询条件扩展为 `status IN (ACTIVE, TESTING)`
+- **理由**: TESTING Agent 语义上确实是"可执行的"，重命名比新增方法更符合 ISP 原则
+- **影响**: `execution_service.py` 中 2 处调用需更新方法名；`AgentQuerierImpl` 查询条件更新
 
 ---
 
@@ -373,6 +417,7 @@ Execution 模块需允许 TESTING 状态的 Agent 执行:
 - SSE helper 新增独立单元测试
 - TestSandbox E2E 测试覆盖 TESTING Agent 对话流
 - 覆盖率目标: >= 85% (与项目标准一致)
+- Alembic 迁移验证: 需在 `--mysql` 模式下验证 upgrade/downgrade 正确性
 
 ---
 
@@ -383,4 +428,5 @@ Execution 模块需允许 TESTING 状态的 Agent 执行:
 | 大量测试需要改写 | 高 | 逐层推进，每层确保测试全绿 |
 | execution 模块 system_prompt 依赖 | 中 | 评估 RAG/Memory 注入路径，必要时保留内部字段 |
 | 前端路由变更影响用户体验 | 低 | "创建 Agent" 按钮直接跳转 Builder 页面 |
-| TestSandbox 需要 TESTING Agent 执行权限 | 低 | 扩展 IAgentQuerier 查询方法 |
+| TestSandbox 需要 TESTING Agent 执行权限 | 低 | `get_active_agent` → `get_executable_agent` 重命名 |
+| Alembic 迁移回滚风险 | 低 | downgrade 需恢复 `system_prompt` 列和 `blueprint_id` nullable; 在 `--mysql` 模式验证 |
