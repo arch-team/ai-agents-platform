@@ -30,6 +30,7 @@ from src.shared.domain.interfaces.agent_creator import (
     PersonaData,
     ToolBindingData,
 )
+from src.shared.domain.interfaces.agent_lifecycle import IAgentLifecycle
 from src.shared.domain.interfaces.skill_creator import CreateSkillRequest, ISkillCreator
 from src.shared.domain.interfaces.skill_querier import ISkillQuerier, SkillSummary
 from src.shared.domain.interfaces.tool_querier import ApprovedToolInfo, IToolQuerier
@@ -51,6 +52,7 @@ class BuilderService:
         llm_service: IBuilderLLMService,
         agent_creator: IAgentCreator,
         *,
+        agent_lifecycle: IAgentLifecycle | None = None,
         skill_creator: ISkillCreator | None = None,
         tool_querier: IToolQuerier | None = None,
         skill_querier: ISkillQuerier | None = None,
@@ -58,6 +60,7 @@ class BuilderService:
         self._session_repo = session_repo
         self._llm_service = llm_service
         self._agent_creator = agent_creator
+        self._agent_lifecycle = agent_lifecycle
         self._skill_creator = skill_creator
         self._tool_querier = tool_querier
         self._skill_querier = skill_querier
@@ -186,10 +189,10 @@ class BuilderService:
                 target_state="confirm_creation",
             )
 
-        # V2: 可选触发 start_testing
-        if auto_start_testing and session.generated_blueprint:
+        # V2: 可选触发 start_testing (通过 IAgentLifecycle)
+        if auto_start_testing and session.generated_blueprint and self._agent_lifecycle:
             try:
-                await self._agent_creator.start_testing(agent_info.id, user_id)
+                await self._agent_lifecycle.start_testing(agent_info.id, user_id)
                 log.info("builder_auto_start_testing", agent_id=agent_info.id)
             except Exception:
                 log.warning("builder_auto_start_testing_failed", agent_id=agent_info.id)

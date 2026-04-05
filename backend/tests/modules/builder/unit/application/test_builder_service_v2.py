@@ -322,9 +322,10 @@ class TestBuilderServiceAutoStartTesting:
         builder_service_v2: BuilderService,
         mock_session_repo: AsyncMock,
         mock_agent_creator: AsyncMock,
+        mock_agent_lifecycle: AsyncMock,
         mock_skill_creator: AsyncMock,
     ) -> None:
-        """auto_start_testing=True 时调用 start_testing。"""
+        """auto_start_testing=True 时通过 IAgentLifecycle 调用 start_testing。"""
         session = make_builder_session(
             session_id=1,
             user_id=100,
@@ -347,7 +348,7 @@ class TestBuilderServiceAutoStartTesting:
         )
         agent_info = CreatedAgentInfo(id=42, name="测试", status="draft")
         mock_agent_creator.create_agent_with_blueprint.return_value = agent_info
-        mock_agent_creator.start_testing.return_value = CreatedAgentInfo(id=42, name="测试", status="testing")
+        mock_agent_lifecycle.start_testing.return_value = CreatedAgentInfo(id=42, name="测试", status="testing")
 
         confirmed = make_builder_session(
             session_id=1,
@@ -362,4 +363,4 @@ class TestBuilderServiceAutoStartTesting:
 
         await builder_service_v2.confirm_session(1, 100, auto_start_testing=True)
 
-        mock_agent_creator.start_testing.assert_called_once_with(42, 100)
+        mock_agent_lifecycle.start_testing.assert_called_once_with(42, 100)
