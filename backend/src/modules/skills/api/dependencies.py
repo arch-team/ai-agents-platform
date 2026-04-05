@@ -20,8 +20,14 @@ async def get_skill_service(
 ) -> SkillService:
     """创建 SkillService 实例。"""
     settings = get_settings()
-    workspace_root = Path(getattr(settings, "SKILL_WORKSPACE_ROOT", "/var/data/skill-library"))
+    import tempfile
+
+    skill_root = (
+        Path(settings.SKILL_LIBRARY_ROOT)
+        if settings.SKILL_LIBRARY_ROOT
+        else Path(tempfile.gettempdir()) / "skill-library"
+    )
     return SkillService(
         repository=SkillRepositoryImpl(session=session),
-        file_manager=SkillFileManagerImpl(workspace_root=workspace_root),
+        file_manager=SkillFileManagerImpl(workspace_root=skill_root),
     )
