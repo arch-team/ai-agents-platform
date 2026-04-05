@@ -1,5 +1,8 @@
 import * as cdk from 'aws-cdk-lib';
 import { Template, Match } from 'aws-cdk-lib/assertions';
+import * as ec2 from 'aws-cdk-lib/aws-ec2';
+import * as efs from 'aws-cdk-lib/aws-efs';
+import * as s3 from 'aws-cdk-lib/aws-s3';
 import { ComputeStack } from '../../lib/stacks/compute-stack';
 import { createCrossStackComputeDependencies } from '../helpers/test-utils';
 
@@ -279,6 +282,115 @@ describe('ComputeStack', () => {
       prodTemplate.hasResourceProperties('AWS::Events::Rule', {
         Name: 'ai-agents-platform-eval-trigger-prod',
         State: 'ENABLED',
+      });
+    });
+  });
+
+  describe('M17: AgentCore Runtime / Memory / Workspace / EFS 条件分支', () => {
+    it('agentcoreRuntimeArn 传入时应添加 InvokeAgentRuntime IAM 权限', () => {
+      const app = new cdk.App();
+      const deps = createCrossStackComputeDependencies(app);
+
+      const stackWithRuntime = new ComputeStack(app, 'TestComputeStackRuntime', {
+        ...deps,
+        envName: 'dev',
+        agentcoreRuntimeArn: 'arn:aws:bedrock-agentcore:us-east-1:123456789012:runtime/test-rt',
+      });
+      const tmpl = Template.fromStack(stackWithRuntime);
+
+      tmpl.hasResourceProperties('AWS::IAM::Policy', {
+        PolicyDocument: {
+          Statement: Match.arrayWith([
+            Match.objectLike({
+              Action: 'bedrock-agentcore:InvokeAgentRuntime',
+              Effect: 'Allow',
+            }),
+          ]),
+        },
+      });
+    });
+
+    it('agentcoreMemoryId 传入时应添加 Memory IAM 权限', () => {
+      const app = new cdk.App();
+      const deps = createCrossStackComputeDependencies(app);
+
+      const stackWithMemory = new ComputeStack(app, 'TestComputeStackMemory', {
+        ...deps,
+        envName: 'dev',
+        agentcoreMemoryId: 'mem-test-123',
+      });
+      const tmpl = Template.fromStack(stackWithMemory);
+
+      tmpl.hasResourceProperties('AWS::IAM::Policy', {
+        PolicyDocument: {
+          Statement: Match.arrayWith([
+            Match.objectLike({
+              Action: Match.arrayWith(['bedrock-agentcore:CreateEvent']),
+              Effect: 'Allow',
+            }),
+          ]),
+        },
+      });
+    });
+
+    it('workspaceBucket 传入时应授予 S3 读写权限', () => {
+      const app = new cdk.App();
+      const deps = createCrossStackComputeDependencies(app);
+      const depStack = new cdk.Stack(app, 'DepStackWorkspace');
+      const bucket = new s3.Bucket(depStack, 'WorkspaceBucket');
+
+      const stackWithBucket = new ComputeStack(app, 'TestComputeStackWorkspace', {
+        ...deps,
+        envName: 'dev',
+        workspaceBucket: bucket,
+      });
+      const tmpl = Template.fromStack(stackWithBucket);
+
+      tmpl.hasResourceProperties('AWS::IAM::Policy', {
+        PolicyDocument: {
+          Statement: Match.arrayWith([
+            Match.objectLike({
+              Action: Match.arrayWith(['s3:GetObject*', 's3:GetBucket*']),
+              Effect: 'Allow',
+            }),
+          ]),
+        },
+      });
+    });
+
+    it('skillLibraryFs + efsSecurityGroup 传入时应创建 NFS 入站规则和 EFS Volume', () => {
+      const app = new cdk.App();
+      const deps = createCrossStackComputeDependencies(app);
+      const depStack = new cdk.Stack(app, 'DepStackEfs');
+      const fileSystem = new efs.FileSystem(depStack, 'SkillLibraryFs', { vpc: deps.vpc });
+      const efsSg = new ec2.SecurityGroup(depStack, 'EfsSg', { vpc: deps.vpc });
+
+      const stackWithEfs = new ComputeStack(app, 'TestComputeStackEfs', {
+        ...deps,
+        envName: 'dev',
+        skillLibraryFs: fileSystem,
+        efsSecurityGroup: efsSg,
+      });
+      const tmpl = Template.fromStack(stackWithEfs);
+
+      // NFS 安全组入站规则 (端口 2049)
+      tmpl.hasResourceProperties('AWS::EC2::SecurityGroupIngress', {
+        IpProtocol: 'tcp',
+        FromPort: 2049,
+        ToPort: 2049,
+        Description: 'Allow ECS containers to access EFS via NFS',
+      });
+
+      // TaskDefinition 应包含 EFS Volume
+      tmpl.hasResourceProperties('AWS::ECS::TaskDefinition', {
+        Volumes: Match.arrayWith([
+          Match.objectLike({
+            Name: 'skill-library',
+            EFSVolumeConfiguration: Match.objectLike({
+              FilesystemId: Match.anyValue(),
+            }),
+          }),
+        ]),
       });
     });
   });
