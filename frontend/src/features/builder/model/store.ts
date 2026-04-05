@@ -5,7 +5,20 @@ import { useShallow } from 'zustand/shallow';
 
 import type { BuilderState } from './types';
 
-const initialState = {
+const initialState: Pick<
+  BuilderState,
+  | 'sessionId'
+  | 'streamContent'
+  | 'generatedConfig'
+  | 'isGenerating'
+  | 'isConfirming'
+  | 'error'
+  | 'phase'
+  | 'messages'
+  | 'generatedBlueprint'
+  | 'configOverrides'
+  | 'createdAgentId'
+> = {
   // V1
   sessionId: null,
   streamContent: '',
@@ -14,12 +27,12 @@ const initialState = {
   isConfirming: false,
   error: null,
   // V2
-  phase: 'input' as const,
+  phase: 'input',
   messages: [],
   generatedBlueprint: null,
   configOverrides: {},
   createdAgentId: null,
-} as const;
+};
 
 export const useBuilderStore = create<BuilderState>()((set) => ({
   ...initialState,
