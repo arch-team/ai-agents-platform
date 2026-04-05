@@ -6,6 +6,14 @@ builder 模块依赖此接口创建 Agent，
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
+from enum import StrEnum
+
+
+class GuardrailSeverity(StrEnum):
+    """安全护栏严重级别。"""
+
+    WARN = "warn"
+    BLOCK = "block"
 
 
 # ── V1: 简单 Agent 创建 ──
@@ -58,7 +66,7 @@ class GuardrailData:
     """Agent 安全护栏 (跨模块值对象)。"""
 
     rule: str
-    severity: str = "warn"
+    severity: GuardrailSeverity = GuardrailSeverity.WARN
 
 
 @dataclass(frozen=True)
