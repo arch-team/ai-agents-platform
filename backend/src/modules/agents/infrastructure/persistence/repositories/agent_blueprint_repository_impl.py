@@ -151,12 +151,28 @@ class AgentBlueprintRepositoryImpl(IAgentBlueprintRepository):
         )
         tb_rows = (await self._session.execute(tb_stmt)).all()
 
+        def _parse(raw: str | None, field: str, default: object) -> object:
+            """安全解析 JSON，损坏时返回默认值并记录日志。"""
+            if not raw:
+                return default
+            try:
+                return json.loads(raw)
+            except json.JSONDecodeError:
+                import structlog
+
+                structlog.get_logger(__name__).exception(
+                    "blueprint_json_decode_error",
+                    agent_id=agent_id,
+                    field=field,
+                )
+                return default
+
         return BlueprintDetailInfo(
             blueprint_id=blueprint_id,
-            persona=json.loads(bp_row[1]),
-            guardrails=json.loads(bp_row[2]),
-            memory_config=json.loads(bp_row[3]),
-            knowledge_base_ids=json.loads(bp_row[4]),
+            persona=_parse(bp_row[1], "persona", {}),  # type: ignore[arg-type]
+            guardrails=_parse(bp_row[2], "guardrails", []),  # type: ignore[arg-type]
+            memory_config=_parse(bp_row[3], "memory_config", {}),  # type: ignore[arg-type]
+            knowledge_base_ids=_parse(bp_row[4], "knowledge_base_ids", []),  # type: ignore[arg-type]
             skill_ids=[r[0] for r in skill_rows],
             tool_bindings=[BlueprintToolBindingInfo(tool_id=r[0], display_name=r[1], usage_hint=r[2]) for r in tb_rows],
         )
