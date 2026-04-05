@@ -1,6 +1,5 @@
 // UI 组件
 export { AgentList } from './ui/AgentList';
-export { AgentCreateForm } from './ui/AgentCreateForm';
 export { AgentStatusBadge } from './ui/AgentStatusBadge';
 export { MemoryPanel } from './ui/MemoryPanel';
 

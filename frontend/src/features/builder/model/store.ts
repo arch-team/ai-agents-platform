@@ -9,7 +9,6 @@ const initialState: Pick<
   BuilderState,
   | 'sessionId'
   | 'streamContent'
-  | 'generatedConfig'
   | 'isGenerating'
   | 'isConfirming'
   | 'error'
@@ -19,14 +18,11 @@ const initialState: Pick<
   | 'configOverrides'
   | 'createdAgentId'
 > = {
-  // V1
   sessionId: null,
   streamContent: '',
-  generatedConfig: null,
   isGenerating: false,
   isConfirming: false,
   error: null,
-  // V2
   phase: 'input',
   messages: [],
   generatedBlueprint: null,
@@ -37,17 +33,16 @@ const initialState: Pick<
 export const useBuilderStore = create<BuilderState>()((set) => ({
   ...initialState,
 
-  // V1 actions
+  // 共享 actions
   setSessionId: (id) => set({ sessionId: id }),
   appendStreamContent: (content) =>
     set((state) => ({ streamContent: state.streamContent + content })),
-  setGeneratedConfig: (config) => set({ generatedConfig: config }),
   setGenerating: (generating) => set({ isGenerating: generating }),
   setConfirming: (confirming) => set({ isConfirming: confirming }),
   setError: (error) => set({ error }),
   reset: () => set({ ...initialState }),
 
-  // V2 actions
+  // Blueprint actions
   setPhase: (phase) => set({ phase }),
   addMessage: (message) => set((state) => ({ messages: [...state.messages, message] })),
   setMessages: (messages) => set({ messages }),
@@ -60,15 +55,14 @@ export const useBuilderStore = create<BuilderState>()((set) => ({
 
 // ── 细粒度 selector hooks ──
 
-// V1
+// 共享 selectors
 export const useBuilderSessionId = () => useBuilderStore((s) => s.sessionId);
 export const useBuilderStreamContent = () => useBuilderStore((s) => s.streamContent);
-export const useBuilderGeneratedConfig = () => useBuilderStore((s) => s.generatedConfig);
 export const useBuilderIsGenerating = () => useBuilderStore((s) => s.isGenerating);
 export const useBuilderIsConfirming = () => useBuilderStore((s) => s.isConfirming);
 export const useBuilderError = () => useBuilderStore((s) => s.error);
 
-// V2
+// Blueprint selectors
 export const useBuilderPhase = () => useBuilderStore((s) => s.phase);
 export const useBuilderMessages = () => useBuilderStore((s) => s.messages);
 export const useBuilderBlueprint = () => useBuilderStore((s) => s.generatedBlueprint);
@@ -81,7 +75,6 @@ export const useBuilderActions = () =>
     useShallow((s) => ({
       setSessionId: s.setSessionId,
       appendStreamContent: s.appendStreamContent,
-      setGeneratedConfig: s.setGeneratedConfig,
       setGenerating: s.setGenerating,
       setConfirming: s.setConfirming,
       setError: s.setError,

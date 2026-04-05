@@ -2,18 +2,9 @@
 
 import { parseSSEStream } from '@/shared/lib/parseSSEStream';
 
-import type { BlueprintStreamChunk, BuilderStreamChunk, RefineBuilderRequest } from '../api/types';
+import type { BlueprintStreamChunk, RefineBuilderRequest } from '../api/types';
 
-// V1: 流式生成 Agent 配置
-export async function* streamBuilderSSE(
-  url: string,
-  token: string | null,
-  signal?: AbortSignal,
-): AsyncGenerator<BuilderStreamChunk> {
-  yield* parseSSEStream<BuilderStreamChunk>({ url, token, method: 'POST', body: {}, signal });
-}
-
-// V2: 流式生成 Blueprint (SOP 引导式)
+// 流式生成 Blueprint (SOP 引导式)
 export async function* streamBlueprintGenerate(
   url: string,
   token: string | null,

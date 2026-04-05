@@ -7,61 +7,12 @@ import { useQueryClient } from '@tanstack/react-query';
 import { env } from '@/shared/config/env';
 import { extractApiError } from '@/shared/lib/extractApiError';
 
-import { streamBlueprintGenerate, streamBlueprintRefine, streamBuilderSSE } from '../lib/sse';
+import { streamBlueprintGenerate, streamBlueprintRefine } from '../lib/sse';
 import { useBuilderActions } from '../model/store';
 
 import { builderKeys } from './queries';
 
-// V1: 流式生成 Agent 配置
-export function useBuilderStream(token: string | null) {
-  const { appendStreamContent, setGeneratedConfig, setGenerating, setError } = useBuilderActions();
-  const queryClient = useQueryClient();
-  const abortControllerRef = useRef<AbortController | null>(null);
-
-  const abort = useCallback(() => {
-    abortControllerRef.current?.abort();
-    abortControllerRef.current = null;
-  }, []);
-
-  // H7 修复: 组件卸载时清理 SSE 连接防止内存泄漏
-  useEffect(() => {
-    return () => {
-      abortControllerRef.current?.abort();
-    };
-  }, []);
-
-  const startGeneration = useCallback(
-    async (sessionId: number) => {
-      abort();
-      const controller = new AbortController();
-      abortControllerRef.current = controller;
-      setGenerating(true);
-      setError(null);
-
-      try {
-        const url = `${env.VITE_API_BASE_URL}/api/v1/builder/sessions/${sessionId}/messages`;
-        for await (const chunk of streamBuilderSSE(url, token, controller.signal)) {
-          if (chunk.error) throw new Error(chunk.error);
-          if (chunk.content) appendStreamContent(chunk.content);
-          if (chunk.config) setGeneratedConfig(chunk.config);
-          if (chunk.done) break;
-        }
-      } catch (err) {
-        if (err instanceof DOMException && err.name === 'AbortError') return;
-        setError(extractApiError(err, '生成失败，请重试'));
-      } finally {
-        abortControllerRef.current = null;
-        setGenerating(false);
-        void queryClient.invalidateQueries({ queryKey: builderKeys.session(sessionId) });
-      }
-    },
-    [appendStreamContent, setGeneratedConfig, setGenerating, setError, queryClient, token, abort],
-  );
-
-  return { startGeneration, abort };
-}
-
-// V2: 流式生成 Blueprint + 迭代优化
+// 流式生成 Blueprint + 迭代优化
 export function useBlueprintStream(token: string | null) {
   const {
     appendStreamContent,
