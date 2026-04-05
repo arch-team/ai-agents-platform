@@ -148,7 +148,7 @@ class TestCreateConversation:
     @pytest.mark.asyncio
     async def test_create_conversation_success(self) -> None:
         agent_querier = AsyncMock(spec=IAgentQuerier)
-        agent_querier.get_active_agent.return_value = _make_agent_info()
+        agent_querier.get_executable_agent.return_value = _make_agent_info()
 
         conv_repo = AsyncMock(spec=IConversationRepository)
         conv_repo.create.side_effect = lambda c: _make_conversation(
@@ -176,7 +176,7 @@ class TestCreateConversation:
     @pytest.mark.asyncio
     async def test_create_conversation_default_title(self) -> None:
         agent_querier = AsyncMock(spec=IAgentQuerier)
-        agent_querier.get_active_agent.return_value = _make_agent_info(name="小助手")
+        agent_querier.get_executable_agent.return_value = _make_agent_info(name="小助手")
 
         conv_repo = AsyncMock(spec=IConversationRepository)
         conv_repo.create.side_effect = lambda c: _make_conversation(
@@ -199,7 +199,7 @@ class TestCreateConversation:
     @pytest.mark.asyncio
     async def test_create_conversation_agent_not_available(self) -> None:
         agent_querier = AsyncMock(spec=IAgentQuerier)
-        agent_querier.get_active_agent.return_value = None
+        agent_querier.get_executable_agent.return_value = None
 
         service = _make_service(agent_querier=agent_querier)
         dto = CreateConversationDTO(agent_id=999)
@@ -235,7 +235,7 @@ class TestSendMessage:
         )
 
         agent_querier = AsyncMock(spec=IAgentQuerier)
-        agent_querier.get_active_agent.return_value = _make_agent_info()
+        agent_querier.get_executable_agent.return_value = _make_agent_info()
 
         service = _make_service(
             conv_repo=conv_repo,
@@ -322,7 +322,7 @@ class TestSendMessageStream:
         llm_client.invoke_stream.side_effect = _mock_stream
 
         agent_querier = AsyncMock(spec=IAgentQuerier)
-        agent_querier.get_active_agent.return_value = _make_agent_info()
+        agent_querier.get_executable_agent.return_value = _make_agent_info()
 
         service = _make_service(
             conv_repo=conv_repo,
@@ -382,7 +382,7 @@ class TestSendMessageStream:
         llm_client.invoke_stream.side_effect = _mock_stream
 
         agent_querier = AsyncMock(spec=IAgentQuerier)
-        agent_querier.get_active_agent.return_value = _make_agent_info()
+        agent_querier.get_executable_agent.return_value = _make_agent_info()
 
         # 独立 session 的 repos (模拟 API 层通过独立 session 创建)
         stream_msg_repo = AsyncMock(spec=IMessageRepository)
@@ -613,7 +613,7 @@ class TestRAGIntegration:
         )
 
         agent_querier = AsyncMock(spec=IAgentQuerier)
-        agent_querier.get_active_agent.return_value = _make_agent_info(
+        agent_querier.get_executable_agent.return_value = _make_agent_info(
             knowledge_base_id=42,
         )
 
@@ -678,7 +678,7 @@ class TestRAGIntegration:
         )
 
         agent_querier = AsyncMock(spec=IAgentQuerier)
-        agent_querier.get_active_agent.return_value = _make_agent_info()
+        agent_querier.get_executable_agent.return_value = _make_agent_info()
 
         knowledge_querier = AsyncMock(spec=IKnowledgeQuerier)
 
@@ -735,7 +735,7 @@ class TestRAGIntegration:
         llm_client.invoke_stream.side_effect = _mock_stream
 
         agent_querier = AsyncMock(spec=IAgentQuerier)
-        agent_querier.get_active_agent.return_value = _make_agent_info(
+        agent_querier.get_executable_agent.return_value = _make_agent_info(
             knowledge_base_id=42,
         )
 
@@ -817,7 +817,7 @@ def _setup_basic_mocks(
     ]
 
     agent_querier = AsyncMock(spec=IAgentQuerier)
-    agent_querier.get_active_agent.return_value = _make_agent_info(
+    agent_querier.get_executable_agent.return_value = _make_agent_info(
         runtime_type=runtime_type,
     )
 

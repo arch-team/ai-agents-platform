@@ -37,7 +37,7 @@ def _to_response(item: MemoryItem) -> MemoryItemResponse:
 
 async def _check_memory_enabled(agent_id: int, agent_querier: IAgentQuerier) -> None:
     """校验 Agent 存在且已启用 Memory。"""
-    info = await agent_querier.get_active_agent(agent_id)
+    info = await agent_querier.get_executable_agent(agent_id)
     if info is None or not info.enable_memory:
         raise MemoryNotEnabledError(agent_id)
 

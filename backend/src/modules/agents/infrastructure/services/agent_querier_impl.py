@@ -38,7 +38,7 @@ class AgentQuerierImpl(IAgentQuerier):
             ttl=cache_ttl,
         )
 
-    async def get_active_agent(self, agent_id: int) -> ActiveAgentInfo | None:
+    async def get_executable_agent(self, agent_id: int) -> ActiveAgentInfo | None:
         """Agent 不存在或非 TESTING/ACTIVE 状态时返回 None, 结果缓存 5 分钟。"""
         if agent_id in self._cache:
             return cast("ActiveAgentInfo | None", self._cache[agent_id])

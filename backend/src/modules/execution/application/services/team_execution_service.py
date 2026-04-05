@@ -104,7 +104,7 @@ class TeamExecutionService:
             DomainError: Agent 不可用或未启用 Teams
         """
         # 校验 Agent 可用且启用 Teams
-        agent_info = await self._agent_querier.get_active_agent(dto.agent_id)
+        agent_info = await self._agent_querier.get_executable_agent(dto.agent_id)
         if agent_info is None:
             raise DomainError(
                 message=f"Agent(id={dto.agent_id}) 不可用",

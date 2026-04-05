@@ -144,7 +144,7 @@ class TestTeamExecutionServiceSubmit:
         """mock agent_querier 返回启用 teams 的 agent，验证创建和返回 DTO。"""
         # Arrange
         agent_querier = AsyncMock(spec=IAgentQuerier)
-        agent_querier.get_active_agent.return_value = _make_agent_info(enable_teams=True)
+        agent_querier.get_executable_agent.return_value = _make_agent_info(enable_teams=True)
 
         execution_repo = AsyncMock(spec=ITeamExecutionRepository)
         execution_repo.create.side_effect = lambda e: _make_team_execution(
@@ -178,7 +178,7 @@ class TestTeamExecutionServiceSubmit:
         """mock agent_querier 返回 None，验证抛出 DomainError。"""
         # Arrange
         agent_querier = AsyncMock(spec=IAgentQuerier)
-        agent_querier.get_active_agent.return_value = None
+        agent_querier.get_executable_agent.return_value = None
 
         service = _make_service(agent_querier=agent_querier)
         dto = CreateTeamExecutionDTO(agent_id=999, prompt="测试")
@@ -192,7 +192,7 @@ class TestTeamExecutionServiceSubmit:
         """mock agent_querier 返回 enable_teams=False 的 agent，验证抛出 DomainError。"""
         # Arrange
         agent_querier = AsyncMock(spec=IAgentQuerier)
-        agent_querier.get_active_agent.return_value = _make_agent_info(
+        agent_querier.get_executable_agent.return_value = _make_agent_info(
             enable_teams=False,
         )
 
@@ -208,7 +208,7 @@ class TestTeamExecutionServiceSubmit:
         """提交时携带 conversation_id。"""
         # Arrange
         agent_querier = AsyncMock(spec=IAgentQuerier)
-        agent_querier.get_active_agent.return_value = _make_agent_info(enable_teams=True)
+        agent_querier.get_executable_agent.return_value = _make_agent_info(enable_teams=True)
 
         execution_repo = AsyncMock(spec=ITeamExecutionRepository)
         execution_repo.create.side_effect = lambda e: _make_team_execution(

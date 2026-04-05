@@ -178,7 +178,7 @@ class TestListToolsForAgent:
         mock_agent_querier: AsyncMock,
     ) -> None:
         """Agent 绑定 3 个工具，其中 2 个 APPROVED → 返回 2 个。"""
-        mock_agent_querier.get_active_agent.return_value = _make_active_agent_info(tool_ids=(1, 2, 3))
+        mock_agent_querier.get_executable_agent.return_value = _make_active_agent_info(tool_ids=(1, 2, 3))
         mock_repo.list_by_ids_and_status.return_value = [
             _make_tool(tool_id=1, name="tool-a"),
             _make_tool(tool_id=2, name="tool-b"),
@@ -199,7 +199,7 @@ class TestListToolsForAgent:
         mock_agent_querier: AsyncMock,
     ) -> None:
         """Agent 未绑定工具 → 返回空列表，不查询 ToolRepository。"""
-        mock_agent_querier.get_active_agent.return_value = _make_active_agent_info(tool_ids=())
+        mock_agent_querier.get_executable_agent.return_value = _make_active_agent_info(tool_ids=())
 
         result = await querier.list_tools_for_agent(agent_id=1)
 
@@ -213,7 +213,7 @@ class TestListToolsForAgent:
         mock_agent_querier: AsyncMock,
     ) -> None:
         """Agent 不存在或非 ACTIVE → 返回空列表。"""
-        mock_agent_querier.get_active_agent.return_value = None
+        mock_agent_querier.get_executable_agent.return_value = None
 
         result = await querier.list_tools_for_agent(agent_id=999)
 
@@ -235,7 +235,7 @@ class TestListToolsForAgent:
         mock_agent_querier: AsyncMock,
     ) -> None:
         """Agent 绑定的工具全部被 DEPRECATED → list_by_ids_and_status 返回空。"""
-        mock_agent_querier.get_active_agent.return_value = _make_active_agent_info(tool_ids=(10, 11))
+        mock_agent_querier.get_executable_agent.return_value = _make_active_agent_info(tool_ids=(10, 11))
         mock_repo.list_by_ids_and_status.return_value = []
 
         result = await querier.list_tools_for_agent(agent_id=1)

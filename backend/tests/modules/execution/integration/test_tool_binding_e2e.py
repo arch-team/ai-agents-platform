@@ -163,7 +163,7 @@ class TestToolBindingQueryChain:
     async def test_agent_with_tools_passes_correct_tools_to_runtime(self) -> None:
         """Agent 绑定 tool_ids=[1,2] 时, ToolQuerier 返回对应已审批工具, Runtime 收到正确的 AgentTool 列表。"""
         conv_repo, msg_repo, agent_querier, llm_client = _setup_base_mocks()
-        agent_querier.get_active_agent.return_value = _make_agent_info(
+        agent_querier.get_executable_agent.return_value = _make_agent_info(
             runtime_type="agent",
             tool_ids=(1, 2),
         )
@@ -215,7 +215,7 @@ class TestToolBindingQueryChain:
     async def test_tool_querier_called_with_agent_id(self) -> None:
         """验证 list_tools_for_agent 被调用时传入正确的 agent_id。"""
         conv_repo, msg_repo, agent_querier, llm_client = _setup_base_mocks()
-        agent_querier.get_active_agent.return_value = _make_agent_info(
+        agent_querier.get_executable_agent.return_value = _make_agent_info(
             agent_id=42,
             runtime_type="agent",
             tool_ids=(10,),
@@ -263,7 +263,7 @@ class TestToolPassingToRuntime:
     async def test_send_message_passes_tools_to_agent_runtime(self) -> None:
         """send_message (同步) 时 tools 参数正确传递给 IAgentRuntime.execute()。"""
         conv_repo, msg_repo, agent_querier, llm_client = _setup_base_mocks()
-        agent_querier.get_active_agent.return_value = _make_agent_info(
+        agent_querier.get_executable_agent.return_value = _make_agent_info(
             runtime_type="agent",
             tool_ids=(1,),
         )
@@ -312,7 +312,7 @@ class TestToolPassingToRuntime:
         """send_message_stream (流式) 时 tools 参数正确传递给 IAgentRuntime.execute_stream()。"""
         conv_repo, msg_repo, agent_querier, llm_client = _setup_base_mocks()
         msg_repo.update.side_effect = lambda m: m
-        agent_querier.get_active_agent.return_value = _make_agent_info(
+        agent_querier.get_executable_agent.return_value = _make_agent_info(
             runtime_type="agent",
             tool_ids=(1, 2),
         )
@@ -371,7 +371,7 @@ class TestNoToolAgent:
     async def test_agent_with_no_tools_sends_empty_tools(self) -> None:
         """tool_ids=() 时, ToolQuerier 返回空列表, Runtime 收到空工具列表。"""
         conv_repo, msg_repo, agent_querier, llm_client = _setup_base_mocks()
-        agent_querier.get_active_agent.return_value = _make_agent_info(
+        agent_querier.get_executable_agent.return_value = _make_agent_info(
             runtime_type="agent",
             tool_ids=(),
         )
@@ -411,7 +411,7 @@ class TestNoToolAgent:
     async def test_agent_without_tool_querier_sends_empty_tools(self) -> None:
         """未配置 tool_querier 时, Runtime 收到空工具列表。"""
         conv_repo, msg_repo, agent_querier, llm_client = _setup_base_mocks()
-        agent_querier.get_active_agent.return_value = _make_agent_info(
+        agent_querier.get_executable_agent.return_value = _make_agent_info(
             runtime_type="agent",
             tool_ids=(1, 2),
         )
@@ -452,7 +452,7 @@ class TestPartialToolInvalidation:
     async def test_only_approved_tools_passed_to_runtime(self) -> None:
         """Agent 绑定 tool_ids=[1,2,3], 但工具 2 已废弃, Runtime 只收到工具 1 和 3。"""
         conv_repo, msg_repo, agent_querier, llm_client = _setup_base_mocks()
-        agent_querier.get_active_agent.return_value = _make_agent_info(
+        agent_querier.get_executable_agent.return_value = _make_agent_info(
             runtime_type="agent",
             tool_ids=(1, 2, 3),
         )
@@ -500,7 +500,7 @@ class TestPartialToolInvalidation:
     async def test_all_tools_deprecated_sends_empty_list(self) -> None:
         """Agent 绑定的所有工具都已废弃时, Runtime 收到空工具列表。"""
         conv_repo, msg_repo, agent_querier, llm_client = _setup_base_mocks()
-        agent_querier.get_active_agent.return_value = _make_agent_info(
+        agent_querier.get_executable_agent.return_value = _make_agent_info(
             runtime_type="agent",
             tool_ids=(1, 2),
         )
@@ -544,7 +544,7 @@ class TestGatewayAuthIntegration:
     async def test_gateway_auth_called_when_mcp_tools_present(self) -> None:
         """存在 mcp_server 类型工具时, IGatewayAuthService.get_bearer_token() 被调用。"""
         conv_repo, msg_repo, agent_querier, llm_client = _setup_base_mocks()
-        agent_querier.get_active_agent.return_value = _make_agent_info(
+        agent_querier.get_executable_agent.return_value = _make_agent_info(
             runtime_type="agent",
             tool_ids=(1,),
         )
@@ -592,7 +592,7 @@ class TestGatewayAuthIntegration:
     async def test_gateway_auth_not_called_without_mcp_tools(self) -> None:
         """只有 api/function 工具时, Gateway Auth 不被调用。"""
         conv_repo, msg_repo, agent_querier, llm_client = _setup_base_mocks()
-        agent_querier.get_active_agent.return_value = _make_agent_info(
+        agent_querier.get_executable_agent.return_value = _make_agent_info(
             runtime_type="agent",
             tool_ids=(1,),
         )
@@ -640,7 +640,7 @@ class TestGatewayAuthIntegration:
     async def test_gateway_auth_not_configured_returns_empty_token(self) -> None:
         """未配置 gateway_auth 时, token 为空字符串。"""
         conv_repo, msg_repo, agent_querier, llm_client = _setup_base_mocks()
-        agent_querier.get_active_agent.return_value = _make_agent_info(
+        agent_querier.get_executable_agent.return_value = _make_agent_info(
             runtime_type="agent",
             tool_ids=(1,),
         )
@@ -682,7 +682,7 @@ class TestGatewayAuthIntegration:
         """流式模式: 有 mcp_server 工具时, Gateway Auth 被调用且 token 传递到 Runtime。"""
         conv_repo, msg_repo, agent_querier, llm_client = _setup_base_mocks()
         msg_repo.update.side_effect = lambda m: m
-        agent_querier.get_active_agent.return_value = _make_agent_info(
+        agent_querier.get_executable_agent.return_value = _make_agent_info(
             runtime_type="agent",
             tool_ids=(1,),
         )
@@ -744,7 +744,7 @@ class TestApprovedToolInfoToAgentToolConversion:
     async def test_tool_config_fields_mapped_correctly(self) -> None:
         """ApprovedToolInfo 的配置字段正确映射到 AgentTool.config。"""
         conv_repo, msg_repo, agent_querier, llm_client = _setup_base_mocks()
-        agent_querier.get_active_agent.return_value = _make_agent_info(
+        agent_querier.get_executable_agent.return_value = _make_agent_info(
             runtime_type="agent",
             tool_ids=(1,),
         )

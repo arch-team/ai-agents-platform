@@ -104,9 +104,9 @@ class TestIAgentQuerier:
             IAgentQuerier()  # type: ignore[abstract]
 
     def test_has_abstract_method(self) -> None:
-        assert hasattr(IAgentQuerier, "get_active_agent")
+        assert hasattr(IAgentQuerier, "get_executable_agent")
         assert getattr(
-            IAgentQuerier.get_active_agent,
+            IAgentQuerier.get_executable_agent,
             "__isabstractmethod__",
             False,
         )
@@ -115,7 +115,7 @@ class TestIAgentQuerier:
         """具体实现类可以正确实例化。"""
 
         class ConcreteQuerier(IAgentQuerier):
-            async def get_active_agent(
+            async def get_executable_agent(
                 self,
                 agent_id: int,
             ) -> ActiveAgentInfo | None:

@@ -77,7 +77,7 @@ def _build_service(
     msg_repo.list_by_conversation.return_value = []
 
     agent_querier = AsyncMock(spec=IAgentQuerier)
-    agent_querier.get_active_agent.return_value = agent_info
+    agent_querier.get_executable_agent.return_value = agent_info
 
     return ExecutionService(
         conversation_repo=conv_repo,
@@ -152,11 +152,11 @@ async def test_send_message_mode2_routes_to_local_runtime() -> None:
 
 
 @pytest.mark.asyncio
-async def test_send_message_mode3_v1_compatible() -> None:
-    """模式3 (V1 兼容): send_message 全流程使用内联 system_prompt。"""
+async def test_send_message_no_workspace_clears_system_prompt() -> None:
+    """无 runtime_arn 和 workspace_path 时，system_prompt 为空 (V1 模式已移除)。"""
     main_runtime = AsyncMock(spec=IAgentRuntime)
     main_runtime.execute.return_value = AgentResponseChunk(
-        content="V1回复",
+        content="Blueprint回复",
         done=True,
         input_tokens=10,
         output_tokens=20,
@@ -171,9 +171,8 @@ async def test_send_message_mode3_v1_compatible() -> None:
 
     main_runtime.execute.assert_called_once()
 
-    # 验证 V1 兼容: system_prompt 保留, cwd/runtime_arn 为空
     request = main_runtime.execute.call_args[0][0]
-    assert request.system_prompt == "V1 系统提示词"
+    assert request.system_prompt == ""
     assert request.cwd == ""
     assert request.runtime_arn == ""
-    assert result.content == "V1回复"
+    assert result.content == "Blueprint回复"

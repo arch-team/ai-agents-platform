@@ -157,14 +157,14 @@ class TestBuildAgentRequestRouting:
 
         assert request.system_prompt == ""
 
-    def test_mode3_v1_keeps_system_prompt(self) -> None:
-        """模式3: V1 兼容 → system_prompt 保留, cwd 和 runtime_arn 都为空。"""
+    def test_no_runtime_no_workspace_clears_system_prompt(self) -> None:
+        """无 runtime_arn 和 workspace_path 时，system_prompt 仍为空 (V1 模式已移除)。"""
         service = _make_service(agent_runtime=AsyncMock(spec=IAgentRuntime))
         ctx = _make_send_context(system_prompt="你是一个专业助手")
 
         request = service._build_agent_request(ctx, tools=[])
 
-        assert request.system_prompt == "你是一个专业助手"
+        assert request.system_prompt == ""
         assert request.cwd == ""
         assert request.runtime_arn == ""
 

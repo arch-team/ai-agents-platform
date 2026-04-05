@@ -75,7 +75,7 @@ class TestPreviewAgentEndpoint:
         mock_agent_runtime: AsyncMock,
     ) -> None:
         """200 + 返回 AgentPreviewResponse。"""
-        mock_agent_querier.get_active_agent.return_value = _make_active_agent_info()
+        mock_agent_querier.get_executable_agent.return_value = _make_active_agent_info()
         mock_agent_runtime.execute.return_value = AgentResponseChunk(
             content="你好! 我是 AI 助手。",
             done=True,
@@ -94,7 +94,7 @@ class TestPreviewAgentEndpoint:
 
     def test_preview_agent_not_available(self, client: TestClient, mock_agent_querier: AsyncMock) -> None:
         """409 Agent 不可用 (不存在或非 ACTIVE)。"""
-        mock_agent_querier.get_active_agent.return_value = None
+        mock_agent_querier.get_executable_agent.return_value = None
 
         response = client.post("/api/v1/agents/999/preview", json={"prompt": "你好"})
 
@@ -102,7 +102,7 @@ class TestPreviewAgentEndpoint:
 
     def test_preview_draft_agent_returns_409(self, client: TestClient, mock_agent_querier: AsyncMock) -> None:
         """409 非 ACTIVE Agent。"""
-        mock_agent_querier.get_active_agent.return_value = None
+        mock_agent_querier.get_executable_agent.return_value = None
 
         response = client.post("/api/v1/agents/1/preview", json={"prompt": "你好"})
 

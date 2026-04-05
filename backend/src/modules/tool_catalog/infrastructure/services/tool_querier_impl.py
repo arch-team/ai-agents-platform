@@ -37,7 +37,7 @@ class ToolQuerierImpl(IToolQuerier):
         if self._agent_querier is None:
             return []
 
-        agent_info = await self._agent_querier.get_active_agent(agent_id)
+        agent_info = await self._agent_querier.get_executable_agent(agent_id)
         if agent_info is None:
             return []
 

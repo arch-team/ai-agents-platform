@@ -46,7 +46,7 @@ async def preview_agent(
     agent_querier: Annotated[IAgentQuerier, Depends(get_agent_querier)],
 ) -> AgentPreviewResponse:
     """预览 Agent — 单轮测试，不创建 Conversation，不持久化消息。"""
-    agent_info: ActiveAgentInfo | None = await agent_querier.get_active_agent(agent_id)
+    agent_info: ActiveAgentInfo | None = await agent_querier.get_executable_agent(agent_id)
     if agent_info is None:
         raise AgentNotAvailableError(agent_id)
 

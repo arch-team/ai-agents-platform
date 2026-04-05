@@ -101,7 +101,7 @@ class TestListMemoriesEndpoint:
         mock_agent_querier: AsyncMock,
     ) -> None:
         """200 + 返回 Memory 列表。"""
-        mock_agent_querier.get_active_agent.return_value = _make_active_agent_info()
+        mock_agent_querier.get_executable_agent.return_value = _make_active_agent_info()
         mock_memory_service.list_memories.return_value = [
             _make_memory_item(memory_id="m1"),
             _make_memory_item(memory_id="m2"),
@@ -122,7 +122,7 @@ class TestListMemoriesEndpoint:
         mock_agent_querier: AsyncMock,
     ) -> None:
         """200 + 空列表。"""
-        mock_agent_querier.get_active_agent.return_value = _make_active_agent_info()
+        mock_agent_querier.get_executable_agent.return_value = _make_active_agent_info()
         mock_memory_service.list_memories.return_value = []
 
         response = client.get("/api/v1/agents/1/memories")
@@ -136,7 +136,7 @@ class TestListMemoriesEndpoint:
         mock_agent_querier: AsyncMock,
     ) -> None:
         """400 Memory 未启用。"""
-        mock_agent_querier.get_active_agent.return_value = _make_active_agent_info(enable_memory=False)
+        mock_agent_querier.get_executable_agent.return_value = _make_active_agent_info(enable_memory=False)
 
         response = client.get("/api/v1/agents/1/memories")
 
@@ -150,7 +150,7 @@ class TestListMemoriesEndpoint:
         mock_agent_querier: AsyncMock,
     ) -> None:
         """400 Agent 不存在 (querier 返回 None)。"""
-        mock_agent_querier.get_active_agent.return_value = None
+        mock_agent_querier.get_executable_agent.return_value = None
 
         response = client.get("/api/v1/agents/999/memories")
 
@@ -163,7 +163,7 @@ class TestListMemoriesEndpoint:
         mock_agent_querier: AsyncMock,
     ) -> None:
         """200 + 传递 max_results 参数。"""
-        mock_agent_querier.get_active_agent.return_value = _make_active_agent_info()
+        mock_agent_querier.get_executable_agent.return_value = _make_active_agent_info()
         mock_memory_service.list_memories.return_value = []
 
         response = client.get("/api/v1/agents/1/memories?max_results=5")
@@ -183,7 +183,7 @@ class TestSaveMemoryEndpoint:
         mock_agent_querier: AsyncMock,
     ) -> None:
         """201 + 返回 memory_id。"""
-        mock_agent_querier.get_active_agent.return_value = _make_active_agent_info()
+        mock_agent_querier.get_executable_agent.return_value = _make_active_agent_info()
         mock_memory_service.save_memory.return_value = "mem-new-001"
 
         response = client.post(
@@ -202,7 +202,7 @@ class TestSaveMemoryEndpoint:
         mock_agent_querier: AsyncMock,
     ) -> None:
         """400 Memory 未启用。"""
-        mock_agent_querier.get_active_agent.return_value = _make_active_agent_info(enable_memory=False)
+        mock_agent_querier.get_executable_agent.return_value = _make_active_agent_info(enable_memory=False)
 
         response = client.post(
             "/api/v1/agents/1/memories",
@@ -217,7 +217,7 @@ class TestSaveMemoryEndpoint:
         mock_agent_querier: AsyncMock,
     ) -> None:
         """422 内容为空。"""
-        mock_agent_querier.get_active_agent.return_value = _make_active_agent_info()
+        mock_agent_querier.get_executable_agent.return_value = _make_active_agent_info()
 
         response = client.post(
             "/api/v1/agents/1/memories",
@@ -232,7 +232,7 @@ class TestSaveMemoryEndpoint:
         mock_agent_querier: AsyncMock,
     ) -> None:
         """422 主题为空。"""
-        mock_agent_querier.get_active_agent.return_value = _make_active_agent_info()
+        mock_agent_querier.get_executable_agent.return_value = _make_active_agent_info()
 
         response = client.post(
             "/api/v1/agents/1/memories",
@@ -253,7 +253,7 @@ class TestSearchMemoriesEndpoint:
         mock_agent_querier: AsyncMock,
     ) -> None:
         """200 + 返回搜索结果。"""
-        mock_agent_querier.get_active_agent.return_value = _make_active_agent_info()
+        mock_agent_querier.get_executable_agent.return_value = _make_active_agent_info()
         mock_memory_service.recall_memory.return_value = [
             _make_memory_item(memory_id="m1", relevance_score=0.95),
         ]
@@ -277,7 +277,7 @@ class TestSearchMemoriesEndpoint:
         mock_agent_querier: AsyncMock,
     ) -> None:
         """200 + 空搜索结果。"""
-        mock_agent_querier.get_active_agent.return_value = _make_active_agent_info()
+        mock_agent_querier.get_executable_agent.return_value = _make_active_agent_info()
         mock_memory_service.recall_memory.return_value = []
 
         response = client.post(
@@ -294,7 +294,7 @@ class TestSearchMemoriesEndpoint:
         mock_agent_querier: AsyncMock,
     ) -> None:
         """400 Memory 未启用。"""
-        mock_agent_querier.get_active_agent.return_value = _make_active_agent_info(enable_memory=False)
+        mock_agent_querier.get_executable_agent.return_value = _make_active_agent_info(enable_memory=False)
 
         response = client.post(
             "/api/v1/agents/1/memories/search",
@@ -309,7 +309,7 @@ class TestSearchMemoriesEndpoint:
         mock_agent_querier: AsyncMock,
     ) -> None:
         """422 查询为空。"""
-        mock_agent_querier.get_active_agent.return_value = _make_active_agent_info()
+        mock_agent_querier.get_executable_agent.return_value = _make_active_agent_info()
 
         response = client.post(
             "/api/v1/agents/1/memories/search",
@@ -330,7 +330,7 @@ class TestGetMemoryEndpoint:
         mock_agent_querier: AsyncMock,
     ) -> None:
         """200 + 返回单条 Memory。"""
-        mock_agent_querier.get_active_agent.return_value = _make_active_agent_info()
+        mock_agent_querier.get_executable_agent.return_value = _make_active_agent_info()
         mock_memory_service.get_memory.return_value = _make_memory_item(memory_id="mem-42")
 
         response = client.get("/api/v1/agents/1/memories/mem-42")
@@ -349,7 +349,7 @@ class TestGetMemoryEndpoint:
         mock_agent_querier: AsyncMock,
     ) -> None:
         """404 Memory 不存在。"""
-        mock_agent_querier.get_active_agent.return_value = _make_active_agent_info()
+        mock_agent_querier.get_executable_agent.return_value = _make_active_agent_info()
         mock_memory_service.get_memory.return_value = None
 
         response = client.get("/api/v1/agents/1/memories/nonexistent")
@@ -364,7 +364,7 @@ class TestGetMemoryEndpoint:
         mock_agent_querier: AsyncMock,
     ) -> None:
         """400 Memory 未启用。"""
-        mock_agent_querier.get_active_agent.return_value = _make_active_agent_info(enable_memory=False)
+        mock_agent_querier.get_executable_agent.return_value = _make_active_agent_info(enable_memory=False)
 
         response = client.get("/api/v1/agents/1/memories/mem-42")
 
@@ -382,7 +382,7 @@ class TestDeleteMemoryEndpoint:
         mock_agent_querier: AsyncMock,
     ) -> None:
         """204 删除成功。"""
-        mock_agent_querier.get_active_agent.return_value = _make_active_agent_info()
+        mock_agent_querier.get_executable_agent.return_value = _make_active_agent_info()
         mock_memory_service.delete_memory.return_value = None
 
         response = client.delete("/api/v1/agents/1/memories/mem-42")
@@ -396,7 +396,7 @@ class TestDeleteMemoryEndpoint:
         mock_agent_querier: AsyncMock,
     ) -> None:
         """400 Memory 未启用。"""
-        mock_agent_querier.get_active_agent.return_value = _make_active_agent_info(enable_memory=False)
+        mock_agent_querier.get_executable_agent.return_value = _make_active_agent_info(enable_memory=False)
 
         response = client.delete("/api/v1/agents/1/memories/mem-42")
 
