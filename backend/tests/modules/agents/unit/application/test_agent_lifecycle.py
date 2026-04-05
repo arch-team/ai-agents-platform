@@ -212,15 +212,13 @@ class TestGoLive:
         mock_event_bus: AsyncMock,
     ) -> None:
         """DRAFT 不能直接 go_live (需要先 start_testing)。"""
-        # go_live 调用 agent.activate()，DRAFT → ACTIVE 在 V1 中需要 system_prompt
-        # 无 system_prompt 的 DRAFT agent 不能 activate
-        agent = make_agent(status=AgentStatus.DRAFT, owner_id=100, system_prompt="")
+        agent = make_agent(status=AgentStatus.DRAFT, owner_id=100)
         mock_agent_repo.get_by_id.return_value = agent
 
-        # DRAFT → ACTIVE 需要 system_prompt，无 system_prompt 时会抛 ValidationError
-        from src.shared.domain.exceptions import ValidationError
+        # go_live 服务层严格要求 status == TESTING，DRAFT 直接抛 InvalidStateTransitionError
+        from src.shared.domain.exceptions import InvalidStateTransitionError
 
-        with pytest.raises(ValidationError):
+        with pytest.raises(InvalidStateTransitionError):
             await lifecycle_service.go_live(agent_id=1, operator_id=100)
 
 

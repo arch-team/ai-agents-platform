@@ -24,9 +24,16 @@ describe('AGENT_STATUS_CONFIG', () => {
     });
   });
 
-  it('应该包含且仅包含三种状态', () => {
+  it('应该包含 testing 状态配置', () => {
+    expect(AGENT_STATUS_CONFIG.testing).toEqual({
+      label: '测试中',
+      className: 'bg-blue-100 text-blue-700',
+    });
+  });
+
+  it('应该包含且仅包含四种状态', () => {
     const statuses = Object.keys(AGENT_STATUS_CONFIG);
-    expect(statuses).toHaveLength(3);
-    expect(statuses).toEqual(expect.arrayContaining(['draft', 'active', 'archived']));
+    expect(statuses).toHaveLength(4);
+    expect(statuses).toEqual(expect.arrayContaining(['draft', 'testing', 'active', 'archived']));
   });
 });
