@@ -51,7 +51,7 @@
 | 文件 | 变更类型 |
 |------|---------|
 | `frontend/src/features/agents/api/types.ts` | 移除 V1 CreateAgentRequest |
-| `frontend/src/features/agents/api/mutations.ts` | 移除 useCreateAgent |
+| `frontend/src/features/agents/api/queries.ts` | 移除 useCreateAgent |
 | `frontend/src/features/agents/index.ts` | 移除 V1 导出 |
 | `frontend/src/features/builder/index.ts` | 移除 V1 hooks 导出 |
 | `frontend/src/features/builder/model/store.ts` | 移除 V1 state 字段 |
@@ -311,6 +311,7 @@ git add -A && git commit -m "refactor(agents): 移除 system_prompt 字段, blue
 - Modify: `backend/src/shared/domain/interfaces/__init__.py`
 - Modify: `backend/src/modules/agents/infrastructure/services/agent_creator_impl.py`
 - Modify: `backend/src/presentation/api/providers.py`
+- Modify: `backend/src/modules/builder/api/dependencies.py` — 注入 IAgentLifecycle
 - Modify: `backend/tests/modules/agents/unit/infrastructure/test_agent_creator_impl.py`
 - Modify: `backend/tests/modules/builder/unit/application/test_builder_service.py`
 
@@ -491,13 +492,18 @@ async def refine_session(self, session_id: int, user_id: int, *, dto: RefineBuil
 
 - [ ] **Step 5: 更新 confirm_session 为 V2-only**
 
+> **注意**: `BuilderStatus.CONFIRMED` 表示 LLM 已生成配置/Blueprint (PENDING→GENERATING→CONFIRMED)。
+> 此状态检查确认 session 处于可创建 Agent 的状态，逻辑与现有代码一致。
+
 ```python
 async def confirm_session(self, session_id: int, user_id: int, *, name_override: str | None = None, auto_start_testing: bool = False) -> BuilderSessionDTO:
     session = await self._get_owned_session(session_id, user_id)
+    # CONFIRMED 状态 = LLM 已完成生成，可以创建 Agent
     if session.status != BuilderStatus.CONFIRMED:
         raise InvalidStateTransitionError(...)
 
     if not session.generated_blueprint:
+        # V2-only: 必须有 Blueprint (V1 JSON config 路径已移除)
         raise InvalidStateTransitionError(
             entity_type="BuilderSession",
             current_state=session.status.value,
@@ -819,7 +825,9 @@ from src.shared.api.sse_helpers import stream_sse_events
 __all__ = [..., "stream_sse_events"]
 ```
 
-- [ ] **Step 4: 重构 builder endpoints (2 个 SSE 端点)**
+- [ ] **Step 4: 重构 builder endpoints (2 个 V2 SSE 端点 — V1 endpoint 已在 Task 5 中移除)**
+
+> **前置**: Task 5 (API 层) 已移除 V1 `generate_config_stream` 端点，此时 builder 仅剩 2 个 SSE 端点。
 
 `builder/api/endpoints.py` — `generate_blueprint_stream` 和 `refine_builder_session`:
 
@@ -911,15 +919,21 @@ git add -A && git commit -m "fix(infrastructure): async 方法内同步 I/O 改�
 
 **Files:**
 - Delete: `frontend/src/features/agents/ui/AgentCreateForm.tsx`
+- Delete: `frontend/src/features/agents/ui/AgentCreateForm.test.tsx`
 - Modify: `frontend/src/features/agents/api/types.ts`
-- Modify: `frontend/src/features/agents/api/mutations.ts`
+- Modify: `frontend/src/features/agents/api/queries.ts` — 移除 useCreateAgent
+- Modify: `frontend/src/features/agents/ui/AgentFormFields.tsx` — 移除 V1 system_prompt 字段引用
+- Modify: `frontend/src/features/agents/ui/AgentFormFields.test.tsx`
 - Modify: `frontend/src/features/agents/index.ts`
+- Modify: `frontend/src/pages/agents/create/index.tsx` — 改为跳转 Builder 页面
 - Modify: `frontend/src/features/builder/index.ts`
-- Modify: `frontend/src/features/builder/model/store.ts`
+- Modify: `frontend/src/features/builder/model/store.ts` — 移除 V1 字段
+- Modify: `frontend/src/features/builder/model/store.test.ts` — 更新测试
+- Modify: `frontend/src/features/builder/model/types.ts`
 - Modify: `frontend/src/features/builder/api/stream.ts`
 - Modify: `frontend/src/features/builder/lib/sse.ts`
-- Modify: `frontend/src/features/builder/model/types.ts`
-- 更新引用 AgentCreateForm 的页面组件
+- Modify: `frontend/src/features/builder/ui/BuilderChat.tsx` — 移除 useBuilderStreamContent 引用
+- Modify: `frontend/src/features/builder/ui/BuilderChat.test.tsx`
 
 - [ ] **Step 1: 确认 AgentCreateForm 的引用位置**
 
@@ -930,10 +944,12 @@ cd frontend && grep -r "AgentCreateForm\|useCreateAgent\|useBuilderStream\|useBu
 - [ ] **Step 2: 删除 AgentCreateForm 组件和 V1 创建相关代码**
 
 1. 删除 `AgentCreateForm.tsx` 文件
-2. 从 `features/agents/api/types.ts` 移除 V1 `CreateAgentRequest` 类型
-3. 从 `features/agents/api/mutations.ts` 移除 `useCreateAgent`
-4. 从 `features/agents/index.ts` 移除相关导出
-5. 引用 AgentCreateForm 的页面改为跳转 Builder 页面
+2. 删除 `features/agents/ui/AgentCreateForm.test.tsx`
+3. 从 `features/agents/api/types.ts` 移除 V1 `CreateAgentRequest` 类型
+4. 从 `features/agents/api/queries.ts` 移除 `useCreateAgent`
+5. 更新 `features/agents/ui/AgentFormFields.tsx` — 移除 system_prompt 表单字段
+6. 从 `features/agents/index.ts` 移除 V1 相关导出
+7. 更新 `pages/agents/create/index.tsx` — 从渲染 AgentCreateForm 改为 `navigate('/builder')`
 
 - [ ] **Step 3: 清理 Builder V1 hooks 和 state**
 
@@ -941,6 +957,9 @@ cd frontend && grep -r "AgentCreateForm\|useCreateAgent\|useBuilderStream\|useBu
 2. `features/builder/api/stream.ts` — 删除 `useBuilderStream` (V1)
 3. `features/builder/model/store.ts` — 删除 V1 字段: `streamContent`, `generatedConfig`, `isGenerating`
 4. `features/builder/index.ts` — 移除 V1 导出
+5. `features/builder/ui/BuilderChat.tsx` — 移除引用 V1 store 字段 (`useBuilderStreamContent`) 的代码
+6. `features/builder/ui/BuilderChat.test.tsx` — 更新对应测试
+7. `features/builder/model/store.test.ts` — 移除 V1 字段相关测试
 
 - [ ] **Step 4: 运行前端测试**
 
@@ -1059,18 +1078,25 @@ git add -A && git commit -m "chore: 清理 V1 迁移脚本 + 最终质量验证"
 ## 执行顺序依赖图
 
 ```
-Task 1 (StrEnum) ──────────────────────────────────┐
-Task 2 (Agent 实体) ───┐                           │
+Task 1 (StrEnum) ──────────────────────────────────────┐
+Task 2 (Agent 实体) ───┐                               │
                        ├─► Task 3 (接口拆分) ──► Task 4 (BuilderService V1 移除)
                        │                          │
-                       │   Task 7 (SSE helper) ◄──┤──► Task 5 (API 层)
-                       │                          │
-                       └──► Task 6 (执行路由) ◄────┘
-                                                  │
-Task 8 (async I/O) ──────────────────────────────┤
-Task 9 (前端 V1 清理) ──► Task 10 (TestSandbox) ──┤
-                                                  │
-                                           Task 11 (清理+验证)
+                       │                          ├──► Task 5 (API 层) ──► Task 7 (SSE helper)
+                       │                          │                              │
+                       └──► Task 6 (执行路由) ◄────┘                              │
+                                                                                │
+Task 8 (async I/O) ─────────────────────────────────────────────────────────────┤
+Task 9 (前端 V1 清理) ──► Task 10 (TestSandbox) ────────────────────────────────┤
+                                                                                │
+                                                                     Task 11 (清理+验证)
 ```
 
-可并行执行: Task 1 | Task 8 | Task 7 (SSE helper 不依赖 V1 移除)
+**并行组**:
+- Task 1 (StrEnum) 可与 Task 2 并行
+- Task 8 (async I/O) 可与 Task 2-7 并行
+- Task 9 (前端) 可与 Task 6-8 并行
+
+**串行约束**:
+- Task 7 (SSE helper) 必须在 Task 5 (API 层) 之后执行 — 两者都修改 `builder/api/endpoints.py`
+- Task 5 依赖 Task 4 (V1 代码移除后才能清理端点)
