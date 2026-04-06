@@ -56,6 +56,8 @@ export function useCurrentUser() {
       return data;
     },
     retry: false,
+    // Token 仅存内存，无 token 时不请求 /auth/me（防止 401 轮询风暴 BUG-6）
+    enabled: !!token,
   });
 
   // 将用户信息同步到 auth store

@@ -23,6 +23,7 @@ export function LoginForm() {
   });
 
   const handleFormSubmit = async (data: LoginFormData) => {
+    if (loginMutation.isPending) return; // 防止快速交互重复提交（BUG-8）
     try {
       await loginMutation.mutateAsync(data);
       navigate('/');
