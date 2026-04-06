@@ -7,6 +7,7 @@
 import { useNavigate } from 'react-router-dom';
 
 import { useAuthToken } from '@/features/auth';
+import { useNavigationGuard } from '@/shared/hooks';
 import {
   BuilderActions,
   BuilderChat,
@@ -28,6 +29,13 @@ export default function BuilderPage() {
   const token = useAuthToken();
 
   const phase = useBuilderPhase();
+
+  // 导航守卫: 有进行中工作时阻止离开（BUG-4）
+  useNavigationGuard(
+    phase === 'generating' || phase === 'configure' || phase === 'testing',
+    '你正在构建 Agent，离开页面将丢失当前进度。确定要离开吗？',
+  );
+
   const sessionId = useBuilderSessionId();
   const createdAgentId = useBuilderCreatedAgentId();
   const { setSessionId, setConfirming, setError, setPhase, setCreatedAgentId, addMessage, reset } =
@@ -178,7 +186,7 @@ function InputPhaseHeader() {
     <div className="border-b border-gray-200 px-6 py-4">
       <div className="mx-auto max-w-2xl">
         <h2 className="text-center text-lg font-semibold text-gray-900">选择构建方式</h2>
-        <div className="mt-3 grid grid-cols-3 gap-3">
+        <div className="mt-3 grid grid-cols-3 gap-3" role="listbox" aria-label="选择构建方式">
           <StartOptionCard
             icon="📚"
             title="从 Skill 库"

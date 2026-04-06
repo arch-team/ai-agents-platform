@@ -263,7 +263,7 @@ tone: casual
         assert mock_session_repo.update.call_count >= 2
 
     @pytest.mark.asyncio
-    async def test_generate_blueprint_stream_no_sections_stays_generating(
+    async def test_generate_blueprint_stream_no_sections_transitions_to_confirmed(
         self,
         builder_service_v2: BuilderService,
         mock_session_repo: AsyncMock,
@@ -271,7 +271,7 @@ tone: casual
         mock_tool_querier: AsyncMock,
         mock_skill_querier: AsyncMock,
     ) -> None:
-        """LLM 返回纯引导文本 (无结构化段) 时, session 保持 GENERATING。"""
+        """LLM 返回纯引导文本 (无结构化段) 时, session 转为 CONFIRMED 以允许后续 refine。"""
         session = make_builder_session(session_id=1, user_id=100, status=BuilderStatus.PENDING)
         mock_session_repo.get_by_id.return_value = session
         mock_tool_querier.list_approved_tools.return_value = []
@@ -287,11 +287,10 @@ tone: casual
             chunks.append(chunk)
 
         assert len(chunks) == 1
-        # session 应该还是 GENERATING (没有 complete_generation)
-        # 最后一次 update 的 session 对象 status 应为 GENERATING
+        # 即使无结构化段，session 也应转为 CONFIRMED（允许后续 refine，BUG-3 修复）
         last_update_call = mock_session_repo.update.call_args_list[-1]
         saved_session = last_update_call[0][0]
-        assert saved_session.status == BuilderStatus.GENERATING
+        assert saved_session.status == BuilderStatus.CONFIRMED
 
 
 @pytest.mark.unit

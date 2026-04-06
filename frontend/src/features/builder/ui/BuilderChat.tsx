@@ -135,6 +135,9 @@ export function BuilderChat({ onSubmitInitial, onSubmitRefine, onAbort }: Builde
         <div className="flex gap-2">
           <textarea
             ref={inputRef}
+            id="builder-prompt"
+            name="builder-prompt"
+            aria-label="Agent 需求描述"
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             rows={2}

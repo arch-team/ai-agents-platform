@@ -1,34 +1,35 @@
-// AuthProvider — 桥接 Zustand auth store 与 API client token 注入 + 401 事件监听
-// + 页面加载时通过 httpOnly Cookie 自动恢复会话
+// AuthProvider — 401 事件监听 + 去抖防止循环登出
+// Token 注入已移至 auth store 的 setAuth/logout 中同步执行（BUG-7）
+// useCurrentUser 由 ProtectedRoute 调用，此处不再重复（BUG-6）
 
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-import { setTokenGetter, UNAUTHORIZED_EVENT } from '@/shared/api';
-import { useAuthToken, useCurrentUser, useLogout } from '@/features/auth';
+import { UNAUTHORIZED_EVENT } from '@/shared/api';
+import { useLogout } from '@/features/auth';
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const token = useAuthToken();
   const navigate = useNavigate();
   const logout = useLogout();
 
-  // 页面加载时自动尝试 /auth/me 恢复会话（httpOnly Cookie 自动携带）
-  useCurrentUser();
-
-  // 将 Zustand store 的 token getter 注入到 API client（Bearer header 仍作为 Cookie 的补充）
+  // 监听 401 未认证事件，去抖防止循环登出（BUG-6）
   useEffect(() => {
-    setTokenGetter(() => token);
-  }, [token]);
+    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 
-  // 监听 401 未认证事件，通过 React Router 导航到登录页（保持 SPA 体验）
-  useEffect(() => {
     const handleUnauthorized = () => {
+      if (debounceTimer) return;
+      debounceTimer = setTimeout(() => {
+        debounceTimer = null;
+      }, 1000);
       logout();
       navigate('/login', { replace: true });
     };
 
     window.addEventListener(UNAUTHORIZED_EVENT, handleUnauthorized);
-    return () => window.removeEventListener(UNAUTHORIZED_EVENT, handleUnauthorized);
+    return () => {
+      window.removeEventListener(UNAUTHORIZED_EVENT, handleUnauthorized);
+      if (debounceTimer) clearTimeout(debounceTimer);
+    };
   }, [logout, navigate]);
 
   return <>{children}</>;

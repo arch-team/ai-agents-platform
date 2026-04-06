@@ -317,9 +317,13 @@ class BuilderService:
             session.add_message("assistant", full_text)
             log.info("builder_blueprint_parsed", session_id=session.id, sections=list(blueprint_dict.keys()))
         else:
-            # 没有结构化段: 可能是引导性对话, 还未到生成阶段
+            # 没有结构化段: 引导性对话, 仍需转为 CONFIRMED 以允许后续 refine (BUG-3)
             session.add_message("assistant", full_text)
-            # 不改变状态, 保持 GENERATING 等下一轮输入
+            session.complete_generation(
+                config=session.generated_config or {},
+                name=session.agent_name or "未命名 Agent",
+                blueprint=session.generated_blueprint,
+            )
             log.info("builder_no_blueprint_sections", session_id=session.id)
 
     @staticmethod
