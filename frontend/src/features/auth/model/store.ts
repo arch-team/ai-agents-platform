@@ -18,6 +18,7 @@ const useAuthStore = create<AuthState>()(
       user: null,
       token: null,
       isAuthenticated: false,
+      _hasHydrated: false,
       setAuth: (user: UserSummary, token: string) => {
         // 同步更新 token getter，避免 navigate 后请求无 Bearer header（BUG-7）
         setTokenGetter(() => token);
@@ -34,11 +35,13 @@ const useAuthStore = create<AuthState>()(
       storage: createJSONStorage(() => sessionStorage),
       // 仅持久化 token — user 信息通过 /auth/me 重新获取
       partialize: (state) => ({ token: state.token }),
-      // rehydrate 后恢复 token getter，确保 API 请求能携带 Bearer header
+      // rehydrate 后恢复 token getter + 标记 hydration 完成
       onRehydrateStorage: () => (state) => {
         if (state?.token) {
           setTokenGetter(() => state.token);
         }
+        // 无论是否有 token，hydration 完成后标记
+        useAuthStore.setState({ _hasHydrated: true });
       },
     },
   ),
@@ -55,6 +58,8 @@ export const useAuth = () =>
   );
 
 export const useAuthToken = () => useAuthStore((state) => state.token);
+
+export const useAuthHasHydrated = () => useAuthStore((state) => state._hasHydrated);
 
 export const useAuthActions = () =>
   useAuthStore(

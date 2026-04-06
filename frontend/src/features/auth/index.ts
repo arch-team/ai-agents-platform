@@ -6,7 +6,7 @@ export { RegisterForm } from './ui/RegisterForm';
 export { SsoLoginButton } from './ui/SsoLoginButton';
 
 // Store hooks
-export { useAuth, useAuthToken, useAuthActions } from './model/store';
+export { useAuth, useAuthToken, useAuthHasHydrated, useAuthActions } from './model/store';
 
 // API hooks
 export { useLogin, useRegister, useCurrentUser, useLogout } from './api/queries';
