@@ -1,6 +1,7 @@
 """Alembic 迁移环境配置 (异步 + Settings)。"""
 
 import asyncio
+import os
 from logging.config import fileConfig
 
 from alembic import context
@@ -31,9 +32,12 @@ config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-# 从 Settings 获取数据库 URL 并注入到 Alembic 配置
-settings = get_settings()
-config.set_main_option("sqlalchemy.url", settings.database_url.replace("%", "%%"))
+# 从 DATABASE_URL 环境变量获取数据库 URL (CI 用 SQLite)，否则从 Settings 构建 (MySQL)
+_db_url = os.environ.get("DATABASE_URL", "")
+if not _db_url:
+    settings = get_settings()
+    _db_url = settings.database_url
+config.set_main_option("sqlalchemy.url", _db_url.replace("%", "%%"))
 
 target_metadata = Base.metadata
 

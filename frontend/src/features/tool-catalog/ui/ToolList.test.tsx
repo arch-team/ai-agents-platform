@@ -190,4 +190,49 @@ describe('ToolList', () => {
 
     expect(screen.getByText('v1.0.0')).toBeInTheDocument();
   });
+
+  it('切换状态筛选应触发过滤', async () => {
+    const user = userEvent.setup();
+    render(<ToolList />, { wrapper: createWrapper() });
+    await waitFor(() => expect(screen.getByText('代码搜索工具')).toBeInTheDocument());
+    await user.selectOptions(screen.getByLabelText('状态'), 'approved');
+  });
+
+  it('切换类型筛选应触发过滤', async () => {
+    const user = userEvent.setup();
+    render(<ToolList />, { wrapper: createWrapper() });
+    await waitFor(() => expect(screen.getByText('代码搜索工具')).toBeInTheDocument());
+    await user.selectOptions(screen.getByLabelText('类型'), 'mcp_server');
+  });
+
+  it('按 Enter 键应调用 onSelect', async () => {
+    const user = userEvent.setup();
+    const handleSelect = vi.fn();
+    render(<ToolList onSelect={handleSelect} />, { wrapper: createWrapper() });
+    await waitFor(() => expect(screen.getByText('代码搜索工具')).toBeInTheDocument());
+    const toolCard = screen.getByRole('button', { name: /查看工具 代码搜索工具 的详情/ });
+    toolCard.focus();
+    await user.keyboard('{Enter}');
+    expect(handleSelect).toHaveBeenCalledWith('tool-1');
+  });
+
+  it('按空格键应调用 onSelect', async () => {
+    const user = userEvent.setup();
+    const handleSelect = vi.fn();
+    render(<ToolList onSelect={handleSelect} />, { wrapper: createWrapper() });
+    await waitFor(() => expect(screen.getByText('代码搜索工具')).toBeInTheDocument());
+    const toolCard = screen.getByRole('button', { name: /查看工具 代码搜索工具 的详情/ });
+    toolCard.focus();
+    await user.keyboard(' ');
+    expect(handleSelect).toHaveBeenCalledWith('tool-1');
+  });
+
+  it('分页应触发页码变更', async () => {
+    const user = userEvent.setup();
+    const multiPageResponse: PageResponse<Tool> = { ...mockResponse, total_pages: 3 };
+    server.use(http.get(`${API_BASE}/api/v1/tools`, () => HttpResponse.json(multiPageResponse)));
+    render(<ToolList />, { wrapper: createWrapper() });
+    await waitFor(() => expect(screen.getByText('代码搜索工具')).toBeInTheDocument());
+    await user.click(screen.getByRole('button', { name: '下一页' }));
+  });
 });

@@ -8,7 +8,7 @@ import { createElement } from 'react';
 import { server } from '../../../../tests/mocks/server';
 
 import type { Template, TemplateListResponse } from './types';
-import { useTemplates, useTemplate, usePublishedTemplates } from './queries';
+import { useTemplates, useTemplate, usePublishedTemplates, useCreateTemplate, useUpdateTemplate, useDeleteTemplate, usePublishTemplate, useArchiveTemplate } from './queries';
 
 const API_BASE = 'http://localhost:8000';
 
@@ -115,6 +115,95 @@ describe('templates API hooks', () => {
       });
 
       expect(result.current.fetchStatus).toBe('idle');
+    });
+  });
+
+  describe('useCreateTemplate', () => {
+    it('应成功创建模板', async () => {
+      server.use(
+        http.post(`${API_BASE}/api/v1/templates`, () => HttpResponse.json(mockTemplate)),
+      );
+
+      const { result } = renderHook(() => useCreateTemplate(), {
+        wrapper: createWrapper(),
+      });
+
+      const newTemplate = await result.current.mutateAsync({
+        name: '新模板',
+        description: '测试创建',
+        category: 'customer_service',
+        system_prompt: '你是助手',
+      });
+
+      expect(newTemplate.name).toBe('测试模板');
+    });
+  });
+
+  describe('useUpdateTemplate', () => {
+    it('应成功更新模板', async () => {
+      const updatedTemplate = { ...mockTemplate, name: '更新后的模板' };
+      server.use(
+        http.put(`${API_BASE}/api/v1/templates/:id`, () => HttpResponse.json(updatedTemplate)),
+      );
+
+      const { result } = renderHook(() => useUpdateTemplate(), {
+        wrapper: createWrapper(),
+      });
+
+      const updated = await result.current.mutateAsync({
+        id: 1,
+        name: '更新后的模板',
+      });
+
+      expect(updated.name).toBe('更新后的模板');
+    });
+  });
+
+  describe('useDeleteTemplate', () => {
+    it('应成功删除模板', async () => {
+      server.use(
+        http.delete(`${API_BASE}/api/v1/templates/:id`, () => new HttpResponse(null, { status: 204 })),
+      );
+
+      const { result } = renderHook(() => useDeleteTemplate(), {
+        wrapper: createWrapper(),
+      });
+
+      await expect(result.current.mutateAsync(1)).resolves.toBeUndefined();
+    });
+  });
+
+  describe('usePublishTemplate', () => {
+    it('应成功发布模板', async () => {
+      const publishedTemplate = { ...mockTemplate, status: 'published' as const };
+      server.use(
+        http.post(`${API_BASE}/api/v1/templates/:id/publish`, () => HttpResponse.json(publishedTemplate)),
+      );
+
+      const { result } = renderHook(() => usePublishTemplate(), {
+        wrapper: createWrapper(),
+      });
+
+      const published = await result.current.mutateAsync(1);
+
+      expect(published.status).toBe('published');
+    });
+  });
+
+  describe('useArchiveTemplate', () => {
+    it('应成功归档模板', async () => {
+      const archivedTemplate = { ...mockTemplate, status: 'archived' as const };
+      server.use(
+        http.post(`${API_BASE}/api/v1/templates/:id/archive`, () => HttpResponse.json(archivedTemplate)),
+      );
+
+      const { result } = renderHook(() => useArchiveTemplate(), {
+        wrapper: createWrapper(),
+      });
+
+      const archived = await result.current.mutateAsync(1);
+
+      expect(archived.status).toBe('archived');
     });
   });
 });
