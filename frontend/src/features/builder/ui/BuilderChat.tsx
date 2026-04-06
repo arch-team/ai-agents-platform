@@ -190,8 +190,8 @@ function MessageBubble({ message }: { message: ChatMessage }) {
 function BlueprintCollapsible({ blueprint }: { blueprint: GeneratedBlueprint }) {
   const [expanded, setExpanded] = useState(false);
 
-  const skillCount = blueprint.skills.length;
-  const toolCount = blueprint.tool_bindings.length;
+  const skillCount = blueprint.skills?.length ?? 0;
+  const toolCount = blueprint.tool_bindings?.length ?? 0;
   const roleName = blueprint.persona?.role ?? '未定义';
 
   return (
@@ -225,18 +225,18 @@ function BlueprintCollapsible({ blueprint }: { blueprint: GeneratedBlueprint }) 
           {skillCount > 0 && (
             <p className="mt-1">
               <span className="font-medium">技能:</span>{' '}
-              {blueprint.skills.map((s) => s.name).join('、')}
+              {blueprint.skills?.map((s) => s.name).join('、')}
             </p>
           )}
           {toolCount > 0 && (
             <p className="mt-1">
               <span className="font-medium">工具:</span>{' '}
-              {blueprint.tool_bindings.map((t) => t.display_name).join('、')}
+              {blueprint.tool_bindings?.map((t) => t.display_name).join('、')}
             </p>
           )}
-          {blueprint.guardrails.length > 0 && (
+          {(blueprint.guardrails?.length ?? 0) > 0 && (
             <p className="mt-1">
-              <span className="font-medium">护栏:</span> {blueprint.guardrails.length} 条规则
+              <span className="font-medium">护栏:</span> {blueprint.guardrails?.length ?? 0} 条规则
             </p>
           )}
           <p className="mt-1.5 text-blue-500">详细蓝图请查看右侧预览面板 →</p>

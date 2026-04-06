@@ -44,6 +44,7 @@ export function useRegister() {
 }
 
 // 获取当前用户信息
+// Cookie 模式下无需内存 token 即可请求（httpOnly Cookie 自动携带）
 export function useCurrentUser() {
   const token = useAuthToken();
   const { setAuth } = useAuthActions();
@@ -54,14 +55,14 @@ export function useCurrentUser() {
       const { data } = await apiClient.get<UserSummary>('/api/v1/auth/me');
       return data;
     },
-    enabled: !!token,
     retry: false,
   });
 
-  // 将用户信息同步到 auth store（避免在 queryFn 内执行副作用）
+  // 将用户信息同步到 auth store
+  // Cookie 模式: token 可能为空，用占位值标记已认证（实际 token 在 httpOnly Cookie 中）
   useEffect(() => {
-    if (query.data && token) {
-      setAuth(query.data, token);
+    if (query.data) {
+      setAuth(query.data, token ?? 'cookie');
     }
   }, [query.data, token, setAuth]);
 

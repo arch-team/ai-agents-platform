@@ -1,6 +1,6 @@
 """Auth API dependencies 单元测试。"""
 
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from fastapi.security import HTTPAuthorizationCredentials
@@ -60,6 +60,13 @@ class TestGetUserService:
         assert hasattr(service, "login")
 
 
+def _mock_request() -> MagicMock:
+    """创建 mock FastAPI Request (Cookie 回退测试用)。"""
+    req = MagicMock()
+    req.cookies = {}
+    return req
+
+
 @pytest.mark.unit
 class TestGetCurrentUser:
     def test_is_callable(self) -> None:
@@ -76,6 +83,7 @@ class TestGetCurrentUser:
         mock_service.get_user.return_value = expected_user
 
         result = await get_current_user(
+            request=_mock_request(),
             credentials=credentials,
             service=mock_service,
             settings=settings,
@@ -96,6 +104,7 @@ class TestGetCurrentUser:
 
         with pytest.raises(AuthenticationError, match="无效的认证令牌"):
             await get_current_user(
+                request=_mock_request(),
                 credentials=credentials,
                 service=mock_service,
                 settings=settings,
@@ -114,6 +123,7 @@ class TestGetCurrentUser:
 
         with pytest.raises(AuthenticationError, match="账户已停用"):
             await get_current_user(
+                request=_mock_request(),
                 credentials=credentials,
                 service=mock_service,
                 settings=settings,
@@ -130,9 +140,42 @@ class TestGetCurrentUser:
 
         with pytest.raises(AuthenticationError, match="用户不存在"):
             await get_current_user(
+                request=_mock_request(),
                 credentials=credentials,
                 service=mock_service,
                 settings=settings,
+            )
+
+    @pytest.mark.asyncio
+    async def test_cookie_fallback_returns_user(self) -> None:
+        """无 Bearer header 时, 从 httpOnly Cookie 读取 token。"""
+        token = _make_token(user_id=7)
+        request = _mock_request()
+        request.cookies = {"access_token": token}
+        settings = _test_settings()
+        expected_user = _make_user_dto(user_id=7)
+
+        mock_service = AsyncMock()
+        mock_service.get_user.return_value = expected_user
+
+        result = await get_current_user(
+            request=request,
+            credentials=None,
+            service=mock_service,
+            settings=settings,
+        )
+
+        assert result.id == 7
+
+    @pytest.mark.asyncio
+    async def test_no_credentials_raises(self) -> None:
+        """无 Bearer header 且无 Cookie 时抛出 AuthenticationError。"""
+        with pytest.raises(AuthenticationError, match="缺少认证凭据"):
+            await get_current_user(
+                request=_mock_request(),
+                credentials=None,
+                service=AsyncMock(),
+                settings=_test_settings(),
             )
 
 

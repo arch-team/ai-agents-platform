@@ -68,13 +68,13 @@ export function BuilderPreview() {
         )}
 
         {/* 📋 技能列表 */}
-        {blueprint.skills.length > 0 && (
+        {(blueprint.skills?.length ?? 0) > 0 && (
           <section>
             <h3 className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-gray-900">
-              <span aria-hidden="true">📋</span> 技能（{blueprint.skills.length}）
+              <span aria-hidden="true">📋</span> 技能（{blueprint.skills?.length ?? 0}）
             </h3>
             <div className="space-y-2">
-              {blueprint.skills.map((skill, i) => (
+              {blueprint.skills?.map((skill, i) => (
                 <SkillCard key={i} skill={skill} />
               ))}
             </div>
@@ -82,13 +82,13 @@ export function BuilderPreview() {
         )}
 
         {/* 🔧 工具绑定 */}
-        {blueprint.tool_bindings.length > 0 && (
+        {(blueprint.tool_bindings?.length ?? 0) > 0 && (
           <section>
             <h3 className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-gray-900">
-              <span aria-hidden="true">🔧</span> 工具绑定（{blueprint.tool_bindings.length}）
+              <span aria-hidden="true">🔧</span> 工具绑定（{blueprint.tool_bindings?.length ?? 0}）
             </h3>
             <div className="space-y-1.5">
-              {blueprint.tool_bindings.map((tool) => (
+              {blueprint.tool_bindings?.map((tool) => (
                 <div
                   key={tool.tool_id}
                   className="rounded-lg border border-gray-200 bg-white px-3 py-2"
@@ -104,13 +104,14 @@ export function BuilderPreview() {
         )}
 
         {/* 📚 知识库 */}
-        {blueprint.knowledge_base_ids.length > 0 && (
+        {(blueprint.knowledge_base_ids?.length ?? 0) > 0 && (
           <section>
             <h3 className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-gray-900">
-              <span aria-hidden="true">📚</span> 知识库（{blueprint.knowledge_base_ids.length}）
+              <span aria-hidden="true">📚</span> 知识库（{blueprint.knowledge_base_ids?.length ?? 0}
+              ）
             </h3>
             <div className="flex flex-wrap gap-2">
-              {blueprint.knowledge_base_ids.map((id) => (
+              {blueprint.knowledge_base_ids?.map((id) => (
                 <span
                   key={id}
                   className="rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-blue-700"
@@ -145,9 +146,9 @@ export function BuilderPreview() {
               )}
             </div>
             {blueprint.memory_config.enabled &&
-              blueprint.memory_config.retain_fields.length > 0 && (
+              (blueprint.memory_config.retain_fields?.length ?? 0) > 0 && (
                 <div className="mt-2 flex flex-wrap gap-1">
-                  {blueprint.memory_config.retain_fields.map((field) => (
+                  {blueprint.memory_config.retain_fields?.map((field) => (
                     <span
                       key={field}
                       className="rounded bg-gray-100 px-1.5 py-0.5 text-xs text-gray-600"
@@ -161,13 +162,13 @@ export function BuilderPreview() {
         )}
 
         {/* 🛡️ 护栏规则 */}
-        {blueprint.guardrails.length > 0 && (
+        {(blueprint.guardrails?.length ?? 0) > 0 && (
           <section>
             <h3 className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-gray-900">
-              <span aria-hidden="true">🛡️</span> 护栏规则（{blueprint.guardrails.length}）
+              <span aria-hidden="true">🛡️</span> 护栏规则（{blueprint.guardrails?.length ?? 0}）
             </h3>
             <div className="space-y-1.5">
-              {blueprint.guardrails.map((guard, i) => (
+              {blueprint.guardrails?.map((guard, i) => (
                 <div
                   key={i}
                   className="flex items-start gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2"

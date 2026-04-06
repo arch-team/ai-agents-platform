@@ -50,6 +50,7 @@ export async function* parseSSEStream<T>(config: SSERequestConfig): AsyncGenerat
       method,
       headers,
       signal,
+      credentials: 'include',
       ...(method === 'POST' && body ? { body: JSON.stringify(body) } : {}),
     });
   } catch (err) {

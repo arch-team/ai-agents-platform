@@ -4,7 +4,7 @@ from collections.abc import Awaitable, Callable
 from typing import Annotated
 
 import structlog
-from fastapi import Depends
+from fastapi import Depends, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -26,7 +26,10 @@ from src.shared.infrastructure.settings import Settings, get_settings
 
 
 logger = structlog.get_logger(__name__)
-security = HTTPBearer()
+# auto_error=False: 缺少 Bearer header 时不自动 403, 允许回退到 Cookie
+security = HTTPBearer(auto_error=False)
+
+_ACCESS_TOKEN_COOKIE = "access_token"
 
 
 def get_user_service(
@@ -46,18 +49,37 @@ def get_user_service(
     )
 
 
+def _extract_token(request: Request, credentials: HTTPAuthorizationCredentials | None) -> str:
+    """从 Bearer header 或 httpOnly Cookie 中提取 access token。
+
+    优先级: Bearer header > Cookie (向后兼容 + 刷新页面后 Cookie 保持登录)
+
+    Raises:
+        AuthenticationError: 两种方式都未提供 token
+    """
+    if credentials:
+        return credentials.credentials
+    cookie_token = request.cookies.get(_ACCESS_TOKEN_COOKIE)
+    if cookie_token:
+        return cookie_token
+    msg = "缺少认证凭据"
+    raise AuthenticationError(msg)
+
+
 async def get_current_user(
-    credentials: Annotated[HTTPAuthorizationCredentials, Depends(security)],
+    request: Request,
+    credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(security)],
     service: Annotated[UserService, Depends(get_user_service)],
     settings: Annotated[Settings, Depends(get_settings)],
 ) -> UserDTO:
-    """从 JWT token 解析当前用户。
+    """从 JWT token (Bearer header 或 httpOnly Cookie) 解析当前用户。
 
     Raises:
         AuthenticationError: token 无效或用户不存在
     """
+    token_str = _extract_token(request, credentials)
     payload = decode_access_token(
-        credentials.credentials,
+        token_str,
         secret_key=settings.JWT_SECRET_KEY.get_secret_value(),
         algorithm=settings.JWT_ALGORITHM,
     )
