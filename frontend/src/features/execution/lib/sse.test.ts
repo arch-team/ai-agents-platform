@@ -90,6 +90,7 @@ describe('streamSSE', () => {
         'Content-Type': 'application/json',
         Authorization: 'Bearer test-token',
       },
+      credentials: 'include',
       body: JSON.stringify({ content: '测试' }),
     });
   });
@@ -107,6 +108,7 @@ describe('streamSSE', () => {
       headers: {
         'Content-Type': 'application/json',
       },
+      credentials: 'include',
       body: JSON.stringify({ content: '测试' }),
     });
   });
