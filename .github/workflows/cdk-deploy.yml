@@ -70,7 +70,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v5
         with:
           version: ${{ env.PNPM_VERSION }}
 
@@ -107,7 +107,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v5
         with:
           version: ${{ env.PNPM_VERSION }}
 
@@ -176,7 +176,7 @@ jobs:
         if: github.event.inputs.action == 'rollback'
         run: echo "::warning::回滚模式 — 将部署 commit ${{ github.event.inputs.rollback-commit }}"
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v5
         with:
           version: ${{ env.PNPM_VERSION }}
 
@@ -228,7 +228,7 @@ jobs:
         if: github.event.inputs.action == 'rollback'
         run: echo "::warning::回滚模式 — 将部署 commit ${{ github.event.inputs.rollback-commit }}"
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v5
         with:
           version: ${{ env.PNPM_VERSION }}
 
