@@ -101,6 +101,7 @@ export function useBlueprintStream(token: string | null) {
       const controller = new AbortController();
       abortControllerRef.current = controller;
       setGenerating(true);
+      setPhase('generating');
       resetStream();
 
       // 先添加用户消息
@@ -128,9 +129,14 @@ export function useBlueprintStream(token: string | null) {
         if (assistantContent) {
           addMessage({ role: 'assistant', content: assistantContent });
         }
+        setPhase('configure');
       } catch (err) {
-        if (err instanceof DOMException && err.name === 'AbortError') return;
+        if (err instanceof DOMException && err.name === 'AbortError') {
+          setPhase('configure');
+          return;
+        }
         setError(extractApiError(err, '优化失败，请重试'));
+        setPhase('configure');
       } finally {
         abortControllerRef.current = null;
         setGenerating(false);
@@ -143,6 +149,7 @@ export function useBlueprintStream(token: string | null) {
       setGenerating,
       setError,
       addMessage,
+      setPhase,
       resetStream,
       queryClient,
       token,

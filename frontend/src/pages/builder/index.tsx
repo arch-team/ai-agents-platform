@@ -213,6 +213,10 @@ function StartOptionCard({
 }) {
   return (
     <div
+      role="option"
+      aria-selected={active}
+      aria-disabled={disabled}
+      title={disabled ? '即将上线' : undefined}
       className={`rounded-lg border-2 p-4 text-center transition-colors ${
         active
           ? 'border-blue-500 bg-blue-50'

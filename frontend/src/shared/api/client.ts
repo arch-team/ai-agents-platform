@@ -5,6 +5,7 @@ import { env } from '@/shared/config/env';
 export const apiClient = axios.create({
   baseURL: env.VITE_API_BASE_URL,
   headers: { 'Content-Type': 'application/json' },
+  withCredentials: true,
 });
 
 // JWT 拦截器 — 通过注入函数从 auth store 读取 token

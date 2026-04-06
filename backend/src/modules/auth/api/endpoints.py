@@ -3,7 +3,7 @@
 from typing import Annotated
 
 import structlog
-from fastapi import APIRouter, Depends, Request, status
+from fastapi import APIRouter, Depends, Request, Response, status
 
 from src.modules.auth.api.dependencies import get_current_user, get_user_service
 from src.modules.auth.api.schemas.requests import LoginRequest, LogoutRequest, RefreshTokenRequest, RegisterRequest
@@ -14,6 +14,10 @@ from src.modules.auth.domain.exceptions import RegistrationDisabledError
 from src.shared.api.middleware.rate_limit import rate_limit
 from src.shared.infrastructure.settings import Settings, get_settings
 
+
+# Cookie 名称常量
+_ACCESS_TOKEN_COOKIE = "access_token"
+_REFRESH_TOKEN_COOKIE = "refresh_token"
 
 router = APIRouter(prefix="/api/v1/auth", tags=["auth"])
 
@@ -37,6 +41,35 @@ def _user_response(user: UserDTO) -> UserResponse:
         role=user.role,
         is_active=user.is_active,
     )
+
+
+def _set_auth_cookies(response: Response, access_token: str, refresh_token: str, settings: Settings) -> None:
+    """在 Response 上设置 httpOnly Cookie，使前端刷新页面后仍保持登录。"""
+    response.set_cookie(
+        key=_ACCESS_TOKEN_COOKIE,
+        value=access_token,
+        httponly=True,
+        secure=settings.ENV_NAME != "dev",
+        samesite="lax",
+        max_age=settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        path="/",
+    )
+    if refresh_token:
+        response.set_cookie(
+            key=_REFRESH_TOKEN_COOKIE,
+            value=refresh_token,
+            httponly=True,
+            secure=settings.ENV_NAME != "dev",
+            samesite="lax",
+            max_age=settings.JWT_REFRESH_TOKEN_EXPIRE_DAYS * 86400,
+            path="/api/v1/auth",
+        )
+
+
+def _clear_auth_cookies(response: Response) -> None:
+    """清除认证 Cookie。"""
+    response.delete_cookie(key=_ACCESS_TOKEN_COOKIE, path="/")
+    response.delete_cookie(key=_REFRESH_TOKEN_COOKIE, path="/api/v1/auth")
 
 
 @router.post(
@@ -64,13 +97,16 @@ async def register(
 @rate_limit("5/minute")
 async def login(
     request: Request,
+    response: Response,
     body: LoginRequest,
     service: Annotated[UserService, Depends(get_user_service)],
+    settings: Annotated[Settings, Depends(get_settings)],
 ) -> TokenResponse:
-    """用户登录，返回 JWT token + refresh token。"""
+    """用户登录，返回 JWT token + refresh token，同时设置 httpOnly Cookie。"""
     _bind_client_context(request)
     dto = LoginDTO(email=body.email, password=body.password)
     token = await service.login(dto)
+    _set_auth_cookies(response, token.access_token, token.refresh_token, settings)
     return TokenResponse(
         access_token=token.access_token,
         refresh_token=token.refresh_token,
@@ -82,13 +118,16 @@ async def login(
 @rate_limit("10/minute")
 async def refresh_token(
     request: Request,
+    response: Response,
     body: RefreshTokenRequest,
     service: Annotated[UserService, Depends(get_user_service)],
+    settings: Annotated[Settings, Depends(get_settings)],
 ) -> TokenResponse:
-    """使用 Refresh Token 换发新的 Access Token。"""
+    """使用 Refresh Token 换发新的 Access Token，同时刷新 httpOnly Cookie。"""
     _bind_client_context(request)
     dto = RefreshTokenDTO(refresh_token=body.refresh_token)
     token = await service.refresh_access_token(dto)
+    _set_auth_cookies(response, token.access_token, token.refresh_token, settings)
     return TokenResponse(
         access_token=token.access_token,
         refresh_token=token.refresh_token,
@@ -99,12 +138,14 @@ async def refresh_token(
 @router.post("/logout")
 async def logout(
     request: Request,
+    response: Response,
     body: LogoutRequest,
     service: Annotated[UserService, Depends(get_user_service)],
 ) -> MessageResponse:
-    """撤销 Refresh Token（登出）。"""
+    """撤销 Refresh Token（登出），同时清除 httpOnly Cookie。"""
     _bind_client_context(request)
     await service.logout(body.refresh_token)
+    _clear_auth_cookies(response)
     return MessageResponse(message="已成功登出")
 
 

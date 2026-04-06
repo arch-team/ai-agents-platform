@@ -7,6 +7,8 @@ interface ErrorBoundaryProps {
   children: ReactNode;
   /** 自定义 fallback UI，不传则使用默认错误页面 */
   fallback?: ReactNode;
+  /** 重试时调用，用于清理导致崩溃的外部状态（如 Zustand store） */
+  onReset?: () => void;
 }
 
 interface ErrorBoundaryState {
@@ -30,6 +32,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
   }
 
   private handleReset = () => {
+    this.props.onReset?.();
     this.setState({ hasError: false, error: null });
   };
 
