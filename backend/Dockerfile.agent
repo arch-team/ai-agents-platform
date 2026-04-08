@@ -5,7 +5,7 @@
 # ============================================================
 
 # -- Stage 1: Builder --
-FROM public.ecr.aws/docker/library/python:3.12-slim AS builder
+FROM public.ecr.aws/docker/library/python:3.14-slim AS builder
 
 # 安装 uv 和编译工具 (asyncmy 需要 gcc)
 COPY --from=ghcr.io/astral-sh/uv:0.7.12 /uv /usr/local/bin/uv
@@ -28,7 +28,7 @@ COPY README.md .
 RUN uv sync --no-dev --frozen
 
 # -- Stage 2: Runtime --
-FROM public.ecr.aws/docker/library/python:3.12-slim AS runtime
+FROM public.ecr.aws/docker/library/python:3.14-slim AS runtime
 
 # Claude Agent SDK bundled CLI (Node.js SEA ELF) 运行时依赖
 RUN apt-get update && apt-get install -y --no-install-recommends \

@@ -4,7 +4,7 @@
 # ============================================================
 
 # -- Stage 1: Builder --
-FROM public.ecr.aws/docker/library/python:3.12-slim AS builder
+FROM public.ecr.aws/docker/library/python:3.14-slim AS builder
 
 # 安装构建依赖 (asyncmy 需要 gcc 编译 Cython 扩展)
 RUN apt-get update && apt-get install -y --no-install-recommends gcc libc6-dev && rm -rf /var/lib/apt/lists/*
@@ -33,7 +33,7 @@ COPY README.md .
 RUN uv sync --no-dev --frozen
 
 # -- Stage 2: Runtime --
-FROM public.ecr.aws/docker/library/python:3.12-slim AS runtime
+FROM public.ecr.aws/docker/library/python:3.14-slim AS runtime
 
 # Claude Agent SDK bundled CLI (Node.js SEA ELF 二进制) 运行时依赖
 # python:3.12-slim 缺少 libstdc++6 等, 导致 CLI 进程启动后立即崩溃 (ProcessTransport not ready)
