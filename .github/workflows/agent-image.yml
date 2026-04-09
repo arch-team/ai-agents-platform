@@ -81,7 +81,7 @@ jobs:
         id: ecr-login
         uses: aws-actions/amazon-ecr-login@v2
 
-      - uses: docker/setup-buildx-action@v3
+      - uses: docker/setup-buildx-action@v4
 
       - name: 构建并推送 Docker 镜像
         uses: docker/build-push-action@v6
@@ -167,7 +167,7 @@ jobs:
         id: ecr-login
         uses: aws-actions/amazon-ecr-login@v2
 
-      - uses: docker/setup-buildx-action@v3
+      - uses: docker/setup-buildx-action@v4
 
       # 从 Dev 仓库复制镜像到 Prod 仓库，无需重新构建
       # ECR 同账号内支持跨仓库 blob 挂载，仅传输 manifest 而非镜像层
