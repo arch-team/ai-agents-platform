@@ -42,7 +42,7 @@ dependencies = [
     "bcrypt>=4.0.0",
     # SSO / SAML + LDAP
     "python3-saml>=1.16.0",
-    "ldap3>=2.9.0",
+    "ldap3>=2.9.1",
     # 日志
     "structlog>=24.1.0",
     # 工具
