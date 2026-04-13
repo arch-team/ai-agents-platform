@@ -30,7 +30,7 @@ dependencies = [
     "email-validator>=2.1.0",
     # 数据库
     "sqlalchemy>=2.0.25",
-    "alembic>=1.13.0",
+    "alembic>=1.18.4",
     "asyncmy>=0.2.9",
     # AWS SDK (Platform API 路径: AgentCore 资源管理 + Bedrock KB + 降级 Converse API)
     "boto3>=1.36.0",
