@@ -100,7 +100,7 @@ jobs:
       - name: 回滚模式提示
         if: github.event.inputs.action == 'rollback'
         run: echo "::warning::回滚模式 — 将部署 commit ${{ github.event.inputs.rollback-commit }}"
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
         with:
           version: ${{ env.PNPM_VERSION }}
       - uses: actions/setup-node@v4
@@ -180,7 +180,7 @@ jobs:
       - name: 回滚模式提示
         if: github.event.inputs.action == 'rollback'
         run: echo "::warning::回滚模式 — 将部署 commit ${{ github.event.inputs.rollback-commit }}"
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
         with:
           version: ${{ env.PNPM_VERSION }}
       - uses: actions/setup-node@v4
