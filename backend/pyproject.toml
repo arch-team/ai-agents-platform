@@ -81,7 +81,7 @@ dev = [
     # 安全扫描
     "bandit>=1.7.7",
     "safety>=3.0.0",
-    "pip-audit>=2.7.0",
+    "pip-audit>=2.10.0",
 
     # pre-commit
     "pre-commit>=3.6.0",
