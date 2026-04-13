@@ -46,7 +46,7 @@ dependencies = [
     # 日志
     "structlog>=24.1.0",
     # 工具
-    "httpx>=0.26.0",
+    "httpx>=0.28.1",
     "python-multipart>=0.0.9",
     # 缓存
     "cachetools>=5.3.0",
@@ -68,7 +68,7 @@ dev = [
     "pytest-asyncio>=0.23.0",
     "pytest-mock>=3.12.0",
     "factory-boy>=3.3.0",
-    "httpx>=0.26.0",  # FastAPI TestClient 依赖
+    "httpx>=0.28.1",  # FastAPI TestClient 依赖
     "aiosqlite>=0.20.0",  # SQLite 异步驱动 (测试用)
 
     # 类型检查
