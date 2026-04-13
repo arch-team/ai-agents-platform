@@ -62,7 +62,7 @@ jobs:
           fi
       - name: 创建漂移报告 Issue
         if: steps.cdk-diff.outputs.drift_detected == 'true'
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         with:
           script: |
             const fs = require('fs');
